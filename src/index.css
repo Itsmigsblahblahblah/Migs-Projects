@@ -8,50 +8,84 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Agricultural Theme - Light Mode */
+    --background: 45 25% 98%;
+    --foreground: 120 15% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 120 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 120 15% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Deep Forest Green Primary */
+    --primary: 120 60% 20%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 120 50% 35%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Warm Earth Secondary */
+    --secondary: 35 25% 85%;
+    --secondary-foreground: 120 15% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 45 15% 92%;
+    --muted-foreground: 120 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Golden Accent */
+    --accent: 42 78% 60%;
+    --accent-foreground: 120 15% 15%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Success Green for Crop Recommendations */
+    --success: 120 50% 35%;
+    --success-foreground: 0 0% 98%;
+
+    /* Warning for Problem Alerts */
+    --warning: 35 95% 55%;
+    --warning-foreground: 120 15% 15%;
+
+    --border: 120 15% 88%;
+    --input: 120 15% 94%;
+    --ring: 120 60% 20%;
+
+    /* Agricultural Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(120 60% 20%), hsl(120 50% 35%));
+    --gradient-earth: linear-gradient(180deg, hsl(45 25% 98%), hsl(35 25% 92%));
+    --gradient-hero: linear-gradient(135deg, hsl(120 60% 20%) 0%, hsl(120 50% 35%) 50%, hsl(42 78% 60%) 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -4px hsl(120 60% 20% / 0.1);
+    --shadow-card: 0 8px 25px -8px hsl(120 60% 20% / 0.15);
+    --shadow-glow: 0 0 30px hsl(42 78% 60% / 0.3);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --radius: 0.5rem;
 
+    /* Agricultural Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(120 60% 20%), hsl(120 50% 35%));
+    --gradient-earth: linear-gradient(180deg, hsl(45 25% 98%), hsl(35 25% 92%));
+    --gradient-hero: linear-gradient(135deg, hsl(120 60% 20%) 0%, hsl(120 50% 35%) 50%, hsl(42 78% 60%) 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -4px hsl(120 60% 20% / 0.1);
+    --shadow-card: 0 8px 25px -8px hsl(120 60% 20% / 0.15);
+    --shadow-glow: 0 0 30px hsl(42 78% 60% / 0.3);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
