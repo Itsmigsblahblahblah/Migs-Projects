@@ -1,10 +1,10 @@
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { 
-  Sprout, 
-  LogOut, 
-  User, 
+import {
+  Sprout,
+  LogOut,
+  User,
   History,
   Settings,
   Home
@@ -22,7 +22,7 @@ const Layout = ({ children }: LayoutProps) => {
   const handleLogout = () => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('username');
-    navigate('/');
+    navigate('/login');
   };
 
   const navigationItems = [
@@ -86,10 +86,10 @@ const Layout = ({ children }: LayoutProps) => {
                   ({userRole === 'farmer' ? 'Farmer' : 'Administrator'})
                 </span>
               </div>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
+
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleLogout}
                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
               >
@@ -130,7 +130,7 @@ const Layout = ({ children }: LayoutProps) => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Sprout className="h-4 w-4 text-primary" />
-              <span>© 2024 Majayjay Farm Resource Management System</span>
+              <span>© 2025 Majayjay Farm Resource Management System</span>
             </div>
             <div className="text-sm text-muted-foreground">
               Empowering farmers with smart technology

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { Sprout, Users, Shield } from "lucide-react";
+import { Sprout, Users, Shield, ArrowLeft } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -30,6 +30,17 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-earth flex items-center justify-center p-4">
+      <div className="absolute top-6 left-6">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Button>
+      </div>
+      
       <div className="w-full max-w-4xl grid lg:grid-cols-2 gap-8 items-center">
         {/* Hero Section */}
         <div className="text-center lg:text-left space-y-6">

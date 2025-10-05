@@ -1,20 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { 
-  Sprout, 
-  Users, 
-  Shield, 
-  Leaf, 
-  BarChart3, 
-  MessageSquare, 
+import {
+  Sprout,
+  Users,
+  Shield,
+  Leaf,
+  BarChart3,
+  MessageSquare,
   Star,
   CheckCircle,
   ArrowRight,
   User
 } from "lucide-react";
 
-const Index = () => {
+const Landing = () => {
   const navigate = useNavigate();
 
   const features = [
@@ -86,23 +86,23 @@ const Index = () => {
 
   const team = [
     {
-      name: "Dr. Elena Martinez",
-      role: "Chief Agricultural Scientist",
-      avatar: <User className="h-12 w-12" />
-    },
-    {
-      name: "James Rodriguez",
+      name: "Dean Martin Mabulay",
       role: "Lead Developer",
       avatar: <User className="h-12 w-12" />
     },
     {
-      name: "Sarah Johnson",
-      role: "Data Scientist",
+      name: "Hyroin Balili",
+      role: "Backend Developer",
       avatar: <User className="h-12 w-12" />
     },
     {
-      name: "Michael Chen",
-      role: "User Experience Director",
+      name: "Joyce Ann Cuala",
+      role: "UI/UX Designer | Research Lead",
+      avatar: <User className="h-12 w-12" />
+    },
+    {
+      name: "Dondon Esquivel",
+      role: "Project Manager",
       avatar: <User className="h-12 w-12" />
     }
   ];
@@ -119,31 +119,31 @@ const Index = () => {
               </div>
               <h1 className="text-2xl font-bold text-primary">Majayjay Farm Resource Management</h1>
             </div>
-            
+
             <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
               Smart Farming for a{" "}
               <span className="text-transparent bg-clip-text bg-gradient-primary">
                 Better Tomorrow
               </span>
             </h1>
-            
+
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-              Empowering Majayjay farmers with expert crop recommendations, real-time analytics, 
+              Empowering Majayjay farmers with expert crop recommendations, real-time analytics,
               and direct access to agricultural specialists for optimized farm productivity.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-gradient-primary hover:opacity-90 transition-opacity text-lg px-8 py-6"
                 onClick={() => navigate('/login')}
               >
                 Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
+              <Button
+                variant="outline"
+                size="lg"
                 className="text-lg px-8 py-6 border-2"
                 onClick={() => navigate('/login')}
               >
@@ -165,7 +165,7 @@ const Index = () => {
               Everything you need to optimize your farm productivity and make data-driven decisions
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <Card key={index} className="border-0 shadow-card hover:shadow-lg transition-shadow">
@@ -197,7 +197,7 @@ const Index = () => {
               Get started in four simple steps and transform your farming experience
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, index) => (
               <div key={index} className="text-center relative">
@@ -208,7 +208,7 @@ const Index = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">{step.title}</h3>
                 <p className="text-muted-foreground">{step.description}</p>
-                
+
                 {index < steps.length - 1 && (
                   <div className="hidden lg:block absolute top-8 left-full w-full h-0.5 bg-gradient-primary"></div>
                 )}
@@ -229,7 +229,7 @@ const Index = () => {
               Hear from farmers who have transformed their agricultural practices
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
               <Card key={index} className="border-0 shadow-card">
@@ -267,11 +267,14 @@ const Index = () => {
               Passionate professionals dedicated to revolutionizing agriculture in Majayjay
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {team.map((member, index) => (
-              <div key={index} className="text-center">
-                <div className="mx-auto mb-4 p-4 rounded-full bg-secondary w-24 h-24 flex items-center justify-center">
+              <div
+                key={index}
+                className="text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group"
+              >
+                <div className="mx-auto mb-4 p-4 rounded-full bg-secondary w-24 h-24 flex items-center justify-center transition-all duration-300 group-hover:shadow-lg">
                   {member.avatar}
                 </div>
                 <h3 className="text-xl font-semibold text-foreground">{member.name}</h3>
@@ -292,9 +295,9 @@ const Index = () => {
             <p className="text-lg text-primary-foreground/90 mb-8">
               Join thousands of farmers already using our platform to increase productivity and profits
             </p>
-            <Button 
-              size="lg" 
-              variant="secondary" 
+            <Button
+              size="lg"
+              variant="secondary"
               className="text-lg px-8 py-6"
               onClick={() => navigate('/login')}
             >
@@ -306,7 +309,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-card/80 backdrop-blur-sm border-t border-border py-12">
+      <footer className="bg-card/80 backdrop-blur-sm border-t border-border py-5">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
@@ -319,7 +322,7 @@ const Index = () => {
               </div>
             </div>
             <div className="text-sm text-muted-foreground">
-              © 2024 Majayjay Farm Resource Management System. Empowering farmers with smart technology.
+              © 2025 Majayjay Farm Resource Management System. Empowering farmers with smart technology.
             </div>
           </div>
         </div>
@@ -328,4 +331,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Landing;
