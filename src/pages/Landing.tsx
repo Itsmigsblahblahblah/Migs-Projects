@@ -13,6 +13,11 @@ import {
   ArrowRight,
   User
 } from "lucide-react";
+import dean from "@/assets/dean.jpg";
+import hyroin from "@/assets/migs.jpg";
+import joyce from "@/assets/joyce.jpg";
+import dondon from "@/assets/don2.jpg";
+
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -85,27 +90,27 @@ const Landing = () => {
   ];
 
   const team = [
-    {
-      name: "Dean Martin Mabulay",
-      role: "Lead Developer",
-      avatar: <User className="h-12 w-12" />
-    },
-    {
-      name: "Hyroin Balili",
-      role: "Backend Developer",
-      avatar: <User className="h-12 w-12" />
-    },
-    {
-      name: "Joyce Ann Cuala",
-      role: "UI/UX Designer | Research Lead",
-      avatar: <User className="h-12 w-12" />
-    },
-    {
-      name: "Dondon Esquivel",
-      role: "Project Manager",
-      avatar: <User className="h-12 w-12" />
-    }
-  ];
+  {
+    name: "Dean Martin Mabulay",
+    role: "Lead Developer",
+    avatar: <img src={dean} alt="Dean Martin Mabulay" className="h-24 w-24 rounded-full object-cover" />
+  },
+  {
+    name: "Hyroin Balili",
+    role: "Backend Developer",
+    avatar: <img src={hyroin} alt="Hyroin Balili" className="h-24 w-24 rounded-full object-cover" />
+  },
+  {
+    name: "Joyce Ann Cuala",
+    role: "UI/UX Designer | Research Lead",
+    avatar: <img src={joyce} alt="Joyce Ann Cuala" className="h-24 w-24 rounded-full object-cover" />
+  },
+  {
+    name: "Dondon Esquivel",
+    role: "Project Manager",
+    avatar: <img src={dondon} alt="Dondon Esquivel" className="h-24 w-24 rounded-full object-cover" />
+  }
+];
 
   return (
     <div className="min-h-screen bg-gradient-earth">
@@ -274,7 +279,7 @@ const Landing = () => {
                 key={index}
                 className="text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group"
               >
-                <div className="mx-auto mb-4 p-4 rounded-full bg-secondary w-24 h-24 flex items-center justify-center transition-all duration-300 group-hover:shadow-lg">
+                <div className="mx-auto mb-4 w-24 h-24 rounded-full overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-lg">
                   {member.avatar}
                 </div>
                 <h3 className="text-xl font-semibold text-foreground">{member.name}</h3>
