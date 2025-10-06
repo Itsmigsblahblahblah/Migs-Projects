@@ -14,7 +14,7 @@ import {
   User
 } from "lucide-react";
 import dean from "@/assets/dean.jpg";
-import hyroin from "@/assets/migs.jpg";
+import hyroin from "@/assets/hyroin.jpg";
 import joyce from "@/assets/joyce.jpg";
 import dondon from "@/assets/don2.jpg";
 
