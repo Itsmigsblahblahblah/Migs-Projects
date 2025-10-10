@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
 import { 
   Calendar, 
@@ -12,14 +13,37 @@ import {
   CheckCircle, 
   Filter,
   Download,
-  Eye
+  Eye,
+  Users
 } from "lucide-react";
+import { collection, query, orderBy, getDocs, where } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
+
+interface Report {
+  id: string;
+  userId: string;
+  username: string;
+  reportText: string;
+  problem: string;
+  affectedCrop: string;
+  recommendedCrops: string[];
+  cropsToAvoid: string[];
+  advice: string;
+  hasImage: boolean;
+  imageName: string | null;
+  createdAt: any;
+  status: string;
+}
 
 const History = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [reportHistory, setReportHistory] = useState<any[]>([]);
+  const [reportHistory, setReportHistory] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const navigate = useNavigate();
+  const { toast } = useToast();
   const userRole = localStorage.getItem('userRole');
+  const currentUserId = localStorage.getItem('userId') || localStorage.getItem('username') || '';
 
   useEffect(() => {
     if (!userRole) {
@@ -27,63 +51,111 @@ const History = () => {
       return;
     }
 
-    // Load history from localStorage (mock data)
-    const history = JSON.parse(localStorage.getItem('reportHistory') || '[]');
-    
-    // Add some mock data if empty
-    if (history.length === 0) {
-      const mockHistory = [
-        {
-          id: 1,
-          text: "Nalubog sa baha ang tanim kong mais",
-          result: {
-            problem: "flood",
-            crop: "corn",
-            recommend: ["Kangkong", "Gabi"],
-            avoid: ["Corn", "Tomato"],
-            advice: "Consider raised bed planting and improved drainage systems."
-          },
-          date: "2024-01-10T10:30:00Z",
-          status: "resolved"
-        },
-        {
-          id: 2,
-          text: "May mga insektong kumakain sa dahon ng kamatis",
-          result: {
-            problem: "pest",
-            crop: "tomato",
-            recommend: ["Corn", "Root vegetables"],
-            avoid: ["Cabbage", "Tomato"],
-            advice: "Implement integrated pest management techniques."
-          },
-          date: "2024-01-08T14:15:00Z",
-          status: "resolved"
-        },
-        {
-          id: 3,
-          text: "Tuyo na ang lupa, walang ulan sa loob ng dalawang linggo",
-          result: {
-            problem: "drought",
-            crop: "general",
-            recommend: ["Cassava", "Sweet potato"],
-            avoid: ["Rice", "Leafy vegetables"],
-            advice: "Install drip irrigation systems and use mulching."
-          },
-          date: "2024-01-05T09:20:00Z",
-          status: "resolved"
-        }
-      ];
-      setReportHistory(mockHistory);
-      localStorage.setItem('reportHistory', JSON.stringify(mockHistory));
-    } else {
-      setReportHistory(history);
-    }
+    loadReportHistory();
   }, [navigate, userRole]);
 
-  const filteredHistory = reportHistory.filter(report =>
-    report.text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    report.result.problem.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const loadReportHistory = async () => {
+    setLoading(true);
+    try {
+      const reportsRef = collection(db, "farmReports");
+      
+      let reports: Report[] = [];
+      
+      // If farmer, show only their reports. If admin, show all reports
+      if (userRole === 'farmer') {
+        // For farmer: filter by userId then sort in memory to avoid composite index requirement
+        const farmerQuery = query(
+          reportsRef,
+          where("userId", "==", currentUserId)
+        );
+        const querySnapshot = await getDocs(farmerQuery);
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          reports.push({
+            id: doc.id,
+            userId: data.userId || '',
+            username: data.username || 'Unknown',
+            reportText: data.reportText || '',
+            problem: data.problem || 'general',
+            affectedCrop: data.affectedCrop || 'unknown',
+            recommendedCrops: data.recommendedCrops || [],
+            cropsToAvoid: data.cropsToAvoid || [],
+            advice: data.advice || '',
+            hasImage: data.hasImage || false,
+            imageName: data.imageName || null,
+            createdAt: data.createdAt,
+            status: data.status || 'pending'
+          });
+        });
+        
+        // Sort by date in memory
+        reports.sort((a, b) => {
+          const dateA = a.createdAt?.toDate() || new Date(0);
+          const dateB = b.createdAt?.toDate() || new Date(0);
+          return dateB.getTime() - dateA.getTime();
+        });
+        
+      } else {
+        // Admin sees all reports - can use orderBy directly
+        const adminQuery = query(
+          reportsRef,
+          orderBy("createdAt", "desc")
+        );
+        const querySnapshot = await getDocs(adminQuery);
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          reports.push({
+            id: doc.id,
+            userId: data.userId || '',
+            username: data.username || 'Unknown',
+            reportText: data.reportText || '',
+            problem: data.problem || 'general',
+            affectedCrop: data.affectedCrop || 'unknown',
+            recommendedCrops: data.recommendedCrops || [],
+            cropsToAvoid: data.cropsToAvoid || [],
+            advice: data.advice || '',
+            hasImage: data.hasImage || false,
+            imageName: data.imageName || null,
+            createdAt: data.createdAt,
+            status: data.status || 'pending'
+          });
+        });
+      }
+
+      setReportHistory(reports);
+
+      if (reports.length === 0) {
+        toast({
+          title: "No Reports Found",
+          description: userRole === 'farmer' ? "You haven't submitted any reports yet." : "No reports have been submitted yet.",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error loading report history:", error);
+      toast({
+        title: "Error Loading Reports",
+        description: error.message || "Failed to load report history. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredHistory = reportHistory.filter(report => {
+    const matchesSearch = 
+      report.reportText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.problem.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.username.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesFilter = 
+      filterStatus === "all" || 
+      report.status === filterStatus;
+
+    return matchesSearch && matchesFilter;
+  });
 
   const getProblemColor = (problem: string) => {
     const colors = {
@@ -96,15 +168,75 @@ const History = () => {
     return colors[problem as keyof typeof colors] || colors.general;
   };
 
+  const exportToCSV = () => {
+    if (filteredHistory.length === 0) {
+      toast({
+        title: "No Data to Export",
+        description: "There are no reports to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const csvData = filteredHistory.map(report => ({
+      'Date': report.createdAt?.toDate().toLocaleDateString(),
+      'Farmer': report.username,
+      'Problem Type': report.problem,
+      'Affected Crop': report.affectedCrop,
+      'Report': report.reportText,
+      'Recommended Crops': report.recommendedCrops?.join('; '),
+      'Crops to Avoid': report.cropsToAvoid?.join('; '),
+      'Advice': report.advice,
+      'Status': report.status
+    }));
+
+    const headers = Object.keys(csvData[0]);
+    const csv = [
+      headers.join(','),
+      ...csvData.map(row => 
+        headers.map(header => JSON.stringify(row[header as keyof typeof row] || '')).join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `farm-reports-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Successful",
+      description: "Report history has been exported to CSV.",
+    });
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading reports...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
-          <h1 className="text-2xl font-bold mb-2">Report History</h1>
+          <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
+            {userRole === 'farmer' ? <Calendar className="h-7 w-7" /> : <Users className="h-7 w-7" />}
+            {userRole === 'farmer' ? 'My Report History' : 'All Community Reports'}
+          </h1>
           <p className="text-primary-foreground/90">
             {userRole === 'farmer' 
-              ? "View your past farm problem reports and recommendations" 
+              ? "View your farm problem reports and recommendations" 
               : "Complete history of all farmer reports and system responses"
             }
           </p>
@@ -119,23 +251,33 @@ const History = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <Input
-                  placeholder="Search by problem description or issue type..."
+                  placeholder={userRole === 'farmer' 
+                    ? "Search your reports by problem description or issue type..." 
+                    : "Search by problem description, issue type, or farmer name..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full"
                 />
               </div>
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                Filters
-              </Button>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
+              <div className="flex gap-2">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-2 border rounded-md bg-background"
+                >
+                  <option value="all">All Status</option>
+                  <option value="processed">Processed</option>
+                  <option value="pending">Pending</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+                <Button variant="outline" onClick={exportToCSV}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -146,106 +288,120 @@ const History = () => {
             <Card className="shadow-soft">
               <CardContent className="p-8 text-center text-muted-foreground">
                 <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                <p>No reports found matching your search criteria.</p>
+                <p className="text-lg font-medium mb-2">No reports found</p>
+                <p className="text-sm">
+                  {searchTerm 
+                    ? "Try adjusting your search or filter criteria." 
+                    : userRole === 'farmer' 
+                      ? "You haven't submitted any reports yet. Go to dashboard to report a problem." 
+                      : "No reports have been submitted yet."}
+                </p>
               </CardContent>
             </Card>
           ) : (
-            filteredHistory.map((report) => (
-              <Card key={report.id} className="shadow-soft hover:shadow-card transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Badge 
-                        className={`${getProblemColor(report.result.problem)} border capitalize`}
-                      >
-                        {report.result.problem.replace('_', ' ')}
-                      </Badge>
-                      {report.result.crop !== 'unknown' && report.result.crop !== 'general' && (
-                        <Badge variant="outline" className="capitalize">
-                          {report.result.crop}
+            filteredHistory.map((report) => {
+              return (
+                <Card key={report.id} className="shadow-soft hover:shadow-card transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {userRole === 'admin' && (
+                          <Badge variant="outline" className="font-medium">
+                            {report.username}
+                          </Badge>
+                        )}
+                        <Badge 
+                          className={`${getProblemColor(report.problem)} border capitalize`}
+                        >
+                          {report.problem.replace('_', ' ')}
                         </Badge>
+                        {report.affectedCrop !== 'unknown' && report.affectedCrop !== 'general' && (
+                          <Badge variant="outline" className="capitalize">
+                            {report.affectedCrop}
+                          </Badge>
+                        )}
+                        <Badge 
+                          variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                          className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          {report.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        {report.createdAt?.toDate().toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    {/* Original Problem */}
+                    <div>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Problem Reported:</h4>
+                      <p className="text-foreground bg-muted/50 p-3 rounded-lg">
+                        "{report.reportText}"
+                      </p>
+                      {report.hasImage && (
+                        <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          Image attached: {report.imageName}
+                        </div>
                       )}
-                      <Badge 
-                        variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                        className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
-                      >
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        {report.status}
-                      </Badge>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      {new Date(report.date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* Original Problem */}
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Problem Reported:</h4>
-                    <p className="text-foreground bg-muted/50 p-3 rounded-lg">
-                      "{report.text}"
-                    </p>
-                  </div>
 
-                  {/* Recommendations Grid */}
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {report.result.recommend.length > 0 && (
-                      <div className="p-3 bg-success/10 rounded-lg border border-success/20">
-                        <h4 className="text-sm font-medium text-success mb-2 flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4" />
-                          Recommended Crops
-                        </h4>
-                        <div className="flex flex-wrap gap-1">
-                          {report.result.recommend.map((crop: string, index: number) => (
-                            <Badge key={index} className="bg-success text-success-foreground text-xs">
-                              {crop}
-                            </Badge>
-                          ))}
+                    {/* Recommendations Grid */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {report.recommendedCrops && report.recommendedCrops.length > 0 && (
+                        <div className="p-3 bg-success/10 rounded-lg border border-success/20">
+                          <h4 className="text-sm font-medium text-success mb-2 flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Recommended Crops
+                          </h4>
+                          <div className="flex flex-wrap gap-1">
+                            {report.recommendedCrops.map((crop: string, index: number) => (
+                              <Badge key={index} className="bg-success text-success-foreground text-xs">
+                                {crop}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
+                      )}
+
+                      {report.cropsToAvoid && report.cropsToAvoid.length > 0 && (
+                        <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                          <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            Crops to Avoid
+                          </h4>
+                          <div className="flex flex-wrap gap-1">
+                            {report.cropsToAvoid.map((crop: string, index: number) => (
+                              <Badge key={index} variant="destructive" className="text-xs">
+                                {crop}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Expert Advice */}
+                    {report.advice && (
+                      <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
+                        <h4 className="text-sm font-medium text-accent-foreground mb-2">Expert Advice:</h4>
+                        <p className="text-sm text-foreground/80">{report.advice}</p>
                       </div>
                     )}
-
-                    {report.result.avoid.length > 0 && (
-                      <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                        <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4" />
-                          Crops to Avoid
-                        </h4>
-                        <div className="flex flex-wrap gap-1">
-                          {report.result.avoid.map((crop: string, index: number) => (
-                            <Badge key={index} variant="destructive" className="text-xs">
-                              {crop}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Expert Advice */}
-                  <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
-                    <h4 className="text-sm font-medium text-accent-foreground mb-2">Expert Advice:</h4>
-                    <p className="text-sm text-foreground/80">{report.result.advice}</p>
-                  </div>
-
-                  {/* Action Button */}
-                  <div className="flex justify-end pt-2">
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Full Details
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
 
@@ -253,14 +409,22 @@ const History = () => {
         {filteredHistory.length > 0 && (
           <Card className="shadow-soft">
             <CardHeader>
-              <CardTitle>Summary Statistics</CardTitle>
-              <CardDescription>Overview of your reporting activity</CardDescription>
+              <CardTitle>
+                {userRole === 'farmer' ? 'My Statistics' : 'Community Statistics'}
+              </CardTitle>
+              <CardDescription>
+                {userRole === 'farmer' 
+                  ? "Overview of your reporting activity" 
+                  : "Overview of all farmer reports"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-4 gap-4">
                 <div className="text-center p-4 bg-primary/5 rounded-lg">
                   <div className="text-2xl font-bold text-primary">{filteredHistory.length}</div>
-                  <div className="text-sm text-muted-foreground">Total Reports</div>
+                  <div className="text-sm text-muted-foreground">
+                    {userRole === 'farmer' ? 'My Reports' : 'Total Reports'}
+                  </div>
                 </div>
                 <div className="text-center p-4 bg-success/5 rounded-lg">
                   <div className="text-2xl font-bold text-success">
@@ -268,11 +432,51 @@ const History = () => {
                   </div>
                   <div className="text-sm text-muted-foreground">Resolved</div>
                 </div>
-                <div className="text-center p-4 bg-accent/5 rounded-lg">
-                  <div className="text-2xl font-bold text-accent">
-                    {Math.round((filteredHistory.filter(r => r.status === 'resolved').length / filteredHistory.length) * 100)}%
+                <div className="text-center p-4 bg-warning/5 rounded-lg">
+                  <div className="text-2xl font-bold text-warning">
+                    {filteredHistory.filter(r => r.status === 'processed').length}
                   </div>
-                  <div className="text-sm text-muted-foreground">Success Rate</div>
+                  <div className="text-sm text-muted-foreground">Processed</div>
+                </div>
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <div className="text-2xl font-bold">
+                    {filteredHistory.filter(r => r.status === 'pending').length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Pending</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Info Card */}
+        {userRole === 'farmer' && (
+          <Card className="shadow-soft border-primary/20 bg-primary/5">
+            <CardContent className="p-6">
+              <div className="flex gap-3">
+                <Calendar className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <h3 className="text-base font-medium mb-1">Your Personal History</h3>
+                  <p className="text-sm text-muted-foreground">
+                    This page shows only your farm reports and recommendations. Track your farming issues 
+                    and review the expert advice you've received to improve your harvest.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {userRole === 'admin' && (
+          <Card className="shadow-soft border-accent/20 bg-accent/5">
+            <CardContent className="p-6">
+              <div className="flex gap-3">
+                <Users className="h-5 w-5 text-accent mt-0.5" />
+                <div>
+                  <h3 className="text-base font-medium mb-1">Admin View</h3>
+                  <p className="text-sm text-muted-foreground">
+                    You can view all farmer reports from the entire community. Use this to monitor 
+                    farming issues across Majayjay and provide better agricultural support.
+                  </p>
                 </div>
               </div>
             </CardContent>

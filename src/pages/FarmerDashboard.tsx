@@ -20,6 +20,8 @@ import {
   Calendar,
   MapPin
 } from "lucide-react";
+import { collection, addDoc, query, where, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
 
 // Mock NLP and DSS System
 const processReport = (text: string) => {
@@ -100,12 +102,15 @@ const FarmerDashboard = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [recommendation, setRecommendation] = useState<any>(null);
   const [username, setUsername] = useState("");
+  const [userId, setUserId] = useState("");
+  const [monthlyReports, setMonthlyReports] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
     const user = localStorage.getItem('username');
+    const uid = localStorage.getItem('userId') || user || 'default-user';
     
     if (role !== 'farmer') {
       navigate('/');
@@ -113,9 +118,32 @@ const FarmerDashboard = () => {
     }
     
     setUsername(user || 'Farmer');
+    setUserId(uid);
+    
+    // Load monthly report count
+    loadMonthlyReportCount(uid);
   }, [navigate]);
 
-  const handleSubmitReport = () => {
+  const loadMonthlyReportCount = async (uid: string) => {
+    try {
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      
+      const reportsRef = collection(db, "farmReports");
+      const q = query(
+        reportsRef,
+        where("userId", "==", uid),
+        where("createdAt", ">=", Timestamp.fromDate(firstDayOfMonth))
+      );
+      
+      const querySnapshot = await getDocs(q);
+      setMonthlyReports(querySnapshot.size);
+    } catch (error) {
+      console.error("Error loading monthly report count:", error);
+    }
+  };
+
+  const handleSubmitReport = async () => {
     if (!reportText.trim()) {
       toast({
         title: "Walang input",
@@ -127,28 +155,53 @@ const FarmerDashboard = () => {
 
     setIsProcessing(true);
     
-    // Simulate processing time
-    setTimeout(() => {
+    try {
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       const result = processReport(reportText);
       setRecommendation(result);
-      setIsProcessing(false);
+      
+      // Save to Firebase Firestore
+      const reportData = {
+        userId: userId,
+        username: username,
+        reportText: reportText,
+        problem: result.problem,
+        affectedCrop: result.crop,
+        recommendedCrops: result.recommend,
+        cropsToAvoid: result.avoid,
+        advice: result.advice,
+        hasImage: selectedImage !== null,
+        imageName: selectedImage?.name || null,
+        createdAt: Timestamp.now(),
+        status: 'processed'
+      };
+      
+      await addDoc(collection(db, "farmReports"), reportData);
       
       toast({
         title: "Recommendation Ready",
-        description: "Nakuha na namin ang inyong crop recommendation!",
+        description: "Nakuha na namin ang inyong crop recommendation at nai-save na!",
       });
       
-      // Save to history (mock)
-      const history = JSON.parse(localStorage.getItem('reportHistory') || '[]');
-      history.unshift({
-        id: Date.now(),
-        text: reportText,
-        result,
-        date: new Date().toISOString()
-      });
-      localStorage.setItem('reportHistory', JSON.stringify(history.slice(0, 10)));
+      // Update monthly count
+      setMonthlyReports(prev => prev + 1);
       
-    }, 2000);
+      // Clear form
+      setReportText("");
+      setSelectedImage(null);
+      
+    } catch (error) {
+      console.error("Error saving report:", error);
+      toast({
+        title: "Error",
+        description: "May problema sa pag-save ng report. Subukan ulit.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -344,7 +397,7 @@ const FarmerDashboard = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Reports This Month</p>
-                <p className="text-lg font-bold">12</p>
+                <p className="text-lg font-bold">{monthlyReports}</p>
               </div>
             </div>
           </Card>

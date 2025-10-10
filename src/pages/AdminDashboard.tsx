@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
 import { 
   BarChart, 
@@ -13,9 +14,6 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   LineChart,
   Line
 } from "recharts";
@@ -31,66 +29,58 @@ import {
   Eye,
   CheckCircle
 } from "lucide-react";
+import { collection, query, getDocs, orderBy, Timestamp, updateDoc, doc } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
 
-// Mock data
-const problemsData = [
-  { name: 'Flooding', count: 45, color: '#3b82f6' },
-  { name: 'Pests', count: 32, color: '#ef4444' },
-  { name: 'Drought', count: 28, color: '#f97316' },
-  { name: 'Disease', count: 22, color: '#8b5cf6' },
-  { name: 'Other', count: 18, color: '#10b981' },
-];
+interface Report {
+  id: string;
+  userId: string;
+  username: string;
+  reportText: string;
+  problem: string;
+  affectedCrop: string;
+  recommendedCrops: string[];
+  cropsToAvoid: string[];
+  advice: string;
+  hasImage: boolean;
+  imageName: string | null;
+  createdAt: any;
+  status: string;
+}
 
-const monthlyTrends = [
-  { month: 'Jan', reports: 65, resolved: 58 },
-  { month: 'Feb', reports: 78, resolved: 72 },
-  { month: 'Mar', reports: 85, resolved: 79 },
-  { month: 'Apr', reports: 92, resolved: 88 },
-  { month: 'May', reports: 88, resolved: 82 },
-  { month: 'Jun', reports: 75, resolved: 70 },
-];
+interface ProblemData {
+  name: string;
+  count: number;
+  color: string;
+}
 
-const cropRecommendations = [
-  { crop: 'Kangkong', frequency: 45 },
-  { crop: 'Gabi', frequency: 38 },
-  { crop: 'Rice', frequency: 35 },
-  { crop: 'Cassava', frequency: 28 },
-  { crop: 'Sweet Potato', frequency: 22 },
-];
+interface MonthlyTrend {
+  month: string;
+  reports: number;
+  resolved: number;
+}
 
-const recentReports = [
-  {
-    id: 1,
-    farmer: "Juan Cruz",
-    problem: "Flooding in rice field",
-    location: "Brgy. San Miguel",
-    date: "2024-01-15",
-    status: "resolved",
-    recommendation: "Plant flood-tolerant rice varieties"
-  },
-  {
-    id: 2,
-    farmer: "Maria Santos",
-    problem: "Pest infestation on tomatoes",
-    location: "Brgy. Poblacion",
-    date: "2024-01-14",
-    status: "pending",
-    recommendation: "Use integrated pest management"
-  },
-  {
-    id: 3,
-    farmer: "Pedro Reyes",
-    problem: "Drought affecting corn",
-    location: "Brgy. Taytay",
-    date: "2024-01-13",
-    status: "resolved",
-    recommendation: "Install drip irrigation system"
-  }
-];
+interface CropRecommendation {
+  crop: string;
+  frequency: number;
+}
 
 const AdminDashboard = () => {
   const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [problemsData, setProblemsData] = useState<ProblemData[]>([]);
+  const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([]);
+  const [cropRecommendations, setCropRecommendations] = useState<CropRecommendation[]>([]);
+  const [stats, setStats] = useState({
+    activeFarmers: 0,
+    pendingReports: 0,
+    resolvedThisMonth: 0,
+    successRate: 0
+  });
+  
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -102,14 +92,240 @@ const AdminDashboard = () => {
     }
     
     setUsername(user || 'Admin');
+    loadDashboardData();
   }, [navigate]);
 
-  const exportData = (type: string) => {
-    // Mock export functionality
-    const data = type === 'reports' ? recentReports : problemsData;
-    console.log(`Exporting ${type}:`, data);
-    // In real app, this would generate and download CSV/PDF
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      // Load all reports
+      const reportsRef = collection(db, "farmReports");
+      const reportsQuery = query(reportsRef, orderBy("createdAt", "desc"));
+      const reportsSnapshot = await getDocs(reportsQuery);
+      
+      const reportsData: Report[] = [];
+      reportsSnapshot.forEach((doc) => {
+        reportsData.push({
+          id: doc.id,
+          ...doc.data()
+        } as Report);
+      });
+      
+      setReports(reportsData);
+      
+      // Calculate statistics
+      calculateStatistics(reportsData);
+      calculateProblemsDistribution(reportsData);
+      calculateMonthlyTrends(reportsData);
+      calculateCropRecommendations(reportsData);
+      
+      toast({
+        title: "Dashboard Loaded",
+        description: "Successfully loaded all analytics data.",
+      });
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const calculateStatistics = (reportsData: Report[]) => {
+    // Count unique farmers
+    const uniqueFarmers = new Set(reportsData.map(r => r.userId)).size;
+    
+    // Count pending reports
+    const pending = reportsData.filter(r => r.status === 'pending' || r.status === 'processed').length;
+    
+    // Count resolved this month
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const resolved = reportsData.filter(r => {
+      const reportDate = r.createdAt?.toDate();
+      return r.status === 'resolved' && reportDate >= firstDayOfMonth;
+    }).length;
+    
+    // Calculate success rate
+    const totalReports = reportsData.length;
+    const resolvedReports = reportsData.filter(r => r.status === 'resolved').length;
+    const successRate = totalReports > 0 ? Math.round((resolvedReports / totalReports) * 100) : 0;
+    
+    setStats({
+      activeFarmers: uniqueFarmers,
+      pendingReports: pending,
+      resolvedThisMonth: resolved,
+      successRate
+    });
+  };
+
+  const calculateProblemsDistribution = (reportsData: Report[]) => {
+    const problemCounts: { [key: string]: number } = {};
+    
+    reportsData.forEach(report => {
+      const problem = report.problem || 'general';
+      problemCounts[problem] = (problemCounts[problem] || 0) + 1;
+    });
+    
+    const colors: { [key: string]: string } = {
+      flood: '#3b82f6',
+      pest: '#ef4444',
+      drought: '#f97316',
+      disease: '#8b5cf6',
+      general: '#10b981'
+    };
+    
+    const data: ProblemData[] = Object.entries(problemCounts)
+      .map(([name, count]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        count,
+        color: colors[name] || '#64748b'
+      }))
+      .sort((a, b) => b.count - a.count);
+    
+    setProblemsData(data);
+  };
+
+  const calculateMonthlyTrends = (reportsData: Report[]) => {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+    const trends: MonthlyTrend[] = [];
+    
+    // Get last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+      
+      const monthReports = reportsData.filter(r => {
+        const reportDate = r.createdAt?.toDate();
+        return reportDate >= monthStart && reportDate <= monthEnd;
+      });
+      
+      trends.push({
+        month: monthNames[date.getMonth()],
+        reports: monthReports.length,
+        resolved: monthReports.filter(r => r.status === 'resolved').length
+      });
+    }
+    
+    setMonthlyTrends(trends);
+  };
+
+  const calculateCropRecommendations = (reportsData: Report[]) => {
+    const cropCounts: { [key: string]: number } = {};
+    
+    reportsData.forEach(report => {
+      report.recommendedCrops?.forEach(crop => {
+        cropCounts[crop] = (cropCounts[crop] || 0) + 1;
+      });
+    });
+    
+    const recommendations: CropRecommendation[] = Object.entries(cropCounts)
+      .map(([crop, frequency]) => ({ crop, frequency }))
+      .sort((a, b) => b.frequency - a.frequency)
+      .slice(0, 5);
+    
+    setCropRecommendations(recommendations);
+  };
+
+  const updateReportStatus = async (reportId: string, newStatus: string) => {
+    try {
+      const reportRef = doc(db, "farmReports", reportId);
+      await updateDoc(reportRef, {
+        status: newStatus,
+        updatedAt: Timestamp.now()
+      });
+      
+      // Update local state instead of reloading everything
+      const updatedReports = reports.map(report => 
+        report.id === reportId 
+          ? { ...report, status: newStatus } 
+          : report
+      );
+      
+      setReports(updatedReports);
+      
+      // Recalculate stats with updated data
+      calculateStatistics(updatedReports);
+      calculateProblemsDistribution(updatedReports);
+      calculateMonthlyTrends(updatedReports);
+      
+      toast({
+        title: "Status Updated",
+        description: `Report status changed to ${newStatus}.`,
+      });
+    } catch (error) {
+      console.error("Error updating report status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update report status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportData = (type: string) => {
+    let dataToExport: any[] = [];
+    let filename = '';
+    
+    if (type === 'reports') {
+      dataToExport = reports.map(r => ({
+        'Farmer': r.username,
+        'Problem': r.problem,
+        'Affected Crop': r.affectedCrop,
+        'Date': r.createdAt?.toDate().toLocaleDateString(),
+        'Status': r.status,
+        'Recommendations': r.recommendedCrops?.join(', ')
+      }));
+      filename = 'farm_reports.csv';
+    } else if (type === 'crops') {
+      dataToExport = cropRecommendations;
+      filename = 'crop_recommendations.csv';
+    }
+    
+    // Convert to CSV
+    if (dataToExport.length > 0) {
+      const headers = Object.keys(dataToExport[0]);
+      const csv = [
+        headers.join(','),
+        ...dataToExport.map(row => 
+          headers.map(header => JSON.stringify(row[header] || '')).join(',')
+        )
+      ].join('\n');
+      
+      // Download CSV
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Export Successful",
+        description: `${filename} has been downloaded.`,
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading dashboard data...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -144,7 +360,7 @@ const AdminDashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Active Farmers</p>
-                  <p className="text-2xl font-bold">248</p>
+                  <p className="text-2xl font-bold">{stats.activeFarmers}</p>
                 </div>
               </div>
             </CardContent>
@@ -158,7 +374,7 @@ const AdminDashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Pending Reports</p>
-                  <p className="text-2xl font-bold">12</p>
+                  <p className="text-2xl font-bold">{stats.pendingReports}</p>
                 </div>
               </div>
             </CardContent>
@@ -172,7 +388,7 @@ const AdminDashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Resolved This Month</p>
-                  <p className="text-2xl font-bold">145</p>
+                  <p className="text-2xl font-bold">{stats.resolvedThisMonth}</p>
                 </div>
               </div>
             </CardContent>
@@ -186,7 +402,7 @@ const AdminDashboard = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Success Rate</p>
-                  <p className="text-2xl font-bold">89%</p>
+                  <p className="text-2xl font-bold">{stats.successRate}%</p>
                 </div>
               </div>
             </CardContent>
@@ -210,15 +426,21 @@ const AdminDashboard = () => {
                   <CardDescription>Distribution of farming issues this month</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={problemsData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="hsl(var(--primary))" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {problemsData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={problemsData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="hsl(var(--primary))" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                      No data available
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -229,26 +451,32 @@ const AdminDashboard = () => {
                   <CardDescription>Reports vs resolved issues over time</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={monthlyTrends}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="reports" 
-                        stroke="hsl(var(--primary))" 
-                        strokeWidth={2}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="resolved" 
-                        stroke="hsl(var(--success))" 
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  {monthlyTrends.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={monthlyTrends}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Line 
+                          type="monotone" 
+                          dataKey="reports" 
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={2}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="resolved" 
+                          stroke="hsl(var(--success))" 
+                          strokeWidth={2}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                      No data available
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -265,6 +493,7 @@ const AdminDashboard = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => exportData('crops')}
+                    disabled={cropRecommendations.length === 0}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export
@@ -272,15 +501,21 @@ const AdminDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={cropRecommendations} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="crop" type="category" width={80} />
-                    <Tooltip />
-                    <Bar dataKey="frequency" fill="hsl(var(--success))" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {cropRecommendations.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={cropRecommendations} layout="horizontal">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="crop" type="category" width={100} />
+                      <Tooltip />
+                      <Bar dataKey="frequency" fill="hsl(var(--success))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                    No recommendations data available
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -291,11 +526,12 @@ const AdminDashboard = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle>Recent Farmer Reports</CardTitle>
-                    <CardDescription>Latest submissions from farmers</CardDescription>
+                    <CardDescription>Latest submissions from farmers ({reports.length} total)</CardDescription>
                   </div>
                   <Button 
                     variant="outline" 
                     onClick={() => exportData('reports')}
+                    disabled={reports.length === 0}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export All
@@ -303,52 +539,74 @@ const AdminDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {recentReports.map((report) => (
-                    <div 
-                      key={report.id} 
-                      className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="font-medium">{report.farmer}</div>
-                          <Badge 
-                            variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                            className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
-                          >
-                            {report.status}
-                          </Badge>
+                {reports.length > 0 ? (
+                  <div className="space-y-4">
+                    {reports.slice(0, 10).map((report) => (
+                      <div 
+                        key={report.id} 
+                        className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className="font-medium">{report.username}</div>
+                            <Badge 
+                              variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                              className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
+                            >
+                              {report.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            {report.createdAt?.toDate().toLocaleDateString()}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          {new Date(report.date).toLocaleDateString()}
+                        
+                        <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
+                          <div>
+                            <span className="text-muted-foreground">Problem: </span>
+                            <span className="capitalize">{report.problem}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Affected Crop: </span>
+                            <span className="capitalize">{report.affectedCrop}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Recommended: </span>
+                            {report.recommendedCrops?.slice(0, 2).join(', ')}
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {report.reportText}
+                          </p>
+                          <div className="flex gap-2">
+                            {report.status !== 'resolved' && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => updateReportStatus(report.id, 'resolved')}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Mark Resolved
+                              </Button>
+                            )}
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                      
-                      <div className="grid md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Problem: </span>
-                          {report.problem}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-muted-foreground" />
-                          {report.location}
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Recommendation: </span>
-                          {report.recommendation}
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-end mt-3">
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <p>No reports submitted yet</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

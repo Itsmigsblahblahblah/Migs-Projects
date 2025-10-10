@@ -4,27 +4,206 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
-import { Sprout, Users, Shield, ArrowLeft } from "lucide-react";
+import { Sprout, Users, ArrowLeft, AlertCircle, LogIn, UserPlus, Eye, EyeOff, Mail, Lock, User, Building2 } from "lucide-react";
+import { auth, db } from "../firebaseConfig";
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  UserCredential 
+} from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
 const Login = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [credentials, setCredentials] = useState({
-    username: "",
-    password: ""
+    email: "",
+    password: "",
+    fullName: "",
+    farmName: ""
   });
 
-  const handleLogin = (role: string) => {
-    // Mock authentication - in real app, validate against backend
-    if (credentials.username && credentials.password) {
-      localStorage.setItem('userRole', role);
-      localStorage.setItem('username', credentials.username);
-      
-      if (role === 'farmer') {
+  // Admin account credentials
+  const ADMIN_EMAIL = "admin@majayjay.farm";
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const provider = new GoogleAuthProvider();
+      // Force account selection every time
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Check if admin
+      if (user.email === ADMIN_EMAIL) {
+        localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('userId', user.uid);
+        localStorage.setItem('username', 'Admin');
+        navigate('/admin');
+        return;
+      }
+
+      // Check if farmer exists in Firestore
+      const farmerDoc = await getDoc(doc(db, "farmers", user.uid));
+
+      if (farmerDoc.exists()) {
+        // Existing farmer - login
+        const farmerData = farmerDoc.data();
+        localStorage.setItem('userRole', 'farmer');
+        localStorage.setItem('userId', user.uid);
+        localStorage.setItem('username', farmerData.fullName);
         navigate('/farmer');
       } else {
-        navigate('/admin');
+        // New farmer - create profile
+        const displayName = user.displayName || user.email?.split('@')[0] || 'Farmer';
+        
+        await setDoc(doc(db, "farmers", user.uid), {
+          email: user.email,
+          fullName: displayName,
+          farmName: `${displayName}'s Farm`,
+          role: "farmer",
+          createdAt: new Date().toISOString(),
+          uid: user.uid,
+          photoURL: user.photoURL || null
+        });
+
+        localStorage.setItem('userRole', 'farmer');
+        localStorage.setItem('userId', user.uid);
+        localStorage.setItem('username', displayName);
+        navigate('/farmer');
       }
+    } catch (err: any) {
+      console.error("Google sign-in error:", err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError("Sign-in cancelled. Please try again.");
+      } else if (err.code === 'auth/popup-blocked') {
+        setError("Popup blocked. Please enable popups for this site.");
+      } else {
+        setError(err.message || "Google sign-in failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      if (!credentials.email || !credentials.password || !credentials.fullName || !credentials.farmName) {
+        setError("Please fill in all fields");
+        setLoading(false);
+        return;
+      }
+
+      if (credentials.password.length < 6) {
+        setError("Password must be at least 6 characters");
+        setLoading(false);
+        return;
+      }
+
+      // Create user in Firebase Auth
+      const userCredential: UserCredential = await createUserWithEmailAndPassword(
+        auth, 
+        credentials.email, 
+        credentials.password
+      );
+
+      // Store farmer data in Firestore
+      await setDoc(doc(db, "farmers", userCredential.user.uid), {
+        email: credentials.email,
+        fullName: credentials.fullName,
+        farmName: credentials.farmName,
+        role: "farmer",
+        createdAt: new Date().toISOString(),
+        uid: userCredential.user.uid
+      });
+
+      // Auto login after signup
+      localStorage.setItem('userRole', 'farmer');
+      localStorage.setItem('userId', userCredential.user.uid);
+      localStorage.setItem('username', credentials.fullName);
+      navigate('/farmer');
+
+    } catch (err: any) {
+      if (err.code === 'auth/email-already-in-use') {
+        setError("Email already registered. Please login instead.");
+      } else if (err.code === 'auth/weak-password') {
+        setError("Password is too weak. Use at least 6 characters.");
+      } else {
+        setError(err.message || "Signup failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      if (!credentials.email || !credentials.password) {
+        setError("Please enter email and password");
+        setLoading(false);
+        return;
+      }
+
+      // Sign in user
+      const userCredential = await signInWithEmailAndPassword(
+        auth, 
+        credentials.email, 
+        credentials.password
+      );
+
+      // Check if admin
+      if (credentials.email === ADMIN_EMAIL) {
+        localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('userId', userCredential.user.uid);
+        localStorage.setItem('username', 'Admin');
+        navigate('/admin');
+        return;
+      }
+
+      // Get farmer data from Firestore
+      const farmerDoc = await getDoc(doc(db, "farmers", userCredential.user.uid));
+      
+      if (!farmerDoc.exists()) {
+        setError("Farmer account not found");
+        await auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      const farmerData = farmerDoc.data();
+      
+      // Store user info
+      localStorage.setItem('userRole', 'farmer');
+      localStorage.setItem('userId', userCredential.user.uid);
+      localStorage.setItem('username', farmerData.fullName);
+      navigate('/farmer');
+
+    } catch (err: any) {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError("Invalid email or password");
+      } else {
+        setError(err.message || "Login failed");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -78,71 +257,267 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Login Form */}
+        {/* Login/Signup Form */}
         <Card className="w-full max-w-md mx-auto shadow-card border-0 bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-foreground">Welcome Back</CardTitle>
-            <CardDescription>Choose your login type to continue</CardDescription>
+            <CardTitle className="text-2xl text-foreground">Welcome</CardTitle>
+            <CardDescription>
+              Login or create a new account to continue
+            </CardDescription>
           </CardHeader>
           
           <CardContent>
-            <Tabs defaultValue="farmer" className="space-y-4">
+            <Tabs defaultValue="login" className="space-y-4">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="farmer" className="flex items-center gap-2">
-                  <Sprout className="h-4 w-4" />
-                  Farmer
+                <TabsTrigger value="login" className="flex items-center gap-2">
+                  <LogIn className="h-4 w-4" />
+                  Login
                 </TabsTrigger>
-                <TabsTrigger value="admin" className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  Admin
+                <TabsTrigger value="signup" className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Sign Up
                 </TabsTrigger>
               </TabsList>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    placeholder="Enter your username"
-                    value={credentials.username}
-                    onChange={(e) => setCredentials({...credentials, username: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={credentials.password}
-                    onChange={(e) => setCredentials({...credentials, password: e.target.value})}
-                  />
-                </div>
-              </div>
+              {/* Login Tab */}
+              <TabsContent value="login" className="space-y-4">
+                {error && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                    <p className="text-sm text-destructive">{error}</p>
+                  </div>
+                )}
 
-              <TabsContent value="farmer" className="space-y-4 mt-6">
+                {/* Google Sign In Button */}
                 <Button 
-                  onClick={() => handleLogin('farmer')} 
-                  className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
+                  onClick={handleGoogleSignIn}
+                  disabled={loading}
+                  variant="outline"
+                  className="w-full"
                   size="lg"
                 >
-                  Login as Farmer
+                  <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  Continue with Google
                 </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 group">
+                  <Label htmlFor="login-email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="login-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={credentials.email}
+                      onChange={(e) => setCredentials({...credentials, email: e.target.value})}
+                      className="peer"
+                    />
+                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
+                        Enter your registered email address
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 group mt-10">
+                  <Label htmlFor="login-password" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="login-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={credentials.password}
+                      onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+                      className="peer pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
+                        Enter your account password
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleLogin}
+                  disabled={loading}
+                  className="w-full bg-gradient-primary hover:opacity-90 transition-opacity mt-10"
+                  size="lg"
+                >
+                  {loading ? "Logging in..." : "Login"}
+                </Button>
+
                 <p className="text-xs text-center text-muted-foreground">
-                  Report farming issues and get personalized crop recommendations
+                  Access your dashboard and manage your farm
                 </p>
               </TabsContent>
 
-              <TabsContent value="admin" className="space-y-4 mt-6">
+              {/* Sign Up Tab */}
+              <TabsContent value="signup" className="space-y-4">
+                {error && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                    <p className="text-sm text-destructive">{error}</p>
+                  </div>
+                )}
+
+                {/* Google Sign Up Button */}
                 <Button 
-                  onClick={() => handleLogin('admin')} 
-                  className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
+                  onClick={handleGoogleSignIn}
+                  disabled={loading}
+                  variant="outline"
+                  className="w-full"
                   size="lg"
                 >
-                  Login as Administrator
+                  <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  Sign up with Google
                 </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">Or sign up with email</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 group">
+                  <Label htmlFor="fullName" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Full Name
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="fullName"
+                      placeholder="Juan Dela Cruz"
+                      value={credentials.fullName}
+                      onChange={(e) => setCredentials({...credentials, fullName: e.target.value})}
+                      className="peer"
+                    />
+                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
+                        Enter your first and last name
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 group mt-10">
+                  <Label htmlFor="farmName" className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Farm Name
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="farmName"
+                      placeholder="Dela Cruz Farm"
+                      value={credentials.farmName}
+                      onChange={(e) => setCredentials({...credentials, farmName: e.target.value})}
+                      className="peer"
+                    />
+                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
+                        Enter the name of your farm
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 group mt-10">
+                  <Label htmlFor="signup-email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={credentials.email}
+                      onChange={(e) => setCredentials({...credentials, email: e.target.value})}
+                      className="peer"
+                    />
+                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
+                        Use a valid email address
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 group mt-10">
+                  <Label htmlFor="signup-password" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-password"
+                      type={showSignupPassword ? "text" : "password"}
+                      placeholder="At least 6 characters"
+                      value={credentials.password}
+                      onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+                      className="peer pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignupPassword(!showSignupPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
+                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
+                        Minimum 6 characters required
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleSignUp}
+                  disabled={loading}
+                  className="w-full bg-gradient-primary hover:opacity-90 transition-opacity mt-10"
+                  size="lg"
+                >
+                  {loading ? "Creating account..." : "Create Account"}
+                </Button>
+
                 <p className="text-xs text-center text-muted-foreground">
-                  Access analytics, manage reports and system configurations
+                  Join as a farmer and start managing your farm
                 </p>
               </TabsContent>
             </Tabs>
