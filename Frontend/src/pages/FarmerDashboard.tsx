@@ -9,16 +9,25 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { 
-  Sprout, 
-  AlertTriangle, 
-  CheckCircle, 
-  Lightbulb, 
-  Camera, 
+import {
+  Sprout,
+  AlertTriangle,
+  CheckCircle,
+  Lightbulb,
+  Camera,
   Send,
   TrendingUp,
   Calendar,
-  MapPin
+  MapPin,
+  User,
+  Wheat,
+  Sun,
+  CloudRain,
+  Clock,
+  Bell,
+  Plus,
+  Eye,
+  Edit
 } from "lucide-react";
 import { collection, addDoc, query, where, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -31,7 +40,7 @@ const processReport = (text: string) => {
     drought: ['tuyo', 'dry', 'walang tubig', 'drought', 'init'],
     disease: ['sakit', 'disease', 'bulok', 'rot', 'fungus']
   };
-  
+
   const crops = {
     corn: ['mais', 'corn'],
     rice: ['bigas', 'rice', 'palay'],
@@ -45,7 +54,7 @@ const processReport = (text: string) => {
 
   // Simple NLP simulation
   const lowerText = text.toLowerCase();
-  
+
   for (const [problem, keywords] of Object.entries(problems)) {
     if (keywords.some(keyword => lowerText.includes(keyword))) {
       detectedProblem = problem;
@@ -96,6 +105,42 @@ const processReport = (text: string) => {
   };
 };
 
+// Mock weather data
+const mockWeatherData = {
+  temperature: 28,
+  condition: "Sunny",
+  humidity: 65,
+  rainfall: 0,
+  forecast: [
+    { day: "Today", condition: "Sunny", high: 30, low: 24 },
+    { day: "Tomorrow", condition: "Partly Cloudy", high: 29, low: 23 },
+    { day: "Wednesday", condition: "Rain", high: 26, low: 22 }
+  ]
+};
+
+// Mock crop data
+const mockCropData = {
+  currentCrop: "Rice",
+  plantedArea: "2 hectares",
+  nextHarvest: "Nov 15, 2025",
+  growthStage: "Flowering",
+  productivityIndex: 85
+};
+
+// Mock tasks data
+const mockTasks = [
+  { id: 1, title: "Fertilize rice field", dueDate: "2025-10-15", priority: "high" },
+  { id: 2, title: "Check irrigation system", dueDate: "2025-10-18", priority: "medium" },
+  { id: 3, title: "Pest inspection", dueDate: "2025-10-20", priority: "low" }
+];
+
+// Mock notifications
+const mockNotifications = [
+  { id: 1, title: "Weather Alert", message: "Heavy rain expected tomorrow", time: "2 hours ago", type: "warning" },
+  { id: 2, title: "Task Reminder", message: "Fertilize rice field due today", time: "5 hours ago", type: "info" },
+  { id: 3, title: "System Update", message: "New crop recommendations available", time: "1 day ago", type: "success" }
+];
+
 const FarmerDashboard = () => {
   const [reportText, setReportText] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -111,15 +156,15 @@ const FarmerDashboard = () => {
     const role = localStorage.getItem('userRole');
     const user = localStorage.getItem('username');
     const uid = localStorage.getItem('userId') || user || 'default-user';
-    
+
     if (role !== 'farmer') {
       navigate('/');
       return;
     }
-    
+
     setUsername(user || 'Farmer');
     setUserId(uid);
-    
+
     // Load monthly report count
     loadMonthlyReportCount(uid);
   }, [navigate]);
@@ -128,14 +173,14 @@ const FarmerDashboard = () => {
     try {
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      
+
       const reportsRef = collection(db, "farmReports");
       const q = query(
         reportsRef,
         where("userId", "==", uid),
         where("createdAt", ">=", Timestamp.fromDate(firstDayOfMonth))
       );
-      
+
       const querySnapshot = await getDocs(q);
       setMonthlyReports(querySnapshot.size);
     } catch (error) {
@@ -154,14 +199,14 @@ const FarmerDashboard = () => {
     }
 
     setIsProcessing(true);
-    
+
     try {
       // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       const result = processReport(reportText);
       setRecommendation(result);
-      
+
       // Save to Firebase Firestore
       const reportData = {
         userId: userId,
@@ -177,21 +222,21 @@ const FarmerDashboard = () => {
         createdAt: Timestamp.now(),
         status: 'processed'
       };
-      
+
       await addDoc(collection(db, "farmReports"), reportData);
-      
+
       toast({
         title: "Recommendation Ready",
         description: "Nakuha na namin ang inyong crop recommendation at nai-save na!",
       });
-      
+
       // Update monthly count
       setMonthlyReports(prev => prev + 1);
-      
+
       // Clear form
       setReportText("");
       setSelectedImage(null);
-      
+
     } catch (error) {
       console.error("Error saving report:", error);
       toast({
@@ -215,6 +260,15 @@ const FarmerDashboard = () => {
     }
   };
 
+  // Get weather icon based on condition
+  const getWeatherIcon = (condition: string) => {
+    switch (condition.toLowerCase()) {
+      case 'sunny': return <Sun className="h-5 w-5 text-yellow-500" />;
+      case 'rain': return <CloudRain className="h-5 w-5 text-blue-500" />;
+      default: return <Sun className="h-5 w-5 text-yellow-500" />;
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -228,6 +282,155 @@ const FarmerDashboard = () => {
             I-type ang inyong problema sa sakahan para makakuha ng crop recommendations.
           </p>
         </div>
+
+        {/* Profile Card and Weather Section */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Profile Card */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Farmer Profile
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="bg-secondary rounded-full p-3">
+                  <User className="h-6 w-6 text-secondary-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">{username}</h3>
+                  <p className="text-sm text-muted-foreground">Majayjay, Batangas</p>
+                </div>
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Farm Area:</span>
+                  <span>2.5 hectares</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Location:</span>
+                  <span>Barangay 1</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Member Since:</span>
+                  <span>Jan 2025</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Weather Section */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sun className="h-5 w-5" />
+                Weather & Conditions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {getWeatherIcon(mockWeatherData.condition)}
+                  <div>
+                    <p className="text-2xl font-bold">{mockWeatherData.temperature}°C</p>
+                    <p className="text-sm text-muted-foreground">{mockWeatherData.condition}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Humidity</p>
+                  <p>{mockWeatherData.humidity}%</p>
+                </div>
+              </div>
+              <Separator />
+              <div>
+                <h4 className="font-medium mb-2">3-Day Forecast</h4>
+                <div className="space-y-2">
+                  {mockWeatherData.forecast.map((day, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <span>{day.day}</span>
+                      <div className="flex items-center gap-2">
+                        {getWeatherIcon(day.condition)}
+                        <span>{day.high}°/{day.low}°</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Crop Status Overview */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wheat className="h-5 w-5" />
+                Crop Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-success/10 p-2 rounded-full">
+                  <Wheat className="h-5 w-5 text-success" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">{mockCropData.currentCrop}</h3>
+                  <p className="text-sm text-muted-foreground">{mockCropData.plantedArea}</p>
+                </div>
+              </div>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Next Harvest:</span>
+                  <span className="font-medium">{mockCropData.nextHarvest}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Growth Stage:</span>
+                  <Badge variant="outline">{mockCropData.growthStage}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Productivity:</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-16 bg-secondary rounded-full h-2">
+                      <div
+                        className="bg-success h-2 rounded-full"
+                        style={{ width: `${mockCropData.productivityIndex}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm">{mockCropData.productivityIndex}%</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5" />
+              Quick Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/history')}>
+                <Eye className="h-5 w-5" />
+                <span>View Reports</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex flex-col gap-2">
+                <Edit className="h-5 w-5" />
+                <span>Update Crop</span>
+              </Button>
+              <Button variant="outline" className="h-20 flex flex-col gap-2">
+                <Bell className="h-5 w-5" />
+                <span>Alerts</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Report Input Form */}
@@ -388,6 +591,33 @@ const FarmerDashboard = () => {
           </Card>
         </div>
 
+        {/* Task Reminders */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Upcoming Tasks
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {mockTasks.map((task) => (
+                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                  <div>
+                    <h4 className="font-medium">{task.title}</h4>
+                    <p className="text-sm text-muted-foreground">{task.dueDate}</p>
+                  </div>
+                  <Badge
+                    variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'default' : 'secondary'}
+                  >
+                    {task.priority}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Quick Stats */}
         <div className="grid sm:grid-cols-3 gap-4">
           <Card className="p-4">
@@ -401,7 +631,7 @@ const FarmerDashboard = () => {
               </div>
             </div>
           </Card>
-          
+
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-success/10 rounded-lg">
@@ -413,7 +643,7 @@ const FarmerDashboard = () => {
               </div>
             </div>
           </Card>
-          
+
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-accent/10 rounded-lg">

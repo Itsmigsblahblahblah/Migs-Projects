@@ -1,6 +1,6 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Sprout,
   LogOut,
@@ -9,6 +9,17 @@ import {
   Settings,
   Home
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface LayoutProps {
   children: ReactNode;
@@ -16,8 +27,10 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const userRole = localStorage.getItem('userRole');
   const username = localStorage.getItem('username');
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('userRole');
@@ -25,27 +38,54 @@ const Layout = ({ children }: LayoutProps) => {
     navigate('/login');
   };
 
+  // Determine if a navigation item is active based on current location
+  const isActive = (path: string) => {
+    if (path === '/farmer' || path === '/admin') {
+      return location.pathname === path;
+    }
+    // For paths like '/history' or '/admin/rules', check if the current path starts with the item path
+    return location.pathname.startsWith(path);
+  };
+
   const navigationItems = [
     {
       label: 'Dashboard',
       icon: Home,
+      path: userRole === 'farmer' ? '/farmer' : '/admin',
       onClick: () => navigate(userRole === 'farmer' ? '/farmer' : '/admin'),
-      active: true
     },
     {
       label: 'History',
       icon: History,
+      path: '/history',
       onClick: () => navigate('/history'),
     },
     ...(userRole === 'admin' ? [{
       label: 'Rules Manager',
       icon: Settings,
+      path: '/admin/rules',
       onClick: () => navigate('/admin/rules'),
     }] : [])
   ];
 
   return (
     <div className="min-h-screen bg-gradient-earth">
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to logout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be signed out of your account. You can log back in anytime to access your dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout}>Yes, Logout</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -66,10 +106,12 @@ const Layout = ({ children }: LayoutProps) => {
               {navigationItems.map((item) => (
                 <Button
                   key={item.label}
-                  variant={item.active ? "default" : "ghost"}
+                  variant="ghost"
                   size="sm"
                   onClick={item.onClick}
-                  className={item.active ? "bg-gradient-primary" : ""}
+                  className={isActive(item.path)
+                    ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90 hover:text-primary-foreground"
+                    : "text-foreground hover:bg-accent hover:text-accent-foreground"}
                 >
                   <item.icon className="h-4 w-4 mr-2" />
                   {item.label}
@@ -90,7 +132,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleLogout}
+                onClick={() => setIsLogoutDialogOpen(true)}
                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
               >
                 <LogOut className="h-4 w-4 mr-2" />
@@ -107,10 +149,12 @@ const Layout = ({ children }: LayoutProps) => {
           {navigationItems.map((item) => (
             <Button
               key={item.label}
-              variant={item.active ? "default" : "ghost"}
+              variant="ghost"
               size="sm"
               onClick={item.onClick}
-              className={`flex-shrink-0 ${item.active ? "bg-gradient-primary" : ""}`}
+              className={`flex-shrink-0 ${isActive(item.path)
+                ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90"
+                : "text-foreground hover:bg-accent hover:text-accent-foreground"}`}
             >
               <item.icon className="h-4 w-4 mr-2" />
               {item.label}
