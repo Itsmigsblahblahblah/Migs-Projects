@@ -328,11 +328,6 @@ const Login = () => {
                       onChange={(e) => setCredentials({...credentials, email: e.target.value})}
                       className="peer"
                     />
-                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
-                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
-                        Enter your registered email address
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -357,11 +352,6 @@ const Login = () => {
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
-                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
-                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
-                        Enter your account password
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -427,11 +417,6 @@ const Login = () => {
                       onChange={(e) => setCredentials({...credentials, fullName: e.target.value})}
                       className="peer"
                     />
-                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
-                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
-                        Enter your first and last name
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -448,11 +433,6 @@ const Login = () => {
                       onChange={(e) => setCredentials({...credentials, farmName: e.target.value})}
                       className="peer"
                     />
-                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
-                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
-                        Enter the name of your farm
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -470,11 +450,6 @@ const Login = () => {
                       onChange={(e) => setCredentials({...credentials, email: e.target.value})}
                       className="peer"
                     />
-                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
-                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
-                        Use a valid email address
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -499,11 +474,6 @@ const Login = () => {
                     >
                       {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
-                    <div className="absolute left-0 -bottom-8 opacity-0 peer-focus:opacity-100 transition-opacity duration-200 pointer-events-none">
-                      <div className="bg-popover text-popover-foreground px-3 py-1.5 rounded-md text-xs shadow-md border">
-                        Minimum 6 characters required
-                      </div>
-                    </div>
                   </div>
                 </div>
 
