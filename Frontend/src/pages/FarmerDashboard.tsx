@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import { useCrops } from "@/contexts/CropContext";
 import {
   Sprout,
   AlertTriangle,
@@ -27,10 +28,18 @@ import {
   Bell,
   Plus,
   Eye,
-  Edit
+  Edit,
+  Leaf
 } from "lucide-react";
-import { collection, addDoc, query, where, orderBy, limit, getDocs, Timestamp } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Mock NLP and DSS System
 const processReport = (text: string) => {
@@ -149,44 +158,35 @@ const FarmerDashboard = () => {
   const [username, setUsername] = useState("");
   const [userId, setUserId] = useState("");
   const [monthlyReports, setMonthlyReports] = useState(0);
+  const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false);
+  const [newCrop, setNewCrop] = useState({
+    name: "",
+    landArea: "",
+    quantity: "",
+    soilType: "",
+    nitrogen: "",
+    phosphorus: "",
+    potassium: "",
+    puhunan: ""
+  });
+  const { addCrop } = useCrops();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
+  // Initialize user data
+  if (!username) {
     const role = localStorage.getItem('userRole');
     const user = localStorage.getItem('username');
     const uid = localStorage.getItem('userId') || user || 'default-user';
 
     if (role !== 'farmer') {
       navigate('/');
-      return;
+      return null;
     }
 
     setUsername(user || 'Farmer');
     setUserId(uid);
-
-    // Load monthly report count
-    loadMonthlyReportCount(uid);
-  }, [navigate]);
-
-  const loadMonthlyReportCount = async (uid: string) => {
-    try {
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-      const reportsRef = collection(db, "farmReports");
-      const q = query(
-        reportsRef,
-        where("userId", "==", uid),
-        where("createdAt", ">=", Timestamp.fromDate(firstDayOfMonth))
-      );
-
-      const querySnapshot = await getDocs(q);
-      setMonthlyReports(querySnapshot.size);
-    } catch (error) {
-      console.error("Error loading monthly report count:", error);
-    }
-  };
+  }
 
   const handleSubmitReport = async () => {
     if (!reportText.trim()) {
@@ -206,24 +206,6 @@ const FarmerDashboard = () => {
 
       const result = processReport(reportText);
       setRecommendation(result);
-
-      // Save to Firebase Firestore
-      const reportData = {
-        userId: userId,
-        username: username,
-        reportText: reportText,
-        problem: result.problem,
-        affectedCrop: result.crop,
-        recommendedCrops: result.recommend,
-        cropsToAvoid: result.avoid,
-        advice: result.advice,
-        hasImage: selectedImage !== null,
-        imageName: selectedImage?.name || null,
-        createdAt: Timestamp.now(),
-        status: 'processed'
-      };
-
-      await addDoc(collection(db, "farmReports"), reportData);
 
       toast({
         title: "Recommendation Ready",
@@ -256,6 +238,72 @@ const FarmerDashboard = () => {
       toast({
         title: "Image uploaded",
         description: "Larawan ay nai-upload na para sa analysis.",
+      });
+    }
+  };
+
+  // Handle crop input changes
+  const handleCropInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewCrop(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle crop submission
+  const handleAddCrop = () => {
+    // Validate inputs
+    if (!newCrop.name || !newCrop.landArea || !newCrop.quantity ||
+      !newCrop.soilType || !newCrop.puhunan) {
+      toast({
+        title: "Incomplete Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Prepare crop data
+      const cropData = {
+        userId: userId,
+        name: newCrop.name,
+        landArea: newCrop.landArea,
+        quantity: parseFloat(newCrop.quantity),
+        soilType: newCrop.soilType,
+        nitrogen: parseFloat(newCrop.nitrogen) || 0,
+        phosphorus: parseFloat(newCrop.phosphorus) || 0,
+        potassium: parseFloat(newCrop.potassium) || 0,
+        puhunan: parseFloat(newCrop.puhunan),
+      };
+
+      // Save to context (temporary storage)
+      addCrop(cropData);
+
+      toast({
+        title: "Crop Added Successfully",
+        description: `${newCrop.name} has been added to your crop history.`,
+      });
+
+      // Reset form and close dialog
+      setNewCrop({
+        name: "",
+        landArea: "",
+        quantity: "",
+        soilType: "",
+        nitrogen: "",
+        phosphorus: "",
+        potassium: "",
+        puhunan: ""
+      });
+      setIsAddCropDialogOpen(false);
+    } catch (error) {
+      console.error("Error saving crop:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add crop. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -415,20 +463,143 @@ const FarmerDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/history')}>
-                <Eye className="h-5 w-5" />
-                <span>View Reports</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <Edit className="h-5 w-5" />
-                <span>Update Crop</span>
-              </Button>
-              <Button variant="outline" className="h-20 flex flex-col gap-2">
-                <Bell className="h-5 w-5" />
-                <span>Alerts</span>
-              </Button>
-            </div>
+            <Dialog open={isAddCropDialogOpen} onOpenChange={setIsAddCropDialogOpen}>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/history')}>
+                  <Eye className="h-5 w-5" />
+                  <span>View Reports</span>
+                </Button>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="h-20 flex flex-col gap-2">
+                    <Plus className="h-5 w-5" />
+                    <span>Add Crop</span>
+                  </Button>
+                </DialogTrigger>
+                <Button variant="outline" className="h-20 flex flex-col gap-2">
+                  <Edit className="h-5 w-5" />
+                  <span>Update Crop</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/crop-history')}>
+                  <Leaf className="h-5 w-5" />
+                  <span>Crop History</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex flex-col gap-2">
+                  <Bell className="h-5 w-5" />
+                  <span>Alerts</span>
+                </Button>
+              </div>
+
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add New Crop</DialogTitle>
+                  <DialogDescription>
+                    Enter the details of your new crop planting.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Crop Name *</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={newCrop.name}
+                      onChange={handleCropInputChange}
+                      placeholder="e.g., Rice, Tomato"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="landArea">Crop Land Area *</Label>
+                    <Input
+                      id="landArea"
+                      name="landArea"
+                      value={newCrop.landArea}
+                      onChange={handleCropInputChange}
+                      placeholder="e.g., 2 hectares"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="quantity">Crop Quantity (kg) *</Label>
+                    <Input
+                      id="quantity"
+                      name="quantity"
+                      type="number"
+                      value={newCrop.quantity}
+                      onChange={handleCropInputChange}
+                      placeholder="e.g., 1000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="soilType">Soil Type (General) *</Label>
+                    <Input
+                      id="soilType"
+                      name="soilType"
+                      value={newCrop.soilType}
+                      onChange={handleCropInputChange}
+                      placeholder="e.g., Loam Soil"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="nitrogen">Nitrogen</Label>
+                      <Input
+                        id="nitrogen"
+                        name="nitrogen"
+                        type="number"
+                        value={newCrop.nitrogen}
+                        onChange={handleCropInputChange}
+                        placeholder="N"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phosphorus">Phosphorus</Label>
+                      <Input
+                        id="phosphorus"
+                        name="phosphorus"
+                        type="number"
+                        value={newCrop.phosphorus}
+                        onChange={handleCropInputChange}
+                        placeholder="P"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="potassium">Potassium</Label>
+                      <Input
+                        id="potassium"
+                        name="potassium"
+                        type="number"
+                        value={newCrop.potassium}
+                        onChange={handleCropInputChange}
+                        placeholder="K"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="puhunan">Puhunan (₱) *</Label>
+                    <Input
+                      id="puhunan"
+                      name="puhunan"
+                      type="number"
+                      value={newCrop.puhunan}
+                      onChange={handleCropInputChange}
+                      placeholder="e.g., 5000"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsAddCropDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAddCrop}>
+                    Submit Crop
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
 

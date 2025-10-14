@@ -45,6 +45,13 @@ All colors MUST be HSL.
     --warning: 35 95% 55%;
     --warning-foreground: 120 15% 15%;
 
+    /* Chart Colors */
+    --chart-1: 120 60% 20%;
+    --chart-2: 42 78% 60%;
+    --chart-3: 120 50% 35%;
+    --chart-4: 35 25% 85%;
+    --chart-5: 120 15% 88%;
+
     --border: 120 15% 88%;
     --input: 120 15% 94%;
     --ring: 120 60% 20%;
@@ -113,6 +120,13 @@ All colors MUST be HSL.
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
+
+    /* Chart Colors */
+    --chart-1: 210 40% 98%;
+    --chart-2: 42 78% 60%;
+    --chart-3: 120 50% 35%;
+    --chart-4: 217.2 32.6% 17.5%;
+    --chart-5: 215 20.2% 65.1%;
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
