@@ -912,7 +912,7 @@ const FarmerDashboard = () => {
                   <Button
                     variant="outline"
                     onClick={() => document.getElementById('image')?.click()}
-                    className="flex items-center gap-2"
+                    className="flex w-full items-center gap-2"
                   >
                     <Camera className="h-4 w-4" />
                     {selectedImage ? 'Change Photo' : 'Add Photo'}
