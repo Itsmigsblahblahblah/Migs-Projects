@@ -86,10 +86,7 @@ const AdminDashboard = () => {
     const role = localStorage.getItem('userRole');
     const user = localStorage.getItem('username');
     
-    if (role !== 'admin') {
-      navigate('/');
-      return;
-    }
+    // Removed navigation check since it's now handled by ProtectedRoute
     
     setUsername(user || 'Admin');
     loadDashboardData();

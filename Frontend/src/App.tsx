@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CropProvider } from "@/contexts/CropContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import PublicOnlyRoute from "@/components/PublicOnlyRoute";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/NotFound";
 import Login from "@/pages/Login";
@@ -26,14 +28,70 @@ const App = () => (
         <CropProvider>
           <Routes>
             <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/farmer" element={<FarmerDashboard />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/rules" element={<RulesManager />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/crop-history" element={<CropHistory />} />
-            <Route path="/crop/:id" element={<CropDetails />} />
-            <Route path="/alerts" element={<Alerts />} />
+            <Route 
+              path="/login" 
+              element={
+                <PublicOnlyRoute>
+                  <Login />
+                </PublicOnlyRoute>
+              } 
+            />
+            <Route 
+              path="/farmer" 
+              element={
+                <ProtectedRoute requiredRole="farmer">
+                  <FarmerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/rules" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <RulesManager />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/history" 
+              element={
+                <ProtectedRoute>
+                  <History />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/crop-history" 
+              element={
+                <ProtectedRoute>
+                  <CropHistory />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/crop/:id" 
+              element={
+                <ProtectedRoute>
+                  <CropDetails />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/alerts" 
+              element={
+                <ProtectedRoute>
+                  <Alerts />
+                </ProtectedRoute>
+              } 
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

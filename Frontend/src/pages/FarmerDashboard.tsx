@@ -192,11 +192,6 @@ const FarmerDashboard = () => {
     const user = localStorage.getItem('username');
     const uid = localStorage.getItem('userId') || user || 'default-user';
 
-    if (role !== 'farmer') {
-      navigate('/');
-      return null;
-    }
-
     setUsername(user || 'Farmer');
     setUserId(uid);
   }

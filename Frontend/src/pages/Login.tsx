@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,17 @@ const Login = () => {
     fullName: "",
     farmName: ""
   });
+
+  // Check if user is already authenticated on component mount
+  useEffect(() => {
+    const userRole = localStorage.getItem('userRole');
+    const userId = localStorage.getItem('userId');
+    
+    if (userRole && userId) {
+      // User is already authenticated, redirect to appropriate dashboard
+      navigate(userRole === 'admin' ? '/admin' : '/farmer');
+    }
+  }, [navigate]);
 
   // Admin account credentials
   const ADMIN_EMAIL = "admin@majayjay.farm";

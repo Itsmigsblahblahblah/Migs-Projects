@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -28,13 +28,56 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const userRole = localStorage.getItem('userRole');
-  const username = localStorage.getItem('username');
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
+  // Check authentication status and listen for changes
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      const role = localStorage.getItem('userRole');
+      const name = localStorage.getItem('username');
+      
+      setUserRole(role);
+      setUsername(name);
+      
+      // If user is not authenticated, redirect to login
+      if (!role) {
+        navigate('/login');
+      }
+    };
+    
+    checkAuthStatus();
+    
+    // Listen for storage changes (multi-tab logout)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'userRole' && !e.newValue) {
+        // User logged out in another tab
+        navigate('/login');
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Set up interval to periodically check auth status
+    const interval = setInterval(checkAuthStatus, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [navigate]);
+
   const handleLogout = () => {
+    // Remove all authentication data
     localStorage.removeItem('userRole');
     localStorage.removeItem('username');
+    localStorage.removeItem('userId');
+    
+    // Close dialog
+    setIsLogoutDialogOpen(false);
+    
+    // Navigate to login
     navigate('/login');
   };
 
@@ -67,6 +110,11 @@ const Layout = ({ children }: LayoutProps) => {
       onClick: () => navigate('/admin/rules'),
     }] : [])
   ];
+
+  // Don't render layout if user is not authenticated
+  if (!userRole) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-earth">
