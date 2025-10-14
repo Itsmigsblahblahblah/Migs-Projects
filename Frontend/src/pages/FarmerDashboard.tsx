@@ -571,7 +571,7 @@ const FarmerDashboard = () => {
                   <Leaf className="h-5 w-5" />
                   <span>Crop History</span>
                 </Button>
-                <Button variant="outline" className="h-20 flex flex-col gap-2">
+                <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/alerts')}>
                   <Bell className="h-5 w-5" />
                   <span>Alerts</span>
                 </Button>
