@@ -159,6 +159,9 @@ const FarmerDashboard = () => {
   const [userId, setUserId] = useState("");
   const [monthlyReports, setMonthlyReports] = useState(0);
   const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false);
+  const [isUpdateCropDialogOpen, setIsUpdateCropDialogOpen] = useState(false);
+  const [isEditCropDialogOpen, setIsEditCropDialogOpen] = useState(false);
+  const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
   const [newCrop, setNewCrop] = useState({
     name: "",
     landArea: "",
@@ -169,7 +172,17 @@ const FarmerDashboard = () => {
     potassium: "",
     puhunan: ""
   });
-  const { addCrop } = useCrops();
+  const [editCrop, setEditCrop] = useState({
+    name: "",
+    landArea: "",
+    quantity: "",
+    soilType: "",
+    nitrogen: "",
+    phosphorus: "",
+    potassium: "",
+    puhunan: ""
+  });
+  const { addCrop, crops, getCropById, updateCrop } = useCrops();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -303,6 +316,81 @@ const FarmerDashboard = () => {
       toast({
         title: "Error",
         description: "Failed to add crop. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle edit crop input changes
+  const handleEditCropInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditCrop(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle edit crop submission
+  const handleEditCrop = () => {
+    // Validate inputs
+    if (!editCrop.name || !editCrop.landArea || !editCrop.quantity ||
+      !editCrop.soilType || !editCrop.puhunan) {
+      toast({
+        title: "Incomplete Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      if (!selectedCropId) {
+        toast({
+          title: "Error",
+          description: "No crop selected for update.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Prepare crop data
+      const cropData = {
+        name: editCrop.name,
+        landArea: editCrop.landArea,
+        quantity: parseFloat(editCrop.quantity),
+        soilType: editCrop.soilType,
+        nitrogen: parseFloat(editCrop.nitrogen) || 0,
+        phosphorus: parseFloat(editCrop.phosphorus) || 0,
+        potassium: parseFloat(editCrop.potassium) || 0,
+        puhunan: parseFloat(editCrop.puhunan),
+      };
+
+      // Update crop in context
+      updateCrop(selectedCropId, cropData);
+
+      toast({
+        title: "Crop Updated Successfully",
+        description: `${editCrop.name} has been updated.`,
+      });
+
+      // Reset form and close dialog
+      setEditCrop({
+        name: "",
+        landArea: "",
+        quantity: "",
+        soilType: "",
+        nitrogen: "",
+        phosphorus: "",
+        potassium: "",
+        puhunan: ""
+      });
+      setIsEditCropDialogOpen(false);
+      setIsUpdateCropDialogOpen(false);
+    } catch (error) {
+      console.error("Error updating crop:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update crop. Please try again.",
         variant: "destructive",
       });
     }
@@ -475,7 +563,7 @@ const FarmerDashboard = () => {
                     <span>Add Crop</span>
                   </Button>
                 </DialogTrigger>
-                <Button variant="outline" className="h-20 flex flex-col gap-2">
+                <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => setIsUpdateCropDialogOpen(true)}>
                   <Edit className="h-5 w-5" />
                   <span>Update Crop</span>
                 </Button>
@@ -596,6 +684,190 @@ const FarmerDashboard = () => {
                   </Button>
                   <Button onClick={handleAddCrop}>
                     Submit Crop
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={isUpdateCropDialogOpen} onOpenChange={setIsUpdateCropDialogOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Select Crop to Update</DialogTitle>
+                  <DialogDescription>
+                    Choose a crop from your history to update its details.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {crops.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Leaf className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                      <p>No crops found in your history.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {crops.map((crop) => (
+                        <div
+                          key={crop.id}
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                          onClick={() => {
+                            setSelectedCropId(crop.id);
+                            setEditCrop({
+                              name: crop.name,
+                              landArea: crop.landArea,
+                              quantity: crop.quantity.toString(),
+                              soilType: crop.soilType,
+                              nitrogen: crop.nitrogen.toString(),
+                              phosphorus: crop.phosphorus.toString(),
+                              potassium: crop.potassium.toString(),
+                              puhunan: crop.puhunan.toString()
+                            });
+                            setIsEditCropDialogOpen(true);
+                          }}
+                        >
+                          <div>
+                            <h4 className="font-medium">{crop.name}</h4>
+                            <p className="text-sm text-muted-foreground">{crop.landArea} • {crop.quantity} kg</p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCropId(crop.id);
+                              setEditCrop({
+                                name: crop.name,
+                                landArea: crop.landArea,
+                                quantity: crop.quantity.toString(),
+                                soilType: crop.soilType,
+                                nitrogen: crop.nitrogen.toString(),
+                                phosphorus: crop.phosphorus.toString(),
+                                potassium: crop.potassium.toString(),
+                                puhunan: crop.puhunan.toString()
+                              });
+                              setIsEditCropDialogOpen(true);
+                            }}
+                          >
+                            Update Crop
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsUpdateCropDialogOpen(false)}>
+                    Close
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={isEditCropDialogOpen} onOpenChange={setIsEditCropDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Update Crop Details</DialogTitle>
+                  <DialogDescription>
+                    Edit the details of your crop planting.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">Crop Name *</Label>
+                    <Input
+                      id="edit-name"
+                      name="name"
+                      value={editCrop.name}
+                      onChange={handleEditCropInputChange}
+                      placeholder="e.g., Rice, Tomato"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-landArea">Crop Land Area *</Label>
+                    <Input
+                      id="edit-landArea"
+                      name="landArea"
+                      value={editCrop.landArea}
+                      onChange={handleEditCropInputChange}
+                      placeholder="e.g., 2 hectares"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-quantity">Crop Quantity (kg) *</Label>
+                    <Input
+                      id="edit-quantity"
+                      name="quantity"
+                      type="number"
+                      value={editCrop.quantity}
+                      onChange={handleEditCropInputChange}
+                      placeholder="e.g., 1000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-soilType">Soil Type (General) *</Label>
+                    <Input
+                      id="edit-soilType"
+                      name="soilType"
+                      value={editCrop.soilType}
+                      onChange={handleEditCropInputChange}
+                      placeholder="e.g., Loam Soil"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-nitrogen">Nitrogen</Label>
+                      <Input
+                        id="edit-nitrogen"
+                        name="nitrogen"
+                        type="number"
+                        value={editCrop.nitrogen}
+                        onChange={handleEditCropInputChange}
+                        placeholder="N"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-phosphorus">Phosphorus</Label>
+                      <Input
+                        id="edit-phosphorus"
+                        name="phosphorus"
+                        type="number"
+                        value={editCrop.phosphorus}
+                        onChange={handleEditCropInputChange}
+                        placeholder="P"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-potassium">Potassium</Label>
+                      <Input
+                        id="edit-potassium"
+                        name="potassium"
+                        type="number"
+                        value={editCrop.potassium}
+                        onChange={handleEditCropInputChange}
+                        placeholder="K"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-puhunan">Puhunan (₱) *</Label>
+                    <Input
+                      id="edit-puhunan"
+                      name="puhunan"
+                      type="number"
+                      value={editCrop.puhunan}
+                      onChange={handleEditCropInputChange}
+                      placeholder="e.g., 5000"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsEditCropDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleEditCrop}>
+                    Update Crop
                   </Button>
                 </DialogFooter>
               </DialogContent>

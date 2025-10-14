@@ -18,6 +18,7 @@ interface Crop {
 interface CropContextType {
     crops: Crop[];
     addCrop: (crop: Omit<Crop, 'id' | 'plantedDate' | 'createdAt'>) => void;
+    updateCrop: (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt'>>) => void;
     getCropById: (id: string) => Crop | undefined;
 }
 
@@ -52,12 +53,22 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
         setCrops(prev => [...prev, newCrop]);
     };
 
+    const updateCrop = (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt'>>) => {
+        setCrops(prev =>
+            prev.map(crop =>
+                crop.id === id
+                    ? { ...crop, ...cropData }
+                    : crop
+            )
+        );
+    };
+
     const getCropById = (id: string) => {
         return crops.find(crop => crop.id === id);
     };
 
     return (
-        <CropContext.Provider value={{ crops, addCrop, getCropById }}>
+        <CropContext.Provider value={{ crops, addCrop, updateCrop, getCropById }}>
             {children}
         </CropContext.Provider>
     );
