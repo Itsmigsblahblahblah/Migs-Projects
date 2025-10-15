@@ -546,7 +546,32 @@ const FarmerDashboard = () => {
       return;
     }
 
-    if (!deleteConfirmPassword.trim()) {
+    // Check if user signed in with Google (no password)
+    const user = auth.currentUser;
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "No authenticated user found. Please log out and log in again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if user signed in with Google (provider ID check)
+    const isGoogleUser = user.providerData.some(provider => provider.providerId === 'google.com');
+
+    // For Google users, we don't require password, but we do require confirmation text
+    if (isGoogleUser && deleteConfirmPassword !== 'DELETE') {
+      toast({
+        title: "Confirmation Required",
+        description: "For Google accounts, type DELETE in the confirmation field to proceed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // For email/password users, require password
+    if (!isGoogleUser && !deleteConfirmPassword.trim()) {
       toast({
         title: "Password Required",
         description: "Please enter your password to confirm account deletion.",
@@ -558,14 +583,15 @@ const FarmerDashboard = () => {
     setIsDeletingAccount(true);
 
     try {
-      const user = auth.currentUser;
-      if (!user || !user.email) {
-        throw new Error("No authenticated user found");
-      }
-
       // Re-authenticate user before deletion (required by Firebase)
-      const credential = EmailAuthProvider.credential(user.email, deleteConfirmPassword);
-      await reauthenticateWithCredential(user, credential);
+      // Only for email/password users
+      if (!isGoogleUser) {
+        if (!user.email) {
+          throw new Error("No email found for user");
+        }
+        const credential = EmailAuthProvider.credential(user.email, deleteConfirmPassword);
+        await reauthenticateWithCredential(user, credential);
+      }
 
       // Delete all user data from Firestore using batch
       const batch = writeBatch(db);
@@ -1510,6 +1536,13 @@ const FarmerDashboard = () => {
                   </DialogTitle>
                   <DialogDescription>
                     Your deletion request has been approved by the admin. You can now permanently delete your account and all associated data.
+                    {
+                      auth.currentUser?.providerData.some(p => p.providerId === 'google.com') ? (
+                        <p className="mt-2 text-warning">Note: For Google accounts, type DELETE in the confirmation field below.</p>
+                      ) : (
+                        <p className="mt-2 text-warning">Note: For email accounts, enter your password in the confirmation field below.</p>
+                      )
+                    }
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -1525,14 +1558,18 @@ const FarmerDashboard = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="delete-password" className="text-destructive">
-                      Enter your password to confirm *
+                      {auth.currentUser?.providerData.some(p => p.providerId === 'google.com') 
+                        ? 'Type DELETE to confirm account deletion *' 
+                        : 'Enter your password to confirm *'}
                     </Label>
                     <Input
                       id="delete-password"
-                      type="password"
+                      type={auth.currentUser?.providerData.some(p => p.providerId === 'google.com') ? "text" : "password"}
                       value={deleteConfirmPassword}
                       onChange={(e) => setDeleteConfirmPassword(e.target.value)}
-                      placeholder="Enter your password"
+                      placeholder={auth.currentUser?.providerData.some(p => p.providerId === 'google.com') 
+                        ? 'Type DELETE' 
+                        : 'Enter your password'}
                       disabled={isDeletingAccount}
                     />
                   </div>
