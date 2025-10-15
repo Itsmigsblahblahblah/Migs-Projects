@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
@@ -27,7 +28,9 @@ import {
   Download,
   Settings,
   Eye,
-  CheckCircle
+  CheckCircle,
+  Mail,
+  Home
 } from "lucide-react";
 import { collection, query, getDocs, orderBy, Timestamp, updateDoc, doc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -65,6 +68,18 @@ interface CropRecommendation {
   frequency: number;
 }
 
+interface Farmer {
+  uid: string;
+  email: string;
+  fullName: string;
+  farmName: string;
+  role: string;
+  createdAt: string;
+  photoURL?: string | null;
+  homeAddress?: string;
+  farmAddress?: string;
+}
+
 const AdminDashboard = () => {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(true);
@@ -72,6 +87,7 @@ const AdminDashboard = () => {
   const [problemsData, setProblemsData] = useState<ProblemData[]>([]);
   const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([]);
   const [cropRecommendations, setCropRecommendations] = useState<CropRecommendation[]>([]);
+  const [farmers, setFarmers] = useState<Farmer[]>([]);
   const [stats, setStats] = useState({
     activeFarmers: 0,
     pendingReports: 0,
@@ -138,6 +154,9 @@ const AdminDashboard = () => {
       calculateProblemsDistribution(reportsData);
       calculateMonthlyTrends(reportsData);
       calculateCropRecommendations(reportsData);
+      
+      // Load farmers
+      await loadFarmers();
       
       toast({
         title: "Dashboard Loaded",
@@ -251,6 +270,67 @@ const AdminDashboard = () => {
       .slice(0, 5);
     
     setCropRecommendations(recommendations);
+  };
+
+  const loadFarmers = async () => {
+    try {
+      const farmersRef = collection(db, "farmers");
+      const farmersSnapshot = await getDocs(farmersRef);
+      
+      const farmersData: Farmer[] = [];
+      farmersSnapshot.forEach((doc) => {
+        const data = doc.data();
+        farmersData.push({
+          uid: data.uid || doc.id,
+          email: data.email || '',
+          fullName: data.fullName || 'Unknown',
+          farmName: data.farmName || 'Unknown Farm',
+          role: data.role || 'farmer',
+          createdAt: data.createdAt || '',
+          photoURL: data.photoURL || null,
+          homeAddress: data.homeAddress || '',
+          farmAddress: data.farmAddress || ''
+        });
+      });
+      
+      // Sort by registration date (newest first)
+      farmersData.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      setFarmers(farmersData);
+    } catch (error) {
+      console.error("Error loading farmers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load farmers data.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Unknown date';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return 'Unknown date';
+    }
   };
 
   const updateReportStatus = async (reportId: string, newStatus: string) => {
@@ -431,11 +511,91 @@ const AdminDashboard = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="farmers">Registered Farmers</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="map">Location Map</TabsTrigger>
           </TabsList>
+
+          {/* Registered Farmers Tab */}
+          <TabsContent value="farmers" className="space-y-6">
+            <Card className="shadow-card">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Registered Farmers</CardTitle>
+                    <CardDescription>List of all farmers registered in the system ({farmers.length} total)</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {farmers.length > 0 ? (
+                  <div className="space-y-4">
+                    {farmers.map((farmer) => (
+                      <div
+                        key={farmer.uid}
+                        className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/admin/farmer/${farmer.uid}`)}
+                      >
+                        <div className="flex items-center gap-4">
+                          {/* Circular Profile Image */}
+                          <Avatar className="h-16 w-16">
+                            <AvatarImage src={farmer.photoURL || undefined} alt={farmer.fullName} />
+                            <AvatarFallback className="text-lg bg-primary/10 text-primary">
+                              {getInitials(farmer.fullName)}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          {/* Farmer Information */}
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <div>
+                                <h3 className="font-semibold text-lg">{farmer.fullName}</h3>
+                                <p className="text-sm text-muted-foreground">{farmer.farmName}</p>
+                              </div>
+                              <Badge variant="secondary">Farmer</Badge>
+                            </div>
+
+                            <div className="grid md:grid-cols-3 gap-3 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground truncate">{farmer.email}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Home className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <span className="text-muted-foreground">Home: </span>
+                                  <span>{farmer.homeAddress || "Not provided"}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <span className="text-muted-foreground">Farm: </span>
+                                  <span>{farmer.farmAddress || "Not provided"}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                              <Calendar className="h-3 w-3" />
+                              Registered: {formatDate(farmer.createdAt)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <p>No registered farmers yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">

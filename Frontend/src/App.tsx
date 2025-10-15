@@ -16,6 +16,7 @@ import RulesManager from "@/pages/RulesManager";
 import CropHistory from "@/pages/CropHistory";
 import CropDetails from "@/pages/CropDetails";
 import Alerts from "@/pages/Alerts";
+import FarmerDetailPage from "@/pages/FarmerDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="admin">
                   <RulesManager />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/farmer/:farmerId" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <FarmerDetailPage />
                 </ProtectedRoute>
               } 
             />
