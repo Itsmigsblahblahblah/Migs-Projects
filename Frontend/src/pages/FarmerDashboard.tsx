@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCrops } from "@/contexts/CropContext";
-import { collection, addDoc, Timestamp, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import {
   Sprout,
@@ -31,7 +31,9 @@ import {
   Plus,
   Eye,
   Edit,
-  Leaf
+  Leaf,
+  Edit2,
+  Upload
 } from "lucide-react";
 import {
   Dialog,
@@ -163,6 +165,7 @@ const FarmerDashboard = () => {
   const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false);
   const [isUpdateCropDialogOpen, setIsUpdateCropDialogOpen] = useState(false);
   const [isEditCropDialogOpen, setIsEditCropDialogOpen] = useState(false);
+  const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
   const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
   const [newCrop, setNewCrop] = useState({
     name: "",
@@ -184,6 +187,16 @@ const FarmerDashboard = () => {
     potassium: "",
     puhunan: ""
   });
+  const [farmerProfile, setFarmerProfile] = useState({
+    fullName: "",
+    email: "",
+    contactNumber: "",
+    homeAddress: "",
+    farmAddress: "",
+    farmArea: "",
+    photoURL: ""
+  });
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const { addCrop, crops, getCropById, updateCrop } = useCrops();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -204,7 +217,30 @@ const FarmerDashboard = () => {
 
     // Load monthly report count
     loadMonthlyReportCount(uid);
+    
+    // Load farmer profile
+    loadFarmerProfile(uid);
   }, [navigate]);
+
+  const loadFarmerProfile = async (uid: string) => {
+    try {
+      const farmerDoc = await getDoc(doc(db, "farmers", uid));
+      if (farmerDoc.exists()) {
+        const data = farmerDoc.data();
+        setFarmerProfile({
+          fullName: data.fullName || "",
+          email: data.email || "",
+          contactNumber: data.contactNumber || "",
+          homeAddress: data.homeAddress || "",
+          farmAddress: data.farmAddress || "",
+          farmArea: data.farmArea || "2.5 hectares",
+          photoURL: data.photoURL || ""
+        });
+      }
+    } catch (error) {
+      console.error("Error loading farmer profile:", error);
+    }
+  };
 
   const loadMonthlyReportCount = async (uid: string) => {
     try {
@@ -293,6 +329,75 @@ const FarmerDashboard = () => {
       toast({
         title: "Image uploaded",
         description: "Larawan ay nai-upload na para sa analysis.",
+      });
+    }
+  };
+
+  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfileImageFile(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFarmerProfile(prev => ({
+          ...prev,
+          photoURL: reader.result as string
+        }));
+      };
+      reader.readAsDataURL(file);
+      toast({
+        title: "Image Selected",
+        description: "Profile picture selected. Click Submit to save.",
+      });
+    }
+  };
+
+  const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFarmerProfile(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      const updates: any = {
+        fullName: farmerProfile.fullName,
+        contactNumber: farmerProfile.contactNumber,
+        homeAddress: farmerProfile.homeAddress,
+        farmAddress: farmerProfile.farmAddress,
+        farmArea: farmerProfile.farmArea
+      };
+
+      // If there's a new profile image, save it (for now just save the data URL)
+      // In production, you'd upload to Firebase Storage
+      if (profileImageFile) {
+        updates.photoURL = farmerProfile.photoURL;
+      }
+
+      await updateDoc(doc(db, "farmers", userId), updates);
+
+      // Update username in localStorage if name changed
+      if (farmerProfile.fullName !== username) {
+        localStorage.setItem('username', farmerProfile.fullName);
+        setUsername(farmerProfile.fullName);
+      }
+
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
+      });
+
+      setIsEditProfileDialogOpen(false);
+      setProfileImageFile(null);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -465,18 +570,37 @@ const FarmerDashboard = () => {
           {/* Profile Card */}
           <Card className="shadow-card">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Farmer Profile
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Farmer Profile
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditProfileDialogOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Edit2 className="h-4 w-4" />
+                  Edit
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="bg-secondary rounded-full p-3">
-                  <User className="h-6 w-6 text-secondary-foreground" />
-                </div>
+                {farmerProfile.photoURL ? (
+                  <img
+                    src={farmerProfile.photoURL}
+                    alt={username}
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="bg-secondary rounded-full p-3">
+                    <User className="h-6 w-6 text-secondary-foreground" />
+                  </div>
+                )}
                 <div>
-                  <h3 className="font-semibold">{username}</h3>
+                  <h3 className="font-semibold">{farmerProfile.fullName || username}</h3>
                   <p className="text-sm text-muted-foreground">Majayjay, Batangas</p>
                 </div>
               </div>
@@ -484,11 +608,11 @@ const FarmerDashboard = () => {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Farm Area:</span>
-                  <span>2.5 hectares</span>
+                  <span>{farmerProfile.farmArea || '2.5 hectares'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Location:</span>
-                  <span>Barangay 1</span>
+                  <span>{farmerProfile.farmAddress || 'Barangay 1'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Member Since:</span>
@@ -909,6 +1033,132 @@ const FarmerDashboard = () => {
                   </Button>
                   <Button onClick={handleEditCrop}>
                     Update Crop
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Profile Dialog */}
+            <Dialog open={isEditProfileDialogOpen} onOpenChange={setIsEditProfileDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Edit Profile</DialogTitle>
+                  <DialogDescription>
+                    Update your profile information
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {/* Profile Picture Upload */}
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-image">Profile Picture</Label>
+                    <div className="flex items-center gap-4">
+                      {farmerProfile.photoURL ? (
+                        <img
+                          src={farmerProfile.photoURL}
+                          alt="Profile Preview"
+                          className="h-16 w-16 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="bg-secondary rounded-full p-4">
+                          <User className="h-8 w-8 text-secondary-foreground" />
+                        </div>
+                      )}
+                      <Input
+                        id="profile-image"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfileImageUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => document.getElementById('profile-image')?.click()}
+                        className="flex items-center gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        {profileImageFile ? 'Change Photo' : 'Upload Photo'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Full Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-fullName">Full Name *</Label>
+                    <Input
+                      id="profile-fullName"
+                      name="fullName"
+                      value={farmerProfile.fullName}
+                      onChange={handleProfileInputChange}
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+
+                  {/* Contact Number */}
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-contactNumber">Contact Number *</Label>
+                    <Input
+                      id="profile-contactNumber"
+                      name="contactNumber"
+                      value={farmerProfile.contactNumber}
+                      onChange={handleProfileInputChange}
+                      placeholder="e.g., 09123456789"
+                    />
+                  </div>
+
+                  {/* Email (Disabled) */}
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-email">Email (Cannot be edited)</Label>
+                    <Input
+                      id="profile-email"
+                      name="email"
+                      value={farmerProfile.email}
+                      disabled
+                      className="bg-muted cursor-not-allowed"
+                    />
+                  </div>
+
+                  {/* Home Address */}
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-homeAddress">Home Address *</Label>
+                    <Input
+                      id="profile-homeAddress"
+                      name="homeAddress"
+                      value={farmerProfile.homeAddress}
+                      onChange={handleProfileInputChange}
+                      placeholder="Enter your home address"
+                    />
+                  </div>
+
+                  {/* Farm Address */}
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-farmAddress">Farm Address *</Label>
+                    <Input
+                      id="profile-farmAddress"
+                      name="farmAddress"
+                      value={farmerProfile.farmAddress}
+                      onChange={handleProfileInputChange}
+                      placeholder="Enter your farm location"
+                    />
+                  </div>
+
+                  {/* Farm Area */}
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-farmArea">Farm Area *</Label>
+                    <Input
+                      id="profile-farmArea"
+                      name="farmArea"
+                      value={farmerProfile.farmArea}
+                      onChange={handleProfileInputChange}
+                      placeholder="e.g., 2.5 hectares"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsEditProfileDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleUpdateProfile}>
+                    Submit
                   </Button>
                 </DialogFooter>
               </DialogContent>
