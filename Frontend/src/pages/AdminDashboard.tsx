@@ -95,19 +95,42 @@ const AdminDashboard = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Load all reports
+      console.log("Loading dashboard data...");
+      
+      // Load all reports - Query without orderBy to get ALL data including old records
       const reportsRef = collection(db, "farmReports");
-      const reportsQuery = query(reportsRef, orderBy("createdAt", "desc"));
+      const reportsQuery = query(reportsRef);
       const reportsSnapshot = await getDocs(reportsQuery);
       
       const reportsData: Report[] = [];
       reportsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        console.log("Report found:", doc.id, data);
         reportsData.push({
           id: doc.id,
-          ...doc.data()
-        } as Report);
+          userId: data.userId || '',
+          username: data.username || 'Unknown',
+          reportText: data.reportText || '',
+          problem: data.problem || 'general',
+          affectedCrop: data.affectedCrop || 'unknown',
+          recommendedCrops: data.recommendedCrops || [],
+          cropsToAvoid: data.cropsToAvoid || [],
+          advice: data.advice || '',
+          hasImage: data.hasImage || false,
+          imageName: data.imageName || null,
+          createdAt: data.createdAt,
+          status: data.status || 'pending'
+        });
       });
       
+      // Sort in memory by createdAt (newest first), put items without createdAt at the end
+      reportsData.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      console.log("Total reports loaded:", reportsData.length);
       setReports(reportsData);
       
       // Calculate statistics
@@ -118,7 +141,7 @@ const AdminDashboard = () => {
       
       toast({
         title: "Dashboard Loaded",
-        description: "Successfully loaded all analytics data.",
+        description: `Successfully loaded ${reportsData.length} reports.`,
       });
     } catch (error) {
       console.error("Error loading dashboard data:", error);

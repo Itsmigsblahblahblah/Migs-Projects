@@ -43,18 +43,23 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 return;
             }
 
+            console.log("Loading crops for userId:", userId);
+
             const cropsRef = collection(db, "farmerCrops");
+            // Query without orderBy to get ALL data including old records without createdAt
             const q = query(
                 cropsRef,
-                where("userId", "==", userId),
-                orderBy("createdAt", "desc")
+                where("userId", "==", userId)
             );
 
             const querySnapshot = await getDocs(q);
             const loadedCrops: Crop[] = [];
 
+            console.log("Found crops:", querySnapshot.size);
+
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
+                console.log("Crop data:", doc.id, data);
                 loadedCrops.push({
                     id: doc.id,
                     userId: data.userId,
@@ -71,6 +76,14 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 });
             });
 
+            // Sort in memory by createdAt (newest first), put items without createdAt at the end
+            loadedCrops.sort((a, b) => {
+                const dateA = a.createdAt?.toDate?.() || new Date(0);
+                const dateB = b.createdAt?.toDate?.() || new Date(0);
+                return dateB.getTime() - dateA.getTime();
+            });
+
+            console.log("Loaded crops:", loadedCrops.length);
             setCrops(loadedCrops);
         } catch (error) {
             console.error("Error loading crops from Firestore:", error);

@@ -16,7 +16,7 @@ import {
   Eye,
   Users
 } from "lucide-react";
-import { collection, query, orderBy, getDocs, where } from "firebase/firestore";
+import { collection, query, getDocs, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 
 interface Report {
@@ -57,21 +57,26 @@ const History = () => {
   const loadReportHistory = async () => {
     setLoading(true);
     try {
+      console.log("Loading report history for role:", userRole, "userId:", currentUserId);
+      
       const reportsRef = collection(db, "farmReports");
       
       let reports: Report[] = [];
       
       // If farmer, show only their reports. If admin, show all reports
       if (userRole === 'farmer') {
-        // For farmer: filter by userId then sort in memory to avoid composite index requirement
+        // For farmer: Query without orderBy to get ALL data including old records
         const farmerQuery = query(
           reportsRef,
           where("userId", "==", currentUserId)
         );
         const querySnapshot = await getDocs(farmerQuery);
         
+        console.log("Farmer reports found:", querySnapshot.size);
+        
         querySnapshot.forEach((doc) => {
           const data = doc.data();
+          console.log("Report data:", doc.id, data);
           reports.push({
             id: doc.id,
             userId: data.userId || '',
@@ -89,23 +94,23 @@ const History = () => {
           });
         });
         
-        // Sort by date in memory
+        // Sort by date in memory (newest first), put items without createdAt at the end
         reports.sort((a, b) => {
-          const dateA = a.createdAt?.toDate() || new Date(0);
-          const dateB = b.createdAt?.toDate() || new Date(0);
+          const dateA = a.createdAt?.toDate?.() || new Date(0);
+          const dateB = b.createdAt?.toDate?.() || new Date(0);
           return dateB.getTime() - dateA.getTime();
         });
         
       } else {
-        // Admin sees all reports - can use orderBy directly
-        const adminQuery = query(
-          reportsRef,
-          orderBy("createdAt", "desc")
-        );
+        // Admin sees all reports - Query without orderBy to get ALL data
+        const adminQuery = query(reportsRef);
         const querySnapshot = await getDocs(adminQuery);
+        
+        console.log("Admin reports found:", querySnapshot.size);
         
         querySnapshot.forEach((doc) => {
           const data = doc.data();
+          console.log("Report data:", doc.id, data);
           reports.push({
             id: doc.id,
             userId: data.userId || '',
@@ -122,8 +127,16 @@ const History = () => {
             status: data.status || 'pending'
           });
         });
+        
+        // Sort by date in memory (newest first), put items without createdAt at the end
+        reports.sort((a, b) => {
+          const dateA = a.createdAt?.toDate?.() || new Date(0);
+          const dateB = b.createdAt?.toDate?.() || new Date(0);
+          return dateB.getTime() - dateA.getTime();
+        });
       }
 
+      console.log("Total reports loaded:", reports.length);
       setReportHistory(reports);
 
       if (reports.length === 0) {
