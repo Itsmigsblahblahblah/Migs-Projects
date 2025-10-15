@@ -6,14 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
-import { Sprout, Users, ArrowLeft, AlertCircle, LogIn, UserPlus, Eye, EyeOff, Mail, Lock, User, Building2 } from "lucide-react";
+import { Sprout, Users, ArrowLeft, AlertCircle, LogIn, UserPlus, Eye, EyeOff, Mail, Lock, User, Building2, CheckCircle } from "lucide-react";
 import { auth, db } from "../firebaseConfig";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
-  UserCredential 
+  UserCredential,
+  sendEmailVerification
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
@@ -21,6 +22,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [credentials, setCredentials] = useState({
@@ -112,6 +114,7 @@ const Login = () => {
   const handleSignUp = async () => {
     setLoading(true);
     setError("");
+    setSuccessMessage("");
 
     try {
       if (!credentials.email || !credentials.password || !credentials.fullName || !credentials.farmName) {
@@ -133,21 +136,37 @@ const Login = () => {
         credentials.password
       );
 
-      // Store farmer data in Firestore
+      // Send email verification
+      await sendEmailVerification(userCredential.user);
+
+      // Store farmer data in Firestore with emailVerified flag
       await setDoc(doc(db, "farmers", userCredential.user.uid), {
         email: credentials.email,
         fullName: credentials.fullName,
         farmName: credentials.farmName,
         role: "farmer",
         createdAt: new Date().toISOString(),
-        uid: userCredential.user.uid
+        uid: userCredential.user.uid,
+        emailVerified: false
       });
 
-      // Auto login after signup
-      localStorage.setItem('userRole', 'farmer');
-      localStorage.setItem('userId', userCredential.user.uid);
-      localStorage.setItem('username', credentials.fullName);
-      navigate('/farmer');
+      // Sign out user to prevent auto-login
+      await auth.signOut();
+
+      // Show success message
+      setSuccessMessage(
+        "Account created successfully! Please check your email (" + 
+        credentials.email + 
+        ") to verify your account before logging in. Check your spam folder if you don't see the email."
+      );
+
+      // Clear form
+      setCredentials({
+        email: "",
+        password: "",
+        fullName: "",
+        farmName: ""
+      });
 
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
@@ -165,6 +184,7 @@ const Login = () => {
   const handleLogin = async () => {
     setLoading(true);
     setError("");
+    setSuccessMessage("");
 
     try {
       if (!credentials.email || !credentials.password) {
@@ -186,6 +206,17 @@ const Login = () => {
         localStorage.setItem('userId', userCredential.user.uid);
         localStorage.setItem('username', 'Admin');
         navigate('/admin');
+        return;
+      }
+
+      // Check if email is verified
+      if (!userCredential.user.emailVerified) {
+        setError(
+          "Please verify your email before logging in. Check your inbox for the verification link. " +
+          "Didn't receive the email? Click 'Resend Verification Email' below."
+        );
+        await auth.signOut();
+        setLoading(false);
         return;
       }
 
@@ -212,6 +243,52 @@ const Login = () => {
         setError("Invalid email or password");
       } else {
         setError(err.message || "Login failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!credentials.email || !credentials.password) {
+      setError("Please enter your email and password first");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      // Sign in to get the user
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        credentials.email,
+        credentials.password
+      );
+
+      // Check if already verified
+      if (userCredential.user.emailVerified) {
+        setSuccessMessage("Your email is already verified! You can now log in.");
+        await auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      // Resend verification email
+      await sendEmailVerification(userCredential.user);
+      await auth.signOut();
+
+      setSuccessMessage(
+        "Verification email sent! Please check your inbox at " + 
+        credentials.email + 
+        ". Don't forget to check your spam folder."
+      );
+    } catch (err: any) {
+      if (err.code === 'auth/too-many-requests') {
+        setError("Too many requests. Please wait a few minutes before trying again.");
+      } else {
+        setError("Failed to resend verification email. Please check your credentials.");
       }
     } finally {
       setLoading(false);
@@ -299,6 +376,13 @@ const Login = () => {
                   </div>
                 )}
 
+                {successMessage && (
+                  <div className="p-3 bg-success/10 border border-success/20 rounded-md flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-success mt-0.5" />
+                    <p className="text-sm text-success">{successMessage}</p>
+                  </div>
+                )}
+
                 {/* Google Sign In Button */}
                 <Button 
                   onClick={handleGoogleSignIn}
@@ -375,6 +459,18 @@ const Login = () => {
                   {loading ? "Logging in..." : "Login"}
                 </Button>
 
+                {error && error.includes("verify your email") && (
+                  <Button 
+                    onClick={handleResendVerification}
+                    disabled={loading}
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                  >
+                    {loading ? "Sending..." : "Resend Verification Email"}
+                  </Button>
+                )}
+
                 <p className="text-xs text-center text-muted-foreground">
                   Access your dashboard and manage your farm
                 </p>
@@ -386,6 +482,13 @@ const Login = () => {
                   <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-start gap-2">
                     <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
                     <p className="text-sm text-destructive">{error}</p>
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div className="p-3 bg-success/10 border border-success/20 rounded-md flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-success mt-0.5" />
+                    <p className="text-sm text-success">{successMessage}</p>
                   </div>
                 )}
 
