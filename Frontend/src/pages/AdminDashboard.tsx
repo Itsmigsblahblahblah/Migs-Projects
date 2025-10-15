@@ -44,7 +44,8 @@ import {
   Trash2
 } from "lucide-react";
 import { collection, query, getDocs, orderBy, Timestamp, updateDoc, doc, deleteDoc, writeBatch, where } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { db, functions } from "@/firebaseConfig";
+import { httpsCallable } from "firebase/functions";
 
 interface Report {
   id: string;
@@ -351,6 +352,34 @@ const AdminDashboard = () => {
 
     setDeletingFarmer(true);
     try {
+      // Try to use Cloud Function if available (deletes both Firestore and Auth)
+      try {
+        const deleteFarmerAccount = httpsCallable(functions, 'deleteFarmerAccount');
+        const result = await deleteFarmerAccount({ farmerId: farmerToDelete.uid });
+        
+        console.log('Cloud Function delete result:', result.data);
+        
+        // Update local state
+        setFarmers(prev => prev.filter(f => f.uid !== farmerToDelete.uid));
+        setStats(prev => ({
+          ...prev,
+          activeFarmers: prev.activeFarmers - 1
+        }));
+
+        toast({
+          title: "Farmer Deleted",
+          description: `${farmerToDelete.fullName}'s account and all data (including Firebase Authentication) have been permanently deleted.`,
+        });
+
+        setFarmerToDelete(null);
+        setDeletingFarmer(false);
+        return;
+      } catch (cloudFunctionError: any) {
+        // Cloud Function not available or failed, fallback to Firestore-only deletion
+        console.warn('Cloud Function not available, using Firestore-only deletion:', cloudFunctionError.message);
+      }
+
+      // Fallback: Delete from Firestore only (Auth user will remain)
       const batch = writeBatch(db);
 
       // 1. Delete farmer document from Firestore
@@ -388,8 +417,9 @@ const AdminDashboard = () => {
       }));
 
       toast({
-        title: "Farmer Deleted",
-        description: `${farmerToDelete.fullName}'s account and all associated data have been permanently deleted.`,
+        title: "Farmer Deleted (Firestore Only)",
+        description: `${farmerToDelete.fullName}'s Firestore data has been deleted. Note: Firebase Authentication account was NOT deleted (requires Cloud Function). See documentation for setup.`,
+        variant: "default",
       });
 
       setFarmerToDelete(null);
