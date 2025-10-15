@@ -10,8 +10,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCrops } from "@/contexts/CropContext";
-import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { db, auth } from "@/firebaseConfig";
+import { deleteUser, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import {
   Sprout,
   AlertTriangle,
@@ -33,7 +34,8 @@ import {
   Edit,
   Leaf,
   Edit2,
-  Upload
+  Upload,
+  Trash2
 } from "lucide-react";
 import {
   Dialog,
@@ -166,6 +168,9 @@ const FarmerDashboard = () => {
   const [isUpdateCropDialogOpen, setIsUpdateCropDialogOpen] = useState(false);
   const [isEditCropDialogOpen, setIsEditCropDialogOpen] = useState(false);
   const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
+  const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
+  const [deleteConfirmPassword, setDeleteConfirmPassword] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
   const [newCrop, setNewCrop] = useState({
     name: "",
@@ -399,6 +404,90 @@ const FarmerDashboard = () => {
         description: "Failed to update profile. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deleteConfirmPassword.trim()) {
+      toast({
+        title: "Password Required",
+        description: "Please enter your password to confirm account deletion.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      const user = auth.currentUser;
+      if (!user || !user.email) {
+        throw new Error("No authenticated user found");
+      }
+
+      // Re-authenticate user before deletion (required by Firebase)
+      const credential = EmailAuthProvider.credential(user.email, deleteConfirmPassword);
+      await reauthenticateWithCredential(user, credential);
+
+      // Delete all user data from Firestore using batch
+      const batch = writeBatch(db);
+
+      // Delete farmer document
+      batch.delete(doc(db, "farmers", userId));
+
+      // Delete all farmer crops
+      const cropsQuery = query(collection(db, "farmerCrops"), where("userId", "==", userId));
+      const cropsSnapshot = await getDocs(cropsQuery);
+      cropsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // Delete all farm reports
+      const reportsQuery = query(collection(db, "farmReports"), where("userId", "==", userId));
+      const reportsSnapshot = await getDocs(reportsQuery);
+      reportsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      // Commit all Firestore deletions
+      await batch.commit();
+
+      // Delete Firebase Auth account (must be last)
+      await deleteUser(user);
+
+      // Clear local storage
+      localStorage.removeItem('userRole');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('username');
+
+      toast({
+        title: "Account Deleted",
+        description: "Your account has been permanently deleted.",
+      });
+
+      // Redirect to login page
+      navigate('/login');
+    } catch (error: any) {
+      console.error("Error deleting account:", error);
+      
+      let errorMessage = "Failed to delete account. Please try again.";
+      
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMessage = "Incorrect password. Please try again.";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "Too many attempts. Please try again later.";
+      } else if (error.code === 'auth/requires-recent-login') {
+        errorMessage = "Please log out and log in again before deleting your account.";
+      }
+
+      toast({
+        title: "Deletion Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingAccount(false);
+      setDeleteConfirmPassword("");
     }
   };
 
@@ -1153,12 +1242,91 @@ const FarmerDashboard = () => {
                     />
                   </div>
                 </div>
+                <DialogFooter className="flex-col sm:flex-row gap-2">
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => {
+                      setIsEditProfileDialogOpen(false);
+                      setIsDeleteAccountDialogOpen(true);
+                    }}
+                    className="flex items-center gap-2 sm:mr-auto"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Account
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setIsEditProfileDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleUpdateProfile}>
+                      Submit
+                    </Button>
+                  </div>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete Account Confirmation Dialog */}
+            <Dialog open={isDeleteAccountDialogOpen} onOpenChange={setIsDeleteAccountDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-destructive">
+                    <Trash2 className="h-5 w-5" />
+                    Delete Account
+                  </DialogTitle>
+                  <DialogDescription>
+                    This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-md p-4 space-y-2">
+                    <p className="text-sm font-medium text-destructive">Warning: This will delete:</p>
+                    <ul className="text-sm text-destructive/90 list-disc list-inside space-y-1">
+                      <li>Your profile and personal information</li>
+                      <li>All your crop records</li>
+                      <li>All your farm reports and history</li>
+                      <li>Your authentication account</li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="delete-password" className="text-destructive">
+                      Enter your password to confirm *
+                    </Label>
+                    <Input
+                      id="delete-password"
+                      type="password"
+                      value={deleteConfirmPassword}
+                      onChange={(e) => setDeleteConfirmPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      disabled={isDeletingAccount}
+                    />
+                  </div>
+                </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsEditProfileDialogOpen(false)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsDeleteAccountDialogOpen(false);
+                      setDeleteConfirmPassword("");
+                    }}
+                    disabled={isDeletingAccount}
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={handleUpdateProfile}>
-                    Submit
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDeleteAccount}
+                    disabled={isDeletingAccount}
+                  >
+                    {isDeletingAccount ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        Deleting...
+                      </div>
+                    ) : (
+                      "Delete My Account Permanently"
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
