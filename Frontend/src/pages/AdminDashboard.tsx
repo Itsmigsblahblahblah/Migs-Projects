@@ -4,6 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
@@ -30,9 +40,10 @@ import {
   Eye,
   CheckCircle,
   Mail,
-  Home
+  Home,
+  Trash2
 } from "lucide-react";
-import { collection, query, getDocs, orderBy, Timestamp, updateDoc, doc } from "firebase/firestore";
+import { collection, query, getDocs, orderBy, Timestamp, updateDoc, doc, deleteDoc, writeBatch, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 
 interface Report {
@@ -88,6 +99,8 @@ const AdminDashboard = () => {
   const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([]);
   const [cropRecommendations, setCropRecommendations] = useState<CropRecommendation[]>([]);
   const [farmers, setFarmers] = useState<Farmer[]>([]);
+  const [farmerToDelete, setFarmerToDelete] = useState<Farmer | null>(null);
+  const [deletingFarmer, setDeletingFarmer] = useState(false);
   const [stats, setStats] = useState({
     activeFarmers: 0,
     pendingReports: 0,
@@ -333,6 +346,65 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteFarmer = async () => {
+    if (!farmerToDelete) return;
+
+    setDeletingFarmer(true);
+    try {
+      const batch = writeBatch(db);
+
+      // 1. Delete farmer document from Firestore
+      const farmerRef = doc(db, "farmers", farmerToDelete.uid);
+      batch.delete(farmerRef);
+
+      // 2. Delete all farmer's crops
+      const cropsRef = collection(db, "farmerCrops");
+      const cropsQuery = query(cropsRef, where("userId", "==", farmerToDelete.uid));
+      const cropsSnapshot = await getDocs(cropsQuery);
+      
+      cropsSnapshot.forEach((cropDoc) => {
+        batch.delete(cropDoc.ref);
+      });
+
+      // 3. Delete all farmer's reports
+      const reportsRef = collection(db, "farmReports");
+      const reportsQuery = query(reportsRef, where("userId", "==", farmerToDelete.uid));
+      const reportsSnapshot = await getDocs(reportsQuery);
+      
+      reportsSnapshot.forEach((reportDoc) => {
+        batch.delete(reportDoc.ref);
+      });
+
+      // Commit all deletions
+      await batch.commit();
+
+      // Update local state
+      setFarmers(prev => prev.filter(f => f.uid !== farmerToDelete.uid));
+      
+      // Update stats
+      setStats(prev => ({
+        ...prev,
+        activeFarmers: prev.activeFarmers - 1
+      }));
+
+      toast({
+        title: "Farmer Deleted",
+        description: `${farmerToDelete.fullName}'s account and all associated data have been permanently deleted.`,
+      });
+
+      setFarmerToDelete(null);
+    } catch (error) {
+      console.error("Error deleting farmer:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete farmer account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingFarmer(false);
+    }
+  };
+
   const updateReportStatus = async (reportId: string, newStatus: string) => {
     try {
       const reportRef = doc(db, "farmReports", reportId);
@@ -535,12 +607,11 @@ const AdminDashboard = () => {
                     {farmers.map((farmer) => (
                       <div
                         key={farmer.uid}
-                        className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/admin/farmer/${farmer.uid}`)}
+                        className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex items-center gap-4">
                           {/* Circular Profile Image */}
-                          <Avatar className="h-16 w-16">
+                          <Avatar className="h-16 w-16 cursor-pointer" onClick={() => navigate(`/admin/farmer/${farmer.uid}`)}>
                             <AvatarImage src={farmer.photoURL || undefined} alt={farmer.fullName} />
                             <AvatarFallback className="text-lg bg-primary/10 text-primary">
                               {getInitials(farmer.fullName)}
@@ -548,7 +619,7 @@ const AdminDashboard = () => {
                           </Avatar>
 
                           {/* Farmer Information */}
-                          <div className="flex-1">
+                          <div className="flex-1 cursor-pointer" onClick={() => navigate(`/admin/farmer/${farmer.uid}`)}>
                             <div className="flex items-center justify-between mb-2">
                               <div>
                                 <h3 className="font-semibold text-lg">{farmer.fullName}</h3>
@@ -582,6 +653,22 @@ const AdminDashboard = () => {
                               <Calendar className="h-3 w-3" />
                               Registered: {formatDate(farmer.createdAt)}
                             </div>
+                          </div>
+
+                          {/* Delete Button */}
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFarmerToDelete(farmer);
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -810,6 +897,39 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!farmerToDelete} onOpenChange={() => setFarmerToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the account for{" "}
+              <span className="font-semibold text-foreground">{farmerToDelete?.fullName}</span>{" "}(
+              {farmerToDelete?.email}) and remove all associated data including:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Farmer profile information</li>
+                <li>All crops data</li>
+                <li>All farm reports</li>
+                <li>Activity history</li>
+              </ul>
+              <p className="mt-3 text-destructive font-medium">
+                ⚠️ This action is permanent and cannot be recovered!
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingFarmer}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteFarmer}
+              disabled={deletingFarmer}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingFarmer ? "Deleting..." : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
