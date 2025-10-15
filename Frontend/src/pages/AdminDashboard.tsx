@@ -350,17 +350,26 @@ const AdminDashboard = () => {
   const handleDeleteFarmer = async () => {
     if (!farmerToDelete) return;
 
+    console.log('Starting deletion for farmer:', farmerToDelete.fullName);
+    console.log('Current farmers count:', farmers.length);
+
     setDeletingFarmer(true);
     try {
       // Try to use Cloud Function if available (deletes both Firestore and Auth)
       try {
+        console.log('Attempting Cloud Function deletion...');
         const deleteFarmerAccount = httpsCallable(functions, 'deleteFarmerAccount');
         const result = await deleteFarmerAccount({ farmerId: farmerToDelete.uid });
         
         console.log('Cloud Function delete result:', result.data);
         
         // Update local state
-        setFarmers(prev => prev.filter(f => f.uid !== farmerToDelete.uid));
+        setFarmers(prev => {
+          const updated = prev.filter(f => f.uid !== farmerToDelete.uid);
+          console.log('Updated farmers count after deletion:', updated.length);
+          return updated;
+        });
+        
         setStats(prev => ({
           ...prev,
           activeFarmers: prev.activeFarmers - 1
@@ -380,17 +389,20 @@ const AdminDashboard = () => {
       }
 
       // Fallback: Delete from Firestore only (Auth user will remain)
+      console.log('Using Firestore batch deletion...');
       const batch = writeBatch(db);
 
       // 1. Delete farmer document from Firestore
       const farmerRef = doc(db, "farmers", farmerToDelete.uid);
       batch.delete(farmerRef);
+      console.log('Added farmer document to batch delete');
 
       // 2. Delete all farmer's crops
       const cropsRef = collection(db, "farmerCrops");
       const cropsQuery = query(cropsRef, where("userId", "==", farmerToDelete.uid));
       const cropsSnapshot = await getDocs(cropsQuery);
       
+      console.log(`Found ${cropsSnapshot.size} crops to delete`);
       cropsSnapshot.forEach((cropDoc) => {
         batch.delete(cropDoc.ref);
       });
@@ -400,15 +412,22 @@ const AdminDashboard = () => {
       const reportsQuery = query(reportsRef, where("userId", "==", farmerToDelete.uid));
       const reportsSnapshot = await getDocs(reportsQuery);
       
+      console.log(`Found ${reportsSnapshot.size} reports to delete`);
       reportsSnapshot.forEach((reportDoc) => {
         batch.delete(reportDoc.ref);
       });
 
       // Commit all deletions
+      console.log('Committing batch deletion...');
       await batch.commit();
+      console.log('Batch deletion committed successfully');
 
       // Update local state
-      setFarmers(prev => prev.filter(f => f.uid !== farmerToDelete.uid));
+      setFarmers(prev => {
+        const updated = prev.filter(f => f.uid !== farmerToDelete.uid);
+        console.log('Updated farmers count after deletion:', updated.length);
+        return updated;
+      });
       
       // Update stats
       setStats(prev => ({
@@ -423,14 +442,21 @@ const AdminDashboard = () => {
       });
 
       setFarmerToDelete(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting farmer:", error);
+      console.error("Error details:", {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
+      
       toast({
         title: "Error",
-        description: "Failed to delete farmer account. Please try again.",
+        description: `Failed to delete farmer account: ${error.message || 'Unknown error'}`,
         variant: "destructive",
       });
     } finally {
+      console.log('Delete operation finished');
       setDeletingFarmer(false);
     }
   };

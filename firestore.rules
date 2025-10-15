@@ -51,6 +51,10 @@ service cloud.firestore {
       // Allow admin to read all crops
       allow read: if request.auth != null && 
                      request.auth.token.email == 'admin@majayjay.farm';
+      
+      // Allow admin to delete all crops (for account deletion)
+      allow delete: if request.auth != null && 
+                       request.auth.token.email == 'admin@majayjay.farm';
     }
     
     // Allow read access to rules (for admin)
