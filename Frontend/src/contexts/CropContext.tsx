@@ -1,8 +1,10 @@
-import { createContext, useContext, useState, ReactNode } from "react";
-import { Timestamp } from "firebase/firestore";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, orderBy } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
 
 interface Crop {
     id: string;
+    userId: string;
     name: string;
     landArea: string;
     quantity: number;
@@ -17,50 +19,112 @@ interface Crop {
 
 interface CropContextType {
     crops: Crop[];
-    addCrop: (crop: Omit<Crop, 'id' | 'plantedDate' | 'createdAt'>) => void;
-    updateCrop: (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt'>>) => void;
+    addCrop: (crop: Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>) => Promise<void>;
+    updateCrop: (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>>) => Promise<void>;
     getCropById: (id: string) => Crop | undefined;
+    loadCrops: () => Promise<void>;
 }
 
 const CropContext = createContext<CropContextType | undefined>(undefined);
 
 export const CropProvider = ({ children }: { children: ReactNode }) => {
-    const [crops, setCrops] = useState<Crop[]>([
-        // Test crop data for demonstration
-        {
-            id: "test-crop-1",
-            name: "Rice",
-            landArea: "2 hectares",
-            quantity: 1500,
-            soilType: "Clay Loam",
-            nitrogen: 45,
-            phosphorus: 30,
-            potassium: 25,
-            puhunan: 8000,
-            plantedDate: { toDate: () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-            createdAt: { toDate: () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+    const [crops, setCrops] = useState<Crop[]>([]);
+
+    // Load crops from Firestore on mount
+    useEffect(() => {
+        loadCrops();
+    }, []);
+
+    const loadCrops = async () => {
+        try {
+            const userId = localStorage.getItem('userId') || localStorage.getItem('username');
+            if (!userId) {
+                console.warn("No userId found in localStorage");
+                return;
+            }
+
+            const cropsRef = collection(db, "farmerCrops");
+            const q = query(
+                cropsRef,
+                where("userId", "==", userId),
+                orderBy("createdAt", "desc")
+            );
+
+            const querySnapshot = await getDocs(q);
+            const loadedCrops: Crop[] = [];
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                loadedCrops.push({
+                    id: doc.id,
+                    userId: data.userId,
+                    name: data.name,
+                    landArea: data.landArea,
+                    quantity: data.quantity,
+                    soilType: data.soilType,
+                    nitrogen: data.nitrogen || 0,
+                    phosphorus: data.phosphorus || 0,
+                    potassium: data.potassium || 0,
+                    puhunan: data.puhunan,
+                    plantedDate: data.plantedDate,
+                    createdAt: data.createdAt
+                });
+            });
+
+            setCrops(loadedCrops);
+        } catch (error) {
+            console.error("Error loading crops from Firestore:", error);
         }
-    ]);
-
-    const addCrop = (cropData: Omit<Crop, 'id' | 'plantedDate' | 'createdAt'>) => {
-        const newCrop: Crop = {
-            id: Math.random().toString(36).substr(2, 9), // Generate a random ID
-            ...cropData,
-            plantedDate: Timestamp.now(),
-            createdAt: Timestamp.now()
-        };
-
-        setCrops(prev => [...prev, newCrop]);
     };
 
-    const updateCrop = (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt'>>) => {
-        setCrops(prev =>
-            prev.map(crop =>
-                crop.id === id
-                    ? { ...crop, ...cropData }
-                    : crop
-            )
-        );
+    const addCrop = async (cropData: Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>) => {
+        try {
+            const userId = localStorage.getItem('userId') || localStorage.getItem('username');
+            if (!userId) {
+                throw new Error("No userId found. Please log in again.");
+            }
+
+            const newCropData = {
+                ...cropData,
+                userId: userId, // Ensure userId is set for Firestore security rules
+                plantedDate: Timestamp.now(),
+                createdAt: Timestamp.now()
+            };
+
+            // Add to Firestore
+            const docRef = await addDoc(collection(db, "farmerCrops"), newCropData);
+
+            // Add to local state
+            const newCrop: Crop = {
+                id: docRef.id,
+                ...newCropData
+            };
+
+            setCrops(prev => [newCrop, ...prev]);
+        } catch (error) {
+            console.error("Error adding crop to Firestore:", error);
+            throw error;
+        }
+    };
+
+    const updateCrop = async (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>>) => {
+        try {
+            // Update in Firestore
+            const cropRef = doc(db, "farmerCrops", id);
+            await updateDoc(cropRef, cropData);
+
+            // Update in local state
+            setCrops(prev =>
+                prev.map(crop =>
+                    crop.id === id
+                        ? { ...crop, ...cropData }
+                        : crop
+                )
+            );
+        } catch (error) {
+            console.error("Error updating crop in Firestore:", error);
+            throw error;
+        }
     };
 
     const getCropById = (id: string) => {
@@ -68,7 +132,7 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <CropContext.Provider value={{ crops, addCrop, updateCrop, getCropById }}>
+        <CropContext.Provider value={{ crops, addCrop, updateCrop, getCropById, loadCrops }}>
             {children}
         </CropContext.Provider>
     );

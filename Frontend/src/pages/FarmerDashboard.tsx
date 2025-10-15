@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCrops } from "@/contexts/CropContext";
+import { collection, addDoc, Timestamp, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
 import {
   Sprout,
   AlertTriangle,
@@ -187,14 +189,41 @@ const FarmerDashboard = () => {
   const navigate = useNavigate();
 
   // Initialize user data
-  if (!username) {
+  useEffect(() => {
     const role = localStorage.getItem('userRole');
     const user = localStorage.getItem('username');
     const uid = localStorage.getItem('userId') || user || 'default-user';
 
+    if (role !== 'farmer') {
+      navigate('/');
+      return;
+    }
+
     setUsername(user || 'Farmer');
     setUserId(uid);
-  }
+
+    // Load monthly report count
+    loadMonthlyReportCount(uid);
+  }, [navigate]);
+
+  const loadMonthlyReportCount = async (uid: string) => {
+    try {
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const reportsRef = collection(db, "farmReports");
+      const q = query(
+        reportsRef,
+        where("userId", "==", uid),
+        where("createdAt", ">=", Timestamp.fromDate(firstDayOfMonth))
+      );
+
+      const querySnapshot = await getDocs(q);
+      setMonthlyReports(querySnapshot.size);
+    } catch (error) {
+      console.error("Error loading monthly report count:", error);
+    }
+  };
 
   const handleSubmitReport = async () => {
     if (!reportText.trim()) {
@@ -215,9 +244,27 @@ const FarmerDashboard = () => {
       const result = processReport(reportText);
       setRecommendation(result);
 
+      // Save to Firestore
+      const reportData = {
+        userId: userId,
+        username: username,
+        reportText: reportText,
+        problem: result.problem,
+        affectedCrop: result.crop,
+        recommendedCrops: result.recommend,
+        cropsToAvoid: result.avoid,
+        advice: result.advice,
+        hasImage: selectedImage !== null,
+        imageName: selectedImage?.name || null,
+        createdAt: Timestamp.now(),
+        status: 'processed'
+      };
+
+      await addDoc(collection(db, "farmReports"), reportData);
+
       toast({
         title: "Recommendation Ready",
-        description: "Nakuha na namin ang inyong crop recommendation at nai-save na!",
+        description: "Nakuha na namin ang inyong crop recommendation at nai-save na sa database!",
       });
 
       // Update monthly count
@@ -231,7 +278,7 @@ const FarmerDashboard = () => {
       console.error("Error saving report:", error);
       toast({
         title: "Error",
-        description: "May problema sa pag-save ng report. Subukan ulit.",
+        description: "May problema sa pag-save ng report sa database. Subukan ulit.",
         variant: "destructive",
       });
     } finally {
@@ -260,7 +307,7 @@ const FarmerDashboard = () => {
   };
 
   // Handle crop submission
-  const handleAddCrop = () => {
+  const handleAddCrop = async () => {
     // Validate inputs
     if (!newCrop.name || !newCrop.landArea || !newCrop.quantity ||
       !newCrop.soilType || !newCrop.puhunan) {
@@ -273,9 +320,8 @@ const FarmerDashboard = () => {
     }
 
     try {
-      // Prepare crop data
+      // Prepare crop data (userId is added automatically in CropContext)
       const cropData = {
-        userId: userId,
         name: newCrop.name,
         landArea: newCrop.landArea,
         quantity: parseFloat(newCrop.quantity),
@@ -286,12 +332,12 @@ const FarmerDashboard = () => {
         puhunan: parseFloat(newCrop.puhunan),
       };
 
-      // Save to context (temporary storage)
-      addCrop(cropData);
+      // Save to Firestore via context
+      await addCrop(cropData);
 
       toast({
         title: "Crop Added Successfully",
-        description: `${newCrop.name} has been added to your crop history.`,
+        description: `${newCrop.name} has been saved to the database.`,
       });
 
       // Reset form and close dialog
@@ -310,7 +356,7 @@ const FarmerDashboard = () => {
       console.error("Error saving crop:", error);
       toast({
         title: "Error",
-        description: "Failed to add crop. Please try again.",
+        description: "Failed to add crop to database. Please try again.",
         variant: "destructive",
       });
     }
@@ -326,7 +372,7 @@ const FarmerDashboard = () => {
   };
 
   // Handle edit crop submission
-  const handleEditCrop = () => {
+  const handleEditCrop = async () => {
     // Validate inputs
     if (!editCrop.name || !editCrop.landArea || !editCrop.quantity ||
       !editCrop.soilType || !editCrop.puhunan) {
@@ -360,12 +406,12 @@ const FarmerDashboard = () => {
         puhunan: parseFloat(editCrop.puhunan),
       };
 
-      // Update crop in context
-      updateCrop(selectedCropId, cropData);
+      // Update crop in Firestore via context
+      await updateCrop(selectedCropId, cropData);
 
       toast({
         title: "Crop Updated Successfully",
-        description: `${editCrop.name} has been updated.`,
+        description: `${editCrop.name} has been updated in the database.`,
       });
 
       // Reset form and close dialog
@@ -385,7 +431,7 @@ const FarmerDashboard = () => {
       console.error("Error updating crop:", error);
       toast({
         title: "Error",
-        description: "Failed to update crop. Please try again.",
+        description: "Failed to update crop in database. Please try again.",
         variant: "destructive",
       });
     }
