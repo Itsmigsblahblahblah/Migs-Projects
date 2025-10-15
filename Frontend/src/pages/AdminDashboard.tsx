@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,7 +42,9 @@ import {
   CheckCircle,
   Mail,
   Home,
-  Trash2
+  Trash2,
+  User,
+  X
 } from "lucide-react";
 import { collection, query, getDocs, orderBy, Timestamp, updateDoc, doc, deleteDoc, writeBatch, where } from "firebase/firestore";
 import { db, functions } from "@/firebaseConfig";
@@ -92,6 +95,18 @@ interface Farmer {
   farmAddress?: string;
 }
 
+interface DeletionRequest {
+  id: string;
+  userId: string;
+  username: string;
+  email: string;
+  fullName: string;
+  status: 'pending' | 'approved' | 'denied';
+  requestedAt: any;
+  reviewedAt?: any;
+  reviewedBy?: string;
+}
+
 const AdminDashboard = () => {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(true);
@@ -100,14 +115,15 @@ const AdminDashboard = () => {
   const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([]);
   const [cropRecommendations, setCropRecommendations] = useState<CropRecommendation[]>([]);
   const [farmers, setFarmers] = useState<Farmer[]>([]);
-  const [farmerToDelete, setFarmerToDelete] = useState<Farmer | null>(null);
-  const [deletingFarmer, setDeletingFarmer] = useState(false);
+  const [deletionRequests, setDeletionRequests] = useState<DeletionRequest[]>([]);
   const [stats, setStats] = useState({
     activeFarmers: 0,
     pendingReports: 0,
     resolvedThisMonth: 0,
     successRate: 0
   });
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -171,6 +187,9 @@ const AdminDashboard = () => {
       
       // Load farmers
       await loadFarmers();
+      
+      // Load deletion requests
+      await loadDeletionRequests();
       
       toast({
         title: "Dashboard Loaded",
@@ -325,6 +344,51 @@ const AdminDashboard = () => {
     }
   };
 
+  const loadDeletionRequests = async () => {
+    try {
+      console.log("[Admin] Loading deletion requests...");
+      const requestsRef = collection(db, "deletionRequests");
+      const requestsSnapshot = await getDocs(requestsRef);
+      
+      console.log("[Admin] Found", requestsSnapshot.size, "deletion request(s)");
+      
+      const requestsData: DeletionRequest[] = [];
+      requestsSnapshot.forEach((doc) => {
+        const data = doc.data();
+        console.log("[Admin] Deletion request:", doc.id, data);
+        requestsData.push({
+          id: doc.id,
+          userId: data.userId || '',
+          username: data.username || 'Unknown',
+          email: data.email || '',
+          fullName: data.fullName || 'Unknown',
+          status: data.status || 'pending',
+          requestedAt: data.requestedAt,
+          reviewedAt: data.reviewedAt,
+          reviewedBy: data.reviewedBy
+        });
+      });
+      
+      // Sort by request date (newest first)
+      requestsData.sort((a, b) => {
+        const dateA = a.requestedAt?.toDate?.() || new Date(0);
+        const dateB = b.requestedAt?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+      
+      console.log("[Admin] Total deletion requests loaded:", requestsData.length);
+      console.log("[Admin] Deletion requests data:", requestsData);
+      setDeletionRequests(requestsData);
+    } catch (error) {
+      console.error("[Admin] Error loading deletion requests:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load deletion requests.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -332,6 +396,91 @@ const AdminDashboard = () => {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const handleDeletionRequestAction = async (requestId: string, action: 'approved' | 'denied') => {
+    try {
+      const requestRef = doc(db, "deletionRequests", requestId);
+      await updateDoc(requestRef, {
+        status: action,
+        reviewedAt: Timestamp.now(),
+        reviewedBy: username
+      });
+
+      // Reload deletion requests
+      await loadDeletionRequests();
+
+      toast({
+        title: action === 'approved' ? "Request Approved" : "Request Denied",
+        description: action === 'approved' 
+          ? "The farmer can now delete their account."
+          : "The deletion request has been denied.",
+      });
+    } catch (error) {
+      console.error("Error updating deletion request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update deletion request.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleDeleteMode = () => {
+    setDeleteMode(!deleteMode);
+    setSelectedRequests([]);
+  };
+
+  const toggleRequestSelection = (requestId: string) => {
+    setSelectedRequests(prev => {
+      if (prev.includes(requestId)) {
+        return prev.filter(id => id !== requestId);
+      } else {
+        return [...prev, requestId];
+      }
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedRequests.length === 0) {
+      toast({
+        title: "No Selection",
+        description: "Please select at least one request to delete.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log("[Admin] Deleting requests:", selectedRequests);
+      const batch = writeBatch(db);
+      
+      selectedRequests.forEach(requestId => {
+        const requestRef = doc(db, "deletionRequests", requestId);
+        batch.delete(requestRef);
+      });
+
+      await batch.commit();
+      
+      // Reload deletion requests
+      await loadDeletionRequests();
+      
+      // Reset delete mode and selections
+      setDeleteMode(false);
+      setSelectedRequests([]);
+
+      toast({
+        title: "Requests Deleted",
+        description: `Successfully deleted ${selectedRequests.length} deletion request(s).`,
+      });
+    } catch (error) {
+      console.error("[Admin] Error deleting requests:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete selected requests.",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -344,120 +493,6 @@ const AdminDashboard = () => {
       });
     } catch {
       return 'Unknown date';
-    }
-  };
-
-  const handleDeleteFarmer = async () => {
-    if (!farmerToDelete) return;
-
-    console.log('Starting deletion for farmer:', farmerToDelete.fullName);
-    console.log('Current farmers count:', farmers.length);
-
-    setDeletingFarmer(true);
-    try {
-      // Try to use Cloud Function if available (deletes both Firestore and Auth)
-      try {
-        console.log('Attempting Cloud Function deletion...');
-        const deleteFarmerAccount = httpsCallable(functions, 'deleteFarmerAccount');
-        const result = await deleteFarmerAccount({ farmerId: farmerToDelete.uid });
-        
-        console.log('Cloud Function delete result:', result.data);
-        
-        // Update local state
-        setFarmers(prev => {
-          const updated = prev.filter(f => f.uid !== farmerToDelete.uid);
-          console.log('Updated farmers count after deletion:', updated.length);
-          return updated;
-        });
-        
-        setStats(prev => ({
-          ...prev,
-          activeFarmers: prev.activeFarmers - 1
-        }));
-
-        toast({
-          title: "Farmer Deleted",
-          description: `${farmerToDelete.fullName}'s account and all data (including Firebase Authentication) have been permanently deleted.`,
-        });
-
-        setFarmerToDelete(null);
-        setDeletingFarmer(false);
-        return;
-      } catch (cloudFunctionError: any) {
-        // Cloud Function not available or failed, fallback to Firestore-only deletion
-        console.warn('Cloud Function not available, using Firestore-only deletion:', cloudFunctionError.message);
-      }
-
-      // Fallback: Delete from Firestore only (Auth user will remain)
-      console.log('Using Firestore batch deletion...');
-      const batch = writeBatch(db);
-
-      // 1. Delete farmer document from Firestore
-      const farmerRef = doc(db, "farmers", farmerToDelete.uid);
-      batch.delete(farmerRef);
-      console.log('Added farmer document to batch delete');
-
-      // 2. Delete all farmer's crops
-      const cropsRef = collection(db, "farmerCrops");
-      const cropsQuery = query(cropsRef, where("userId", "==", farmerToDelete.uid));
-      const cropsSnapshot = await getDocs(cropsQuery);
-      
-      console.log(`Found ${cropsSnapshot.size} crops to delete`);
-      cropsSnapshot.forEach((cropDoc) => {
-        batch.delete(cropDoc.ref);
-      });
-
-      // 3. Delete all farmer's reports
-      const reportsRef = collection(db, "farmReports");
-      const reportsQuery = query(reportsRef, where("userId", "==", farmerToDelete.uid));
-      const reportsSnapshot = await getDocs(reportsQuery);
-      
-      console.log(`Found ${reportsSnapshot.size} reports to delete`);
-      reportsSnapshot.forEach((reportDoc) => {
-        batch.delete(reportDoc.ref);
-      });
-
-      // Commit all deletions
-      console.log('Committing batch deletion...');
-      await batch.commit();
-      console.log('Batch deletion committed successfully');
-
-      // Update local state
-      setFarmers(prev => {
-        const updated = prev.filter(f => f.uid !== farmerToDelete.uid);
-        console.log('Updated farmers count after deletion:', updated.length);
-        return updated;
-      });
-      
-      // Update stats
-      setStats(prev => ({
-        ...prev,
-        activeFarmers: prev.activeFarmers - 1
-      }));
-
-      toast({
-        title: "Farmer Deleted (Firestore Only)",
-        description: `${farmerToDelete.fullName}'s Firestore data has been deleted. Note: Firebase Authentication account was NOT deleted (requires Cloud Function). See documentation for setup.`,
-        variant: "default",
-      });
-
-      setFarmerToDelete(null);
-    } catch (error: any) {
-      console.error("Error deleting farmer:", error);
-      console.error("Error details:", {
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
-      
-      toast({
-        title: "Error",
-        description: `Failed to delete farmer account: ${error.message || 'Unknown error'}`,
-        variant: "destructive",
-      });
-    } finally {
-      console.log('Delete operation finished');
-      setDeletingFarmer(false);
     }
   };
 
@@ -639,8 +674,9 @@ const AdminDashboard = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="farmers">Registered Farmers</TabsTrigger>
+            <TabsTrigger value="deletion-requests">Deletion Requests</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
             <TabsTrigger value="map">Location Map</TabsTrigger>
@@ -710,22 +746,6 @@ const AdminDashboard = () => {
                               Registered: {formatDate(farmer.createdAt)}
                             </div>
                           </div>
-
-                          {/* Delete Button */}
-                          <div className="flex flex-col gap-2">
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setFarmerToDelete(farmer);
-                              }}
-                              className="flex items-center gap-2"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete
-                            </Button>
-                          </div>
                         </div>
                       </div>
                     ))}
@@ -734,6 +754,154 @@ const AdminDashboard = () => {
                   <div className="text-center py-12 text-muted-foreground">
                     <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                     <p>No registered farmers yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Deletion Requests Tab */}
+          <TabsContent value="deletion-requests" className="space-y-6">
+            <Card className="shadow-card">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Account Deletion Requests</CardTitle>
+                    <CardDescription>
+                      Manage farmer account deletion requests ({deletionRequests.filter(r => r.status === 'pending').length} pending, {deletionRequests.length} total)
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    {deleteMode ? (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={toggleDeleteMode}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Cancel
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={handleBulkDelete}
+                          disabled={selectedRequests.length === 0}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete ({selectedRequests.length})
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={loadDeletionRequests}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Refresh
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={toggleDeleteMode}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {deletionRequests.length > 0 ? (
+                  <div className="space-y-4">
+                    {deletionRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          {/* Checkbox for delete mode */}
+                          {deleteMode && (
+                            <Checkbox
+                              checked={selectedRequests.includes(request.id)}
+                              onCheckedChange={() => toggleRequestSelection(request.id)}
+                              className="h-5 w-5"
+                            />
+                          )}
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="bg-secondary rounded-full p-2">
+                                <User className="h-5 w-5 text-secondary-foreground" />
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-lg">{request.fullName}</h3>
+                                <p className="text-sm text-muted-foreground">{request.email}</p>
+                              </div>
+                              <Badge 
+                                variant={request.status === 'pending' ? 'secondary' : request.status === 'approved' ? 'default' : 'destructive'}
+                                className={request.status === 'approved' ? 'bg-success text-success-foreground' : ''}
+                              >
+                                {request.status.toUpperCase()}
+                              </Badge>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-3 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <div>
+                                  <span className="text-muted-foreground">Requested: </span>
+                                  <span>{request.requestedAt?.toDate().toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                              {request.reviewedAt && (
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <span className="text-muted-foreground">Reviewed: </span>
+                                    <span>{request.reviewedAt?.toDate().toLocaleDateString()}</span>
+                                    {request.reviewedBy && <span className="ml-1">by {request.reviewedBy}</span>}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Action Buttons - Only for pending requests and not in delete mode */}
+                          {!deleteMode && request.status === 'pending' && (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeletionRequestAction(request.id, 'denied')}
+                                className="flex items-center gap-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              >
+                                <AlertTriangle className="h-4 w-4" />
+                                Deny
+                              </Button>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => handleDeletionRequestAction(request.id, 'approved')}
+                                className="flex items-center gap-2 bg-success hover:bg-success/90"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                Approve
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                    <p>No deletion requests yet</p>
                   </div>
                 )}
               </CardContent>
@@ -953,39 +1121,6 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!farmerToDelete} onOpenChange={() => setFarmerToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the account for{" "}
-              <span className="font-semibold text-foreground">{farmerToDelete?.fullName}</span>{" "}(
-              {farmerToDelete?.email}) and remove all associated data including:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Farmer profile information</li>
-                <li>All crops data</li>
-                <li>All farm reports</li>
-                <li>Activity history</li>
-              </ul>
-              <p className="mt-3 text-destructive font-medium">
-                ⚠️ This action is permanent and cannot be recovered!
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingFarmer}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteFarmer}
-              disabled={deletingFarmer}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deletingFarmer ? "Deleting..." : "Delete Permanently"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Layout>
   );
 };

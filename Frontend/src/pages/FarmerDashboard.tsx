@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCrops } from "@/contexts/CropContext";
-import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, updateDoc, writeBatch, deleteDoc } from "firebase/firestore";
 import { db, auth } from "@/firebaseConfig";
 import { deleteUser, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import {
@@ -169,8 +169,11 @@ const FarmerDashboard = () => {
   const [isEditCropDialogOpen, setIsEditCropDialogOpen] = useState(false);
   const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false);
   const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
+  const [isRequestDeleteDialogOpen, setIsRequestDeleteDialogOpen] = useState(false);
   const [deleteConfirmPassword, setDeleteConfirmPassword] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isRequestingDeletion, setIsRequestingDeletion] = useState(false);
+  const [deletionRequest, setDeletionRequest] = useState<any>(null);
   const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
   const [newCrop, setNewCrop] = useState({
     name: "",
@@ -225,6 +228,9 @@ const FarmerDashboard = () => {
     
     // Load farmer profile
     loadFarmerProfile(uid);
+    
+    // Check for deletion requests
+    checkDeletionRequest(uid);
   }, [navigate]);
 
   const loadFarmerProfile = async (uid: string) => {
@@ -263,6 +269,36 @@ const FarmerDashboard = () => {
       setMonthlyReports(querySnapshot.size);
     } catch (error) {
       console.error("Error loading monthly report count:", error);
+    }
+  };
+
+  const checkDeletionRequest = async (uid: string) => {
+    try {
+      const requestsRef = collection(db, "deletionRequests");
+      const q = query(requestsRef, where("userId", "==", uid));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        // Sort by requestedAt in memory to get the most recent one
+        const sortedDocs = querySnapshot.docs.sort((a, b) => {
+          const dateA = a.data().requestedAt?.toDate?.() || new Date(0);
+          const dateB = b.data().requestedAt?.toDate?.() || new Date(0);
+          return dateB.getTime() - dateA.getTime(); // Most recent first
+        });
+        
+        const requestDoc = sortedDocs[0]; // Get the most recent one
+        setDeletionRequest({ id: requestDoc.id, ...requestDoc.data() });
+        
+        // Log if there are multiple requests (for debugging)
+        if (sortedDocs.length > 1) {
+          console.warn(`[Farmer] Found ${sortedDocs.length} deletion requests for user ${uid}. Using the most recent one.`);
+          console.log("[Farmer] All requests:", sortedDocs.map(d => ({ id: d.id, status: d.data().status, requestedAt: d.data().requestedAt?.toDate?.() })));
+        }
+      } else {
+        setDeletionRequest(null);
+      }
+    } catch (error) {
+      console.error("Error checking deletion request:", error);
     }
   };
 
@@ -407,7 +443,109 @@ const FarmerDashboard = () => {
     }
   };
 
+  const handleRequestAccountDeletion = async () => {
+    setIsRequestingDeletion(true);
+
+    try {
+      // Check if there's already a pending or approved request
+      if (deletionRequest) {
+        if (deletionRequest.status === 'denied') {
+          // User is re-requesting after denial - delete ALL old requests
+          console.log("[Farmer] Deleting old denied request before creating new one...");
+          try {
+            // Query ALL requests for this user to ensure cleanup
+            const requestsRef = collection(db, "deletionRequests");
+            const q = query(requestsRef, where("userId", "==", userId));
+            const querySnapshot = await getDocs(q);
+            
+            console.log(`[Farmer] Found ${querySnapshot.size} old request(s) to delete`);
+            
+            // Delete all old requests using batch
+            const batch = writeBatch(db);
+            querySnapshot.forEach((doc) => {
+              console.log(`[Farmer] Deleting old request: ${doc.id}`);
+              batch.delete(doc.ref);
+            });
+            await batch.commit();
+            
+            console.log("[Farmer] All old requests deleted successfully");
+            setDeletionRequest(null);
+          } catch (error) {
+            console.error("Error deleting old requests:", error);
+            throw new Error("Failed to clean up old requests. Please try again.");
+          }
+        } else {
+          toast({
+            title: "Request Already Exists",
+            description: deletionRequest.status === 'approved' 
+              ? "Your deletion request has been approved. You can now delete your account."
+              : "You already have a pending deletion request. Please wait for admin approval.",
+            variant: "default",
+          });
+          setIsRequestDeleteDialogOpen(false);
+          setIsRequestingDeletion(false);
+          return;
+        }
+      }
+
+      // Validate required data
+      if (!userId || !username) {
+        throw new Error("User information is missing. Please log out and log in again.");
+      }
+
+      // Get current user email from auth
+      const currentUser = auth.currentUser;
+      if (!currentUser || !currentUser.email) {
+        throw new Error("Could not retrieve user email. Please log out and log in again.");
+      }
+
+      // Create a new deletion request
+      const requestData = {
+        userId: userId,
+        username: username,
+        email: currentUser.email,
+        fullName: farmerProfile.fullName || username,
+        status: 'pending' as const,
+        requestedAt: Timestamp.now(),
+      };
+
+      console.log("Creating deletion request:", requestData);
+
+      const docRef = await addDoc(collection(db, "deletionRequests"), requestData);
+      console.log("Deletion request created with ID:", docRef.id);
+
+      // Reload deletion request
+      await checkDeletionRequest(userId);
+
+      toast({
+        title: "Request Submitted",
+        description: "Your account deletion request has been submitted. Please wait for admin approval.",
+      });
+
+      setIsRequestDeleteDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error requesting account deletion:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit deletion request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRequestingDeletion(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
+    // Check if deletion request is approved
+    if (!deletionRequest || deletionRequest.status !== 'approved') {
+      toast({
+        title: "Deletion Not Approved",
+        description: "You need admin approval before deleting your account. Please request account deletion first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!deleteConfirmPassword.trim()) {
       toast({
         title: "Password Required",
@@ -448,6 +586,11 @@ const FarmerDashboard = () => {
       reportsSnapshot.forEach((doc) => {
         batch.delete(doc.ref);
       });
+
+      // Delete the deletion request
+      if (deletionRequest && deletionRequest.id) {
+        batch.delete(doc(db, "deletionRequests", deletionRequest.id));
+      }
 
       // Commit all Firestore deletions
       await batch.commit();
@@ -1129,7 +1272,7 @@ const FarmerDashboard = () => {
 
             {/* Edit Profile Dialog */}
             <Dialog open={isEditProfileDialogOpen} onOpenChange={setIsEditProfileDialogOpen}>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Edit Profile</DialogTitle>
                   <DialogDescription>
@@ -1170,31 +1313,32 @@ const FarmerDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Full Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="profile-fullName">Full Name *</Label>
-                    <Input
-                      id="profile-fullName"
-                      name="fullName"
-                      value={farmerProfile.fullName}
-                      onChange={handleProfileInputChange}
-                      placeholder="Enter your full name"
-                    />
+                  {/* Full Name and Contact Number - Grid */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="profile-fullName">Full Name *</Label>
+                      <Input
+                        id="profile-fullName"
+                        name="fullName"
+                        value={farmerProfile.fullName}
+                        onChange={handleProfileInputChange}
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="profile-contactNumber">Contact Number *</Label>
+                      <Input
+                        id="profile-contactNumber"
+                        name="contactNumber"
+                        value={farmerProfile.contactNumber}
+                        onChange={handleProfileInputChange}
+                        placeholder="e.g., 09123456789"
+                      />
+                    </div>
                   </div>
 
-                  {/* Contact Number */}
-                  <div className="space-y-2">
-                    <Label htmlFor="profile-contactNumber">Contact Number *</Label>
-                    <Input
-                      id="profile-contactNumber"
-                      name="contactNumber"
-                      value={farmerProfile.contactNumber}
-                      onChange={handleProfileInputChange}
-                      placeholder="e.g., 09123456789"
-                    />
-                  </div>
-
-                  {/* Email (Disabled) */}
+                  {/* Email (Disabled) - Full width */}
                   <div className="space-y-2">
                     <Label htmlFor="profile-email">Email (Cannot be edited)</Label>
                     <Input
@@ -1206,31 +1350,32 @@ const FarmerDashboard = () => {
                     />
                   </div>
 
-                  {/* Home Address */}
-                  <div className="space-y-2">
-                    <Label htmlFor="profile-homeAddress">Home Address *</Label>
-                    <Input
-                      id="profile-homeAddress"
-                      name="homeAddress"
-                      value={farmerProfile.homeAddress}
-                      onChange={handleProfileInputChange}
-                      placeholder="Enter your home address"
-                    />
+                  {/* Home Address and Farm Address - Grid */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="profile-homeAddress">Home Address *</Label>
+                      <Input
+                        id="profile-homeAddress"
+                        name="homeAddress"
+                        value={farmerProfile.homeAddress}
+                        onChange={handleProfileInputChange}
+                        placeholder="Enter your home address"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="profile-farmAddress">Farm Address *</Label>
+                      <Input
+                        id="profile-farmAddress"
+                        name="farmAddress"
+                        value={farmerProfile.farmAddress}
+                        onChange={handleProfileInputChange}
+                        placeholder="Enter your farm location"
+                      />
+                    </div>
                   </div>
 
-                  {/* Farm Address */}
-                  <div className="space-y-2">
-                    <Label htmlFor="profile-farmAddress">Farm Address *</Label>
-                    <Input
-                      id="profile-farmAddress"
-                      name="farmAddress"
-                      value={farmerProfile.farmAddress}
-                      onChange={handleProfileInputChange}
-                      placeholder="Enter your farm location"
-                    />
-                  </div>
-
-                  {/* Farm Area */}
+                  {/* Farm Area - Full width */}
                   <div className="space-y-2">
                     <Label htmlFor="profile-farmArea">Farm Area *</Label>
                     <Input
@@ -1242,26 +1387,115 @@ const FarmerDashboard = () => {
                     />
                   </div>
                 </div>
-                <DialogFooter className="flex-col sm:flex-row gap-2">
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => {
-                      setIsEditProfileDialogOpen(false);
-                      setIsDeleteAccountDialogOpen(true);
-                    }}
-                    className="flex items-center gap-2 sm:mr-auto"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete Account
-                  </Button>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setIsEditProfileDialogOpen(false)}>
+                <DialogFooter className="flex-col sm:flex-row gap-2 w-full">
+                  <div className="w-full sm:w-auto sm:mr-auto">
+                    {!deletionRequest && (
+                      <Button 
+                        variant="destructive" 
+                        onClick={() => {
+                          setIsEditProfileDialogOpen(false);
+                          setIsRequestDeleteDialogOpen(true);
+                        }}
+                        className="flex items-center gap-2 w-full sm:w-auto"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Request Account Deletion
+                      </Button>
+                    )}
+                    {deletionRequest && deletionRequest.status === 'pending' && (
+                      <Button 
+                        variant="outline" 
+                        disabled
+                        className="flex items-center gap-2 w-full sm:w-auto"
+                      >
+                        <Clock className="h-4 w-4" />
+                        Deletion Pending Approval
+                      </Button>
+                    )}
+                    {deletionRequest && deletionRequest.status === 'approved' && (
+                      <Button 
+                        variant="destructive" 
+                        onClick={() => {
+                          setIsEditProfileDialogOpen(false);
+                          setIsDeleteAccountDialogOpen(true);
+                        }}
+                        className="flex items-center gap-2 w-full sm:w-auto"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete Account Now (Approved)
+                      </Button>
+                    )}
+                    {deletionRequest && deletionRequest.status === 'denied' && (
+                      <Button 
+                        variant="destructive" 
+                        onClick={() => {
+                          setIsEditProfileDialogOpen(false);
+                          setIsRequestDeleteDialogOpen(true);
+                        }}
+                        className="flex items-center gap-2 w-full sm:w-auto"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Request Again (Previous Denied)
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button variant="outline" onClick={() => setIsEditProfileDialogOpen(false)} className="flex-1 sm:flex-initial">
                       Cancel
                     </Button>
-                    <Button onClick={handleUpdateProfile}>
+                    <Button onClick={handleUpdateProfile} className="flex-1 sm:flex-initial">
                       Submit
                     </Button>
                   </div>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Request Account Deletion Dialog */}
+            <Dialog open={isRequestDeleteDialogOpen} onOpenChange={setIsRequestDeleteDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-warning">
+                    <AlertTriangle className="h-5 w-5" />
+                    Request Account Deletion
+                  </DialogTitle>
+                  <DialogDescription>
+                    Submit a request to delete your account. An admin will review your request before you can proceed with deletion.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="bg-warning/10 border border-warning/20 rounded-md p-4 space-y-2">
+                    <p className="text-sm font-medium text-warning">Next Steps:</p>
+                    <ul className="text-sm text-warning/90 list-disc list-inside space-y-1">
+                      <li>Your request will be sent to the admin for review</li>
+                      <li>Wait for admin approval</li>
+                      <li>Once approved, you can delete your account permanently</li>
+                      <li>All your data will be removed from the system</li>
+                    </ul>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsRequestDeleteDialogOpen(false)}
+                    disabled={isRequestingDeletion}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleRequestAccountDeletion}
+                    disabled={isRequestingDeletion}
+                  >
+                    {isRequestingDeletion ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        Submitting...
+                      </div>
+                    ) : (
+                      "Submit Deletion Request"
+                    )}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -1272,10 +1506,10 @@ const FarmerDashboard = () => {
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2 text-destructive">
                     <Trash2 className="h-5 w-5" />
-                    Delete Account
+                    Delete Account (Admin Approved)
                   </DialogTitle>
                   <DialogDescription>
-                    This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                    Your deletion request has been approved by the admin. You can now permanently delete your account and all associated data.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
