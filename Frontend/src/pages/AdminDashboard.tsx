@@ -674,12 +674,37 @@ const AdminDashboard = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="farmers">Registered Farmers</TabsTrigger>
-            <TabsTrigger value="deletion-requests">Deletion Requests</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-            <TabsTrigger value="map">Location Map</TabsTrigger>
+          <TabsList className="flex flex-col sm:flex-row flex-wrap gap-2 w-full">
+            <TabsTrigger 
+              value="farmers" 
+              className="flex-1 min-w-[120px] text-center whitespace-nowrap"
+            >
+              Registered Farmers
+            </TabsTrigger>
+            <TabsTrigger 
+              value="deletion-requests" 
+              className="flex-1 min-w-[120px] text-center whitespace-nowrap"
+            >
+              Deletion Requests
+            </TabsTrigger>
+            <TabsTrigger 
+              value="analytics" 
+              className="flex-1 min-w-[120px] text-center whitespace-nowrap"
+            >
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger 
+              value="reports" 
+              className="flex-1 min-w-[120px] text-center whitespace-nowrap"
+            >
+              Reports
+            </TabsTrigger>
+            <TabsTrigger 
+              value="map" 
+              className="flex-1 min-w-[120px] text-center whitespace-nowrap"
+            >
+              Location Map
+            </TabsTrigger>
           </TabsList>
 
           {/* Registered Farmers Tab */}

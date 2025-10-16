@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCrops } from "@/contexts/CropContext";
@@ -57,6 +58,14 @@ interface ChecklistItem {
     category: string;
 }
 
+interface PrescribedCrop {
+    id: string;
+    name: string;
+    reason: string;
+    recommendations: string[];
+    practices: string[];
+}
+
 // Chart configuration for ShadCN chart
 const salesChartConfig = {
     puhunan: {
@@ -89,6 +98,78 @@ const CropDetails = () => {
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [productivityData, setProductivityData] = useState<{ task: string; productivity: number }[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedPrescribedCrop, setSelectedPrescribedCrop] = useState<PrescribedCrop | null>(null);
+
+    // Mock prescribed crops data based on soil composition, weather forecast, and market demand
+    const prescribedCrops: PrescribedCrop[] = useMemo(() => {
+        if (!crop) return [];
+        
+        // Generate recommendations based on crop's soil composition and type
+        const soilRecommendations = [
+            { 
+                id: "1", 
+                name: "Squash", 
+                reason: "High nitrogen levels in your soil are perfect for squash, which requires nitrogen-rich soil for optimal leaf growth.",
+                recommendations: [
+                    "Plant seeds 1 inch deep with 3-4 feet spacing",
+                    "Water consistently but avoid waterlogging",
+                    "Apply mulch to retain moisture"
+                ],
+                practices: [
+                    "Harvest when fruits are 6-8 inches long",
+                    "Prune lateral shoots to focus energy on main fruits",
+                    "Monitor for squash bugs and cucumber beetles"
+                ]
+            },
+            { 
+                id: "2", 
+                name: "Eggplant", 
+                reason: "Your soil's potassium levels are ideal for eggplant, which requires high potassium for fruit development.",
+                recommendations: [
+                    "Plant in full sun with well-draining soil",
+                    "Space plants 18-24 inches apart",
+                    "Stake plants to support fruit weight"
+                ],
+                practices: [
+                    "Harvest when fruits are glossy and firm",
+                    "Prune lower leaves to improve air circulation",
+                    "Apply compost tea every 2 weeks"
+                ]
+            },
+            { 
+                id: "3", 
+                name: "Okra", 
+                reason: "With your current phosphorus levels and soil type, okra will thrive as it prefers moderately fertile soil with good drainage.",
+                recommendations: [
+                    "Plant seeds 1 inch deep, 12-18 inches apart",
+                    "Okra thrives in warm weather, perfect for current forecast",
+                    "Apply balanced fertilizer at planting"
+                ],
+                practices: [
+                    "Harvest pods every 2-3 days for best quality",
+                    "Wear gloves when harvesting to avoid spines",
+                    "Cut pods with knife to avoid plant damage"
+                ]
+            },
+            { 
+                id: "4", 
+                name: "Peppers", 
+                reason: "Your soil composition and upcoming weather forecast create ideal conditions for peppers, which prefer warm, well-drained soil.",
+                recommendations: [
+                    "Transplant seedlings after soil warms to 60°F",
+                    "Provide consistent moisture without overwatering",
+                    "Use row covers for early protection"
+                ],
+                practices: [
+                    "Harvest when peppers reach full color",
+                    "Prune suckers to improve air circulation",
+                    "Apply calcium-rich fertilizer to prevent blossom end rot"
+                ]
+            }
+        ];
+        
+        return soilRecommendations;
+    }, [crop]);
 
     // Mock checklist data based on crop type
     const generateChecklist = (cropName: string) => {
@@ -115,6 +196,13 @@ const CropDetails = () => {
                 { id: "8", title: "Hill up soil around base of plants", completed: false, category: "Maintenance" },
                 { id: "9", title: "Remove suckers to promote growth", completed: false, category: "Maintenance" },
             ];
+        } else if (selectedPrescribedCrop) {
+            // If a prescribed crop is selected, generate checklist for that crop
+            return [
+                ...baseItems,
+                { id: "8", title: `Apply specific fertilizer for ${selectedPrescribedCrop.name}`, completed: false, category: "Planting" },
+                { id: "9", title: `Follow ${selectedPrescribedCrop.name} spacing requirements`, completed: false, category: "Planting" },
+            ];
         }
 
         return baseItems;
@@ -132,15 +220,16 @@ const CropDetails = () => {
                 if (cropData) {
                     setCrop(cropData);
 
-                    // Generate checklist based on crop type
+                    // Generate checklist based on crop type or selected prescribed crop
                     const generatedChecklist = generateChecklist(cropData.name);
                     setChecklist(generatedChecklist);
 
                     // Initialize productivity data with 0% at start
-                    setProductivityData([
-                        { task: "Start", productivity: 0 },
-                        { task: "Initial", productivity: 0 }
-                    ]);
+                    const initialData = generatedChecklist.map(item => ({
+                        task: item.title,
+                        productivity: 0
+                    }));
+                    setProductivityData(initialData);
                 }
             } catch (error) {
                 console.error("Error fetching crop:", error);
@@ -152,35 +241,45 @@ const CropDetails = () => {
         fetchCrop();
     }, [id, getCropById]);
 
+    // Update checklist when prescribed crop is selected
+    useEffect(() => {
+        if (crop) {
+            const generatedChecklist = generateChecklist(crop.name);
+            setChecklist(generatedChecklist);
+            
+            // Update productivity data to match new checklist
+            const initialData = generatedChecklist.map(item => ({
+                task: item.title,
+                productivity: item.completed ? 100 : 0
+            }));
+            setProductivityData(initialData);
+        }
+    }, [selectedPrescribedCrop, crop]);
+
     const toggleChecklistItem = (itemId: string) => {
         setChecklist(prev => {
             const updatedChecklist = prev.map(item =>
                 item.id === itemId ? { ...item, completed: !item.completed } : item
             );
 
-            // Update productivity data when a checklist item is toggled
+            // Calculate overall productivity
             const completed = updatedChecklist.filter(item => item.completed).length;
             const total = updatedChecklist.length;
-            const productivity = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const overallProductivity = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-            // Find the task name for the tooltip
-            const taskItem = updatedChecklist.find(item => item.id === itemId);
-            const taskName = taskItem ? taskItem.title : `Task ${completed}`;
+            // Update productivity data - one entry per checklist item
+            const updatedProductivityData = updatedChecklist.map(item => ({
+                task: item.title,
+                productivity: item.completed ? 100 : 0
+            }));
 
-            setProductivityData(prevData => {
-                // Check if we already have a data point with the same productivity value
-                const lastEntry = prevData[prevData.length - 1];
-                if (lastEntry && lastEntry.productivity === productivity) {
-                    // If productivity hasn't changed, don't add a new entry
-                    return prevData;
-                }
-
-                // Add new data point
-                return [
-                    ...prevData,
-                    { task: taskName, productivity }
-                ];
+            // Add overall productivity at the end
+            updatedProductivityData.push({
+                task: "Overall Progress",
+                productivity: overallProductivity
             });
+
+            setProductivityData(updatedProductivityData);
 
             return updatedChecklist;
         });
@@ -286,6 +385,16 @@ const CropDetails = () => {
             netProfit: netProfit * (index + 1) / stages.length,
         }));
     }, [crop]);
+
+    // Handle prescribed crop selection
+    const handlePrescribedCropSelect = (prescribedCrop: PrescribedCrop) => {
+        setSelectedPrescribedCrop(prescribedCrop);
+    };
+
+    // Reset to original crop recommendations
+    const resetToOriginal = () => {
+        setSelectedPrescribedCrop(null);
+    };
 
     if (loading) {
         return (
@@ -407,73 +516,138 @@ const CropDetails = () => {
                 </Card>
 
                 {/* Growth and Health Insights */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <Card className="shadow-card lg:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Sun className="h-5 w-5" />
-                                Growth and Health Insights
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="p-4 bg-accent/10 rounded-lg">
-                                    <p className="text-sm text-muted-foreground mb-1">Growth Stage</p>
-                                    <p className="font-medium">{calculateGrowthStage(crop.plantedDate)}</p>
-                                </div>
-                                <div className="p-4 bg-accent/10 rounded-lg">
-                                    <p className="text-sm text-muted-foreground mb-1">Harvest Date</p>
-                                    <p className="font-medium">{calculateHarvestDate(crop.plantedDate, crop.name)}</p>
-                                </div>
-                                <div className="p-4 bg-accent/10 rounded-lg">
-                                    <p className="text-sm text-muted-foreground mb-1">Productivity</p>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-full bg-secondary rounded-full h-2">
-                                            <div
-                                                className="bg-success h-2 rounded-full"
-                                                style={{ width: `${productivity}%` }}
-                                            ></div>
-                                        </div>
-                                        <span className="text-sm font-medium">{productivity}%</span>
+                <Card className="shadow-card">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Sun className="h-5 w-5" />
+                            Growth and Health Insights
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 bg-accent/10 rounded-lg">
+                                <p className="text-sm text-muted-foreground mb-1">Growth Stage</p>
+                                <p className="font-medium">{calculateGrowthStage(crop.plantedDate)}</p>
+                            </div>
+                            <div className="p-4 bg-accent/10 rounded-lg">
+                                <p className="text-sm text-muted-foreground mb-1">Harvest Date</p>
+                                <p className="font-medium">{calculateHarvestDate(crop.plantedDate, crop.name)}</p>
+                            </div>
+                            <div className="p-4 bg-accent/10 rounded-lg">
+                                <p className="text-sm text-muted-foreground mb-1">Productivity</p>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-full bg-secondary rounded-full h-2">
+                                        <div
+                                            className="bg-success h-2 rounded-full"
+                                            style={{ width: `${productivity}%` }}
+                                        ></div>
                                     </div>
+                                    <span className="text-sm font-medium">{productivity}%</span>
                                 </div>
                             </div>
+                        </div>
 
-                            <div>
-                                <h3 className="font-medium mb-3">Common Issues & Solutions</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div className="p-3 border rounded-lg">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Bug className="h-4 w-4 text-destructive" />
-                                            <span className="font-medium text-sm">Pests</span>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">
-                                            Use neem oil spray and introduce beneficial insects like ladybugs.
-                                        </p>
+                        {/* Prescribed Crops Section */}
+                        <div>
+                            <h3 className="font-medium mb-3">Prescribed Crops</h3>
+                            {prescribedCrops.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {prescribedCrops.map((prescribedCrop) => (
+                                        <Badge
+                                            key={prescribedCrop.id}
+                                            variant={selectedPrescribedCrop?.id === prescribedCrop.id ? "default" : "secondary"}
+                                            className="cursor-pointer hover:bg-primary/80 transition-colors"
+                                            onClick={() => handlePrescribedCropSelect(prescribedCrop)}
+                                        >
+                                            {prescribedCrop.name}
+                                        </Badge>
+                                    ))}
+                                    {selectedPrescribedCrop && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 px-2 text-xs"
+                                            onClick={resetToOriginal}
+                                        >
+                                            Clear Selection
+                                        </Button>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    No crop prescriptions available at the moment. Please check again later or adjust your soil/forecast settings.
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Common Issues & Solutions */}
+                        <div>
+                            <h3 className="font-medium mb-3">Common Issues & Solutions</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="p-3 border rounded-lg">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Bug className="h-4 w-4 text-destructive" />
+                                        <span className="font-medium text-sm">Pests</span>
                                     </div>
-                                    <div className="p-3 border rounded-lg">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Droplets className="h-4 w-4 text-blue-500" />
-                                            <span className="font-medium text-sm">Diseases</span>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">
-                                            Ensure proper spacing and apply copper-based fungicides if needed.
-                                        </p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Use neem oil spray and introduce beneficial insects like ladybugs.
+                                    </p>
+                                </div>
+                                <div className="p-3 border rounded-lg">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Droplets className="h-4 w-4 text-blue-500" />
+                                        <span className="font-medium text-sm">Diseases</span>
                                     </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        Ensure proper spacing and apply copper-based fungicides if needed.
+                                    </p>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    {/* Recommendations */}
-                    <Card className="shadow-card">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <CheckCircle className="h-5 w-5" />
-                                Recommendations
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
+                {/* Recommendations moved below Growth and Health Insights */}
+                <Card className="shadow-card">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5" />
+                            {selectedPrescribedCrop ? `${selectedPrescribedCrop.name} Recommendations` : "Recommendations"}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {selectedPrescribedCrop ? (
+                            <div className="space-y-4 animate-in fade-in duration-300">
+                                <div className="p-3 bg-primary/5 rounded-lg border">
+                                    <h4 className="font-medium mb-2">Why {selectedPrescribedCrop.name}?</h4>
+                                    <p className="text-sm">{selectedPrescribedCrop.reason}</p>
+                                </div>
+                                
+                                <div>
+                                    <h4 className="font-medium mb-2">Practical Recommendations</h4>
+                                    <ul className="space-y-2 text-sm">
+                                        {selectedPrescribedCrop.recommendations.map((rec, index) => (
+                                            <li key={index} className="flex items-start gap-2">
+                                                <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
+                                                <span>{rec}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                
+                                <div>
+                                    <h4 className="font-medium mb-2">Best Practices</h4>
+                                    <ul className="space-y-2 text-sm">
+                                        {selectedPrescribedCrop.practices.map((practice, index) => (
+                                            <li key={index} className="flex items-start gap-2">
+                                                <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
+                                                <span>{practice}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        ) : (
                             <ul className="space-y-2 text-sm">
                                 <li className="flex items-start gap-2">
                                     <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
@@ -492,9 +666,9 @@ const CropDetails = () => {
                                     <span>Harvest when grains are golden brown for best yield</span>
                                 </li>
                             </ul>
-                        </CardContent>
-                    </Card>
-                </div>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Sales Forecast */}
                 <Card className="shadow-card">
@@ -601,7 +775,7 @@ const CropDetails = () => {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <CheckCircle className="h-5 w-5" />
-                            Maintenance Checklist
+                            {selectedPrescribedCrop ? `${selectedPrescribedCrop.name} Maintenance Checklist` : "Maintenance Checklist"}
                         </CardTitle>
                         <CardDescription>
                             Track your progress through the growing season
@@ -648,7 +822,7 @@ const CropDetails = () => {
                                             tickLine={false}
                                             axisLine={false}
                                             tickMargin={8}
-                                            tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value}
+                                            tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value}
                                         />
                                         <YAxis
                                             domain={[0, 100]}
@@ -672,7 +846,7 @@ const CropDetails = () => {
                                             fill="var(--color-productivity)"
                                             dot={{ r: 4, fill: "var(--color-productivity)", strokeWidth: 2, stroke: "var(--color-productivity)" }}
                                             activeDot={{ r: 6, stroke: "var(--color-productivity)", strokeWidth: 2 }}
-                                            connectNulls={true}
+                                            connectNulls={false}
                                         />
                                     </LineChart>
                                 </ChartContainer>
