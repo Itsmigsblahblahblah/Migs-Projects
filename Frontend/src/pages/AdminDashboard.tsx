@@ -138,6 +138,14 @@ const AdminDashboard = () => {
     loadDashboardData();
   }, [navigate]);
 
+  // Update stats when farmers array changes
+  useEffect(() => {
+    setStats(prevStats => ({
+      ...prevStats,
+      activeFarmers: farmers.length
+    }));
+  }, [farmers]);
+
   const loadDashboardData = async () => {
     setLoading(true);
     try {
@@ -179,7 +187,7 @@ const AdminDashboard = () => {
       console.log("Total reports loaded:", reportsData.length);
       setReports(reportsData);
       
-      // Calculate statistics
+      // Calculate statistics with reports data only first
       calculateStatistics(reportsData);
       calculateProblemsDistribution(reportsData);
       calculateMonthlyTrends(reportsData);
@@ -208,7 +216,7 @@ const AdminDashboard = () => {
   };
 
   const calculateStatistics = (reportsData: Report[]) => {
-    // Count unique farmers
+    // Count unique farmers who have submitted reports
     const uniqueFarmers = new Set(reportsData.map(r => r.userId)).size;
     
     // Count pending reports
