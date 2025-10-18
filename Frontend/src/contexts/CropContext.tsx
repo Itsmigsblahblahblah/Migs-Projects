@@ -61,7 +61,7 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
     const loadCrops = async (userId?: string) => {
         try {
             const effectiveUserId = userId || currentUserId || localStorage.getItem('userId') || localStorage.getItem('username');
-            
+
             if (!effectiveUserId) {
                 console.warn("No userId found");
                 setCrops([]);

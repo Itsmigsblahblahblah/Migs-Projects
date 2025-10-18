@@ -36,12 +36,12 @@ const CropHistory = () => {
         }
 
         setUsername(user || 'Farmer');
-        
+
         // Simulate loading state
         const timer = setTimeout(() => {
             setLoading(false);
         }, 500);
-        
+
         return () => clearTimeout(timer);
     }, [navigate]);
 
@@ -72,7 +72,7 @@ const CropHistory = () => {
                             View and manage all your crop plantings
                         </p>
                     </div>
-                    
+
                     {/* Loading State */}
                     <Card className="shadow-card">
                         <CardContent className="py-12 text-center">
