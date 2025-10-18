@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
-import { Settings, MapPin } from "lucide-react";
+import { Settings, MapPin, Users, FileText, BarChart3, Map } from "lucide-react";
 import AdminStatsOverview from "@/components/dashboard/admin/AdminStatsOverview";
 import FarmersList from "@/components/dashboard/admin/FarmersList";
 import DeletionRequests from "@/components/dashboard/admin/DeletionRequests";
@@ -14,6 +14,7 @@ import { useAdminDashboard } from "@/hooks/custom/useAdminDashboard";
 
 const AdminDashboard = () => {
   const [username, setUsername] = useState("");
+  const [activeSection, setActiveSection] = useState("analytics"); // Default to analytics
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -86,48 +87,63 @@ const AdminDashboard = () => {
         {/* Stats Overview */}
         <AdminStatsOverview stats={stats} />
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="analytics" className="space-y-6">
-          <TabsList className="flex flex-col sm:flex-row flex-wrap gap-2 w-full">
-            <TabsTrigger
-              value="farmers"
-              className="flex-1 min-w-[120px] text-center whitespace-nowrap"
-            >
-              Registered Farmers
-            </TabsTrigger>
-            <TabsTrigger
-              value="deletion-requests"
-              className="flex-1 min-w-[120px] text-center whitespace-nowrap"
-            >
-              Deletion Requests
-            </TabsTrigger>
-            <TabsTrigger
-              value="analytics"
-              className="flex-1 min-w-[120px] text-center whitespace-nowrap"
-            >
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger
-              value="reports"
-              className="flex-1 min-w-[120px] text-center whitespace-nowrap"
-            >
-              Reports
-            </TabsTrigger>
-            <TabsTrigger
-              value="map"
-              className="flex-1 min-w-[120px] text-center whitespace-nowrap"
-            >
-              Location Map
-            </TabsTrigger>
-          </TabsList>
+        {/* Quick Actions Style Navigation */}
+        <Card className="shadow-card">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              <Button
+                variant={activeSection === "farmers" ? "default" : "outline"}
+                className="h-20 flex flex-col gap-2"
+                onClick={() => setActiveSection("farmers")}
+              >
+                <Users className="h-5 w-5" />
+                <span>Registered Farmers</span>
+              </Button>
+              <Button
+                variant={activeSection === "deletion-requests" ? "default" : "outline"}
+                className="h-20 flex flex-col gap-2"
+                onClick={() => setActiveSection("deletion-requests")}
+              >
+                <FileText className="h-5 w-5" />
+                <span>Deletion Requests</span>
+              </Button>
+              <Button
+                variant={activeSection === "analytics" ? "default" : "outline"}
+                className="h-20 flex flex-col gap-2"
+                onClick={() => setActiveSection("analytics")}
+              >
+                <BarChart3 className="h-5 w-5" />
+                <span>Analytics</span>
+              </Button>
+              <Button
+                variant={activeSection === "reports" ? "default" : "outline"}
+                className="h-20 flex flex-col gap-2"
+                onClick={() => setActiveSection("reports")}
+              >
+                <FileText className="h-5 w-5" />
+                <span>Reports</span>
+              </Button>
+              <Button
+                variant={activeSection === "map" ? "default" : "outline"}
+                className="h-20 flex flex-col gap-2"
+                onClick={() => setActiveSection("map")}
+              >
+                <Map className="h-5 w-5" />
+                <span>Location Map</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Registered Farmers Tab */}
-          <TabsContent value="farmers" className="space-y-6">
+        {/* Section Content */}
+        <div className="space-y-6">
+          {/* Registered Farmers Section */}
+          {activeSection === "farmers" && (
             <FarmersList farmers={farmers} />
-          </TabsContent>
+          )}
 
-          {/* Deletion Requests Tab */}
-          <TabsContent value="deletion-requests" className="space-y-6">
+          {/* Deletion Requests Section */}
+          {activeSection === "deletion-requests" && (
             <DeletionRequests
               deletionRequests={deletionRequests}
               deleteMode={deleteMode}
@@ -139,29 +155,29 @@ const AdminDashboard = () => {
               onApproveRequest={(id) => handleDeletionRequestAction(id, 'approved')}
               onDenyRequest={(id) => handleDeletionRequestAction(id, 'denied')}
             />
-          </TabsContent>
+          )}
 
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
+          {/* Analytics Section */}
+          {activeSection === "analytics" && (
             <AnalyticsCharts
               problemsData={problemsData}
               monthlyTrends={monthlyTrends}
               cropRecommendations={cropRecommendations}
               onExport={exportData}
             />
-          </TabsContent>
+          )}
 
-          {/* Reports Tab */}
-          <TabsContent value="reports" className="space-y-6">
+          {/* Reports Section */}
+          {activeSection === "reports" && (
             <ReportsList
               reports={reports}
               onExport={() => exportData('reports')}
               onUpdateStatus={updateReportStatus}
             />
-          </TabsContent>
+          )}
 
-          {/* Map Tab */}
-          <TabsContent value="map" className="space-y-6">
+          {/* Map Section */}
+          {activeSection === "map" && (
             <div className="shadow-card rounded-lg border p-6">
               <div className="bg-muted/30 rounded-lg p-8 text-center">
                 <MapPin className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
@@ -171,8 +187,8 @@ const AdminDashboard = () => {
                 </p>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
     </Layout>
   );
