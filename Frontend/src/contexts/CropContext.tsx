@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, orderBy } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
+import { db, auth } from "@/firebaseConfig";
 
 interface Crop {
     id: string;
@@ -29,27 +30,51 @@ const CropContext = createContext<CropContextType | undefined>(undefined);
 
 export const CropProvider = ({ children }: { children: ReactNode }) => {
     const [crops, setCrops] = useState<Crop[]>([]);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-    // Load crops from Firestore on mount
+    // Listen for auth state changes
     useEffect(() => {
-        loadCrops();
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const userId = user.uid;
+                setCurrentUserId(userId);
+                // Load crops when user changes
+                loadCrops(userId);
+            } else {
+                setCurrentUserId(null);
+                setCrops([]);
+            }
+        });
+
+        return () => unsubscribe();
     }, []);
 
-    const loadCrops = async () => {
+    // Load crops when currentUserId changes
+    useEffect(() => {
+        if (currentUserId) {
+            loadCrops(currentUserId);
+        } else {
+            setCrops([]);
+        }
+    }, [currentUserId]);
+
+    const loadCrops = async (userId?: string) => {
         try {
-            const userId = localStorage.getItem('userId') || localStorage.getItem('username');
-            if (!userId) {
-                console.warn("No userId found in localStorage");
+            const effectiveUserId = userId || currentUserId || localStorage.getItem('userId') || localStorage.getItem('username');
+            
+            if (!effectiveUserId) {
+                console.warn("No userId found");
+                setCrops([]);
                 return;
             }
 
-            console.log("Loading crops for userId:", userId);
+            console.log("Loading crops for userId:", effectiveUserId);
 
             const cropsRef = collection(db, "farmerCrops");
             // Query without orderBy to get ALL data including old records without createdAt
             const q = query(
                 cropsRef,
-                where("userId", "==", userId)
+                where("userId", "==", effectiveUserId)
             );
 
             const querySnapshot = await getDocs(q);
@@ -87,12 +112,13 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
             setCrops(loadedCrops);
         } catch (error) {
             console.error("Error loading crops from Firestore:", error);
+            setCrops([]);
         }
     };
 
     const addCrop = async (cropData: Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>) => {
         try {
-            const userId = localStorage.getItem('userId') || localStorage.getItem('username');
+            const userId = currentUserId || localStorage.getItem('userId') || localStorage.getItem('username');
             if (!userId) {
                 throw new Error("No userId found. Please log in again.");
             }

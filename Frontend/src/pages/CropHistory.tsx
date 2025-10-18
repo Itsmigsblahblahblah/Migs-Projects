@@ -23,6 +23,7 @@ interface Crop {
 const CropHistory = () => {
     const { crops } = useCrops();
     const [username, setUsername] = useState("");
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -35,6 +36,13 @@ const CropHistory = () => {
         }
 
         setUsername(user || 'Farmer');
+        
+        // Simulate loading state
+        const timer = setTimeout(() => {
+            setLoading(false);
+        }, 500);
+        
+        return () => clearTimeout(timer);
     }, [navigate]);
 
     const formatDate = (timestamp: any) => {
@@ -49,6 +57,35 @@ const CropHistory = () => {
             return 'Unknown date';
         }
     };
+
+    if (loading) {
+        return (
+            <Layout>
+                <div className="space-y-6">
+                    {/* Header */}
+                    <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Leaf className="h-6 w-6" />
+                            <h1 className="text-2xl font-bold">Crop History</h1>
+                        </div>
+                        <p className="text-primary-foreground/90">
+                            View and manage all your crop plantings
+                        </p>
+                    </div>
+                    
+                    {/* Loading State */}
+                    <Card className="shadow-card">
+                        <CardContent className="py-12 text-center">
+                            <div className="flex justify-center items-center h-24">
+                                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                            <p className="text-muted-foreground">Loading crop history...</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            </Layout>
+        );
+    }
 
     return (
         <Layout>
