@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Upload, Trash2 } from "lucide-react";
+import { User, Upload, Trash2, Clock, CheckCircle, XCircle } from "lucide-react";
 
 interface EditProfileDialogProps {
     open: boolean;
@@ -30,6 +30,9 @@ interface EditProfileDialogProps {
     handleUpdateProfile: () => Promise<void>;
     onRequestAccountDeletion: () => void;
     username: string;
+    deletionRequest: any;
+    isDeletionButtonDisabled: boolean;
+    getDeletionButtonText: () => string;
 }
 
 const EditProfileDialog = ({
@@ -41,7 +44,10 @@ const EditProfileDialog = ({
     handleProfileImageUpload,
     handleUpdateProfile,
     onRequestAccountDeletion,
-    username
+    username,
+    deletionRequest,
+    isDeletionButtonDisabled,
+    getDeletionButtonText
 }: EditProfileDialogProps) => {
     const [isUploading, setIsUploading] = useState(false);
 
@@ -174,9 +180,10 @@ const EditProfileDialog = ({
                         variant="destructive"
                         className="w-full sm:w-auto"
                         onClick={onRequestAccountDeletion}
+                        disabled={isDeletionButtonDisabled}
                     >
                         <Trash2 className="h-4 w-4 mr-2" />
-                        Request Account Deletion
+                        {getDeletionButtonText()}
                     </Button>
                     <div className="flex gap-2 w-full sm:w-auto">
                         <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">

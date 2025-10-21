@@ -17,9 +17,13 @@ import UpdateCropDialog from "@/components/dashboard/farmer/UpdateCropDialog";
 import EditCropDialog from "@/components/dashboard/farmer/EditCropDialog";
 import RequestAccountDeletionDialog from "@/components/dashboard/farmer/RequestAccountDeletionDialog";
 import DeleteAccountDialog from "@/components/dashboard/farmer/DeleteAccountDialog";
+import DeleteConfirmationDialog from "@/components/dashboard/farmer/DeleteConfirmationDialog";
 import { useFarmerDashboard } from "@/hooks/custom/useFarmerDashboard";
 import { useCropManagement } from "@/hooks/custom/useCropManagement";
 import { useReportManagement } from "@/hooks/custom/useReportManagement";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 // Mock data
 const mockWeatherData = {
@@ -119,8 +123,57 @@ const FarmerDashboard = () => {
     setIsRequestingDeletion(true);
     try {
       await handleRequestAccountDeletion();
+      // Close the dialog after successful submission
+      setIsRequestDeleteDialogOpen(false);
     } finally {
       setIsRequestingDeletion(false);
+    }
+  };
+
+  // Determine the text and action for the deletion button based on request status
+  const getDeletionButtonText = () => {
+    if (!deletionRequest) {
+      return "Request Account Deletion";
+    }
+    
+    switch (deletionRequest.status) {
+      case 'pending':
+        return "Deletion Pending Approval";
+      case 'approved':
+        return "Delete Account Now (Approved)";
+      case 'denied':
+        return "Request Again (Previous Denied)";
+      default:
+        return "Request Account Deletion";
+    }
+  };
+
+  // Determine if the deletion button should be disabled
+  const isDeletionButtonDisabled = () => {
+    if (!deletionRequest) return false;
+    return deletionRequest.status === 'pending';
+  };
+
+  // Handle deletion button click
+  const handleDeletionButtonClick = () => {
+    if (!deletionRequest) {
+      setIsRequestDeleteDialogOpen(true);
+      return;
+    }
+    
+    switch (deletionRequest.status) {
+      case 'pending':
+        // Do nothing, button is disabled
+        break;
+      case 'approved':
+        setIsDeleteAccountDialogOpen(true);
+        break;
+      case 'denied':
+        setIsRequestDeleteDialogOpen(true);
+        break;
+      default:
+        setIsRequestDeleteDialogOpen(true);
+        break;
     }
   };
 
@@ -137,6 +190,58 @@ const FarmerDashboard = () => {
             I-type ang inyong problema sa sakahan para makakuha ng crop recommendations.
           </p>
         </div>
+
+        {/* Deletion Request Status Banner */}
+        {deletionRequest && (
+          <Card className="border-l-4 p-4 rounded-r-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {deletionRequest.status === 'pending' && (
+                  <>
+                    <Clock className="h-5 w-5 text-yellow-500" />
+                    <div>
+                      <h3 className="font-medium">Deletion Request Pending</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Your request is awaiting admin approval
+                      </p>
+                    </div>
+                  </>
+                )}
+                {deletionRequest.status === 'approved' && (
+                  <>
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <div>
+                      <h3 className="font-medium">Deletion Request Approved</h3>
+                      <p className="text-sm text-muted-foreground">
+                        You can now delete your account
+                      </p>
+                    </div>
+                  </>
+                )}
+                {deletionRequest.status === 'denied' && (
+                  <>
+                    <XCircle className="h-5 w-5 text-red-500" />
+                    <div>
+                      <h3 className="font-medium">Deletion Request Denied</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Your request was denied by admin. You can request again.
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+              {deletionRequest.status === 'approved' && (
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => setIsDeleteAccountDialogOpen(true)}
+                >
+                  Delete Account
+                </Button>
+              )}
+            </div>
+          </Card>
+        )}
 
         {/* Profile Card and Weather Section */}
         <div className="grid lg:grid-cols-3 gap-6">
@@ -187,11 +292,11 @@ const FarmerDashboard = () => {
           handleProfileInputChange={handleProfileInputChange}
           handleProfileImageUpload={handleProfileImageUpload}
           handleUpdateProfile={handleUpdateProfile}
-          onRequestAccountDeletion={() => {
-            setIsEditProfileDialogOpen(false);
-            setIsRequestDeleteDialogOpen(true);
-          }}
+          onRequestAccountDeletion={handleDeletionButtonClick}
           username={username}
+          deletionRequest={deletionRequest}
+          isDeletionButtonDisabled={isDeletionButtonDisabled()}
+          getDeletionButtonText={getDeletionButtonText}
         />
 
         <AddCropDialog
