@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useCrops } from "@/contexts/CropContext";
-import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, updateDoc, writeBatch, setDoc } from "firebase/firestore"; // Added setDoc import
 import { db, auth } from "@/firebaseConfig";
 import { deleteUser, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
+import { generateDeletionRequestId } from "@/lib/idUtils"; // Added import for ID generation
 
 export const useFarmerDashboard = () => {
     const [username, setUsername] = useState("");
@@ -245,8 +246,13 @@ export const useFarmerDashboard = () => {
 
             console.log("Creating deletion request:", requestData);
 
-            const docRef = await addDoc(collection(db, "deletionRequests"), requestData);
-            console.log("Deletion request created with ID:", docRef.id);
+            // Generate a readable document ID using username instead of userId
+            const documentId = generateDeletionRequestId(username);
+            
+            // Add to Firestore with custom ID
+            const requestRef = doc(db, "deletionRequests", documentId);
+            await setDoc(requestRef, requestData);
+            console.log("Deletion request created with ID:", documentId);
 
             // Reload deletion request
             await checkDeletionRequest(userId);

@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, orderBy } from "firebase/firestore";
+import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, orderBy, setDoc } from "firebase/firestore"; // Added setDoc import
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "@/firebaseConfig";
+import { generateFarmerCropId } from "@/lib/idUtils";
 
 interface ChecklistItem {
     id: string;
@@ -132,19 +133,26 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 throw new Error("No userId found. Please log in again.");
             }
 
+            // Get username from localStorage
+            const username = localStorage.getItem('username') || userId;
+
             const newCropData = {
                 ...cropData,
-                userId: userId, // Ensure userId is set for Firestore security rules
+                userId: userId,
                 plantedDate: Timestamp.now(),
                 createdAt: Timestamp.now()
             };
 
-            // Add to Firestore
-            const docRef = await addDoc(collection(db, "farmerCrops"), newCropData);
+            // Generate a readable document ID using username instead of userId
+            const documentId = generateFarmerCropId(username, cropData.name);
+            
+            // Add to Firestore with custom ID
+            const cropRef = doc(db, "farmerCrops", documentId);
+            await setDoc(cropRef, newCropData);
 
             // Add to local state
             const newCrop: Crop = {
-                id: docRef.id,
+                id: documentId, // Use the custom ID
                 ...newCropData
             };
 
