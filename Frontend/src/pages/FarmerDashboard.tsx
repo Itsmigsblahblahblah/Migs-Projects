@@ -178,93 +178,147 @@ const FarmerDashboard = () => {
 
         {/* Edit Profile Dialog */}
         <Dialog open={isEditProfileDialogOpen} onOpenChange={setIsEditProfileDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Profile</DialogTitle>
               <DialogDescription>
-                Update your profile information here.
+                Update your profile information
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                {farmerProfile.photoURL ? (
-                  <img
-                    src={farmerProfile.photoURL}
-                    alt={username}
-                    className="h-16 w-16 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="bg-secondary rounded-full p-4">
-                    <User className="h-8 w-8 text-secondary-foreground" />
-                  </div>
-                )}
-                <div>
-                  <Label htmlFor="profileImage">Profile Image</Label>
+              {/* Profile Picture Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="profile-image">Profile Picture</Label>
+                <div className="flex items-center gap-4">
+                  {farmerProfile.photoURL ? (
+                    <img
+                      src={farmerProfile.photoURL}
+                      alt={username}
+                      className="h-16 w-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="bg-secondary rounded-full p-4">
+                      <User className="h-8 w-8 text-secondary-foreground" />
+                    </div>
+                  )}
                   <Input
-                    id="profileImage"
+                    id="profile-image"
                     type="file"
                     accept="image/*"
                     onChange={handleProfileImageUpload}
-                    className="mt-1"
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => document.getElementById('profile-image')?.click()}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {profileImageFile ? 'Change Photo' : 'Upload Photo'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Full Name and Contact Number - Grid */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="profile-fullName">Full Name</Label>
+                  <Input
+                    id="profile-fullName"
+                    name="fullName"
+                    value={farmerProfile.fullName}
+                    onChange={handleProfileInputChange}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="profile-contactNumber">Contact Number</Label>
+                  <Input
+                    id="profile-contactNumber"
+                    name="contactNumber"
+                    value={farmerProfile.contactNumber}
+                    onChange={handleProfileInputChange}
+                    placeholder="e.g., 09123456789"
                   />
                 </div>
               </div>
+
+              {/* Email (Disabled) - Full width */}
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="profile-email">Email (Cannot be edited)</Label>
                 <Input
-                  id="fullName"
-                  name="fullName"
-                  value={farmerProfile.fullName}
-                  onChange={handleProfileInputChange}
+                  id="profile-email"
+                  name="email"
+                  value={farmerProfile.email}
+                  disabled
+                  className="bg-muted cursor-not-allowed"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="contactNumber">Contact Number</Label>
-                <Input
-                  id="contactNumber"
-                  name="contactNumber"
-                  value={farmerProfile.contactNumber}
-                  onChange={handleProfileInputChange}
-                />
+
+              {/* Home Address and Farm Address - Grid */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="profile-homeAddress">Home Address</Label>
+                  <Input
+                    id="profile-homeAddress"
+                    name="homeAddress"
+                    value={farmerProfile.homeAddress}
+                    onChange={handleProfileInputChange}
+                    placeholder="Enter your home address"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="profile-farmAddress">Farm Address</Label>
+                  <Input
+                    id="profile-farmAddress"
+                    name="farmAddress"
+                    value={farmerProfile.farmAddress}
+                    onChange={handleProfileInputChange}
+                    placeholder="Enter your farm location"
+                  />
+                </div>
               </div>
+
+              {/* Farm Area - Full width */}
               <div className="space-y-2">
-                <Label htmlFor="homeAddress">Home Address</Label>
+                <Label htmlFor="profile-farmArea">Farm Area (hectares)</Label>
                 <Input
-                  id="homeAddress"
-                  name="homeAddress"
-                  value={farmerProfile.homeAddress}
-                  onChange={handleProfileInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="farmAddress">Farm Address</Label>
-                <Input
-                  id="farmAddress"
-                  name="farmAddress"
-                  value={farmerProfile.farmAddress}
-                  onChange={handleProfileInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="farmArea">Farm Area (hectares)</Label>
-                <Input
-                  id="farmArea"
+                  id="profile-farmArea"
                   name="farmArea"
                   value={farmerProfile.farmArea}
                   onChange={handleProfileInputChange}
+                  placeholder="e.g., 2.5 hectares"
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditProfileDialogOpen(false)}>
-                Cancel
+            <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-2">
+              <Button
+                variant="destructive"
+                className="w-full sm:w-auto"
+                onClick={() => {
+                  setIsEditProfileDialogOpen(false);
+                  setIsRequestDeleteDialogOpen(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Request Account Deletion
               </Button>
-              <Button onClick={async () => {
-                await handleUpdateProfile();
-                setIsEditProfileDialogOpen(false);
-              }}>
-                Save Changes
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button variant="outline" onClick={() => setIsEditProfileDialogOpen(false)} className="flex-1">
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={async () => {
+                    await handleUpdateProfile();
+                    setIsEditProfileDialogOpen(false);
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -530,6 +584,104 @@ const FarmerDashboard = () => {
               </Button>
               <Button onClick={handleEditCropSubmitWrapper}>
                 Update Crop
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Request Account Deletion Dialog */}
+        <Dialog open={isRequestDeleteDialogOpen} onOpenChange={setIsRequestDeleteDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-warning">
+                <AlertTriangle className="h-5 w-5" />
+                Request Account Deletion
+              </DialogTitle>
+              <DialogDescription>
+                Submit a request to delete your account. An admin will review your request before you can proceed with deletion.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="bg-warning/10 border border-warning/20 rounded-md p-4 space-y-2">
+                <p className="text-sm font-medium text-warning">Next Steps:</p>
+                <ul className="text-sm text-warning/90 list-disc list-inside space-y-1">
+                  <li>Your request will be sent to the admin for review</li>
+                  <li>Wait for admin approval</li>
+                  <li>Once approved, you can delete your account permanently</li>
+                  <li>All your data will be removed from the system</li>
+                </ul>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsRequestDeleteDialogOpen(false)}
+                disabled={isRequestingDeletion}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRequestAccountDeletion}
+                disabled={isRequestingDeletion}
+              >
+                {isRequestingDeletion ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                    Submitting...
+                  </div>
+                ) : (
+                  "Submit Deletion Request"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Account Confirmation Dialog */}
+        <Dialog open={isDeleteAccountDialogOpen} onOpenChange={setIsDeleteAccountDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Confirm Account Deletion</DialogTitle>
+              <DialogDescription>
+                This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="rounded-lg bg-destructive/10 p-4">
+                <h4 className="font-medium text-destructive mb-2">Warning</h4>
+                <p className="text-sm text-destructive">
+                  All your data including profile, crops, reports, and history will be permanently deleted.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="deleteConfirm">
+                  Type "DELETE" to confirm
+                </Label>
+                <Input
+                  id="deleteConfirm"
+                  value={deleteConfirmPassword}
+                  onChange={(e) => setDeleteConfirmPassword(e.target.value)}
+                  placeholder="Type DELETE"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteAccountDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  await handleDeleteAccount(deleteConfirmPassword);
+                  if (!document.querySelector('.toast-destructive')) { // Only close if no error toast
+                    setIsDeleteAccountDialogOpen(false);
+                    setDeleteConfirmPassword("");
+                  }
+                }}
+                disabled={deleteConfirmPassword !== 'DELETE'}
+              >
+                Permanently Delete
               </Button>
             </DialogFooter>
           </DialogContent>
