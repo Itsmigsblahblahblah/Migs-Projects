@@ -22,6 +22,7 @@ interface Crop {
     puhunan: number;
     plantedDate: any;
     createdAt: any;
+    checklist?: ChecklistItem[]; // Add checklist field
 }
 
 interface ChecklistItem {
@@ -42,7 +43,7 @@ interface PrescribedCrop {
 const CropDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getCropById } = useCrops();
+    const { getCropById, updateCrop } = useCrops();
     const [crop, setCrop] = useState<Crop | null>(null);
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [productivityData, setProductivityData] = useState<{ task: string; productivity: number }[]>([]);
@@ -110,15 +111,33 @@ const CropDetails = () => {
                 if (cropData) {
                     setCrop(cropData);
 
-                    // Generate checklist based on crop type
-                    const generatedChecklist = generateChecklist(cropData.name);
-                    setChecklist(generatedChecklist);
+                    // Load checklist from database or generate new one
+                    let loadedChecklist: ChecklistItem[] = [];
+                    if (cropData.checklist && cropData.checklist.length > 0) {
+                        // Use existing checklist from database
+                        loadedChecklist = cropData.checklist;
+                    } else {
+                        // Generate new checklist based on crop type
+                        loadedChecklist = generateChecklist(cropData.name);
+                    }
+                    setChecklist(loadedChecklist);
 
                     // Initialize productivity data
-                    const initialData = generatedChecklist.map(item => ({
+                    const initialData = loadedChecklist.map(item => ({
                         task: item.title,
-                        productivity: 0
+                        productivity: item.completed ? 100 : 0
                     }));
+                    
+                    // Add overall productivity at the end
+                    const completed = loadedChecklist.filter(item => item.completed).length;
+                    const total = loadedChecklist.length;
+                    const overallProductivity = total > 0 ? Math.round((completed / total) * 100) : 0;
+                    
+                    initialData.push({
+                        task: "Overall Progress",
+                        productivity: overallProductivity
+                    });
+                    
                     setProductivityData(initialData);
                 }
             } catch (error) {
@@ -131,33 +150,41 @@ const CropDetails = () => {
         fetchCrop();
     }, [id, getCropById]);
 
-    const toggleChecklistItem = (itemId: string) => {
-        setChecklist(prev => {
-            const updatedChecklist = prev.map(item =>
-                item.id === itemId ? { ...item, completed: !item.completed } : item
-            );
+    const toggleChecklistItem = async (itemId: string) => {
+        const updatedChecklist = checklist.map(item =>
+            item.id === itemId ? { ...item, completed: !item.completed } : item
+        );
 
-            // Calculate overall productivity
-            const completed = updatedChecklist.filter(item => item.completed).length;
-            const total = updatedChecklist.length;
-            const overallProductivity = total > 0 ? Math.round((completed / total) * 100) : 0;
+        // Update local state
+        setChecklist(updatedChecklist);
 
-            // Update productivity data
-            const updatedProductivityData = updatedChecklist.map(item => ({
-                task: item.title,
-                productivity: item.completed ? 100 : 0
-            }));
+        // Calculate overall productivity
+        const completed = updatedChecklist.filter(item => item.completed).length;
+        const total = updatedChecklist.length;
+        const overallProductivity = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-            // Add overall productivity at the end
-            updatedProductivityData.push({
-                task: "Overall Progress",
-                productivity: overallProductivity
-            });
+        // Update productivity data
+        const updatedProductivityData = updatedChecklist.map(item => ({
+            task: item.title,
+            productivity: item.completed ? 100 : 0
+        }));
 
-            setProductivityData(updatedProductivityData);
-
-            return updatedChecklist;
+        // Add overall productivity at the end
+        updatedProductivityData.push({
+            task: "Overall Progress",
+            productivity: overallProductivity
         });
+
+        setProductivityData(updatedProductivityData);
+
+        // Save to database
+        if (crop && crop.id) {
+            try {
+                await updateCrop(crop.id, { checklist: updatedChecklist });
+            } catch (error) {
+                console.error("Error saving checklist to database:", error);
+            }
+        }
     };
 
     const calculateHarvestDate = (plantedDate: any, cropName: string) => {

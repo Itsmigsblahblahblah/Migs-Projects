@@ -3,6 +3,13 @@ import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, o
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "@/firebaseConfig";
 
+interface ChecklistItem {
+    id: string;
+    title: string;
+    completed: boolean;
+    category: string;
+}
+
 interface Crop {
     id: string;
     userId: string;
@@ -16,6 +23,7 @@ interface Crop {
     puhunan: number;
     plantedDate: any;
     createdAt: any;
+    checklist?: ChecklistItem[]; // Add checklist field
 }
 
 interface CropContextType {
@@ -97,7 +105,8 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                     potassium: data.potassium || 0,
                     puhunan: data.puhunan,
                     plantedDate: data.plantedDate,
-                    createdAt: data.createdAt
+                    createdAt: data.createdAt,
+                    checklist: data.checklist || [] // Load checklist data
                 });
             });
 
