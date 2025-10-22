@@ -48,3 +48,15 @@ export function generateDeletionRequestId(username: string): string {
   const userSlug = generateSlug(username);
   return `${userSlug}_deletion_request_${timestamp}`;
 }
+
+/**
+ * Generates a readable document ID for farmer reports
+ * Format: {username}_report_{timestamp}
+ * @param username The farmer's username
+ * @returns A readable document ID
+ */
+export function generateFarmerReportId(username: string): string {
+  const timestamp = generateTimestamp();
+  const userSlug = generateSlug(username);
+  return `${userSlug}_report_${timestamp}`;
+}

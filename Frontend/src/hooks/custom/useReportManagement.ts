@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import { collection, addDoc, Timestamp, doc, setDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
+import { generateFarmerReportId } from "@/lib/idUtils";
 
 // Mock NLP and DSS System
 const processReport = (text: string) => {
@@ -118,7 +119,12 @@ export const useReportManagement = (userId: string, username: string, setMonthly
                 status: 'processed'
             };
 
-            await addDoc(collection(db, "farmReports"), reportData);
+            // Generate a readable document ID using username
+            const documentId = generateFarmerReportId(username);
+            
+            // Add to Firestore with custom ID
+            const reportRef = doc(db, "farmReports", documentId);
+            await setDoc(reportRef, reportData);
 
             toast({
                 title: "Recommendation Ready",
