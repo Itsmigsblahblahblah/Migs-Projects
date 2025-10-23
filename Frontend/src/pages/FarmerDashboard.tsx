@@ -25,19 +25,7 @@ import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
-// Mock data
-const mockWeatherData = {
-  temperature: 28,
-  condition: "Sunny",
-  humidity: 65,
-  rainfall: 0,
-  forecast: [
-    { day: "Today", condition: "Sunny", high: 30, low: 24 },
-    { day: "Tomorrow", condition: "Partly Cloudy", high: 29, low: 23 },
-    { day: "Wednesday", condition: "Rain", high: 26, low: 22 }
-  ]
-};
-
+// Mock data for other components
 const mockCropData = {
   currentCrop: "Rice",
   plantedArea: "2 hectares",
@@ -68,6 +56,9 @@ const FarmerDashboard = () => {
     deletionRequest,
     farmerProfile,
     profileImageFile,
+    weatherData,
+    weatherLoading,
+    weatherError,
     crops,
     setUsername,
     setProfileImageFile,
@@ -250,7 +241,13 @@ const FarmerDashboard = () => {
             farmerProfile={farmerProfile}
             onEditProfile={() => setIsEditProfileDialogOpen(true)}
           />
-          <WeatherCard weatherData={mockWeatherData} />
+          <WeatherCard weatherData={weatherData || {
+            temperature: 0,
+            condition: "Loading...",
+            humidity: 0,
+            rainfall: 0,
+            forecast: []
+          }} />
           <CropStatusCard cropData={mockCropData} />
         </div>
 

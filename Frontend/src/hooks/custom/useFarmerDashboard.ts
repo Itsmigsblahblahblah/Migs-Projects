@@ -7,6 +7,20 @@ import { db, auth } from "@/firebaseConfig";
 import { deleteUser, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { generateDeletionRequestId } from "@/lib/idUtils"; // Added import for ID generation
 
+// Weather data interface
+interface WeatherData {
+    temperature: number;
+    condition: string;
+    humidity: number;
+    rainfall: number;
+    forecast: {
+        day: string;
+        condition: string;
+        high: number;
+        low: number;
+    }[];
+}
+
 export const useFarmerDashboard = () => {
     const [username, setUsername] = useState("");
     const [userId, setUserId] = useState("");
@@ -22,6 +36,9 @@ export const useFarmerDashboard = () => {
         photoURL: ""
     });
     const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+    const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+    const [weatherLoading, setWeatherLoading] = useState(false);
+    const [weatherError, setWeatherError] = useState<string | null>(null);
     const { addCrop, crops, updateCrop } = useCrops();
     const { toast } = useToast();
     const navigate = useNavigate();
@@ -48,6 +65,9 @@ export const useFarmerDashboard = () => {
 
         // Check for deletion requests
         checkDeletionRequest(uid);
+
+        // Load weather data
+        loadWeatherData();
     }, [navigate]);
 
     const loadFarmerProfile = async (uid: string) => {
@@ -117,6 +137,114 @@ export const useFarmerDashboard = () => {
         } catch (error) {
             console.error("Error checking deletion request:", error);
         }
+    };
+
+    // Function to fetch weather data from Open-Meteo API
+    const loadWeatherData = async () => {
+        try {
+            setWeatherLoading(true);
+            setWeatherError(null);
+            
+            // Coordinates for Majayjay, Laguna, Philippines
+            const LATITUDE = 14.1463;
+            const LONGITUDE = 121.4729;
+            
+            // Current weather API endpoint
+            const currentUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&forecast_days=1`;
+            
+            // Daily forecast API endpoint
+            const dailyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&forecast_days=7`;
+            
+            // Fetch current weather data
+            const currentResponse = await fetch(currentUrl);
+            if (!currentResponse.ok) {
+                throw new Error(`Failed to fetch current weather data: ${currentResponse.status}`);
+            }
+            const currentData = await currentResponse.json();
+            
+            // Fetch daily forecast data
+            const dailyResponse = await fetch(dailyUrl);
+            if (!dailyResponse.ok) {
+                throw new Error(`Failed to fetch forecast data: ${dailyResponse.status}`);
+            }
+            const dailyData = await dailyResponse.json();
+            
+            // Process the data to match our WeatherData interface
+            const processedWeatherData: WeatherData = {
+                temperature: currentData.current?.temperature_2m || 0,
+                condition: getWeatherDescription(currentData.current?.weather_code || 0),
+                humidity: currentData.current?.relative_humidity_2m || 0,
+                rainfall: currentData.current?.rain || 0,
+                forecast: processForecastData(dailyData.daily)
+            };
+            
+            setWeatherData(processedWeatherData);
+        } catch (error: any) {
+            console.error("Error loading weather data:", error);
+            setWeatherError(error.message || "Failed to load weather data");
+        } finally {
+            setWeatherLoading(false);
+        }
+    };
+
+    // Helper function to convert weather codes to descriptions
+    const getWeatherDescription = (code: number): string => {
+        const weatherCodes: Record<number, string> = {
+            0: 'Clear sky',
+            1: 'Mainly clear',
+            2: 'Partly cloudy',
+            3: 'Overcast',
+            45: 'Fog',
+            48: 'Depositing rime fog',
+            51: 'Light drizzle',
+            53: 'Moderate drizzle',
+            55: 'Dense drizzle',
+            56: 'Light freezing drizzle',
+            57: 'Dense freezing drizzle',
+            61: 'Slight rain',
+            63: 'Moderate rain',
+            65: 'Heavy rain',
+            66: 'Light freezing rain',
+            67: 'Heavy freezing rain',
+            71: 'Slight snow fall',
+            73: 'Moderate snow fall',
+            75: 'Heavy snow fall',
+            77: 'Snow grains',
+            80: 'Slight rain showers',
+            81: 'Moderate rain showers',
+            82: 'Violent rain showers',
+            85: 'Slight snow showers',
+            86: 'Heavy snow showers',
+            95: 'Thunderstorm',
+            96: 'Thunderstorm with slight hail',
+            99: 'Thunderstorm with heavy hail'
+        };
+        
+        return weatherCodes[code] || 'Unknown';
+    };
+
+    // Helper function to process forecast data
+    const processForecastData = (daily: any): WeatherData['forecast'] => {
+        if (!daily || !daily.time || !daily.time.length) {
+            return [];
+        }
+        
+        const forecast = [];
+        const daysToShow = Math.min(3, daily.time.length);
+        
+        for (let i = 0; i < daysToShow; i++) {
+            const date = new Date(daily.time[i]);
+            const dayName = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : date.toLocaleDateString('en-US', { weekday: 'short' });
+            
+            forecast.push({
+                day: dayName,
+                condition: getWeatherDescription(daily.weather_code[i]),
+                high: daily.temperature_2m_max[i],
+                low: daily.temperature_2m_min[i]
+            });
+        }
+        
+        return forecast;
     };
 
     const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -399,6 +527,9 @@ export const useFarmerDashboard = () => {
         deletionRequest,
         farmerProfile,
         profileImageFile,
+        weatherData,
+        weatherLoading,
+        weatherError,
         crops,
         setUsername,
         setProfileImageFile,
@@ -409,6 +540,7 @@ export const useFarmerDashboard = () => {
         handleDeleteAccount,
         loadFarmerProfile,
         loadMonthlyReportCount,
-        checkDeletionRequest
+        checkDeletionRequest,
+        loadWeatherData
     };
 };

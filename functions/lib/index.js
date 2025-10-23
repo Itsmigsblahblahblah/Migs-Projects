@@ -22,10 +22,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cleanupOrphanedData = exports.deleteFarmerAccount = void 0;
+exports.getWeatherData = exports.cleanupOrphanedData = exports.deleteFarmerAccount = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
+const node_fetch_1 = __importDefault(require("node-fetch"));
 // Initialize Firebase Admin
 admin.initializeApp();
 /**
@@ -137,13 +141,13 @@ exports.cleanupOrphanedData = functions.pubsub
     try {
         // Get all farmers
         const farmersSnapshot = await db.collection('farmers').get();
-        const farmerIds = new Set(farmersSnapshot.docs.map(doc => doc.id));
+        const farmerIds = new Set(farmersSnapshot.docs.map((doc) => doc.id));
         let orphanedCrops = 0;
         let orphanedReports = 0;
         // Check for orphaned crops
         const cropsSnapshot = await db.collection('farmerCrops').get();
         const batch1 = db.batch();
-        cropsSnapshot.forEach(doc => {
+        cropsSnapshot.forEach((doc) => {
             const userId = doc.data().userId;
             if (!farmerIds.has(userId)) {
                 batch1.delete(doc.ref);
@@ -156,7 +160,7 @@ exports.cleanupOrphanedData = functions.pubsub
         // Check for orphaned reports
         const reportsSnapshot = await db.collection('farmReports').get();
         const batch2 = db.batch();
-        reportsSnapshot.forEach(doc => {
+        reportsSnapshot.forEach((doc) => {
             const userId = doc.data().userId;
             if (!farmerIds.has(userId)) {
                 batch2.delete(doc.ref);
@@ -177,4 +181,185 @@ exports.cleanupOrphanedData = functions.pubsub
         throw error;
     }
 });
+/**
+ * Weather API function to fetch current weather and forecast data for Majayjay, Laguna
+ * Uses Open-Meteo API to get weather information
+ */
+exports.getWeatherData = functions.https.onCall(async (data, context) => {
+    try {
+        // Coordinates for Majayjay, Laguna, Philippines
+        const LATITUDE = 14.1463;
+        const LONGITUDE = 121.4729;
+        // Get forecast days from request (default to 7)
+        const forecastDays = (data === null || data === void 0 ? void 0 : data.forecastDays) || 7;
+        const forecastType = (data === null || data === void 0 ? void 0 : data.forecastType) || 'daily'; // daily, hourly, current
+        let apiUrl = '';
+        // Build API URL based on forecast type
+        if (forecastType === 'current') {
+            // Current weather
+            apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&forecast_days=1`;
+        }
+        else if (forecastType === 'hourly') {
+            // Hourly forecast
+            apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&hourly=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m,soil_temperature_0cm,soil_temperature_6cm,soil_temperature_18cm,soil_moisture_0_to_1cm,soil_moisture_1_to_3cm,soil_moisture_3_to_9cm&forecast_days=${forecastDays}`;
+        }
+        else {
+            // Daily forecast (default)
+            apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&forecast_days=${forecastDays}`;
+        }
+        // Fetch weather data from Open-Meteo API
+        const response = await (0, node_fetch_1.default)(apiUrl);
+        if (!response.ok) {
+            throw new functions.https.HttpsError('internal', `Failed to fetch weather data: ${response.status} ${response.statusText}`);
+        }
+        const weatherData = await response.json();
+        // Process and format the weather data
+        const processedData = {
+            location: {
+                name: 'Majayjay, Laguna',
+                latitude: LATITUDE,
+                longitude: LONGITUDE
+            },
+            current: forecastType === 'current' ? processCurrentWeather(weatherData.current) : null,
+            hourly: forecastType === 'hourly' ? processHourlyWeather(weatherData.hourly) : null,
+            daily: forecastType !== 'hourly' ? processDailyWeather(weatherData.daily) : null,
+            forecastType,
+            forecastDays
+        };
+        return {
+            success: true,
+            data: processedData
+        };
+    }
+    catch (error) {
+        functions.logger.error('Error fetching weather data:', error);
+        throw new functions.https.HttpsError('internal', 'Failed to fetch weather data', error.message);
+    }
+});
+// Helper function to process current weather data
+function processCurrentWeather(current) {
+    return {
+        time: current.time,
+        temperature: current.temperature_2m,
+        humidity: current.relative_humidity_2m,
+        apparentTemperature: current.apparent_temperature,
+        isDay: current.is_day,
+        precipitation: current.precipitation,
+        rain: current.rain,
+        showers: current.showers,
+        snowfall: current.snowfall,
+        weatherCode: current.weather_code,
+        cloudCover: current.cloud_cover,
+        pressure: current.pressure_msl,
+        surfacePressure: current.surface_pressure,
+        windSpeed: current.wind_speed_10m,
+        windDirection: current.wind_direction_10m,
+        windGusts: current.wind_gusts_10m,
+        weatherDescription: getWeatherDescription(current.weather_code)
+    };
+}
+// Helper function to process hourly weather data
+function processHourlyWeather(hourly) {
+    if (!hourly)
+        return null;
+    return {
+        time: hourly.time,
+        temperature: hourly.temperature_2m,
+        humidity: hourly.relative_humidity_2m,
+        apparentTemperature: hourly.apparent_temperature,
+        precipitation: hourly.precipitation,
+        rain: hourly.rain,
+        showers: hourly.showers,
+        snowfall: hourly.snowfall,
+        weatherCode: hourly.weather_code,
+        cloudCover: hourly.cloud_cover,
+        pressure: hourly.pressure_msl,
+        surfacePressure: hourly.surface_pressure,
+        windSpeed: hourly.wind_speed_10m,
+        windDirection: hourly.wind_direction_10m,
+        windGusts: hourly.wind_gusts_10m,
+        soilTemperature: {
+            surface: hourly.soil_temperature_0cm,
+            depth6cm: hourly.soil_temperature_6cm,
+            depth18cm: hourly.soil_temperature_18cm
+        },
+        soilMoisture: {
+            surface: hourly.soil_moisture_0_to_1cm,
+            depth1to3cm: hourly.soil_moisture_1_to_3cm,
+            depth3to9cm: hourly.soil_moisture_3_to_9cm
+        }
+    };
+}
+// Helper function to process daily weather data
+function processDailyWeather(daily) {
+    if (!daily)
+        return null;
+    return {
+        time: daily.time,
+        weatherCode: daily.weather_code,
+        temperature: {
+            max: daily.temperature_2m_max,
+            min: daily.temperature_2m_min
+        },
+        apparentTemperature: {
+            max: daily.apparent_temperature_max,
+            min: daily.apparent_temperature_min
+        },
+        sunrise: daily.sunrise,
+        sunset: daily.sunset,
+        uvIndex: {
+            max: daily.uv_index_max,
+            clearSkyMax: daily.uv_index_clear_sky_max
+        },
+        precipitation: {
+            sum: daily.precipitation_sum,
+            rainSum: daily.rain_sum,
+            showersSum: daily.showers_sum,
+            snowfallSum: daily.snowfall_sum,
+            hours: daily.precipitation_hours,
+            probabilityMax: daily.precipitation_probability_max
+        },
+        wind: {
+            speedMax: daily.wind_speed_10m_max,
+            gustsMax: daily.wind_gusts_10m_max,
+            directionDominant: daily.wind_direction_10m_dominant
+        },
+        shortwaveRadiationSum: daily.shortwave_radiation_sum,
+        evapotranspiration: daily.et0_fao_evapotranspiration
+    };
+}
+// Helper function to convert weather codes to descriptions
+function getWeatherDescription(code) {
+    const weatherCodes = {
+        0: 'Clear sky',
+        1: 'Mainly clear',
+        2: 'Partly cloudy',
+        3: 'Overcast',
+        45: 'Fog',
+        48: 'Depositing rime fog',
+        51: 'Light drizzle',
+        53: 'Moderate drizzle',
+        55: 'Dense drizzle',
+        56: 'Light freezing drizzle',
+        57: 'Dense freezing drizzle',
+        61: 'Slight rain',
+        63: 'Moderate rain',
+        65: 'Heavy rain',
+        66: 'Light freezing rain',
+        67: 'Heavy freezing rain',
+        71: 'Slight snow fall',
+        73: 'Moderate snow fall',
+        75: 'Heavy snow fall',
+        77: 'Snow grains',
+        80: 'Slight rain showers',
+        81: 'Moderate rain showers',
+        82: 'Violent rain showers',
+        85: 'Slight snow showers',
+        86: 'Heavy snow showers',
+        95: 'Thunderstorm',
+        96: 'Thunderstorm with slight hail',
+        99: 'Thunderstorm with heavy hail'
+    };
+    return weatherCodes[code] || 'Unknown';
+}
 //# sourceMappingURL=index.js.map
