@@ -21,6 +21,31 @@ interface WeatherData {
     }[];
 }
 
+interface ExtendedWeatherData extends WeatherData {
+    extendedForecast?: {
+        date: string;
+        dayOfWeek: string;
+        condition: string;
+        high: number;
+        low: number;
+        // Add alert information for each day
+        alerts?: WeatherAlert[];
+    }[];
+    // Add current alerts
+    currentAlerts?: WeatherAlert[];
+}
+
+// Add new interface for weather alerts
+interface WeatherAlert {
+    type: 'typhoon' | 'monsoon' | 'cyclone' | 'thunderstorm' | 'heavyRain' | 'highWind' | 'extremeHeat' | 'extremeCold';
+    severity: 'low' | 'moderate' | 'high' | 'severe';
+    description: string;
+    icon: string;
+}
+
+// Add new types for forecast view
+type ForecastView = 'now' | 'tomorrow' | 'specific' | 'week' | 'sixteen';
+
 export const useFarmerDashboard = () => {
     const [username, setUsername] = useState("");
     const [userId, setUserId] = useState("");
@@ -36,9 +61,11 @@ export const useFarmerDashboard = () => {
         photoURL: ""
     });
     const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
-    const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+    const [weatherData, setWeatherData] = useState<ExtendedWeatherData | null>(null);
     const [weatherLoading, setWeatherLoading] = useState(false);
     const [weatherError, setWeatherError] = useState<string | null>(null);
+    const [forecastView, setForecastView] = useState<ForecastView>('now');
+    const [selectedDate, setSelectedDate] = useState<string>('');
     const { addCrop, crops, updateCrop } = useCrops();
     const { toast } = useToast();
     const navigate = useNavigate();
@@ -152,8 +179,8 @@ export const useFarmerDashboard = () => {
             // Current weather API endpoint
             const currentUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&forecast_days=1`;
             
-            // Daily forecast API endpoint
-            const dailyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&forecast_days=7`;
+            // Daily forecast API endpoint (extended to 16 days)
+            const dailyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&forecast_days=16`;
             
             // Fetch current weather data
             const currentResponse = await fetch(currentUrl);
@@ -162,7 +189,7 @@ export const useFarmerDashboard = () => {
             }
             const currentData = await currentResponse.json();
             
-            // Fetch daily forecast data
+            // Fetch daily forecast data (16 days)
             const dailyResponse = await fetch(dailyUrl);
             if (!dailyResponse.ok) {
                 throw new Error(`Failed to fetch forecast data: ${dailyResponse.status}`);
@@ -170,12 +197,15 @@ export const useFarmerDashboard = () => {
             const dailyData = await dailyResponse.json();
             
             // Process the data to match our WeatherData interface
-            const processedWeatherData: WeatherData = {
+            const processedWeatherData: ExtendedWeatherData = {
                 temperature: currentData.current?.temperature_2m || 0,
                 condition: getWeatherDescription(currentData.current?.weather_code || 0),
                 humidity: currentData.current?.relative_humidity_2m || 0,
                 rainfall: currentData.current?.rain || 0,
-                forecast: processForecastData(dailyData.daily)
+                forecast: processForecastData(dailyData.daily, 3), // Keep the original 3-day forecast for backward compatibility
+                extendedForecast: processExtendedForecastData(dailyData.daily),
+                // Add current alerts based on current conditions
+                currentAlerts: detectWeatherAlerts(currentData.current?.weather_code || 0, currentData.current)
             };
             
             setWeatherData(processedWeatherData);
@@ -223,14 +253,14 @@ export const useFarmerDashboard = () => {
         return weatherCodes[code] || 'Unknown';
     };
 
-    // Helper function to process forecast data
-    const processForecastData = (daily: any): WeatherData['forecast'] => {
+    // Helper function to process forecast data (limited days)
+    const processForecastData = (daily: any, days: number): WeatherData['forecast'] => {
         if (!daily || !daily.time || !daily.time.length) {
             return [];
         }
         
         const forecast = [];
-        const daysToShow = Math.min(3, daily.time.length);
+        const daysToShow = Math.min(days, daily.time.length);
         
         for (let i = 0; i < daysToShow; i++) {
             const date = new Date(daily.time[i]);
@@ -245,6 +275,200 @@ export const useFarmerDashboard = () => {
         }
         
         return forecast;
+    };
+
+    // Helper function to detect weather alerts based on conditions
+    const detectWeatherAlerts = (weatherCode: number, weatherData: any): WeatherAlert[] => {
+        const alerts: WeatherAlert[] = [];
+        
+        // Thunderstorm alerts (codes 95, 96, 99)
+        if ([95, 96, 99].includes(weatherCode)) {
+            alerts.push({
+                type: 'thunderstorm',
+                severity: weatherCode === 99 ? 'severe' : weatherCode === 96 ? 'high' : 'moderate',
+                description: weatherCode === 99 ? 'Thunderstorm with heavy hail' : 
+                            weatherCode === 96 ? 'Thunderstorm with slight hail' : 'Thunderstorm',
+                icon: '⚡'
+            });
+        }
+        
+        // Heavy rain alerts (codes 65, 82)
+        if ([65, 82].includes(weatherCode)) {
+            alerts.push({
+                type: 'heavyRain',
+                severity: 'high',
+                description: weatherCode === 65 ? 'Heavy rain' : 'Heavy showers',
+                icon: '🌧️'
+            });
+        }
+        
+        // High wind alerts (wind speed > 40 km/h)
+        if (weatherData?.wind_speed_10m > 40) {
+            // Typhoon alerts for very high winds (> 118 km/h)
+            if (weatherData.wind_speed_10m > 118) {
+                alerts.push({
+                    type: 'typhoon',
+                    severity: 'severe',
+                    description: `Typhoon conditions (${Math.round(weatherData.wind_speed_10m)} km/h winds)`,
+                    icon: '🌪️'
+                });
+            } 
+            // Cyclone alerts for high winds (> 63 km/h)
+            else if (weatherData.wind_speed_10m > 63) {
+                alerts.push({
+                    type: 'cyclone',
+                    severity: weatherData.wind_speed_10m > 89 ? 'severe' : 'high',
+                    description: `Cyclone conditions (${Math.round(weatherData.wind_speed_10m)} km/h winds)`,
+                    icon: '🌀'
+                });
+            }
+            // General high wind alert
+            else {
+                alerts.push({
+                    type: 'highWind',
+                    severity: weatherData.wind_speed_10m > 60 ? 'severe' : 'high',
+                    description: `High winds (${Math.round(weatherData.wind_speed_10m)} km/h)`,
+                    icon: '💨'
+                });
+            }
+        }
+        
+        // Extreme heat alerts (temperature > 35°C)
+        if (weatherData?.temperature_2m > 35) {
+            alerts.push({
+                type: 'extremeHeat',
+                severity: weatherData.temperature_2m > 40 ? 'severe' : 'moderate',
+                description: `Extreme heat (${Math.round(weatherData.temperature_2m)}°C)`,
+                icon: '🌡️'
+            });
+        }
+        
+        // Heavy precipitation probability alerts (> 80%)
+        if (weatherData?.precipitation_probability > 80) {
+            alerts.push({
+                type: 'heavyRain',
+                severity: 'moderate',
+                description: `High chance of rain (${weatherData.precipitation_probability}%)`,
+                icon: '☔'
+            });
+        }
+        
+        // Monsoon alerts based on sustained high humidity and rain
+        if (weatherData?.relative_humidity_2m > 80 && weatherData?.rain > 5) {
+            alerts.push({
+                type: 'monsoon',
+                severity: 'moderate',
+                description: 'Monsoon conditions detected',
+                icon: '🌊'
+            });
+        }
+        
+        return alerts;
+    };
+
+    // Helper function to detect alerts for forecast days
+    const detectForecastAlerts = (weatherCode: number, dailyData: any, index: number): WeatherAlert[] => {
+        const alerts: WeatherAlert[] = [];
+        
+        // Thunderstorm alerts (codes 95, 96, 99)
+        if ([95, 96, 99].includes(weatherCode)) {
+            alerts.push({
+                type: 'thunderstorm',
+                severity: weatherCode === 99 ? 'severe' : weatherCode === 96 ? 'high' : 'moderate',
+                description: weatherCode === 99 ? 'Thunderstorm with heavy hail' : 
+                            weatherCode === 96 ? 'Thunderstorm with slight hail' : 'Thunderstorm',
+                icon: '⚡'
+            });
+        }
+        
+        // Heavy rain alerts based on precipitation sum
+        if (dailyData?.precipitation_sum?.[index] > 20) {
+            alerts.push({
+                type: 'heavyRain',
+                severity: dailyData.precipitation_sum[index] > 50 ? 'severe' : 'high',
+                description: `Heavy rain expected (${Math.round(dailyData.precipitation_sum[index])}mm)`,
+                icon: '🌧️'
+            });
+        }
+        
+        // High wind alerts
+        if (dailyData?.wind_speed_10m_max?.[index] > 40) {
+            // Typhoon alerts for very high winds (> 118 km/h)
+            if (dailyData.wind_speed_10m_max[index] > 118) {
+                alerts.push({
+                    type: 'typhoon',
+                    severity: 'severe',
+                    description: `Typhoon expected (${Math.round(dailyData.wind_speed_10m_max[index])} km/h winds)`,
+                    icon: '🌪️'
+                });
+            } 
+            // Cyclone alerts for high winds (> 63 km/h)
+            else if (dailyData.wind_speed_10m_max[index] > 63) {
+                alerts.push({
+                    type: 'cyclone',
+                    severity: dailyData.wind_speed_10m_max[index] > 89 ? 'severe' : 'high',
+                    description: `Cyclone expected (${Math.round(dailyData.wind_speed_10m_max[index])} km/h winds)`,
+                    icon: '🌀'
+                });
+            }
+            // General high wind alert
+            else {
+                alerts.push({
+                    type: 'highWind',
+                    severity: dailyData.wind_speed_10m_max[index] > 60 ? 'severe' : 'high',
+                    description: `High winds expected (${Math.round(dailyData.wind_speed_10m_max[index])} km/h)`,
+                    icon: '💨'
+                });
+            }
+        }
+        
+        // High precipitation probability alerts
+        if (dailyData?.precipitation_probability_max?.[index] > 80) {
+            alerts.push({
+                type: 'heavyRain',
+                severity: 'moderate',
+                description: `High chance of rain (${dailyData.precipitation_probability_max[index]}%)`,
+                icon: '☔'
+            });
+        }
+        
+        // Monsoon alerts based on high precipitation and wind patterns
+        if (dailyData?.precipitation_sum?.[index] > 15 && dailyData?.wind_speed_10m_max?.[index] > 30) {
+            alerts.push({
+                type: 'monsoon',
+                severity: 'moderate',
+                description: 'Monsoon conditions expected',
+                icon: '🌊'
+            });
+        }
+        
+        return alerts;
+    };
+
+    // Helper function to process extended forecast data (16 days)
+    const processExtendedForecastData = (daily: any) => {
+        if (!daily || !daily.time || !daily.time.length) {
+            return [];
+        }
+        
+        const extendedForecast = [];
+        const daysToShow = Math.min(16, daily.time.length);
+        
+        for (let i = 0; i < daysToShow; i++) {
+            const date = new Date(daily.time[i]);
+            
+            extendedForecast.push({
+                date: daily.time[i],
+                dayOfWeek: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                condition: getWeatherDescription(daily.weather_code[i]),
+                high: daily.temperature_2m_max[i],
+                low: daily.temperature_2m_min[i],
+                // Add alerts for this day
+                alerts: detectForecastAlerts(daily.weather_code[i], daily, i)
+            });
+        }
+        
+        return extendedForecast;
     };
 
     const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -520,6 +744,12 @@ export const useFarmerDashboard = () => {
         }
     };
 
+    // Get available dates for specific day selection
+    const getAvailableDates = (): string[] => {
+        if (!weatherData?.extendedForecast) return [];
+        return weatherData.extendedForecast.map(item => item.date);
+    };
+
     return {
         username,
         userId,
@@ -541,6 +771,12 @@ export const useFarmerDashboard = () => {
         loadFarmerProfile,
         loadMonthlyReportCount,
         checkDeletionRequest,
-        loadWeatherData
+        loadWeatherData,
+        // New weather forecast view properties
+        forecastView,
+        setForecastView,
+        selectedDate,
+        setSelectedDate,
+        getAvailableDates
     };
 };

@@ -67,6 +67,12 @@ const FarmerDashboard = () => {
     handleUpdateProfile,
     handleRequestAccountDeletion,
     handleDeleteAccount,
+    // Weather forecast view properties
+    forecastView,
+    setForecastView,
+    selectedDate,
+    setSelectedDate,
+    getAvailableDates
   } = useFarmerDashboard();
 
   const {
@@ -241,13 +247,21 @@ const FarmerDashboard = () => {
             farmerProfile={farmerProfile}
             onEditProfile={() => setIsEditProfileDialogOpen(true)}
           />
-          <WeatherCard weatherData={weatherData || {
-            temperature: 0,
-            condition: "Loading...",
-            humidity: 0,
-            rainfall: 0,
-            forecast: []
-          }} />
+          <WeatherCard 
+            weatherData={weatherData || {
+              temperature: 0,
+              condition: "Loading...",
+              humidity: 0,
+              rainfall: 0,
+              forecast: [],
+              extendedForecast: []
+            }} 
+            forecastView={forecastView}
+            onForecastViewChange={setForecastView}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            availableDates={getAvailableDates()}
+          />
           <CropStatusCard cropData={mockCropData} />
         </div>
 
