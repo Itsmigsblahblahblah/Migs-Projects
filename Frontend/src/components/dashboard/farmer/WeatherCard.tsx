@@ -156,8 +156,8 @@ const WeatherCard = ({
                                 <p className="font-semibold">Tomorrow</p>
                                 <div className="flex items-center gap-2 mt-2">
                                     {getWeatherIcon(tomorrow.condition)}
-                                    <div>
-                                        <p className="text-2xl font-bold">{tomorrow.high}°</p>
+                                    <div className="min-w-0">
+                                        <p className="text-2xl font-bold truncate">{tomorrow.high}°</p>
                                         <p className="text-sm text-muted-foreground">High</p>
                                     </div>
                                 </div>
@@ -185,8 +185,8 @@ const WeatherCard = ({
                                     <p className="font-semibold">{formatDate(specificDay.date)}</p>
                                     <div className="flex items-center gap-2 mt-2">
                                         {getWeatherIcon(specificDay.condition)}
-                                        <div>
-                                            <p className="text-2xl font-bold">{specificDay.high}°</p>
+                                        <div className="min-w-0">
+                                            <p className="text-2xl font-bold truncate">{specificDay.high}°</p>
                                             <p className="text-sm text-muted-foreground">High</p>
                                         </div>
                                     </div>
@@ -213,23 +213,23 @@ const WeatherCard = ({
                                     const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                     
                                     return (
-                                        <div key={index} className="border rounded-lg p-2 bg-card text-center">
-                                            <div className="font-medium text-xs">
+                                        <div key={index} className="border rounded-lg p-2 bg-card text-center min-w-0">
+                                            <div className="font-medium text-xs truncate">
                                                 {index === 0 ? 'Today' : 
                                                  index === 1 ? 'Tomorrow' : 
                                                  day.dayOfWeek}
                                             </div>
-                                            <div className="text-xs text-muted-foreground">
+                                            <div className="text-xs text-muted-foreground truncate">
                                                 {formattedDate}
                                             </div>
                                             <div className="my-1 flex justify-center">
                                                 {getWeatherIcon(day.condition)}
                                             </div>
-                                            <div className="text-sm font-medium">
+                                            <div className="text-sm font-medium min-w-0 truncate">
                                                 {Math.round(day.high)}°/{Math.round(day.low)}°
                                             </div>
                                             {day.alerts && day.alerts.length > 0 && (
-                                                <div className="mt-1 text-red-500 text-xs">
+                                                <div className="mt-1 text-red-500 text-xs truncate">
                                                     ⚠️
                                                 </div>
                                             )}
@@ -261,23 +261,23 @@ const WeatherCard = ({
                                     const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                     
                                     return (
-                                        <div key={index} className="border rounded-lg p-2 bg-card text-center">
-                                            <div className="font-medium text-xs">
+                                        <div key={index} className="border rounded-lg p-2 bg-card text-center min-w-0">
+                                            <div className="font-medium text-xs truncate">
                                                 {index === 0 ? 'Today' : 
                                                  index === 1 ? 'Tomorrow' : 
                                                  day.dayOfWeek}
                                             </div>
-                                            <div className="text-xs text-muted-foreground">
+                                            <div className="text-xs text-muted-foreground truncate">
                                                 {formattedDate}
                                             </div>
                                             <div className="my-1 flex justify-center">
                                                 {getWeatherIcon(day.condition)}
                                             </div>
-                                            <div className="text-sm font-medium">
+                                            <div className="text-sm font-medium min-w-0 truncate">
                                                 {Math.round(day.high)}°/{Math.round(day.low)}°
                                             </div>
                                             {day.alerts && day.alerts.length > 0 && (
-                                                <div className="mt-1 text-red-500 text-xs">
+                                                <div className="mt-1 text-red-500 text-xs truncate">
                                                     ⚠️
                                                 </div>
                                             )}
@@ -302,11 +302,11 @@ const WeatherCard = ({
                 return (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                                 {getWeatherIcon(weatherData.condition)}
-                                <div>
-                                    <p className="text-2xl font-bold">{weatherData.temperature}°C</p>
-                                    <p className="text-sm text-muted-foreground">{weatherData.condition}</p>
+                                <div className="min-w-0">
+                                    <p className="text-2xl font-bold truncate">{weatherData.temperature}°C</p>
+                                    <p className="text-sm text-muted-foreground truncate">{weatherData.condition}</p>
                                 </div>
                             </div>
                             <div className="text-right">
@@ -333,31 +333,31 @@ const WeatherCard = ({
                     {/* Filter Controls */}
                     <div className="flex flex-wrap gap-2">
                         <button 
-                            className={`px-3 py-1 text-xs rounded-full ${forecastView === 'now' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
+                            className={`px-3 py-1 text-xs rounded-full truncate ${forecastView === 'now' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
                             onClick={() => onForecastViewChange && onForecastViewChange('now')}
                         >
                             Now
                         </button>
                         <button 
-                            className={`px-3 py-1 text-xs rounded-full ${forecastView === 'tomorrow' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
+                            className={`px-3 py-1 text-xs rounded-full truncate ${forecastView === 'tomorrow' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
                             onClick={() => onForecastViewChange && onForecastViewChange('tomorrow')}
                         >
                             Tomorrow
                         </button>
                         <button 
-                            className={`px-3 py-1 text-xs rounded-full ${forecastView === 'specific' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
+                            className={`px-3 py-1 text-xs rounded-full truncate ${forecastView === 'specific' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
                             onClick={() => onForecastViewChange && onForecastViewChange('specific')}
                         >
                             Specific Day
                         </button>
                         <button 
-                            className={`px-3 py-1 text-xs rounded-full ${forecastView === 'week' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
+                            className={`px-3 py-1 text-xs rounded-full truncate ${forecastView === 'week' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
                             onClick={() => onForecastViewChange && onForecastViewChange('week')}
                         >
                             1-Week
                         </button>
                         <button 
-                            className={`px-3 py-1 text-xs rounded-full ${forecastView === 'sixteen' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
+                            className={`px-3 py-1 text-xs rounded-full truncate ${forecastView === 'sixteen' ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
                             onClick={() => onForecastViewChange && onForecastViewChange('sixteen')}
                         >
                             16-Day

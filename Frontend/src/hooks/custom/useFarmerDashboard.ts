@@ -28,6 +28,11 @@ interface ExtendedWeatherData extends WeatherData {
         condition: string;
         high: number;
         low: number;
+        // Add detailed weather information
+        humidity?: number;
+        windSpeed?: number;
+        precipitationProbability?: number;
+        uvIndex?: number;
         // Add alert information for each day
         alerts?: WeatherAlert[];
     }[];
@@ -180,7 +185,7 @@ export const useFarmerDashboard = () => {
             const currentUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m&forecast_days=1`;
             
             // Daily forecast API endpoint (extended to 16 days)
-            const dailyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&forecast_days=16`;
+            const dailyUrl = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,relative_humidity_2m_mean,sunrise,sunset,uv_index_max,uv_index_clear_sky_max,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,wind_direction_10m_dominant,shortwave_radiation_sum,et0_fao_evapotranspiration&forecast_days=16`;
             
             // Fetch current weather data
             const currentResponse = await fetch(currentUrl);
@@ -463,6 +468,11 @@ export const useFarmerDashboard = () => {
                 condition: getWeatherDescription(daily.weather_code[i]),
                 high: daily.temperature_2m_max[i],
                 low: daily.temperature_2m_min[i],
+                // Add detailed weather information
+                humidity: daily.relative_humidity_2m_mean?.[i] || 0,
+                windSpeed: daily.wind_speed_10m_max?.[i] || 0,
+                precipitationProbability: daily.precipitation_probability_max?.[i] || 0,
+                uvIndex: daily.uv_index_max?.[i] || 0,
                 // Add alerts for this day
                 alerts: detectForecastAlerts(daily.weather_code[i], daily, i)
             });

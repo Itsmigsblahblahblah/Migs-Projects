@@ -34,6 +34,11 @@ interface ForecastDay {
     condition: string;
     high: number;
     low: number;
+    // Add detailed weather information
+    humidity?: number;
+    windSpeed?: number;
+    precipitationProbability?: number;
+    uvIndex?: number;
     alerts?: WeatherAlert[];
 }
 
@@ -110,12 +115,12 @@ const WeatherForecastModal = ({
         if (!alerts || alerts.length === 0) return null;
         
         return (
-            <div className="mt-3 space-y-2">
-                <h4 className="font-medium text-sm">Weather Alerts</h4>
+            <div className="mt-3 space-y-2 min-w-0">
+                <h4 className="font-medium text-sm truncate">Weather Alerts</h4>
                 {alerts.map((alert, index) => (
-                    <div key={index} className={`flex items-center gap-2 text-xs p-2 rounded ${getAlertColor(alert.severity)}`}>
-                        <span className="text-lg">{alert.icon}</span>
-                        <span className="font-medium">{alert.description}</span>
+                    <div key={index} className={`flex items-center gap-2 text-xs p-2 rounded ${getAlertColor(alert.severity)} min-w-0`}>
+                        <span className="text-lg truncate">{alert.icon}</span>
+                        <span className="font-medium truncate">{alert.description}</span>
                     </div>
                 ))}
             </div>
@@ -160,22 +165,22 @@ const WeatherForecastModal = ({
                                             }`}
                                             onClick={() => navigateToDay(index)}
                                         >
-                                            <div className="text-xs font-medium">
+                                            <div className="text-xs font-medium truncate">
                                                 {index === 0 ? 'Today' : 
                                                  index === 1 ? 'Tomorrow' : 
                                                  day.dayOfWeek}
                                             </div>
-                                            <div className="text-xs opacity-80">
+                                            <div className="text-xs opacity-80 truncate">
                                                 {formattedDate}
                                             </div>
                                             <div className="my-1">
                                                 {getWeatherIcon(day.condition)}
                                             </div>
-                                            <div className="text-sm font-medium">
+                                            <div className="text-sm font-medium min-w-0 truncate">
                                                 {Math.round(day.high)}°/{Math.round(day.low)}°
                                             </div>
                                             {day.alerts && day.alerts.length > 0 && (
-                                                <div className="mt-1 text-red-500">
+                                                <div className="mt-1 text-red-500 truncate">
                                                     ⚠️
                                                 </div>
                                             )}
@@ -191,50 +196,50 @@ const WeatherForecastModal = ({
                     {currentDay && (
                         <div className="flex-1 overflow-y-auto border rounded-lg p-4 bg-card">
                             <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <h2 className="text-xl font-bold">
+                                <div className="min-w-0">
+                                    <h2 className="text-xl font-bold truncate">
                                         {currentIndex === 0 ? 'Today' : 
                                          currentIndex === 1 ? 'Tomorrow' : 
                                          currentDay.dayOfWeek}
                                     </h2>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-sm text-muted-foreground truncate">
                                         {formatDate(currentDay.date)}
                                     </p>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
                                     {getWeatherIcon(currentDay.condition)}
-                                    <div>
-                                        <p className="text-2xl font-bold">{Math.round(currentDay.high)}°</p>
+                                    <div className="min-w-0">
+                                        <p className="text-2xl font-bold truncate">{Math.round(currentDay.high)}°</p>
                                         <p className="text-sm text-muted-foreground">High</p>
                                     </div>
-                                    <div>
-                                        <p className="text-lg">{Math.round(currentDay.low)}°</p>
+                                    <div className="min-w-0">
+                                        <p className="text-lg truncate">{Math.round(currentDay.low)}°</p>
                                         <p className="text-sm text-muted-foreground">Low</p>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div className="mb-4">
+                            <div className="mb-4 min-w-0">
                                 <h3 className="font-medium mb-2">Condition</h3>
-                                <p className="text-sm">{currentDay.condition}</p>
+                                <p className="text-sm truncate">{currentDay.condition}</p>
                             </div>
                             
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                <div className="border rounded-lg p-3">
-                                    <p className="text-sm text-muted-foreground">Humidity</p>
-                                    <p className="font-medium">75%</p>
+                                <div className="border rounded-lg p-3 min-w-0">
+                                    <p className="text-sm text-muted-foreground truncate">Humidity</p>
+                                    <p className="font-medium truncate">{currentDay.humidity || 0}%</p>
                                 </div>
-                                <div className="border rounded-lg p-3">
-                                    <p className="text-sm text-muted-foreground">Wind</p>
-                                    <p className="font-medium">12 km/h</p>
+                                <div className="border rounded-lg p-3 min-w-0">
+                                    <p className="text-sm text-muted-foreground truncate">Wind</p>
+                                    <p className="font-medium truncate">{currentDay.windSpeed || 0} km/h</p>
                                 </div>
-                                <div className="border rounded-lg p-3">
-                                    <p className="text-sm text-muted-foreground">Rain</p>
-                                    <p className="font-medium">20%</p>
+                                <div className="border rounded-lg p-3 min-w-0">
+                                    <p className="text-sm text-muted-foreground truncate">Rain</p>
+                                    <p className="font-medium truncate">{currentDay.precipitationProbability || 0}%</p>
                                 </div>
-                                <div className="border rounded-lg p-3">
-                                    <p className="text-sm text-muted-foreground">UV Index</p>
-                                    <p className="font-medium">6</p>
+                                <div className="border rounded-lg p-3 min-w-0">
+                                    <p className="text-sm text-muted-foreground truncate">UV Index</p>
+                                    <p className="font-medium truncate">{currentDay.uvIndex || 0}</p>
                                 </div>
                             </div>
                             

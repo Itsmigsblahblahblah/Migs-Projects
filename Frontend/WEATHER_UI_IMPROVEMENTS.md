@@ -86,7 +86,14 @@ This document summarizes the UI improvements made to the weather functionality i
 
 ## Future Enhancements
 Potential areas for future improvement:
-- Dynamic weather data in modal (currently showing placeholder values)
 - Integration with soil temperature and moisture data
 - Personalized weather recommendations for farming activities
 - Export functionality for weather forecast data
+
+## Recent Improvements
+- Adjusted layout in 1-week and 16-day forecasts to ensure temperature displays are properly contained within their boxes
+- Added `min-w-0` and `truncate` classes to temperature elements to prevent overflow
+- Improved responsive design for better readability across all screen sizes
+- Fixed layout issues with "Today" and "Tomorrow" labels in forecast sections
+- Added containment classes to all text elements to prevent overflow in fixed-size containers
+- Enhanced filter control buttons with truncation for better mobile experience
