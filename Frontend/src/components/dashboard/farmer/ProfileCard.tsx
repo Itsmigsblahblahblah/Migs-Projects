@@ -10,11 +10,26 @@ interface ProfileCardProps {
         photoURL?: string;
         farmArea: string;
         farmAddress: string;
+        createdAt?: string;
     };
     onEditProfile: () => void;
 }
 
 const ProfileCard = ({ username, farmerProfile, onEditProfile }: ProfileCardProps) => {
+    // Format the registration date
+    const formatRegistrationDate = (dateString: string | undefined) => {
+        if (!dateString) return 'Unknown';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long'
+            });
+        } catch {
+            return 'Unknown';
+        }
+    };
+
     return (
         <Card className="shadow-card">
             <CardHeader>
@@ -64,7 +79,7 @@ const ProfileCard = ({ username, farmerProfile, onEditProfile }: ProfileCardProp
                     </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Member Since:</span>
-                        <span>Jan 2025</span>
+                        <span>{formatRegistrationDate(farmerProfile.createdAt)}</span>
                     </div>
                 </div>
             </CardContent>

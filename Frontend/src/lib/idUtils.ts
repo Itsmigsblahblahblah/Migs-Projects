@@ -24,6 +24,15 @@ export function generateTimestamp(): string {
 }
 
 /**
+ * Generates a timestamp string in YYYYMMDD_HHMMSS format for more precision
+ * @returns Timestamp string with seconds precision
+ */
+export function generatePreciseTimestamp(): string {
+  const now = new Date();
+  return `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+}
+
+/**
  * Generates a readable document ID for farmer crops
  * Format: {username}_{cropName}_{timestamp}
  * @param username The farmer's username
@@ -32,7 +41,7 @@ export function generateTimestamp(): string {
  */
 export function generateFarmerCropId(username: string, cropName: string): string {
   const slug = generateSlug(cropName);
-  const timestamp = generateTimestamp();
+  const timestamp = generatePreciseTimestamp();
   const userSlug = generateSlug(username);
   return `${userSlug}_${slug}_${timestamp}`;
 }
@@ -56,7 +65,7 @@ export function generateDeletionRequestId(username: string): string {
  * @returns A readable document ID
  */
 export function generateFarmerReportId(username: string): string {
-  const timestamp = generateTimestamp();
+  const timestamp = generatePreciseTimestamp();
   const userSlug = generateSlug(username);
   return `${userSlug}_report_${timestamp}`;
 }

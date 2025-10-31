@@ -63,7 +63,8 @@ export const useFarmerDashboard = () => {
         homeAddress: "",
         farmAddress: "",
         farmArea: "",
-        photoURL: ""
+        photoURL: "",
+        createdAt: ""
     });
     const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
     const [weatherData, setWeatherData] = useState<ExtendedWeatherData | null>(null);
@@ -114,7 +115,8 @@ export const useFarmerDashboard = () => {
                     homeAddress: data.homeAddress || "",
                     farmAddress: data.farmAddress || "",
                     farmArea: data.farmArea || "2.5 hectares",
-                    photoURL: data.photoURL || ""
+                    photoURL: data.photoURL || "",
+                    createdAt: data.createdAt || ""
                 });
             }
         } catch (error) {

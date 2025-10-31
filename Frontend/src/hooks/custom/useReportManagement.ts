@@ -119,12 +119,9 @@ export const useReportManagement = (userId: string, username: string, setMonthly
                 status: 'processed'
             };
 
-            // Generate a readable document ID using username
-            const documentId = generateFarmerReportId(username);
-            
-            // Add to Firestore with custom ID
-            const reportRef = doc(db, "farmReports", documentId);
-            await setDoc(reportRef, reportData);
+            // Add to Firestore with auto-generated ID
+            const reportsRef = collection(db, "farmReports");
+            const docRef = await addDoc(reportsRef, reportData);
 
             toast({
                 title: "Recommendation Ready",

@@ -143,16 +143,13 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 createdAt: Timestamp.now()
             };
 
-            // Generate a readable document ID using username instead of userId
-            const documentId = generateFarmerCropId(username, cropData.name);
+            // Add to Firestore with auto-generated ID
+            const cropsRef = collection(db, "farmerCrops");
+            const docRef = await addDoc(cropsRef, newCropData);
             
-            // Add to Firestore with custom ID
-            const cropRef = doc(db, "farmerCrops", documentId);
-            await setDoc(cropRef, newCropData);
-
-            // Add to local state
+            // Add to local state with the auto-generated ID
             const newCrop: Crop = {
-                id: documentId, // Use the custom ID
+                id: docRef.id, // Use the auto-generated ID
                 ...newCropData
             };
 
