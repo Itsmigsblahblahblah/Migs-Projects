@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
@@ -7,9 +8,11 @@ import {
     Edit,
     Leaf,
     Bell,
-    Lightbulb
+    Lightbulb,
+    Sprout
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import CropPrescriptionDialog from "./CropPrescriptionDialog";
 
 interface QuickActionsProps {
     onAddCrop: () => void;
@@ -18,6 +21,7 @@ interface QuickActionsProps {
 
 const QuickActions = ({ onAddCrop, onUpdateCrop }: QuickActionsProps) => {
     const navigate = useNavigate();
+    const [isPrescriptionDialogOpen, setIsPrescriptionDialogOpen] = useState(false);
 
     return (
         <Card className="shadow-card">
@@ -30,9 +34,13 @@ const QuickActions = ({ onAddCrop, onUpdateCrop }: QuickActionsProps) => {
             <CardContent>
                 <Dialog>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/history')}>
-                            <Eye className="h-5 w-5" />
-                            <span>View Reports</span>
+                        <Button 
+                            variant="outline" 
+                            className="h-20 flex flex-col gap-2" 
+                            onClick={() => setIsPrescriptionDialogOpen(true)}
+                        >
+                            <Sprout className="h-5 w-5" />
+                            <span>Prescribe Crop</span>
                         </Button>
                         <DialogTrigger asChild>
                             <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={onAddCrop}>
@@ -54,6 +62,11 @@ const QuickActions = ({ onAddCrop, onUpdateCrop }: QuickActionsProps) => {
                         </Button>
                     </div>
                 </Dialog>
+                
+                <CropPrescriptionDialog 
+                    open={isPrescriptionDialogOpen} 
+                    onOpenChange={setIsPrescriptionDialogOpen} 
+                />
             </CardContent>
         </Card>
     );
