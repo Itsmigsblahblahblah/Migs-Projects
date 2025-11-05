@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Upload, Trash2, Clock, CheckCircle, XCircle } from "lucide-react";
+import { User, Upload, Trash2, Clock, CheckCircle, XCircle, ChevronDown } from "lucide-react";
 
 interface EditProfileDialogProps {
     open: boolean;
@@ -50,6 +50,106 @@ const EditProfileDialog = ({
     getDeletionButtonText
 }: EditProfileDialogProps) => {
     const [isUploading, setIsUploading] = useState(false);
+    
+    // Dropdown states for home address
+    const [showHomeDropdown, setShowHomeDropdown] = useState(false);
+    const [homeSearchTerm, setHomeSearchTerm] = useState(farmerProfile.homeAddress || "");
+    const homeDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Dropdown states for farm address
+    const [showFarmDropdown, setShowFarmDropdown] = useState(false);
+    const [farmSearchTerm, setFarmSearchTerm] = useState(farmerProfile.farmAddress || "");
+    const farmDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Sync dropdown values with farmerProfile when it changes
+    useEffect(() => {
+        setHomeSearchTerm(farmerProfile.homeAddress || "");
+        setFarmSearchTerm(farmerProfile.farmAddress || "");
+    }, [farmerProfile.homeAddress, farmerProfile.farmAddress]);
+    
+    // Home address options
+    const homeAddressOptions = [
+        "Amonoy", "Bakia", "Balanac", "Balayong", "Banilad", "Banti", "Bitaoy", 
+        "Botocan", "Bukal", "Burgos", "Burol", "Coralao", "Gagalot", "Ibabang Banga", 
+        "Ibabang Bayucain", "Ilayang Banga", "Ilayang Bayucain", "Isabang", "Malinao", 
+        "May-It", "Munting Kawayan", "Oobi", "Olla", "Origuel (Poblacion)", "Panalaban", 
+        "Pangil", "Panglan", "Piit", "Pook", "Rizal", "San Francisco (Poblacion)", 
+        "San Isidro", "San Miguel (Poblacion)", "San Roque", "Santa Catalina (Poblacion)", 
+        "Suba", "Talortor", "Tanawan", "Taytay", "Villa Nogales"
+    ];
+    
+    // Farm address options
+    const farmAddressOptions = [
+        "Brgy. Amonay", "Brgy. Balayong", "Brgy. Dobi", "Brgy. Banga", "Brgy. Bukal", 
+        "Brgy. Gagalot", "Brgy. Malinao", "Brgy. Burgos", "Brgy. San Francisco", 
+        "Brgy. Munting Kawayan", "Brgy. Piit", "Brgy. Taytay", "Brgy. Olla", 
+        "Brgy. Coralao", "Brgy. San Roque", "Brgy. Suba", "Brgy. Pangil"
+    ];
+    
+    // Filter options based on search term
+    const getFilteredOptions = (options: string[], searchTerm: string) => {
+        if (searchTerm) {
+            return options.filter(option =>
+                option.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+        return options;
+    };
+    
+    // Close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (homeDropdownRef.current && !homeDropdownRef.current.contains(event.target as Node)) {
+                setShowHomeDropdown(false);
+            }
+            if (farmDropdownRef.current && !farmDropdownRef.current.contains(event.target as Node)) {
+                setShowFarmDropdown(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+    
+    // Handle selection for home address
+    const handleHomeSelect = (value: string) => {
+        setHomeSearchTerm(value);
+        handleProfileInputChange({
+            target: { name: "homeAddress", value }
+        } as React.ChangeEvent<HTMLInputElement>);
+        setShowHomeDropdown(false);
+    };
+    
+    // Handle selection for farm address
+    const handleFarmSelect = (value: string) => {
+        setFarmSearchTerm(value);
+        handleProfileInputChange({
+            target: { name: "farmAddress", value }
+        } as React.ChangeEvent<HTMLInputElement>);
+        setShowFarmDropdown(false);
+    };
+    
+    // Handle input change for home address
+    const handleHomeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setHomeSearchTerm(value);
+        handleProfileInputChange({
+            target: { name: "homeAddress", value }
+        } as React.ChangeEvent<HTMLInputElement>);
+        setShowHomeDropdown(true);
+    };
+    
+    // Handle input change for farm address
+    const handleFarmInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setFarmSearchTerm(value);
+        handleProfileInputChange({
+            target: { name: "farmAddress", value }
+        } as React.ChangeEvent<HTMLInputElement>);
+        setShowFarmDropdown(true);
+    };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         setIsUploading(true);
@@ -140,26 +240,92 @@ const EditProfileDialog = ({
 
                     {/* Home Address and Farm Address - Grid */}
                     <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="profile-homeAddress">Home Address</Label>
-                            <Input
-                                id="profile-homeAddress"
-                                name="homeAddress"
-                                value={farmerProfile.homeAddress}
-                                onChange={handleProfileInputChange}
-                                placeholder="Enter your home address"
-                            />
+                        {/* Home Address Dropdown */}
+                        <div className="space-y-2" ref={homeDropdownRef}>
+                            <Label htmlFor="profile-homeAddress">Home Address (Barangay)</Label>
+                            <div className="relative">
+                                <Input
+                                    id="profile-homeAddress"
+                                    name="homeAddress"
+                                    value={homeSearchTerm}
+                                    onChange={handleHomeInputChange}
+                                    onFocus={() => setShowHomeDropdown(true)}
+                                    placeholder="Select or type your barangay"
+                                    className="pr-10"
+                                    autoComplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowHomeDropdown(!showHomeDropdown)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    <ChevronDown className="h-4 w-4" />
+                                </button>
+                                
+                                {showHomeDropdown && (
+                                    <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-[120px] overflow-auto">
+                                        {getFilteredOptions(homeAddressOptions, homeSearchTerm).length > 0 ? (
+                                            getFilteredOptions(homeAddressOptions, homeSearchTerm).map((option) => (
+                                                <div
+                                                    key={option}
+                                                    className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                                    onClick={() => handleHomeSelect(option)}
+                                                >
+                                                    {option}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                                                No matching barangays found
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="profile-farmAddress">Farm Address</Label>
-                            <Input
-                                id="profile-farmAddress"
-                                name="farmAddress"
-                                value={farmerProfile.farmAddress}
-                                onChange={handleProfileInputChange}
-                                placeholder="Enter your farm location"
-                            />
+                        {/* Farm Address Dropdown */}
+                        <div className="space-y-2" ref={farmDropdownRef}>
+                            <Label htmlFor="profile-farmAddress">Farm Address (Barangay)</Label>
+                            <div className="relative">
+                                <Input
+                                    id="profile-farmAddress"
+                                    name="farmAddress"
+                                    value={farmSearchTerm}
+                                    onChange={handleFarmInputChange}
+                                    onFocus={() => setShowFarmDropdown(true)}
+                                    placeholder="Select or type your barangay"
+                                    className="pr-10"
+                                    autoComplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowFarmDropdown(!showFarmDropdown)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    <ChevronDown className="h-4 w-4" />
+                                </button>
+                                
+                                {showFarmDropdown && (
+                                    <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-[120px] overflow-auto">
+                                        {getFilteredOptions(farmAddressOptions, farmSearchTerm).length > 0 ? (
+                                            getFilteredOptions(farmAddressOptions, farmSearchTerm).map((option) => (
+                                                <div
+                                                    key={option}
+                                                    className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                                    onClick={() => handleFarmSelect(option)}
+                                                >
+                                                    {option}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                                                No matching barangays found
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 

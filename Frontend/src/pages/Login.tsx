@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,64 @@ const Login = () => {
     fullName: "",
     farmName: ""
   });
+
+  // Barangay options
+  const barangayOptions = [
+    "Brgy. Amonay",
+    "Brgy. Balayong",
+    "Brgy. Dobi",
+    "Brgy. Banga",
+    "Brgy. Bukal",
+    "Brgy. Gagalot",
+    "Brgy. Malinao",
+    "Brgy. Burgos",
+    "Brgy. San Francisco",
+    "Brgy. Munting Kawayan",
+    "Brgy. Piit",
+    "Brgy. Taytay",
+    "Brgy. Olla",
+    "Brgy. Coralao",
+    "Brgy. San Roque",
+    "Brgy. Suba",
+    "Brgy. Pangil"
+  ];
+
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [filteredOptions, setFilteredOptions] = useState(barangayOptions);
+  const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Filter options based on search term
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = barangayOptions.filter(option =>
+        option.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredOptions(filtered);
+    } else {
+      setFilteredOptions(barangayOptions);
+    }
+  }, [searchTerm]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleSelect = (value: string) => {
+    setCredentials({...credentials, farmName: value});
+    setShowDropdown(false);
+    setSearchTerm("");
+  };
 
   // Check if user is already authenticated on component mount
   useEffect(() => {
@@ -534,19 +592,54 @@ const Login = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2 group mt-10">
+                <div className="space-y-2 group mt-10" ref={dropdownRef}>
                   <Label htmlFor="farmName" className="flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
-                    Farm Name
+                    Farm Address
                   </Label>
                   <div className="relative">
                     <Input
                       id="farmName"
-                      placeholder="Dela Cruz Farm"
+                      placeholder="Select or type your farm address"
                       value={credentials.farmName}
-                      onChange={(e) => setCredentials({...credentials, farmName: e.target.value})}
-                      className="peer"
+                      onChange={(e) => {
+                        setCredentials({...credentials, farmName: e.target.value});
+                        setSearchTerm(e.target.value);
+                        setShowDropdown(true);
+                      }}
+                      onFocus={() => setShowDropdown(true)}
+                      className="peer pr-10"
+                      autoComplete="off"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowDropdown(!showDropdown)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    
+                    {showDropdown && (
+                      <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-[120px] overflow-auto">
+                        {filteredOptions.length > 0 ? (
+                          filteredOptions.map((option) => (
+                            <div
+                              key={option}
+                              className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                              onClick={() => handleSelect(option)}
+                            >
+                              {option}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            No matching addresses found
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
