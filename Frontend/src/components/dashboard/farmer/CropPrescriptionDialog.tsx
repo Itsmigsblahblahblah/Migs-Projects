@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,87 +12,182 @@ import {
   TrendingUp, 
   Leaf,
   Calendar,
-  MapPin
+  MapPin,
+  FlaskConical
 } from "lucide-react";
+
+// Add this interface for the API response
+interface CropRecommendation {
+  crop: string;
+  confidence: number;
+}
+
+interface SoilData {
+  pH: number;
+  Nitrogen: string;  // 'L', 'M', or 'H'
+  Phosphorus: string;  // 'L', 'M', or 'H'
+  Potassium: string;  // 'L', 'M', or 'H'
+}
+
+interface PrescriptionDetails {
+  id: string;
+  crop: string;
+  reason: string;
+  confidence: number;
+  plantingSeason: string;
+  expectedYield: string;
+  marketTrend: string;
+  soilType: string;
+  weatherCondition: string;
+  recommendations: string[];
+  avoid: string[];
+}
+
+interface FarmerProfile {
+  fullName: string;
+  email: string;
+  contactNumber: string;
+  homeAddress: string;
+  farmAddress: string;
+  farmArea: string;
+  photoURL: string;
+  createdAt: string;
+}
 
 interface CropPrescriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  farmerProfile?: FarmerProfile;
 }
 
-// Placeholder data for crop prescriptions
-const placeholderPrescriptions = [
-  {
-    id: "1",
-    crop: "Rice",
-    reason: "Current soil moisture levels and weather patterns are optimal for rice cultivation.",
-    confidence: 92,
-    plantingSeason: "Wet Season (June - October)",
-    expectedYield: "4-5 tons/hectare",
-    marketTrend: "Stable prices with increasing demand",
-    soilType: "Clayey loam",
-    weatherCondition: "High rainfall expected",
-    recommendations: [
-      "Plant during the upcoming wet season for optimal growth",
-      "Use nitrogen-rich fertilizer for better yield",
-      "Ensure proper water management and drainage"
-    ],
-    avoid: [
-      "Avoid planting during dry season without irrigation",
-      "Do not over-fertilize with nitrogen late in season"
-    ]
-  },
-  {
-    id: "2",
-    crop: "Corn",
-    reason: "Moderate temperatures and adequate rainfall support healthy corn growth.",
-    confidence: 85,
-    plantingSeason: "Dry Season (November - April)",
-    expectedYield: "2-3 tons/hectare",
-    marketTrend: "Good market prices expected next quarter",
-    soilType: "Sandy loam",
-    weatherCondition: "Moderate temperatures",
-    recommendations: [
-      "Plant in well-drained soil with good sunlight exposure",
-      "Apply balanced fertilizer (NPK) at recommended rates",
-      "Monitor for corn borer pests during growing season"
-    ],
-    avoid: [
-      "Avoid waterlogged areas that can cause root rot",
-      "Do not plant too close to previous corn crop (rotation needed)"
-    ]
-  },
-  {
-    id: "3",
-    crop: "Vegetable Legumes",
-    reason: "Current nitrogen levels in soil support legume growth, and market demand is high.",
-    confidence: 78,
-    plantingSeason: "Year-round with proper irrigation",
-    expectedYield: "1-2 tons/hectare",
-    marketTrend: "High demand with premium prices",
-    soilType: "Well-drained loam",
-    weatherCondition: "Stable temperatures",
-    recommendations: [
-      "Plant in rotation with other crops to improve soil fertility",
-      "Harvest regularly to encourage continuous production",
-      "Use organic mulch to retain soil moisture"
-    ],
-    avoid: [
-      "Avoid planting during extreme heat without shade",
-      "Do not overwater as this can cause root diseases"
-    ]
-  }
-];
+const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile }: CropPrescriptionDialogProps) => {
+  const [selectedCrop, setSelectedCrop] = useState<PrescriptionDetails | null>(null);
+  // Add state for loading and recommendations
+  const [recommendations, setRecommendations] = useState<CropRecommendation[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Add state for soil data input
+  const [inputSoilData, setInputSoilData] = useState<SoilData>({
+    pH: 6.5,
+    Nitrogen: 'M',
+    Phosphorus: 'M',
+    Potassium: 'M'
+  });
+  const [soilDataLoading, setSoilDataLoading] = useState(false);
 
-const CropPrescriptionDialog = ({ open, onOpenChange }: CropPrescriptionDialogProps) => {
-  const [selectedCrop, setSelectedCrop] = useState<typeof placeholderPrescriptions[0] | null>(null);
+  // Function to extract barangay name from farm address
+  const extractBarangay = (farmAddress: string) => {
+    // Extract barangay name from address like "Brgy. San Roque" or "Barangay San Roque"
+    const match = farmAddress.match(/(?:Brgy\.|Barangay)\s+(.+)/i);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    return farmAddress; // fallback to the full address if no match
+  };
 
-  const handleCropSelect = (crop: typeof placeholderPrescriptions[0]) => {
+  // Function to fetch soil data by barangay
+  const fetchSoilDataByBarangay = async (barangay: string) => {
+    setSoilDataLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`/api/soil-data/${encodeURIComponent(barangay)}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch soil data');
+      }
+      
+      const data = await response.json();
+      
+      if (data.soil_data && Object.keys(data.soil_data).length > 0) {
+        // Update input soil data with fetched data
+        setInputSoilData({
+          pH: data.soil_data.pH,
+          Nitrogen: data.soil_data.Nitrogen,
+          Phosphorus: data.soil_data.Phosphorus,
+          Potassium: data.soil_data.Potassium
+        });
+        return data.soil_data;
+      } else {
+        // If no data found, keep current values or use defaults
+        console.log(`No soil data found for barangay: ${barangay}`);
+        return null;
+      }
+    } catch (err) {
+      console.error('Error fetching soil data:', err);
+      setError('Failed to load soil data. Using default values.');
+      return null;
+    } finally {
+      setSoilDataLoading(false);
+    }
+  };
+
+  // Add function to fetch recommendations
+  const fetchRecommendations = async (soilData: SoilData) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/recommend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(soilData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch recommendations');
+      }
+      
+      const data = await response.json();
+      setRecommendations(data.recommended_crops);
+    } catch (err) {
+      setError('Failed to load crop recommendations. Please try again.');
+      console.error('Error fetching recommendations:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch soil data when dialog opens and farmer profile is available
+  useEffect(() => {
+    const loadSoilData = async () => {
+      if (open && farmerProfile?.farmAddress) {
+        const barangay = extractBarangay(farmerProfile.farmAddress);
+        const soilData = await fetchSoilDataByBarangay(barangay);
+        
+        // If we got soil data, use it for recommendations
+        if (soilData) {
+          fetchRecommendations({
+            pH: soilData.pH,
+            Nitrogen: soilData.Nitrogen,
+            Phosphorus: soilData.Phosphorus,
+            Potassium: soilData.Potassium
+          });
+        } else {
+          // If no soil data found, use current input values
+          fetchRecommendations(inputSoilData);
+        }
+      } else if (open) {
+        // If no farm address, use default values
+        fetchRecommendations(inputSoilData);
+      }
+    };
+
+    loadSoilData();
+  }, [open, farmerProfile?.farmAddress]);
+
+  const handleCropSelect = (crop: PrescriptionDetails) => {
     setSelectedCrop(crop);
   };
 
   const handleResetSelection = () => {
     setSelectedCrop(null);
+  };
+
+  const handleGetRecommendations = () => {
+    fetchRecommendations(inputSoilData);
   };
 
   return (
@@ -110,6 +205,88 @@ const CropPrescriptionDialog = ({ open, onOpenChange }: CropPrescriptionDialogPr
 
         {!selectedCrop ? (
           <div className="space-y-6">
+            {/* Soil Data Input */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FlaskConical className="h-5 w-5" />
+                  Soil Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(soilDataLoading || loading) && (
+                  <div className="flex justify-center items-center h-8">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                    <span>Loading soil data...</span>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="ph" className="block text-sm font-medium mb-1">pH Level</label>
+                    <input
+                      id="ph"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="14"
+                      value={inputSoilData.pH}
+                      onChange={(e) => setInputSoilData({...inputSoilData, pH: parseFloat(e.target.value) || 0})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      disabled={soilDataLoading || loading}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Nitrogen</label>
+                      <select 
+                        value={inputSoilData.Nitrogen} 
+                        onChange={(e) => setInputSoilData({...inputSoilData, Nitrogen: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        disabled={soilDataLoading || loading}
+                      >
+                        <option value="L">Low (L)</option>
+                        <option value="M">Medium (M)</option>
+                        <option value="H">High (H)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Phosphorus</label>
+                      <select 
+                        value={inputSoilData.Phosphorus} 
+                        onChange={(e) => setInputSoilData({...inputSoilData, Phosphorus: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        disabled={soilDataLoading || loading}
+                      >
+                        <option value="L">Low (L)</option>
+                        <option value="M">Medium (M)</option>
+                        <option value="H">High (H)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Potassium</label>
+                      <select 
+                        value={inputSoilData.Potassium} 
+                        onChange={(e) => setInputSoilData({...inputSoilData, Potassium: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        disabled={soilDataLoading || loading}
+                      >
+                        <option value="L">Low (L)</option>
+                        <option value="M">Medium (M)</option>
+                        <option value="H">High (H)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleGetRecommendations}
+                  disabled={loading || soilDataLoading}
+                  className="w-full"
+                >
+                  {loading ? "Analyzing..." : "Get Recommendations"}
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Environmental Factors */}
             <Card className="shadow-card">
               <CardHeader>
@@ -151,41 +328,77 @@ const CropPrescriptionDialog = ({ open, onOpenChange }: CropPrescriptionDialogPr
             {/* Prescribed Crops */}
             <div>
               <h3 className="text-lg font-semibold mb-4">Recommended Crops</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {placeholderPrescriptions.map((prescription) => (
-                  <Card 
-                    key={prescription.id} 
-                    className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
-                    onClick={() => handleCropSelect(prescription)}
-                  >
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <span>{prescription.crop}</span>
-                        <Badge variant="secondary">{prescription.confidence}%</Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-3">{prescription.reason}</p>
-                      <div className="flex items-center gap-2 text-xs">
-                        <Calendar className="h-3 w-3" />
-                        <span>{prescription.plantingSeason}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs mt-1">
-                        <TrendingUp className="h-3 w-3" />
-                        <span>{prescription.marketTrend}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              
+              {loading && (
+                <div className="flex justify-center items-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="ml-2">Analyzing soil data...</span>
+                </div>
+              )}
+              
+              {error && (
+                <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 text-destructive">
+                  {error}
+                </div>
+              )}
+              
+              {!loading && !error && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {recommendations.map((recommendation, index) => (
+                    <Card 
+                      key={index}
+                      className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
+                      onClick={() => handleCropSelect({
+                        id: index.toString(),
+                        crop: recommendation.crop,
+                        reason: `Recommended based on your soil analysis with ${Math.round(recommendation.confidence * 100)}% confidence.`,
+                        confidence: Math.round(recommendation.confidence * 100),
+                        plantingSeason: "Based on current conditions",
+                        expectedYield: "Varies by conditions",
+                        marketTrend: "Check local market",
+                        soilType: `pH: ${inputSoilData.pH}, N:${inputSoilData.Nitrogen}, P:${inputSoilData.Phosphorus}, K:${inputSoilData.Potassium}`,
+                        weatherCondition: "Current weather patterns",
+                        recommendations: [
+                          "Follow local agricultural guidelines",
+                          "Monitor soil moisture levels",
+                          "Apply appropriate fertilizers based on soil test"
+                        ],
+                        avoid: [
+                          "Plant in waterlogged areas",
+                          "Over-fertilize without soil testing",
+                          "Ignore local climate conditions"
+                        ]
+                      })}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <span>{recommendation.crop}</span>
+                          <Badge variant="secondary">{Math.round(recommendation.confidence * 100)}%</Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Recommended based on your soil analysis with {Math.round(recommendation.confidence * 100)}% confidence.
+                        </p>
+                        <div className="flex items-center gap-2 text-xs">
+                          <Calendar className="h-3 w-3" />
+                          <span>Planting season varies</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs mt-1">
+                          <TrendingUp className="h-3 w-3" />
+                          <span>Check local market trends</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Disclaimer */}
             <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
               <p className="text-sm">
-                <strong>Note:</strong> These recommendations are based on simulated data. 
-                In the future, this feature will use real-time weather data, soil analysis, 
-                and market trends to provide personalized crop prescriptions.
+                <strong>Note:</strong> These recommendations are based on real soil analysis data processed by our AI model.
               </p>
             </div>
           </div>

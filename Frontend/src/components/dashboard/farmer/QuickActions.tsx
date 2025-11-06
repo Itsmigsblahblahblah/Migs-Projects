@@ -14,12 +14,24 @@ import {
 import { useNavigate } from "react-router-dom";
 import CropPrescriptionDialog from "./CropPrescriptionDialog";
 
+interface FarmerProfile {
+    fullName: string;
+    email: string;
+    contactNumber: string;
+    homeAddress: string;
+    farmAddress: string;
+    farmArea: string;
+    photoURL: string;
+    createdAt: string;
+}
+
 interface QuickActionsProps {
     onAddCrop: () => void;
     onUpdateCrop: () => void;
+    farmerProfile?: FarmerProfile;
 }
 
-const QuickActions = ({ onAddCrop, onUpdateCrop }: QuickActionsProps) => {
+const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile }: QuickActionsProps) => {
     const navigate = useNavigate();
     const [isPrescriptionDialogOpen, setIsPrescriptionDialogOpen] = useState(false);
 
@@ -66,6 +78,7 @@ const QuickActions = ({ onAddCrop, onUpdateCrop }: QuickActionsProps) => {
                 <CropPrescriptionDialog 
                     open={isPrescriptionDialogOpen} 
                     onOpenChange={setIsPrescriptionDialogOpen} 
+                    farmerProfile={farmerProfile}
                 />
             </CardContent>
         </Card>

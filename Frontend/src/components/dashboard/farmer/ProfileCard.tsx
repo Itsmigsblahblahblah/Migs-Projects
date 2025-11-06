@@ -10,6 +10,7 @@ interface ProfileCardProps {
         photoURL?: string;
         farmArea: string;
         farmAddress: string;
+        homeAddress: string;
         createdAt?: string;
     };
     onEditProfile: () => void;
@@ -64,7 +65,11 @@ const ProfileCard = ({ username, farmerProfile, onEditProfile }: ProfileCardProp
                     )}
                     <div>
                         <h3 className="font-semibold">{farmerProfile.fullName || username}</h3>
-                        <p className="text-sm text-muted-foreground">Majayjay, Batangas</p>
+                        <p className="text-sm text-muted-foreground">
+                            {farmerProfile.homeAddress 
+                                ? `${farmerProfile.homeAddress}, Majayjay` 
+                                : "Majayjay, Batangas"}
+                        </p>
                     </div>
                 </div>
                 <Separator />

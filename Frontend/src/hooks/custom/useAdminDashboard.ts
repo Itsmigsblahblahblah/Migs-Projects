@@ -58,6 +58,7 @@ interface DeletionRequest {
     requestedAt: any;
     reviewedAt?: any;
     reviewedBy?: string;
+    reason?: string; // Add reason field
 }
 
 export const useAdminDashboard = () => {
@@ -314,7 +315,8 @@ export const useAdminDashboard = () => {
                     status: data.status || 'pending',
                     requestedAt: data.requestedAt,
                     reviewedAt: data.reviewedAt,
-                    reviewedBy: data.reviewedBy
+                    reviewedBy: data.reviewedBy,
+                    reason: data.reason || '' // Add reason field
                 });
             });
 

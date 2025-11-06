@@ -546,7 +546,7 @@ export const useFarmerDashboard = () => {
         }
     };
 
-    const handleRequestAccountDeletion = async () => {
+    const handleRequestAccountDeletion = async (reason?: string) => {
         try {
             // Check if there's already a pending or approved request
             if (deletionRequest) {
@@ -599,7 +599,7 @@ export const useFarmerDashboard = () => {
             }
 
             // Create a new deletion request
-            const requestData = {
+            const requestData: any = {
                 userId: userId,
                 username: username,
                 email: currentUser.email,
@@ -607,6 +607,11 @@ export const useFarmerDashboard = () => {
                 status: 'pending' as const,
                 requestedAt: Timestamp.now(),
             };
+
+            // Add reason if provided
+            if (reason) {
+                requestData.reason = reason;
+            }
 
             console.log("Creating deletion request:", requestData);
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Sprout, Leaf } from "lucide-react";
+import { Sprout, Leaf, X } from "lucide-react";
 import ProfileCard from "@/components/dashboard/farmer/ProfileCard";
 import WeatherCard from "@/components/dashboard/farmer/WeatherCard";
 import CropStatusCard from "@/components/dashboard/farmer/CropStatusCard";
@@ -48,6 +48,7 @@ const FarmerDashboard = () => {
   const [isDeleteAccountDialogOpen, setIsDeleteAccountDialogOpen] = useState(false);
   const [isRequestDeleteDialogOpen, setIsRequestDeleteDialogOpen] = useState(false);
   const [isRequestingDeletion, setIsRequestingDeletion] = useState(false);
+  const [showDeletionNotification, setShowDeletionNotification] = useState(true);
 
   const {
     username,
@@ -101,6 +102,18 @@ const FarmerDashboard = () => {
     handleImageUpload
   } = useReportManagement(userId, username, () => { }, monthlyReports);
 
+  // Auto-hide denied deletion notifications after 3 minutes
+  useEffect(() => {
+    if (deletionRequest && deletionRequest.status === 'denied') {
+      setShowDeletionNotification(true);
+      const timer = setTimeout(() => {
+        setShowDeletionNotification(false);
+      }, 180000); // 3 minutes in milliseconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [deletionRequest]);
+
   const handleAddCropSubmit = async () => {
     const success = await handleAddCrop();
     if (success) {
@@ -116,10 +129,10 @@ const FarmerDashboard = () => {
     }
   };
 
-  const handleRequestAccountDeletionWrapper = async () => {
+  const handleRequestAccountDeletionWrapper = async (reason: string) => {
     setIsRequestingDeletion(true);
     try {
-      await handleRequestAccountDeletion();
+      await handleRequestAccountDeletion(reason);
       // Close the dialog after successful submission
       setIsRequestDeleteDialogOpen(false);
     } finally {
@@ -174,6 +187,11 @@ const FarmerDashboard = () => {
     }
   };
 
+  // Function to manually close the deletion notification
+  const closeDeletionNotification = () => {
+    setShowDeletionNotification(false);
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -189,8 +207,14 @@ const FarmerDashboard = () => {
         </div>
 
         {/* Deletion Request Status Banner */}
-        {deletionRequest && (
-          <Card className="border-l-4 p-4 rounded-r-lg">
+        {deletionRequest && showDeletionNotification && (
+          <Card className="border-l-4 p-4 rounded-r-lg relative">
+            <button 
+              onClick={closeDeletionNotification}
+              className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </button>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {deletionRequest.status === 'pending' && (
@@ -269,6 +293,7 @@ const FarmerDashboard = () => {
         <QuickActions
           onAddCrop={() => setIsAddCropDialogOpen(true)}
           onUpdateCrop={() => setIsUpdateCropDialogOpen(true)}
+          farmerProfile={farmerProfile}
         />
 
         <div className="grid lg:grid-cols-2 gap-6">
