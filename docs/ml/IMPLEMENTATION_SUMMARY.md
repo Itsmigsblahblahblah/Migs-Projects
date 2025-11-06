@@ -7,7 +7,7 @@ This document summarizes the complete implementation of the soil-based crop reco
 
 ### 1. Main Implementation Files
 
-#### `fert_soil_transformer.py`
+#### `Backend/ml_model/fert_soil_transformer.py`
 - **Type**: Python script
 - **Purpose**: Complete implementation of the neural network model and FastAPI server
 - **Features**:
@@ -26,7 +26,7 @@ This document summarizes the complete implementation of the soil-based crop reco
   - FastAPI (for API server)
   - Uvicorn (for ASGI server)
 
-#### `test_model.py`
+#### `Backend/ml_model/test_model.py`
 - **Type**: Python script
 - **Purpose**: Simple test script to demonstrate model usage
 - **Features**:
@@ -73,18 +73,20 @@ This document summarizes the complete implementation of the soil-based crop reco
 ## System Workflow
 
 ### Training Phase
-1. Execute `python fert_soil_transformer.py train`
-2. Script loads `Backend/Data/Soilanaly.csv` and `Backend/Data/FertilizerRecomm.csv`
-3. Data is preprocessed and cleaned
-4. Neural network model is trained on soil features → crop mappings
-5. Trained model saved as `fert_soil_transformer.h5`
-6. Preprocessing pipeline saved as `preprocessing_pipeline.pkl`
+1. Navigate to `Backend/ml_model` directory
+2. Execute `python fert_soil_transformer.py train`
+3. Script loads `../Data/Soilanaly.csv` and `../Data/FertilizerRecomm.csv`
+4. Data is preprocessed and cleaned
+5. Neural network model is trained on soil features → crop mappings
+6. Trained model saved as `fert_soil_transformer.h5`
+7. Preprocessing pipeline saved as `preprocessing_pipeline.pkl`
 
 ### Serving Phase
-1. Execute `python fert_soil_transformer.py serve`
-2. FastAPI server starts on specified port (default 8000)
-3. Model and preprocessing pipeline loaded into memory
-4. Server ready to accept soil data and return crop recommendations
+1. Navigate to `Backend/ml_model` directory
+2. Execute `python fert_soil_transformer.py serve`
+3. FastAPI server starts on specified port (default 8000)
+4. Model and preprocessing pipeline loaded into memory
+5. Server ready to accept soil data and return crop recommendations
 
 ### Frontend Integration
 1. User accesses Crop Prescription feature in Farmer Dashboard
@@ -134,10 +136,12 @@ This document summarizes the complete implementation of the soil-based crop reco
 ## Deployment Instructions
 
 ### Local Development
-1. Install dependencies: `pip install -r requirements.txt`
-2. Train model: `python fert_soil_transformer.py train`
-3. Start server: `python fert_soil_transformer.py serve`
-4. Test API: Use curl or Postman to call endpoints
+
+1. Navigate to `Backend/ml_model` directory
+2. Install dependencies: `pip install -r requirements.txt`
+3. Train model: `python fert_soil_transformer.py train`
+4. Start server: `python fert_soil_transformer.py serve`
+5. Test API: Use curl or Postman to call endpoints
 
 ### Production Deployment
 1. Use a production WSGI server (e.g., Gunicorn)

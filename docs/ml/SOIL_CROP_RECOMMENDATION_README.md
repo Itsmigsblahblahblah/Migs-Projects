@@ -4,23 +4,25 @@
 This system provides crop recommendations based on soil analysis data using a neural network model trained on soil properties (pH, Nitrogen, Phosphorus, Potassium levels).
 
 ## Model Files
-- `fert_soil_transformer.py` - Main script containing the model implementation
-- `fert_soil_transformer.h5` - Trained model (generated after training)
-- `preprocessing_pipeline.pkl` - Preprocessing pipeline (generated after training)
+- `Backend/ml_model/fert_soil_transformer.py` - Main script containing the model implementation
+- `Backend/ml_model/fert_soil_transformer.h5` - Trained model (generated after training)
+- `Backend/ml_model/preprocessing_pipeline.pkl` - Preprocessing pipeline (generated after training)
 
 ## Training the Model
 ```bash
+cd Backend/ml_model
 python fert_soil_transformer.py train
 ```
 
 This will:
-1. Load and preprocess data from `Backend/Data/Soilanaly.csv` and `Backend/Data/FertilizerRecomm.csv`
+1. Load and preprocess data from `../Data/Soilanaly.csv` and `../Data/FertilizerRecomm.csv`
 2. Train a neural network model on the soil data
 3. Save the trained model as `fert_soil_transformer.h5`
 4. Save the preprocessing pipeline as `preprocessing_pipeline.pkl`
 
 ## Running the API Server
 ```bash
+cd Backend/ml_model
 python fert_soil_transformer.py serve [--port PORT]
 ```
 

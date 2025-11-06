@@ -27,7 +27,7 @@ graph TD
 - **Function**: User interface for soil data input and crop recommendations display
 
 ### 2. Backend API Server (FastAPI)
-- **File**: `fert_soil_transformer.py`
+- **File**: `Backend/ml_model/fert_soil_transformer.py`
 - **Framework**: FastAPI with Uvicorn
 - **Function**: 
   - Serve crop recommendations via REST API
@@ -36,7 +36,7 @@ graph TD
   - Return JSON-formatted recommendations
 
 ### 3. Neural Network Model
-- **File**: `fert_soil_transformer.h5` (generated after training)
+- **File**: `Backend/ml_model/fert_soil_transformer.h5` (generated after training)
 - **Type**: Dense neural network (simplified from original Transformer architecture)
 - **Input Features**: 
   - pH level (numerical)
@@ -56,7 +56,7 @@ graph TD
   - Used for training context and future enhancements
 
 ### 5. Preprocessing Pipeline
-- **File**: `preprocessing_pipeline.pkl` (generated after training)
+- **File**: `Backend/ml_model/preprocessing_pipeline.pkl` (generated after training)
 - **Function**: 
   - Standardize numerical features (pH)
   - Encode categorical features (N, P, K levels)
@@ -66,11 +66,12 @@ graph TD
 ## Data Flow
 
 ### Training Phase
-1. Load `Soilanaly.csv` and `FertilizerRecomm.csv`
-2. Preprocess data (clean, encode, normalize)
-3. Train neural network model on soil features → crop labels
-4. Save trained model as `fert_soil_transformer.h5`
-5. Save preprocessing pipeline as `preprocessing_pipeline.pkl`
+1. Navigate to `Backend/ml_model` directory
+2. Load `../Data/Soilanaly.csv` and `../Data/FertilizerRecomm.csv`
+3. Preprocess data (clean, encode, normalize)
+4. Train neural network model on soil features → crop labels
+5. Save trained model as `fert_soil_transformer.h5`
+6. Save preprocessing pipeline as `preprocessing_pipeline.pkl`
 
 ### Inference Phase (API Request)
 1. User inputs soil data in Crop Prescription Dialog

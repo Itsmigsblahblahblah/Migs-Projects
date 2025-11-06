@@ -4,10 +4,13 @@ This is a smart farming web application for Majayjay farmers. The system provide
 
 ## Project Structure
 
-This repository is organized into two main directories:
+This repository is organized into several directories:
 
 - **Frontend**: Contains all frontend code (React, TypeScript, Vite)
-- **Backend**: Reserved for future backend services (currently using Firebase)
+- **Backend**: Contains machine learning components for crop recommendations
+- **functions**: Firebase Cloud Functions
+- **docs**: Documentation organized by domain (firebase, ml, frontend)
+- **samples**: Sample API responses and test data
 
 ## Frontend
 
@@ -46,11 +49,18 @@ Create a `.env` file in the Frontend directory with your Firebase configuration.
 
 ## Backend
 
-Currently, the backend services are provided by Firebase. In the future, this directory will contain:
-- Custom API services
-- Server-side logic
-- Database management scripts
-- Machine learning models (if applicable)
+The backend directory contains machine learning components for crop recommendations:
+- **ml_model**: Transformer-based neural network model for recommending crops based on soil analysis
+- **Data**: Soil analysis data and fertilizer recommendations used by the model
+
+The main backend services are still provided by Firebase, with the ML model serving as an additional service for crop recommendations.
+
+## Documentation
+
+Documentation is organized in the `docs/` directory:
+- **docs/firebase**: Firebase setup and configuration guides
+- **docs/ml**: Machine learning model documentation
+- **docs/frontend**: Frontend integration guides
 
 ## Contributing
 

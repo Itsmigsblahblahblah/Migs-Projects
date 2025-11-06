@@ -69,8 +69,8 @@ class SoilCropTransformer:
         self.feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
         self.preprocessor = None
         
-    def load_and_preprocess_data(self, soil_file='Backend/Data/Soilanaly.csv', 
-                                fertilizer_file='Backend/Data/FertilizerRecomm.csv'):
+    def load_and_preprocess_data(self, soil_file='../Data/Soilanaly.csv', 
+                                fertilizer_file='../Data/FertilizerRecomm.csv'):
         """
         Load and preprocess the soil analysis and fertilizer recommendation data
         
@@ -373,8 +373,8 @@ def main():
     """Main function to handle training and serving"""
     parser = argparse.ArgumentParser(description='Soil Crop Recommendation Transformer Model')
     parser.add_argument('mode', choices=['train', 'serve'], help='Mode: train or serve')
-    parser.add_argument('--soil-file', default='Backend/Data/Soilanaly.csv', help='Path to Soilanaly.csv')
-    parser.add_argument('--fertilizer-file', default='Backend/Data/FertilizerRecomm.csv', help='Path to FertilizerRecomm.csv')
+    parser.add_argument('--soil-file', default='../Data/Soilanaly.csv', help='Path to Soilanaly.csv')
+    parser.add_argument('--fertilizer-file', default='../Data/FertilizerRecomm.csv', help='Path to FertilizerRecomm.csv')
     parser.add_argument('--port', type=int, default=8000, help='Port for FastAPI server')
     
     args = parser.parse_args()
