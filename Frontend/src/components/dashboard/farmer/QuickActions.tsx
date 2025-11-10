@@ -29,9 +29,10 @@ interface QuickActionsProps {
     onAddCrop: () => void;
     onUpdateCrop: () => void;
     farmerProfile?: FarmerProfile;
+    weatherData?: any; // Add weather data prop
 }
 
-const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile }: QuickActionsProps) => {
+const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: QuickActionsProps) => {
     const navigate = useNavigate();
     const [isPrescriptionDialogOpen, setIsPrescriptionDialogOpen] = useState(false);
 
@@ -79,6 +80,7 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile }: QuickActionsPr
                     open={isPrescriptionDialogOpen} 
                     onOpenChange={setIsPrescriptionDialogOpen} 
                     farmerProfile={farmerProfile}
+                    weatherData={weatherData}
                 />
             </CardContent>
         </Card>

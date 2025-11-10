@@ -59,14 +59,21 @@ np.random.seed(HYPERPARAMETERS['random_seed'])
 tf.random.set_seed(HYPERPARAMETERS['random_seed'])
 
 class SoilCropTransformer:
-    """Neural network model for crop recommendation based on soil data"""
+    """Neural network model for crop recommendation based on soil and weather data"""
     
     def __init__(self, hyperparams=None):
         self.hyperparams = hyperparams or HYPERPARAMETERS
         self.model = None
         self.label_encoder = LabelEncoder()
         self.scaler = StandardScaler()
-        self.feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
+        # Updated feature columns to include weather data
+        self.feature_columns = [
+            'pH', 'Nitrogen', 'Phosphorus', 'Potassium',
+            'temperature', 'humidity', 'precipitation_probability', 
+            'wind_speed', 'uv_index'
+        ]
+        # For backward compatibility with soil-only data
+        self.soil_feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
         self.preprocessor = None
         
     def load_and_preprocess_data(self, soil_file='../Data/Soilanaly.csv', 
@@ -108,6 +115,17 @@ class SoilCropTransformer:
         soil_df['Nitrogen'] = soil_df['Nitrogen'].fillna(1)
         soil_df['Phosphorus'] = soil_df['Phosphorus'].fillna(1)
         soil_df['Potassium'] = soil_df['Potassium'].fillna(1)
+        
+        # Generate synthetic weather data to match soil data
+        np.random.seed(42)
+        n_samples = len(soil_df)
+        
+        # Add weather features to the dataframe
+        soil_df['temperature'] = np.random.uniform(20, 35, n_samples)  # Temperature in Celsius
+        soil_df['humidity'] = np.random.uniform(40, 80, n_samples)    # Humidity percentage
+        soil_df['precipitation_probability'] = np.random.uniform(0, 100, n_samples)  # Precipitation probability %
+        soil_df['wind_speed'] = np.random.uniform(0, 20, n_samples)   # Wind speed in km/h
+        soil_df['uv_index'] = np.random.uniform(0, 10, n_samples)     # UV index
         
         # Features and labels
         X = soil_df[self.feature_columns].values
@@ -301,7 +319,9 @@ class SoilCropTransformer:
             self.preprocessor = pickle.load(f)
         self.label_encoder = self.preprocessor['label_encoder']
         self.scaler = self.preprocessor['scaler']
+        self.feature_columns = self.preprocessor['feature_columns']
         logger.info(f"Preprocessing pipeline loaded from {preprocessor_path}")
+        logger.info(f"Model trained with {len(self.feature_columns)} features: {self.feature_columns}")
     
     def predict(self, soil_data):
         """
@@ -322,12 +342,70 @@ class SoilCropTransformer:
         phosphorus_map = {'L': 0, 'M': 1, 'H': 2}
         potassium_map = {'L': 0, 'M': 1, 'H': 2}
         
-        # Prepare input data
+        # Prepare input data with soil features only
         input_data = np.array([[
             soil_data['pH'],
             nitrogen_map.get(soil_data['Nitrogen'], 1),
             phosphorus_map.get(soil_data['Phosphorus'], 1),
             potassium_map.get(soil_data['Potassium'], 1)
+        ]])
+        
+        # For compatibility with the new model, we need to pad with default weather values
+        # Default weather values: temperature=25, humidity=50, precipitation_probability=0, wind_speed=5, uv_index=5
+        weather_data = np.array([[25, 50, 0, 5, 5]])
+        input_data_with_weather = np.concatenate([input_data, weather_data], axis=1)
+        
+        # Scale input data
+        input_scaled = self.scaler.transform(input_data_with_weather)
+        
+        # Make prediction
+        predictions = self.model.predict(input_scaled, verbose=0)
+        
+        # Get top 3 predictions
+        top_3_indices = np.argsort(predictions[0])[::-1][:3]
+        top_3_crops = [self.label_encoder.inverse_transform([i])[0] for i in top_3_indices]
+        top_3_scores = [predictions[0][i] for i in top_3_indices]
+        
+        return list(zip(top_3_crops, top_3_scores))
+    
+    def predict_with_weather(self, soil_data, weather_data):
+        """
+        Predict recommended crops based on soil and weather data
+        
+        Args:
+            soil_data (dict): Dictionary with soil properties
+                Example: {"pH": 6.5, "Nitrogen": "M", "Phosphorus": "L", "Potassium": "H"}
+            weather_data (dict): Dictionary with weather properties
+                Example: {
+                    "temperature": 28.5,
+                    "humidity": 65,
+                    "precipitation_probability": 20,
+                    "wind_speed": 10,
+                    "uv_index": 7
+                }
+                
+        Returns:
+            list: List of recommended crops with confidence scores
+        """
+        if self.model is None:
+            raise ValueError("Model not loaded. Call load_model() first.")
+        
+        # Convert categorical values to numerical
+        nitrogen_map = {'L': 0, 'M': 1, 'H': 2}
+        phosphorus_map = {'L': 0, 'M': 1, 'H': 2}
+        potassium_map = {'L': 0, 'M': 1, 'H': 2}
+        
+        # Prepare input data with both soil and weather features
+        input_data = np.array([[
+            soil_data['pH'],
+            nitrogen_map.get(soil_data['Nitrogen'], 1),
+            phosphorus_map.get(soil_data['Phosphorus'], 1),
+            potassium_map.get(soil_data['Potassium'], 1),
+            weather_data.get('temperature', 25.0),
+            weather_data.get('humidity', 50.0),
+            weather_data.get('precipitation_probability', 0.0),
+            weather_data.get('wind_speed', 5.0),
+            weather_data.get('uv_index', 5.0)
         ]])
         
         # Scale input data
@@ -487,6 +565,79 @@ def main():
                 
             except Exception as e:
                 logger.error(f"Error in prediction: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+        
+        @app.post("/recommend-with-weather")
+        async def recommend_crops_with_weather(data: dict):
+            """
+            Get crop recommendations based on soil and weather data
+            
+            Expected input format:
+            {
+                "soil_data": {
+                    "pH": 6.5,
+                    "Nitrogen": "M",  # L, M, or H
+                    "Phosphorus": "L",  # L, M, or H
+                    "Potassium": "H"   # L, M, or H
+                },
+                "weather_data": {
+                    "temperature": 28.5,
+                    "humidity": 65,
+                    "precipitation_probability": 20,
+                    "wind_speed": 10,
+                    "uv_index": 7
+                }
+            }
+            
+            Returns:
+            {
+                "recommended_crops": [
+                    {"crop": "Rice", "confidence": 0.85},
+                    {"crop": "Corn", "confidence": 0.12},
+                    {"crop": "Vegetable Legumes", "confidence": 0.03}
+                ]
+            }
+            """
+            try:
+                # Validate input
+                if 'soil_data' not in data:
+                    raise HTTPException(status_code=400, detail="Missing soil_data in request")
+                
+                if 'weather_data' not in data:
+                    raise HTTPException(status_code=400, detail="Missing weather_data in request")
+                
+                soil_data = data['soil_data']
+                weather_data = data['weather_data']
+                
+                # Validate soil data
+                required_soil_fields = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
+                for field in required_soil_fields:
+                    if field not in soil_data:
+                        raise HTTPException(status_code=400, detail=f"Missing required soil field: {field}")
+                
+                # Validate categorical values
+                valid_levels = ['L', 'M', 'H']
+                for field in ['Nitrogen', 'Phosphorus', 'Potassium']:
+                    if soil_data[field] not in valid_levels:
+                        raise HTTPException(status_code=400, detail=f"Invalid value for soil {field}. Must be L, M, or H")
+                
+                # Validate pH range
+                if not (0 <= soil_data['pH'] <= 14):
+                    raise HTTPException(status_code=400, detail="pH must be between 0 and 14")
+                
+                # Get predictions with weather data
+                predictions = model.predict_with_weather(soil_data, weather_data)
+                
+                # Format response
+                recommended_crops = [
+                    {"crop": crop, "confidence": float(confidence)}
+                    for crop, confidence in predictions
+                ]
+                
+                return {"recommended_crops": recommended_crops}
+                
+            except Exception as e:
+                logger.error(f"Error in weather-enhanced prediction: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
         
         @app.get("/health")

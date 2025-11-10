@@ -29,6 +29,15 @@ interface SoilData {
   Potassium: string;  // 'L', 'M', or 'H'
 }
 
+// Add interface for weather data
+interface WeatherData {
+  temperature: number;
+  humidity: number;
+  precipitation_probability: number;
+  wind_speed: number;
+  uv_index: number;
+}
+
 interface PrescriptionDetails {
   id: string;
   crop: string;
@@ -58,9 +67,10 @@ interface CropPrescriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   farmerProfile?: FarmerProfile;
+  weatherData?: any; // Add weather data prop
 }
 
-const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile }: CropPrescriptionDialogProps) => {
+const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData }: CropPrescriptionDialogProps) => {
   const [selectedCrop, setSelectedCrop] = useState<PrescriptionDetails | null>(null);
   // Add state for loading and recommendations
   const [recommendations, setRecommendations] = useState<CropRecommendation[]>([]);
@@ -123,17 +133,23 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile }: CropPresc
   };
 
   // Add function to fetch recommendations
-  const fetchRecommendations = async (soilData: SoilData) => {
+  const fetchRecommendations = async (soilData: SoilData, weatherDataForRecommendation?: WeatherData) => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await fetch('/api/recommend', {
+      // Use the weather-enhanced endpoint if weather data is available
+      const endpoint = weatherDataForRecommendation ? '/api/recommend-with-weather' : '/api/recommend';
+      const requestBody = weatherDataForRecommendation 
+        ? { soil_data: soilData, weather_data: weatherDataForRecommendation }
+        : soilData;
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(soilData),
+        body: JSON.stringify(requestBody),
       });
       
       if (!response.ok) {
@@ -157,6 +173,18 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile }: CropPresc
         const barangay = extractBarangay(farmerProfile.farmAddress);
         const soilData = await fetchSoilDataByBarangay(barangay);
         
+        // Prepare weather data if available
+        let weatherDataForRecommendation: WeatherData | undefined;
+        if (weatherData) {
+          weatherDataForRecommendation = {
+            temperature: weatherData.temperature || 25,
+            humidity: weatherData.humidity || 50,
+            precipitation_probability: weatherData.extendedForecast?.[0]?.precipitationProbability || 0,
+            wind_speed: weatherData.extendedForecast?.[0]?.windSpeed || 5,
+            uv_index: weatherData.extendedForecast?.[0]?.uvIndex || 5
+          };
+        }
+        
         // If we got soil data, use it for recommendations
         if (soilData) {
           fetchRecommendations({
@@ -164,10 +192,10 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile }: CropPresc
             Nitrogen: soilData.Nitrogen,
             Phosphorus: soilData.Phosphorus,
             Potassium: soilData.Potassium
-          });
+          }, weatherDataForRecommendation);
         } else {
           // If no soil data found, use current input values
-          fetchRecommendations(inputSoilData);
+          fetchRecommendations(inputSoilData, weatherDataForRecommendation);
         }
       } else if (open) {
         // If no farm address, use default values
@@ -187,7 +215,19 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile }: CropPresc
   };
 
   const handleGetRecommendations = () => {
-    fetchRecommendations(inputSoilData);
+    // Prepare weather data if available
+    let weatherDataForRecommendation: WeatherData | undefined;
+    if (weatherData) {
+      weatherDataForRecommendation = {
+        temperature: weatherData.temperature || 25,
+        humidity: weatherData.humidity || 50,
+        precipitation_probability: weatherData.extendedForecast?.[0]?.precipitationProbability || 0,
+        wind_speed: weatherData.extendedForecast?.[0]?.windSpeed || 5,
+        uv_index: weatherData.extendedForecast?.[0]?.uvIndex || 5
+      };
+    }
+    
+    fetchRecommendations(inputSoilData, weatherDataForRecommendation);
   };
 
   return (
@@ -301,38 +341,71 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile }: CropPresc
                     <Thermometer className="h-4 w-4 text-accent" />
                     <span className="font-medium">Temperature</span>
                   </div>
-                  <p className="text-2xl font-bold">28°C</p>
-                  <p className="text-sm text-muted-foreground">Optimal for most crops</p>
+                  <p className="text-2xl font-bold">{weatherData?.temperature ? `${Math.round(weatherData.temperature)}°C` : '28°C'}</p>
+                  <p className="text-sm text-muted-foreground">Current temperature</p>
                 </div>
                 
                 <div className="p-4 bg-accent/10 rounded-lg border">
                   <div className="flex items-center gap-2 mb-2">
                     <Droplets className="h-4 w-4 text-accent" />
-                    <span className="font-medium">Soil Moisture</span>
+                    <span className="font-medium">Humidity</span>
                   </div>
-                  <p className="text-2xl font-bold">65%</p>
-                  <p className="text-sm text-muted-foreground">Adequate for planting</p>
+                  <p className="text-2xl font-bold">{weatherData?.humidity ? `${Math.round(weatherData.humidity)}%` : '65%'}</p>
+                  <p className="text-sm text-muted-foreground">Relative humidity</p>
                 </div>
                 
                 <div className="p-4 bg-accent/10 rounded-lg border">
                   <div className="flex items-center gap-2 mb-2">
                     <Sun className="h-4 w-4 text-accent" />
-                    <span className="font-medium">Weather Forecast</span>
+                    <span className="font-medium">Weather</span>
                   </div>
-                  <p className="text-2xl font-bold">Sunny</p>
-                  <p className="text-sm text-muted-foreground">7-day forecast favorable</p>
+                  <p className="text-2xl font-bold">{weatherData?.condition || 'Sunny'}</p>
+                  <p className="text-sm text-muted-foreground">Current conditions</p>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* 7-Day Forecast */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  7-Day Forecast
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {weatherData?.extendedForecast && weatherData.extendedForecast.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
+                    {weatherData.extendedForecast.slice(0, 7).map((day, index) => (
+                      <div key={index} className="p-2 bg-accent/5 rounded-lg border text-center">
+                        <p className="text-xs font-medium">{day.dayOfWeek}</p>
+                        <p className="text-xs text-muted-foreground">{new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                        <p className="text-sm mt-1">{day.condition}</p>
+                        <div className="flex justify-center gap-1 mt-1">
+                          <span className="text-sm font-bold">{Math.round(day.high)}°</span>
+                          <span className="text-sm text-muted-foreground">/</span>
+                          <span className="text-sm">{Math.round(day.low)}°</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">7-day forecast data not available</p>
+                )}
               </CardContent>
             </Card>
 
             {/* Prescribed Crops */}
             <div>
               <h3 className="text-lg font-semibold mb-4">Recommended Crops</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Based on your soil conditions and current weather patterns
+              </p>
               
               {loading && (
                 <div className="flex justify-center items-center h-32">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  <span className="ml-2">Analyzing soil data...</span>
+                  <span className="ml-2">Analyzing soil and weather data...</span>
                 </div>
               )}
               
@@ -351,7 +424,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile }: CropPresc
                       onClick={() => handleCropSelect({
                         id: index.toString(),
                         crop: recommendation.crop,
-                        reason: `Recommended based on your soil analysis with ${Math.round(recommendation.confidence * 100)}% confidence.`,
+                        reason: `Recommended based on your soil analysis and current weather conditions with ${Math.round(recommendation.confidence * 100)}% confidence.`,
                         confidence: Math.round(recommendation.confidence * 100),
                         plantingSeason: "Based on current conditions",
                         expectedYield: "Varies by conditions",
@@ -378,7 +451,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile }: CropPresc
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-muted-foreground mb-3">
-                          Recommended based on your soil analysis with {Math.round(recommendation.confidence * 100)}% confidence.
+                          Recommended based on your soil analysis and current weather conditions with {Math.round(recommendation.confidence * 100)}% confidence.
                         </p>
                         <div className="flex items-center gap-2 text-xs">
                           <Calendar className="h-3 w-3" />
@@ -457,7 +530,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile }: CropPresc
                       <Sun className="h-4 w-4" />
                       Weather Condition
                     </h4>
-                    <p>{selectedCrop.weatherCondition}</p>
+                    <p>Optimal growth with current temperature and humidity levels</p>
                   </div>
                 </div>
 

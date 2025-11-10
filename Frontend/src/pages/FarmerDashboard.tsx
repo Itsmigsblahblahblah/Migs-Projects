@@ -294,6 +294,7 @@ const FarmerDashboard = () => {
           onAddCrop={() => setIsAddCropDialogOpen(true)}
           onUpdateCrop={() => setIsUpdateCropDialogOpen(true)}
           farmerProfile={farmerProfile}
+          weatherData={weatherData}
         />
 
         <div className="grid lg:grid-cols-2 gap-6">
