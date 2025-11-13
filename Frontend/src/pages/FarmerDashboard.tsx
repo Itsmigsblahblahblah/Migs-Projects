@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Sprout, Leaf, X } from "lucide-react";
+import { Sprout, Leaf, X, RotateCcw } from "lucide-react";
 import ProfileCard from "@/components/dashboard/farmer/ProfileCard";
 import WeatherCard from "@/components/dashboard/farmer/WeatherCard";
 import CropStatusCard from "@/components/dashboard/farmer/CropStatusCard";
@@ -192,6 +192,10 @@ const FarmerDashboard = () => {
     setShowDeletionNotification(false);
   };
 
+  const handleRefresh = () => {
+    setRecommendation(null);
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -307,7 +311,20 @@ const FarmerDashboard = () => {
           />
 
           {/* Recommendation Results */}
-          <RecommendationResults recommendation={recommendation} />
+          <div className="relative">
+            <RecommendationResults recommendation={recommendation} />
+            {recommendation && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                className="absolute top-4 right-4 h-8 w-8 p-0"
+                title="Clear recommendations"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Task Reminders */}

@@ -25,7 +25,7 @@ const RecommendationResults = ({ recommendation }: RecommendationResultsProps) =
     const DISPLAY_LIMIT = 3;
     
     return (
-        <Card className="shadow-card">
+        <Card className="shadow-card h-full flex flex-col">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Lightbulb className="h-5 w-5 text-accent" />
@@ -35,14 +35,16 @@ const RecommendationResults = ({ recommendation }: RecommendationResultsProps) =
                     Smart farming guidance based on your reported issue
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-grow overflow-y-auto">
                 {!recommendation ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                        <Sprout className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                        <p>Submit your farming problem to get personalized recommendations</p>
+                    <div className="text-center py-8 text-muted-foreground flex items-center justify-center h-full">
+                        <div>
+                            <Sprout className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                            <p>Submit your farming problem to get personalized recommendations</p>
+                        </div>
                     </div>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 h-full">
                         {/* Problem Detection */}
                         <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
                             <div className="flex items-center gap-2 mb-2">
