@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Sprout, AlertTriangle, CheckCircle, TrendingUp, Lightbulb } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sprout, AlertTriangle, CheckCircle, TrendingUp, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 
 interface Recommendation {
     problem: string;
@@ -16,6 +18,12 @@ interface RecommendationResultsProps {
 }
 
 const RecommendationResults = ({ recommendation }: RecommendationResultsProps) => {
+    const [showAllRecommend, setShowAllRecommend] = useState(false);
+    const [showAllAvoid, setShowAllAvoid] = useState(false);
+    
+    // Limit for displaying items before showing "See More"
+    const DISPLAY_LIMIT = 3;
+    
     return (
         <Card className="shadow-card">
             <CardHeader>
@@ -53,45 +61,90 @@ const RecommendationResults = ({ recommendation }: RecommendationResultsProps) =
 
                         <Separator />
 
-                        {/* Recommendations */}
+                        {/* Best Practices */}
                         <div className="space-y-4">
                             {recommendation.recommend.length > 0 && (
                                 <div className="p-4 bg-success/10 rounded-lg border border-success/20">
                                     <div className="flex items-center gap-2 mb-3">
                                         <CheckCircle className="h-4 w-4 text-success" />
-                                        <span className="font-medium text-success">Recommended Crops</span>
+                                        <span className="font-medium text-success">Best Practices</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {recommendation.recommend.map((crop: string, index: number) => (
-                                            <Badge key={index} className="bg-success text-success-foreground">
-                                                {crop}
-                                            </Badge>
-                                        ))}
+                                        {recommendation.recommend
+                                            .slice(0, showAllRecommend ? recommendation.recommend.length : DISPLAY_LIMIT)
+                                            .map((crop: string, index: number) => (
+                                                <Badge key={index} className="bg-success text-success-foreground">
+                                                    {crop}
+                                                </Badge>
+                                            ))}
                                     </div>
+                                    {recommendation.recommend.length > DISPLAY_LIMIT && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="mt-2 p-0 h-auto text-success hover:text-success/80"
+                                            onClick={() => setShowAllRecommend(!showAllRecommend)}
+                                        >
+                                            {showAllRecommend ? (
+                                                <>
+                                                    <ChevronUp className="h-4 w-4 mr-1" />
+                                                    Show Less
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ChevronDown className="h-4 w-4 mr-1" />
+                                                    See More ({recommendation.recommend.length - DISPLAY_LIMIT} more)
+                                                </>
+                                            )}
+                                        </Button>
+                                    )}
                                 </div>
                             )}
 
+                            {/* Caution / Things to Avoid */}
                             {recommendation.avoid.length > 0 && (
                                 <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
                                     <div className="flex items-center gap-2 mb-3">
                                         <AlertTriangle className="h-4 w-4 text-destructive" />
-                                        <span className="font-medium text-destructive">Avoid These Crops</span>
+                                        <span className="font-medium text-destructive">Caution / Things to Avoid</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {recommendation.avoid.map((crop: string, index: number) => (
-                                            <Badge key={index} variant="destructive">
-                                                {crop}
-                                            </Badge>
-                                        ))}
+                                        {recommendation.avoid
+                                            .slice(0, showAllAvoid ? recommendation.avoid.length : DISPLAY_LIMIT)
+                                            .map((crop: string, index: number) => (
+                                                <Badge key={index} variant="destructive">
+                                                    {crop}
+                                                </Badge>
+                                            ))}
                                     </div>
+                                    {recommendation.avoid.length > DISPLAY_LIMIT && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="mt-2 p-0 h-auto text-destructive hover:text-destructive/80"
+                                            onClick={() => setShowAllAvoid(!showAllAvoid)}
+                                        >
+                                            {showAllAvoid ? (
+                                                <>
+                                                    <ChevronUp className="h-4 w-4 mr-1" />
+                                                    Show Less
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ChevronDown className="h-4 w-4 mr-1" />
+                                                    See More ({recommendation.avoid.length - DISPLAY_LIMIT} more)
+                                                </>
+                                            )}
+                                        </Button>
+                                    )}
                                 </div>
                             )}
 
-                            {/* Expert Advice */}
+                            {/* AI Guidance */}
                             <div className="p-4 bg-accent/10 rounded-lg border border-accent/20">
                                 <div className="flex items-center gap-2 mb-2">
                                     <TrendingUp className="h-4 w-4 text-accent" />
-                                    <span className="font-medium">Expert Advice</span>
+                                    <span className="font-medium">AI Guidance</span>
                                 </div>
                                 <p className="text-sm text-foreground/80">
                                     {recommendation.advice}

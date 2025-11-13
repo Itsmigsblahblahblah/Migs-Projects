@@ -1,80 +1,86 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { collection, addDoc, Timestamp, doc, setDoc } from "firebase/firestore";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
-import { generateFarmerReportId } from "@/lib/idUtils";
 
-// Mock NLP and DSS System
-const processReport = (text: string) => {
-    const problems = {
-        flood: ['baha', 'flood', 'tubig', 'ulan', 'nalubog'],
-        pest: ['insekto', 'pest', 'uod', 'peste', 'damage'],
-        drought: ['tuyo', 'dry', 'walang tubig', 'drought', 'init'],
-        disease: ['sakit', 'disease', 'bulok', 'rot', 'fungus']
-    };
+// Gemini API integration
+const getGeminiRecommendation = async (reportText: string) => {
+  // Use the provided API key
+  const API_KEY = "AIzaSyBH392sx2Gy-D8DBz3MrDZ_Ou88h4IDtog";
+  
+  // Detect language (simple approach)
+  const isTagalog = /[áàâéèêíìîóòôúùûñÁÀÂÉÈÊÍÌÎÓÒÔÚÙÛÑ]/.test(reportText) || 
+                    reportText.toLowerCase().includes('ng ') || 
+                    reportText.toLowerCase().includes('ang ') ||
+                    reportText.toLowerCase().includes('sa ') ||
+                    reportText.toLowerCase().includes('na ');
+  
+  const language = isTagalog ? 'Tagalog' : 'English';
+  
+  const prompt = `
+    You are an expert agricultural advisor helping farmers in the Philippines, specifically in Majayjay.
+    
+    Analyze the following farming problem report and provide crop recommendations and solutions:
+    
+    Report: "${reportText}"
+    
+    The report is in ${language}. Please respond in the same language.
+    
+    Please respond in the following JSON format:
+    {
+      "problem": "identified problem category (flood, pest, drought, disease, or general)",
+      "crop": "affected crop if mentioned (or 'unknown' if not specified)",
+      "recommend": ["recommended crops or solutions as an array of strings"],
+      "avoid": ["crops to avoid as an array of strings"],
+      "advice": "detailed expert advice as a single string"
+    }
+    
+    Ensure your response is valid JSON and nothing else. Keep your response focused on practical farming advice.
+  `;
 
-    const crops = {
-        corn: ['mais', 'corn'],
-        rice: ['bigas', 'rice', 'palay'],
-        tomato: ['kamatis', 'tomato'],
-        cabbage: ['repolyo', 'cabbage'],
-        eggplant: ['talong', 'eggplant']
-    };
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-goog-api-key": API_KEY,
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }]
+        }),
+      }
+    );
 
-    let detectedProblem = 'general';
-    let affectedCrop = 'unknown';
-
-    // Simple NLP simulation
-    const lowerText = text.toLowerCase();
-
-    for (const [problem, keywords] of Object.entries(problems)) {
-        if (keywords.some(keyword => lowerText.includes(keyword))) {
-            detectedProblem = problem;
-            break;
-        }
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.statusText}`);
     }
 
-    for (const [crop, keywords] of Object.entries(crops)) {
-        if (keywords.some(keyword => lowerText.includes(keyword))) {
-            affectedCrop = crop;
-            break;
-        }
-    }
-
-    // DSS Logic
-    const recommendations = {
-        flood: {
-            avoid: ['Corn', 'Tomato', 'Eggplant'],
-            recommend: ['Kangkong', 'Gabi', 'Rice (flood-tolerant variety)'],
-            advice: 'Consider raised bed planting and improved drainage systems. Plant flood-tolerant crops during rainy season.'
-        },
-        pest: {
-            avoid: ['Cabbage', 'Tomato'],
-            recommend: ['Corn', 'Root vegetables', 'Herbs'],
-            advice: 'Implement integrated pest management. Use organic pesticides and companion planting techniques.'
-        },
-        drought: {
-            avoid: ['Rice', 'Leafy vegetables'],
-            recommend: ['Cassava', 'Sweet potato', 'Drought-resistant corn varieties'],
-            advice: 'Install drip irrigation systems. Mulch around plants to retain moisture.'
-        },
-        disease: {
-            avoid: ['Tomato', 'Eggplant'],
-            recommend: ['Root crops', 'Legumes'],
-            advice: 'Ensure proper crop rotation and soil sterilization. Remove infected plants immediately.'
-        },
-        general: {
-            avoid: [],
-            recommend: ['Seasonal vegetables', 'Local varieties'],
-            advice: 'Consult with local agricultural officer for specific recommendations.'
-        }
-    };
-
+    const data = await response.json();
+    
+    // Extract JSON from the response
+    const textResponse = data.candidates[0].content.parts[0].text;
+    // Clean up the response to extract valid JSON
+    const jsonStart = textResponse.indexOf('{');
+    const jsonEnd = textResponse.lastIndexOf('}') + 1;
+    const jsonString = textResponse.substring(jsonStart, jsonEnd);
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error("Error with Gemini API:", error);
+    // Fallback to default response if API fails
     return {
-        problem: detectedProblem,
-        crop: affectedCrop,
-        ...recommendations[detectedProblem as keyof typeof recommendations]
+      problem: "general",
+      crop: "unknown",
+      recommend: ["Consult with local agricultural officer for specific recommendations"],
+      avoid: [],
+      advice: "We're experiencing technical difficulties. Please try again later or consult with a local agricultural expert."
     };
+  }
 };
 
 export const useReportManagement = (userId: string, username: string, setMonthlyReports: (count: number) => void, monthlyReports: number) => {
@@ -97,10 +103,8 @@ export const useReportManagement = (userId: string, username: string, setMonthly
         setIsProcessing(true);
 
         try {
-            // Simulate processing time
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            const result = processReport(reportText);
+            // Get recommendation from Gemini API
+            const result = await getGeminiRecommendation(reportText);
             setRecommendation(result);
 
             // Save to Firestore
@@ -136,10 +140,10 @@ export const useReportManagement = (userId: string, username: string, setMonthly
             setSelectedImage(null);
 
         } catch (error) {
-            console.error("Error saving report:", error);
+            console.error("Error getting recommendation:", error);
             toast({
                 title: "Error",
-                description: "May problema sa pag-save ng report sa database. Subukan ulit.",
+                description: "May problema sa pagkuha ng recommendation. Subukan ulit.",
                 variant: "destructive",
             });
         } finally {
