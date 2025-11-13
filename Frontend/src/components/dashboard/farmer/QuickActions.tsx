@@ -9,7 +9,8 @@ import {
     Leaf,
     Bell,
     Lightbulb,
-    Sprout
+    Sprout,
+    History
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import CropPrescriptionDialog from "./CropPrescriptionDialog";
@@ -46,7 +47,7 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
             </CardHeader>
             <CardContent>
                 <Dialog>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
                         <Button 
                             variant="outline" 
                             className="h-20 flex flex-col gap-2" 
@@ -72,6 +73,11 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
                         <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/alerts')}>
                             <Bell className="h-5 w-5" />
                             <span>Alerts</span>
+                        </Button>
+                        {/* History button moved here as requested */}
+                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/history')}>
+                            <History className="h-5 w-5" />
+                            <span>History</span>
                         </Button>
                     </div>
                 </Dialog>

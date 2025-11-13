@@ -3,8 +3,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Send, Camera } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, Send, Camera, Mic, Square } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useSpeechRecognition } from "@/hooks/custom/useSpeechRecognition";
+import { useToast } from "@/hooks/use-toast";
 
 interface ReportFormProps {
     reportText: string;
@@ -15,11 +17,60 @@ interface ReportFormProps {
 
 const ReportForm = ({ reportText, onReportTextChange, onSubmitReport, isProcessing }: ReportFormProps) => {
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const { toast } = useToast();
+    const {
+        isListening,
+        transcript,
+        interimTranscript,
+        isSupported,
+        error,
+        startListening,
+        stopListening,
+        resetTranscript,
+    } = useSpeechRecognition();
+
+    // Update the report text when speech recognition transcript changes
+    useEffect(() => {
+        if (transcript || interimTranscript) {
+            onReportTextChange(transcript + interimTranscript);
+        }
+    }, [transcript, interimTranscript]);
+
+    // Show error toast when speech recognition fails
+    useEffect(() => {
+        if (error) {
+            toast({
+                title: "Speech Recognition Error",
+                description: error === "not-allowed" 
+                    ? "Microphone access denied. Please allow microphone access to use this feature." 
+                    : `Error: ${error}`,
+                variant: "destructive",
+            });
+        }
+    }, [error, toast]);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             setSelectedImage(file);
+        }
+    };
+
+    const toggleSpeechRecognition = () => {
+        if (!isSupported) {
+            toast({
+                title: "Speech Recognition Not Supported",
+                description: "Your browser does not support speech recognition. Please try Chrome, Edge, or Safari.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (isListening) {
+            stopListening();
+        } else {
+            resetTranscript();
+            startListening();
         }
     };
 
@@ -36,7 +87,30 @@ const ReportForm = ({ reportText, onReportTextChange, onSubmitReport, isProcessi
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="problem">Problema sa Sakahan</Label>
+                    <div className="flex justify-between items-center">
+                        <Label htmlFor="problem">Problema sa Sakahan</Label>
+                        {isSupported && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={toggleSpeechRecognition}
+                                className={`flex items-center gap-1 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : ''}`}
+                            >
+                                {isListening ? (
+                                    <>
+                                        <Square className="h-4 w-4" />
+                                        Stop Recording
+                                    </>
+                                ) : (
+                                    <>
+                                        <Mic className="h-4 w-4" />
+                                        Use Microphone
+                                    </>
+                                )}
+                            </Button>
+                        )}
+                    </div>
                     <Textarea
                         id="problem"
                         placeholder="Halimbawa: 'Nalubog sa baha ang tanim kong mais sa nakaraang linggo...'"
@@ -44,6 +118,17 @@ const ReportForm = ({ reportText, onReportTextChange, onSubmitReport, isProcessi
                         onChange={(e) => onReportTextChange(e.target.value)}
                         className="min-h-32 resize-none"
                     />
+                    {isListening && (
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                            Listening... Please speak now
+                        </div>
+                    )}
+                    {!isSupported && (
+                        <div className="text-sm text-muted-foreground">
+                            Speech recognition not supported in your browser
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-2">

@@ -5,7 +5,6 @@ import {
   Sprout,
   LogOut,
   User,
-  History,
   Settings,
   Home
 } from "lucide-react";
@@ -91,18 +90,8 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   const navigationItems = [
-    {
-      label: 'Dashboard',
-      icon: Home,
-      path: userRole === 'farmer' ? '/farmer' : '/admin',
-      onClick: () => navigate(userRole === 'farmer' ? '/farmer' : '/admin'),
-    },
-    {
-      label: 'History',
-      icon: History,
-      path: '/history',
-      onClick: () => navigate('/history'),
-    },
+    // Dashboard button removed as requested
+    // History button removed as requested
     ...(userRole === 'admin' ? [{
       label: 'Rules Manager',
       icon: Settings,
@@ -138,8 +127,11 @@ const Layout = ({ children }: LayoutProps) => {
       <header className="bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
+            {/* Logo - now acts as Dashboard link */}
+            <div 
+              className="flex items-center gap-3 cursor-pointer"
+              onClick={() => navigate(userRole === 'farmer' ? '/farmer' : '/admin')}
+            >
               <div className="p-2 rounded-lg bg-gradient-primary">
                 <Sprout className="h-6 w-6 text-primary-foreground" />
               </div>
