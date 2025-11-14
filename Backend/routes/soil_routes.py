@@ -27,7 +27,12 @@ app.add_middleware(
 
 # Global model instance
 model = SoilCropTransformer()
-model.load_model('models/fert_soil_transformer.h5', 'models/preprocessing_pipeline.pkl')
+try:
+    model.load_model('models/fert_soil_transformer.h5', 'models/preprocessing_pipeline.pkl')
+    logger.info("Model loaded successfully")
+except Exception as e:
+    logger.error(f"Failed to load model: {e}")
+    model = None
 
 @app.get("/")
 async def root():
@@ -57,6 +62,10 @@ async def recommend_crops(soil_data: dict):
     }
     """
     try:
+        # Check if model is loaded
+        if model is None:
+            raise HTTPException(status_code=500, detail="Model not loaded")
+        
         # Validate input
         required_fields = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
         for field in required_fields:
@@ -120,6 +129,10 @@ async def recommend_crops_with_weather(data: dict):
     }
     """
     try:
+        # Check if model is loaded
+        if model is None:
+            raise HTTPException(status_code=500, detail="Model not loaded")
+        
         # Validate input
         if 'soil_data' not in data:
             raise HTTPException(status_code=400, detail="Missing soil_data in request")
@@ -163,10 +176,10 @@ async def recommend_crops_with_weather(data: dict):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "model_loaded": model.model is not None}
+    return {"status": "healthy", "model_loaded": model is not None and model.model is not None}
 
 @app.get("/soil-data/{barangay}")
-async def get_soil_data(barangay: str, soil_file: str = '../Data/Soilanaly.csv'):
+async def get_soil_data(barangay: str, soil_file: str = 'Data/Soilanaly.csv'):
     """
     Get soil data for a specific barangay
     

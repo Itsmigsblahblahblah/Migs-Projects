@@ -87,11 +87,14 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
 
   // Function to extract barangay name from farm address
   const extractBarangay = (farmAddress: string) => {
+    console.log('Extracting barangay from farm address:', farmAddress);
     // Extract barangay name from address like "Brgy. San Roque" or "Barangay San Roque"
     const match = farmAddress.match(/(?:Brgy\.|Barangay)\s+(.+)/i);
     if (match && match[1]) {
+      console.log('Matched barangay:', match[1].trim());
       return match[1].trim();
     }
+    console.log('No match found, returning farm address:', farmAddress);
     return farmAddress; // fallback to the full address if no match
   };
 
@@ -101,13 +104,20 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
     setError(null);
     
     try {
+      console.log('Fetching soil data for barangay:', barangay);
       const response = await fetch(`/api/soil-data/${encodeURIComponent(barangay)}`);
       
+      console.log('Soil data response status:', response.status);
+      console.log('Soil data response ok:', response.ok);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch soil data');
+        const errorText = await response.text();
+        console.error('Soil data error response:', errorText);
+        throw new Error(`Failed to fetch soil data: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log('Soil data response:', data);
       
       if (data.soil_data && Object.keys(data.soil_data).length > 0) {
         // Update input soil data with fetched data
@@ -136,6 +146,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
   const fetchRecommendations = async (soilData: SoilData, weatherDataForRecommendation?: WeatherData) => {
     setLoading(true);
     setError(null);
+    setRecommendations([]); // Clear previous recommendations
     
     try {
       // Use the weather-enhanced endpoint if weather data is available
@@ -143,6 +154,9 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
       const requestBody = weatherDataForRecommendation 
         ? { soil_data: soilData, weather_data: weatherDataForRecommendation }
         : soilData;
+      
+      console.log('Fetching recommendations from:', endpoint);
+      console.log('Request body:', requestBody);
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -152,12 +166,26 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
         body: JSON.stringify(requestBody),
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch recommendations');
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Failed to fetch recommendations: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
-      setRecommendations(data.recommended_crops);
+      console.log('Response data:', data);
+      
+      // Check if recommended_crops exists and is an array
+      if (data.recommended_crops && Array.isArray(data.recommended_crops)) {
+        console.log('Setting recommendations:', data.recommended_crops);
+        setRecommendations(data.recommended_crops);
+      } else {
+        console.error('Invalid response format:', data);
+        setError('Invalid response format from server');
+      }
     } catch (err) {
       setError('Failed to load crop recommendations. Please try again.');
       console.error('Error fetching recommendations:', err);
@@ -168,9 +196,12 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
 
   // Fetch soil data when dialog opens and farmer profile is available
   useEffect(() => {
+    console.log('useEffect triggered - open:', open, 'farmerProfile:', farmerProfile);
     const loadSoilData = async () => {
       if (open && farmerProfile?.farmAddress) {
+        console.log('Fetching soil data for farm address:', farmerProfile.farmAddress);
         const barangay = extractBarangay(farmerProfile.farmAddress);
+        console.log('Extracted barangay:', barangay);
         const soilData = await fetchSoilDataByBarangay(barangay);
         
         // Prepare weather data if available
@@ -187,6 +218,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
         
         // If we got soil data, use it for recommendations
         if (soilData) {
+          console.log('Using fetched soil data for recommendations:', soilData);
           fetchRecommendations({
             pH: soilData.pH,
             Nitrogen: soilData.Nitrogen,
@@ -195,16 +227,18 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
           }, weatherDataForRecommendation);
         } else {
           // If no soil data found, use current input values
+          console.log('No soil data found, using input soil data:', inputSoilData);
           fetchRecommendations(inputSoilData, weatherDataForRecommendation);
         }
       } else if (open) {
         // If no farm address, use default values
+        console.log('No farm address, using default input soil data:', inputSoilData);
         fetchRecommendations(inputSoilData);
       }
     };
 
     loadSoilData();
-  }, [open, farmerProfile?.farmAddress]);
+  }, [open, farmerProfile]);
 
   const handleCropSelect = (crop: PrescriptionDetails) => {
     setSelectedCrop(crop);
@@ -215,6 +249,13 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
   };
 
   const handleGetRecommendations = () => {
+    console.log('Get Recommendations button clicked');
+    console.log('Current input soil data:', inputSoilData);
+    console.log('Current weather data:', weatherData);
+    
+    // Clear any previous error
+    setError(null);
+    
     // Prepare weather data if available
     let weatherDataForRecommendation: WeatherData | undefined;
     if (weatherData) {
@@ -225,6 +266,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
         wind_speed: weatherData.extendedForecast?.[0]?.windSpeed || 5,
         uv_index: weatherData.extendedForecast?.[0]?.uvIndex || 5
       };
+      console.log('Prepared weather data for recommendation:', weatherDataForRecommendation);
     }
     
     fetchRecommendations(inputSoilData, weatherDataForRecommendation);
@@ -417,11 +459,12 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
               
               {!loading && !error && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {recommendations.map((recommendation, index) => (
-                    <Card 
-                      key={index}
-                      className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
-                      onClick={() => handleCropSelect({
+                  {recommendations.length > 0 ? (
+                    recommendations.map((recommendation, index) => (
+                      <Card 
+                        key={index}
+                        className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
+                        onClick={() => handleCropSelect({
                         id: index.toString(),
                         crop: recommendation.crop,
                         reason: `Recommended based on your soil analysis and current weather conditions with ${Math.round(recommendation.confidence * 100)}% confidence.`,
@@ -463,8 +506,13 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No crop recommendations available
+                  </div>
+                )}
+              </div>
               )}
             </div>
 
