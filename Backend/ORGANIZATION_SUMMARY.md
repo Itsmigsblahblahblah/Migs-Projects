@@ -1,93 +1,80 @@
 # Backend Organization Summary
 
-This document summarizes the reorganization of backend files to improve project structure and maintainability.
+This document provides a comprehensive overview of the restructured Backend directory for the Majayjay Farm Resource Management System.
 
-## Changes Made
+## Final Directory Structure
 
-### 1. Directory Structure Reorganization
-
-**Before:**
 ```
-Project Root/
-├── fert_soil_transformer.py
-├── test_model.py
-├── test_soil_endpoint.py
-├── requirements.txt
-├── fert_soil_transformer.h5
-├── preprocessing_pipeline.pkl
-├── Backend/
-│   └── Data/
-│       ├── Soilanaly.csv
-│       └── FertilizerRecomm.csv
-└── functions/ (Firebase Cloud Functions - unchanged)
-```
-
-**After:**
-```
-Project Root/
-├── Backend/
-│   ├── Data/
-│   │   ├── Soilanaly.csv
-│   │   └── FertilizerRecomm.csv
-│   ├── ml_model/
-│   │   ├── fert_soil_transformer.py
-│   │   ├── test_model.py
-│   │   ├── test_soil_endpoint.py
-│   │   ├── requirements.txt
-│   │   ├── fert_soil_transformer.h5
-│   │   └── preprocessing_pipeline.pkl
-│   ├── README.md
-│   └── ORGANIZATION_SUMMARY.md
-└── functions/ (Firebase Cloud Functions - unchanged)
+Backend/
+├── Data/                      # Data files used by the ML model
+│   ├── Soilanaly.csv          # Soil analysis data from different locations
+│   └── FertilizerRecomm.csv   # Fertilizer recommendations for crops
+├── models/                    # Trained ML models and preprocessing pipelines
+│   ├── fert_soil_transformer.h5     # Trained model in Keras HDF5 format
+│   └── preprocessing_pipeline.pkl   # Preprocessing pipeline for data transformation
+├── services/                  # Business logic and ML model implementation
+│   └── soil_crop_service.py         # Main model implementation
+├── routes/                    # API route definitions
+│   └── soil_routes.py               # FastAPI routes for crop recommendations
+├── tests/                     # Test scripts
+│   ├── test_model.py                # Test script for the model
+│   └── test_soil_endpoint.py        # Test script for API endpoints
+├── config/                    # Configuration files
+├── training/                  # Training scripts and datasets
+├── main.py                    # Main entry point for Uvicorn/FastAPI
+├── requirements.txt           # Python dependencies
+├── .venv/                     # Python virtual environment (excluded from git)
+├── README.md                  # Documentation
+└── ORGANIZATION_SUMMARY.md   # This file
 ```
 
-### 2. Path Updates
+## Startup Process
 
-All file paths in the moved Python scripts were updated to maintain correct relative references:
-- `fert_soil_transformer.py`: Updated default paths from `Backend/Data/` to `../Data/`
-- Documentation files updated to reflect new file locations
-
-### 3. Documentation Updates
-
-The following documentation files were updated to reflect the new structure:
-- `README.md` - Project overview updated
-- `SOIL_CROP_RECOMMENDATION_README.md` - Usage instructions updated
-- `IMPLEMENTATION_SUMMARY.md` - File locations and usage instructions updated
-- `SYSTEM_ARCHITECTURE.md` - Component descriptions updated
-
-## Benefits of Reorganization
-
-1. **Improved Structure**: All backend-related files are now properly organized in the Backend directory
-2. **Better Maintainability**: Related files are grouped together logically
-3. **Clear Separation**: Machine learning components are in `ml_model/` subdirectory
-4. **Data Isolation**: Data files remain in their own directory
-5. **No Functionality Changes**: All existing features work exactly as before
-
-## Verification
-
-- All Python imports work correctly
-- Model loading and prediction functions properly
-- Data files are accessible from the new locations
-- API endpoints function as expected
-- Documentation reflects the new structure
-
-## Usage
-
-### Training the Model
+### 1. Activate Virtual Environment
 ```bash
-cd Backend/ml_model
-python fert_soil_transformer.py train
+cd Backend
+python -m venv .venv
+source .venv/Scripts/activate  # On Windows
+# or
+.venv\Scripts\activate.bat     # On Windows CMD
 ```
 
-### Running the API Server
+### 2. Install Dependencies
 ```bash
-cd Backend/ml_model
-python fert_soil_transformer.py serve
+pip install -r requirements.txt
 ```
 
-### Testing
+### 3. Run the Backend Server
 ```bash
-cd Backend/ml_model
-python test_model.py
-python test_soil_endpoint.py
+uvicorn main:app --reload
 ```
+
+The server will start on `http://localhost:8000` by default.
+
+## API Endpoints
+
+- `GET /` - API root endpoint
+- `POST /recommend` - Get crop recommendations based on soil data
+- `POST /recommend-with-weather` - Get crop recommendations based on soil and weather data
+- `GET /soil-data/{barangay}` - Get soil data for a specific barangay
+- `GET /health` - Health check endpoint
+
+## Testing
+
+### Test the Model
+```bash
+python tests/test_model.py
+```
+
+### Test API Endpoints
+```bash
+python tests/test_soil_endpoint.py
+```
+
+## Key Improvements
+
+1. **Virtual Environment**: All dependencies are now isolated in a virtual environment
+2. **Clean Structure**: Clear separation of concerns with dedicated directories
+3. **Standard Entry Point**: Using Uvicorn/FastAPI as the standard way to start the backend
+4. **Maintainable**: Easy to understand and modify structure
+5. **Reproducible**: Collaborators can easily set up the environment with just `pip install -r requirements.txt`

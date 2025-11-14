@@ -9,21 +9,29 @@ Backend/
 ├── Data/                      # Data files used by the ML model
 │   ├── Soilanaly.csv          # Soil analysis data from different locations
 │   └── FertilizerRecomm.csv   # Fertilizer recommendations for crops
-├── ml_model/                  # Machine learning model for crop recommendations
-│   ├── fert_soil_transformer.py     # Main model implementation
-│   ├── requirements.txt             # Python dependencies
+├── models/                    # Trained ML models and preprocessing pipelines
+│   ├── fert_soil_transformer.h5     # Trained model in Keras HDF5 format
+│   └── preprocessing_pipeline.pkl   # Preprocessing pipeline for data transformation
+├── services/                  # Business logic and ML model implementation
+│   └── soil_crop_service.py         # Main model implementation
+├── routes/                    # API route definitions
+│   └── soil_routes.py               # FastAPI routes for crop recommendations
+├── tests/                     # Test scripts
 │   ├── test_model.py                # Test script for the model
 │   └── test_soil_endpoint.py        # Test script for API endpoints
+├── config/                    # Configuration files
+├── training/                  # Training scripts and datasets
+├── main.py                    # Main entry point for Uvicorn/FastAPI
+├── requirements.txt           # Python dependencies
 └── README.md                  # This file
 ```
 
 ## Components
 
-### 1. Machine Learning Model (`ml_model/`)
-- **fert_soil_transformer.py**: Implements a neural network model for crop recommendation based on soil analysis data
+### 1. Machine Learning Model (`services/`)
+- **soil_crop_service.py**: Implements a neural network model for crop recommendation based on soil analysis data
 - **Features**: pH, Nitrogen, Phosphorus, and Potassium levels
 - **Output**: Recommended crops with confidence scores
-- **API**: FastAPI server with endpoints for crop recommendations and soil data retrieval
 
 ### 2. Data Files (`Data/`)
 - **Soilanaly.csv**: Contains actual soil analysis results from different barangays
@@ -31,26 +39,34 @@ Backend/
 
 ## Usage
 
+### Setting up the Environment
+```bash
+cd Backend
+python -m venv .venv
+source .venv/Scripts/activate  # On Windows
+pip install -r requirements.txt
+```
+
 ### Training the Model
 ```bash
-cd Backend/ml_model
-python fert_soil_transformer.py train
+cd Backend
+python -m services.soil_crop_service train
 ```
 
 ### Running the API Server
 ```bash
-cd Backend/ml_model
-python fert_soil_transformer.py serve
+cd Backend
+uvicorn main:app --reload
 ```
 
 ### Testing the Model
 ```bash
-cd Backend/ml_model
-python test_model.py
+cd Backend
+tests/test_model.py
 ```
 
 ### Testing API Endpoints
 ```bash
-cd Backend/ml_model
-python test_soil_endpoint.py
+cd Backend
+tests/test_soil_endpoint.py
 ```

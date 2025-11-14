@@ -76,8 +76,8 @@ class SoilCropTransformer:
         self.soil_feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
         self.preprocessor = None
         
-    def load_and_preprocess_data(self, soil_file='../Data/Soilanaly.csv', 
-                                fertilizer_file='../Data/FertilizerRecomm.csv'):
+    def load_and_preprocess_data(self, soil_file='Data/Soilanaly.csv', 
+                                fertilizer_file='Data/FertilizerRecomm.csv'):
         """
         Load and preprocess the soil analysis and fertilizer recommendation data
         
@@ -302,7 +302,7 @@ class SoilCropTransformer:
             pickle.dump(self.preprocessor, f)
         logger.info(f"Preprocessing pipeline saved to {preprocessor_path}")
     
-    def load_model(self, model_path='fert_soil_transformer.h5', preprocessor_path='preprocessing_pipeline.pkl'):
+    def load_model(self, model_path='models/fert_soil_transformer.h5', preprocessor_path='models/preprocessing_pipeline.pkl'):
         """
         Load a trained model and preprocessing pipeline
         
@@ -693,5 +693,3 @@ def main():
         logger.info(f"Server starting on http://localhost:{args.port}")
         uvicorn.run(app, host="0.0.0.0", port=args.port)
 
-if __name__ == "__main__":
-    main()

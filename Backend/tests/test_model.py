@@ -3,7 +3,7 @@ Test script to demonstrate the soil crop recommendation model
 """
 
 import json
-from fert_soil_transformer import SoilCropTransformer
+from services.soil_crop_service import SoilCropTransformer
 
 def main():
     # Initialize the model
