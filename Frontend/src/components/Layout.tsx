@@ -92,12 +92,7 @@ const Layout = ({ children }: LayoutProps) => {
   const navigationItems = [
     // Dashboard button removed as requested
     // History button removed as requested
-    ...(userRole === 'admin' ? [{
-      label: 'Rules Manager',
-      icon: Settings,
-      path: '/admin/rules',
-      onClick: () => navigate('/admin/rules'),
-    }] : [])
+    // Rules Manager button removed as requested
   ];
 
   // Don't render layout if user is not authenticated

@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
-import { Settings, MapPin, Users, FileText, BarChart3, Map } from "lucide-react";
+import { Settings, Users, FileText, BarChart3 } from "lucide-react";
 import AdminStatsOverview from "@/components/dashboard/admin/AdminStatsOverview";
 import FarmersList from "@/components/dashboard/admin/FarmersList";
 import DeletionRequests from "@/components/dashboard/admin/DeletionRequests";
@@ -73,14 +73,6 @@ const AdminDashboard = () => {
                 Welcome back, {username}. Here's your farm management overview.
               </p>
             </div>
-            <Button
-              variant="outline"
-              className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-              onClick={() => navigate('/admin/rules')}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Manage Rules
-            </Button>
           </div>
         </div>
 
@@ -124,12 +116,12 @@ const AdminDashboard = () => {
                 <span>Reports</span>
               </Button>
               <Button
-                variant={activeSection === "map" ? "default" : "outline"}
+                variant="outline"
                 className="h-20 flex flex-col gap-2"
-                onClick={() => setActiveSection("map")}
+                onClick={() => navigate('/admin/rules')}
               >
-                <Map className="h-5 w-5" />
-                <span>Location Map</span>
+                <Settings className="h-5 w-5" />
+                <span>Manage Rules</span>
               </Button>
             </div>
           </CardContent>
@@ -176,18 +168,7 @@ const AdminDashboard = () => {
             />
           )}
 
-          {/* Map Section */}
-          {activeSection === "map" && (
-            <div className="shadow-card rounded-lg border p-6">
-              <div className="bg-muted/30 rounded-lg p-8 text-center">
-                <MapPin className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">Interactive Map Coming Soon</h3>
-                <p className="text-muted-foreground">
-                  This will show the geographic distribution of farming problems across different barangays in Majayjay.
-                </p>
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
     </Layout>
