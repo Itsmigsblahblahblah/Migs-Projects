@@ -68,7 +68,7 @@ const AnalyticsCharts = ({
                                                 outerRadius={80}
                                                 fill="#8884d8"
                                                 dataKey="value"
-                                                label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                                                label={(props: any) => `${Math.round(props.percent * 100)}%`}
                                             >
                                                 {pieData.map((entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
