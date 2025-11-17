@@ -1,25 +1,19 @@
 """
-Transformer-based Crop Recommendation Model for Soil Analysis Data
+Transformer-based Soil Crop Recommendation Model
 
-This script trains a Transformer-based model on soil analysis data to recommend crops.
-It processes two CSV files:
-1. Soilanaly.csv - Contains actual soil analysis results from different locations
-2. FertilizerRecomm.csv - Contains standardized fertilizer recommendations for crops
+This script trains a Transformer-based model on soil data to recommend 
+suitable crops based on soil properties and optional weather data.
 
-Expected Input Columns:
-- Soilanaly.csv: Address, Crop, pH, Nitrogen(N), Phosphorus(P), Potassium(K), Fertilizer recommendations
-- FertilizerRecomm.csv: Crop/Variety, Nitrogen (Low/Medium/High), Phosphorus (Low/Medium/High), Potassium (Low/Medium/High)
+Expected Input:
+- brgy_soil_dataset.csv: Contains soil data for various barangays
 
 Model Output:
-- Recommended crops based on soil properties (pH, Nitrogen, Phosphorus, Potassium levels)
+- Recommended crops based on soil properties
+- Confidence scores for each recommendation
 
 Usage:
-1. Training: python fert_soil_transformer.py train
-2. API Server: python fert_soil_transformer.py serve
-
-Artifacts Saved:
-- fert_soil_transformer.h5: Trained model in Keras HDF5 format
-- preprocessing_pipeline.pkl: Preprocessing pipeline for consistent data transformation
+1. Training: python soil_crop_service.py train --soil-file Data/brgy_soil_dataset.csv
+2. API Server: python soil_crop_service.py serve --soil-file Data/brgy_soil_dataset.csv
 """
 
 import os
@@ -31,7 +25,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import classification_report
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense, Dropout
 from tensorflow.keras.models import Model
@@ -59,41 +53,36 @@ np.random.seed(HYPERPARAMETERS['random_seed'])
 tf.random.set_seed(HYPERPARAMETERS['random_seed'])
 
 class SoilCropTransformer:
-    """Neural network model for crop recommendation based on soil and weather data"""
+    """Transformer-based model for crop recommendation based on soil properties"""
     
     def __init__(self, hyperparams=None):
         self.hyperparams = hyperparams or HYPERPARAMETERS
         self.model = None
         self.label_encoder = LabelEncoder()
         self.scaler = StandardScaler()
-        # Updated feature columns to include weather data
-        self.feature_columns = [
-            'pH', 'Nitrogen', 'Phosphorus', 'Potassium',
-            'temperature', 'humidity', 'precipitation_probability', 
-            'wind_speed', 'uv_index'
-        ]
+        self.feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium', 
+                               'temperature', 'humidity', 'precipitation_probability', 
+                               'wind_speed', 'uv_index']
         # For backward compatibility with soil-only data
         self.soil_feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
         self.preprocessor = None
         
-    def load_and_preprocess_data(self, soil_file='Data/Soilanaly.csv', 
-                                fertilizer_file='Data/FertilizerRecomm.csv'):
+    def load_and_preprocess_data(self, soil_file='Data/brgy_soil_dataset.csv'):
         """
-        Load and preprocess the soil analysis and fertilizer recommendation data
+        Load and preprocess the soil analysis data from barangay dataset
         
         Args:
-            soil_file (str): Path to Soilanaly.csv
-            fertilizer_file (str): Path to FertilizerRecomm.csv
+            soil_file (str): Path to brgy_soil_dataset.csv
             
         Returns:
             tuple: (X, y) preprocessed features and labels
         """
-        logger.info("Loading and preprocessing data...")
+        logger.info("Loading and preprocessing barangay soil data...")
         
         # Load soil analysis data
         try:
-            soil_df = pd.read_csv(soil_file, skiprows=2, usecols=range(1, 8))
-            soil_df.columns = ['Address', 'Crop', 'pH', 'Nitrogen', 'Phosphorus', 'Potassium', 'Fertilizer_Recommendation']
+            soil_df = pd.read_csv(soil_file)
+            # No need to skip rows or rename columns as the new file has the correct format
         except Exception as e:
             logger.warning(f"Could not load soil data from {soil_file}: {e}")
             logger.info("Generating synthetic soil data for demonstration...")
@@ -107,9 +96,9 @@ class SoilCropTransformer:
         phosphorus_map = {'L': 0, 'M': 1, 'H': 2}
         potassium_map = {'L': 0, 'M': 1, 'H': 2}
         
-        soil_df['Nitrogen'] = soil_df['Nitrogen'].replace(nitrogen_map)
-        soil_df['Phosphorus'] = soil_df['Phosphorus'].replace(phosphorus_map)
-        soil_df['Potassium'] = soil_df['Potassium'].replace(potassium_map)
+        soil_df['Nitrogen'] = soil_df['Nitrogen(N)'].replace(nitrogen_map)
+        soil_df['Phosphorus'] = soil_df['Phosphorus(P)'].replace(phosphorus_map)
+        soil_df['Potassium'] = soil_df['Potassium(K)'].replace(potassium_map)
         
         # Fill NaN values
         soil_df['Nitrogen'] = soil_df['Nitrogen'].fillna(1)
@@ -168,10 +157,9 @@ class SoilCropTransformer:
             'Address': [f"Brgy. Area{i}" for i in range(n_samples)],
             'Crop': np.random.choice(crops, n_samples),
             'pH': np.random.uniform(5.0, 7.5, n_samples),
-            'Nitrogen': np.random.choice(['L', 'M', 'H'], n_samples),
-            'Phosphorus': np.random.choice(['L', 'M', 'H'], n_samples),
-            'Potassium': np.random.choice(['L', 'M', 'H'], n_samples),
-            'Fertilizer_Recommendation': np.random.uniform(2.0, 8.0, n_samples)
+            'Nitrogen(N)': np.random.choice(['L', 'M', 'H'], n_samples),
+            'Phosphorus(P)': np.random.choice(['L', 'M', 'H'], n_samples),
+            'Potassium(K)': np.random.choice(['L', 'M', 'H'], n_samples)
         }
         
         return pd.DataFrame(data)
@@ -241,8 +229,8 @@ class SoilCropTransformer:
         logger.info(f"Test samples: {len(X_test)}")
         
         # Build model
-        unique_classes = np.unique(y) if y is not None else np.array([0])
-        self.build_model(X_train.shape[1:], len(unique_classes))
+        unique_classes = np.unique(y) if y is not None and len(y) > 0 else np.array([0])
+        self.build_model(X_train.shape[1:], len(unique_classes) if len(unique_classes) > 0 else 1)
         
         # Callbacks
         early_stopping = EarlyStopping(
@@ -276,13 +264,111 @@ class SoilCropTransformer:
         y_pred = np.argmax(self.model.predict(X_test, verbose=0), axis=1)
         # Get unique labels in test set
         unique_labels = np.unique(np.concatenate([y_test, y_pred]))
-        target_names = [self.label_encoder.inverse_transform([i])[0] for i in unique_labels]
-        report = classification_report(y_test, y_pred, labels=unique_labels, target_names=target_names, output_dict=True)
         
-        logger.info("Training completed")
+        # Create classification report
+        target_names = self.label_encoder.inverse_transform(unique_labels)
+        report = classification_report(y_test, y_pred, target_names=target_names, output_dict=True, zero_division="warn")
+        
         return history, report
     
-    def save_model(self, model_path='fert_soil_transformer.h5', preprocessor_path='preprocessing_pipeline.pkl'):
+    def predict(self, soil_data):
+        """
+        Predict suitable crops based on soil data
+        
+        Args:
+            soil_data (dict): Dictionary containing soil properties
+                {
+                    "pH": 6.5,
+                    "Nitrogen": "M",  # L, M, or H
+                    "Phosphorus": "L",  # L, M, or H
+                    "Potassium": "H"   # L, M, or H
+                }
+                
+        Returns:
+            list: List of tuples (crop_name, confidence) sorted by confidence
+        """
+        if self.model is None:
+            raise ValueError("Model not loaded. Call load_model() first.")
+        
+        # Convert categorical values to numerical
+        nitrogen_map = {'L': 0, 'M': 1, 'H': 2}
+        phosphorus_map = {'L': 0, 'M': 1, 'H': 2}
+        potassium_map = {'L': 0, 'M': 1, 'H': 2}
+        
+        # Prepare input data with default weather values
+        input_data = np.array([[
+            soil_data['pH'],
+            nitrogen_map[soil_data['Nitrogen']],
+            phosphorus_map[soil_data['Phosphorus']],
+            potassium_map[soil_data['Potassium']],
+            25.0,  # Default temperature
+            60.0,  # Default humidity
+            50.0,  # Default precipitation probability
+            10.0,  # Default wind speed
+            5.0    # Default UV index
+        ]])
+        
+        # Scale input data
+        input_scaled = self.scaler.transform(input_data)
+        
+        # Make prediction
+        predictions = self.model.predict(input_scaled, verbose=0)[0]
+        
+        # Get top 5 predictions
+        top_indices = np.argsort(predictions)[-5:][::-1]
+        top_crops = self.label_encoder.inverse_transform(top_indices)
+        top_confidences = predictions[top_indices]
+        
+        # Return as list of tuples
+        return list(zip(top_crops, top_confidences))
+    
+    def predict_with_weather(self, soil_data, weather_data):
+        """
+        Predict suitable crops based on soil and weather data
+        
+        Args:
+            soil_data (dict): Dictionary containing soil properties
+            weather_data (dict): Dictionary containing weather data
+            
+        Returns:
+            list: List of tuples (crop_name, confidence) sorted by confidence
+        """
+        if self.model is None:
+            raise ValueError("Model not loaded. Call load_model() first.")
+        
+        # Convert categorical values to numerical
+        nitrogen_map = {'L': 0, 'M': 1, 'H': 2}
+        phosphorus_map = {'L': 0, 'M': 1, 'H': 2}
+        potassium_map = {'L': 0, 'M': 1, 'H': 2}
+        
+        # Prepare input data
+        input_data = np.array([[
+            soil_data['pH'],
+            nitrogen_map[soil_data['Nitrogen']],
+            phosphorus_map[soil_data['Phosphorus']],
+            potassium_map[soil_data['Potassium']],
+            weather_data.get('temperature', 25.0),
+            weather_data.get('humidity', 60.0),
+            weather_data.get('precipitation_probability', 50.0),
+            weather_data.get('wind_speed', 10.0),
+            weather_data.get('uv_index', 5.0)
+        ]])
+        
+        # Scale input data
+        input_scaled = self.scaler.transform(input_data)
+        
+        # Make prediction
+        predictions = self.model.predict(input_scaled, verbose=0)[0]
+        
+        # Get top 5 predictions
+        top_indices = np.argsort(predictions)[-5:][::-1]
+        top_crops = self.label_encoder.inverse_transform(top_indices)
+        top_confidences = predictions[top_indices]
+        
+        # Return as list of tuples
+        return list(zip(top_crops, top_confidences))
+    
+    def save_model(self, model_path='models/soil_crop_transformer.keras', preprocessor_path='models/soil_preprocessing_pipeline.pkl'):
         """
         Save the trained model and preprocessing pipeline
         
@@ -291,7 +377,10 @@ class SoilCropTransformer:
             preprocessor_path (str): Path to save the preprocessing pipeline
         """
         if self.model is None:
-            raise ValueError("Model not trained yet. Call train() first.")
+            raise ValueError("No model to save. Train the model first.")
+        
+        # Create models directory if it doesn't exist
+        os.makedirs(os.path.dirname(model_path), exist_ok=True)
         
         # Save model
         self.model.save(model_path)
@@ -302,157 +391,57 @@ class SoilCropTransformer:
             pickle.dump(self.preprocessor, f)
         logger.info(f"Preprocessing pipeline saved to {preprocessor_path}")
     
-    def load_model(self, model_path='models/fert_soil_transformer.h5', preprocessor_path='models/preprocessing_pipeline.pkl'):
+    def load_model(self, model_path='models/soil_crop_transformer.keras', preprocessor_path='models/soil_preprocessing_pipeline.pkl'):
         """
         Load a trained model and preprocessing pipeline
         
         Args:
-            model_path (str): Path to the saved model
-            preprocessor_path (str): Path to the preprocessing pipeline
+            model_path (str): Path to load the model from
+            preprocessor_path (str): Path to load the preprocessing pipeline from
         """
+        from tensorflow.keras.models import load_model
+        
         # Load model
-        self.model = tf.keras.models.load_model(model_path)
+        self.model = load_model(model_path)
         logger.info(f"Model loaded from {model_path}")
         
         # Load preprocessing pipeline
         with open(preprocessor_path, 'rb') as f:
             self.preprocessor = pickle.load(f)
+        
+        # Restore components
         self.label_encoder = self.preprocessor['label_encoder']
         self.scaler = self.preprocessor['scaler']
         self.feature_columns = self.preprocessor['feature_columns']
+        
         logger.info(f"Preprocessing pipeline loaded from {preprocessor_path}")
-        logger.info(f"Model trained with {len(self.feature_columns)} features: {self.feature_columns}")
-    
-    def predict(self, soil_data):
-        """
-        Predict recommended crops based on soil data
-        
-        Args:
-            soil_data (dict): Dictionary with soil properties
-                Example: {"pH": 6.5, "Nitrogen": "M", "Phosphorus": "L", "Potassium": "H"}
-                
-        Returns:
-            list: List of recommended crops with confidence scores
-        """
-        if self.model is None:
-            raise ValueError("Model not loaded. Call load_model() first.")
-        
-        # Convert categorical values to numerical
-        nitrogen_map = {'L': 0, 'M': 1, 'H': 2}
-        phosphorus_map = {'L': 0, 'M': 1, 'H': 2}
-        potassium_map = {'L': 0, 'M': 1, 'H': 2}
-        
-        # Prepare input data with soil features only
-        input_data = np.array([[
-            soil_data['pH'],
-            nitrogen_map.get(soil_data['Nitrogen'], 1),
-            phosphorus_map.get(soil_data['Phosphorus'], 1),
-            potassium_map.get(soil_data['Potassium'], 1)
-        ]])
-        
-        # For compatibility with the new model, we need to pad with default weather values
-        # Default weather values: temperature=25, humidity=50, precipitation_probability=0, wind_speed=5, uv_index=5
-        weather_data = np.array([[25, 50, 0, 5, 5]])
-        input_data_with_weather = np.concatenate([input_data, weather_data], axis=1)
-        
-        # Scale input data
-        input_scaled = self.scaler.transform(input_data_with_weather)
-        
-        # Make prediction
-        predictions = self.model.predict(input_scaled, verbose=0)
-        
-        # Get top 3 predictions
-        top_3_indices = np.argsort(predictions[0])[::-1][:3]
-        top_3_crops = [self.label_encoder.inverse_transform([i])[0] for i in top_3_indices]
-        top_3_scores = [predictions[0][i] for i in top_3_indices]
-        
-        return list(zip(top_3_crops, top_3_scores))
-    
-    def predict_with_weather(self, soil_data, weather_data):
-        """
-        Predict recommended crops based on soil and weather data
-        
-        Args:
-            soil_data (dict): Dictionary with soil properties
-                Example: {"pH": 6.5, "Nitrogen": "M", "Phosphorus": "L", "Potassium": "H"}
-            weather_data (dict): Dictionary with weather properties
-                Example: {
-                    "temperature": 28.5,
-                    "humidity": 65,
-                    "precipitation_probability": 20,
-                    "wind_speed": 10,
-                    "uv_index": 7
-                }
-                
-        Returns:
-            list: List of recommended crops with confidence scores
-        """
-        if self.model is None:
-            raise ValueError("Model not loaded. Call load_model() first.")
-        
-        # Convert categorical values to numerical
-        nitrogen_map = {'L': 0, 'M': 1, 'H': 2}
-        phosphorus_map = {'L': 0, 'M': 1, 'H': 2}
-        potassium_map = {'L': 0, 'M': 1, 'H': 2}
-        
-        # Prepare input data with both soil and weather features
-        input_data = np.array([[
-            soil_data['pH'],
-            nitrogen_map.get(soil_data['Nitrogen'], 1),
-            phosphorus_map.get(soil_data['Phosphorus'], 1),
-            potassium_map.get(soil_data['Potassium'], 1),
-            weather_data.get('temperature', 25.0),
-            weather_data.get('humidity', 50.0),
-            weather_data.get('precipitation_probability', 0.0),
-            weather_data.get('wind_speed', 5.0),
-            weather_data.get('uv_index', 5.0)
-        ]])
-        
-        # Scale input data
-        input_scaled = self.scaler.transform(input_data)
-        
-        # Make prediction
-        predictions = self.model.predict(input_scaled, verbose=0)
-        
-        # Get top 3 predictions
-        top_3_indices = np.argsort(predictions[0])[::-1][:3]
-        top_3_crops = [self.label_encoder.inverse_transform([i])[0] for i in top_3_indices]
-        top_3_scores = [predictions[0][i] for i in top_3_indices]
-        
-        return list(zip(top_3_crops, top_3_scores))
 
 def print_evaluation_report(report):
     """Print a formatted evaluation report"""
-    logger.info("\n" + "="*50)
-    logger.info("MODEL EVALUATION REPORT")
-    logger.info("="*50)
+    print("\n" + "="*50)
+    print("MODEL EVALUATION REPORT")
+    print("="*50)
     
     # Overall metrics
-    logger.info(f"Overall Accuracy: {report['accuracy']:.4f}")
+    print(f"Accuracy: {report['accuracy']:.4f}")
+    print("\nPer-class metrics:")
+    print("-" * 50)
     
-    # Per-class metrics (showing top 5 classes for brevity)
-    logger.info("\nPer-Class Metrics (Top 5):")
-    logger.info("-" * 50)
-    logger.info(f"{'Class':<20} {'Precision':<10} {'Recall':<10} {'F1-Score':<10}")
-    logger.info("-" * 50)
-    
-    # Sort classes by support (number of samples)
-    classes_with_support = [(cls, report[cls]['support']) for cls in report.keys() 
-                           if cls not in ['accuracy', 'macro avg', 'weighted avg']]
-    classes_sorted = sorted(classes_with_support, key=lambda x: x[1], reverse=True)
-    
-    for cls, _ in classes_sorted[:5]:  # Show top 5 classes
-        metrics = report[cls]
-        logger.info(f"{cls:<20} {metrics['precision']:<10.4f} {metrics['recall']:<10.4f} {metrics['f1-score']:<10.4f}")
-    
-    logger.info("="*50)
+    # Remove 'accuracy' and 'macro avg'/'weighted avg' from report for per-class display
+    for class_name, metrics in report.items():
+        if class_name not in ['accuracy', 'macro avg', 'weighted avg']:
+            print(f"{class_name}:")
+            print(f"  Precision: {metrics['precision']:.4f}")
+            print(f"  Recall: {metrics['recall']:.4f}")
+            print(f"  F1-Score: {metrics['f1-score']:.4f}")
+            print(f"  Support: {metrics['support']}")
+            print()
 
 def main():
     """Main function to handle training and serving"""
     parser = argparse.ArgumentParser(description='Soil Crop Recommendation Transformer Model')
     parser.add_argument('mode', choices=['train', 'serve'], help='Mode: train or serve')
-    parser.add_argument('--soil-file', default='../Data/Soilanaly.csv', help='Path to Soilanaly.csv')
-    parser.add_argument('--fertilizer-file', default='../Data/FertilizerRecomm.csv', help='Path to FertilizerRecomm.csv')
+    parser.add_argument('--soil-file', default='Data/brgy_soil_dataset.csv', help='Path to brgy_soil_dataset.csv')
     parser.add_argument('--port', type=int, default=8000, help='Port for FastAPI server')
     
     args = parser.parse_args()
@@ -465,7 +454,7 @@ def main():
         transformer = SoilCropTransformer()
         
         # Load and preprocess data
-        X, y = transformer.load_and_preprocess_data(args.soil_file, args.fertilizer_file)
+        X, y = transformer.load_and_preprocess_data(args.soil_file)
         
         # Train model
         history, report = transformer.train(X, y)
@@ -659,8 +648,7 @@ def main():
                 # Load soil analysis data
                 soil_file = args.soil_file
                 try:
-                    soil_df = pd.read_csv(soil_file, skiprows=2, usecols=range(1, 8))
-                    soil_df.columns = ['Address', 'Crop', 'pH', 'Nitrogen', 'Phosphorus', 'Potassium', 'Fertilizer_Recommendation']
+                    soil_df = pd.read_csv(soil_file)
                 except Exception as e:
                     logger.warning(f"Could not load soil data from {soil_file}: {e}")
                     return {"soil_data": {}}
@@ -676,9 +664,9 @@ def main():
                     row = matching_rows.iloc[0]
                     soil_data = {
                         "pH": float(row['pH']),
-                        "Nitrogen": row['Nitrogen'],
-                        "Phosphorus": row['Phosphorus'],
-                        "Potassium": row['Potassium']
+                        "Nitrogen": row['Nitrogen(N)'],
+                        "Phosphorus": row['Phosphorus(P)'],
+                        "Potassium": row['Potassium(K)']
                     }
                     return {"soil_data": soil_data}
                 else:
@@ -693,3 +681,5 @@ def main():
         logger.info(f"Server starting on http://localhost:{args.port}")
         uvicorn.run(app, host="0.0.0.0", port=args.port)
 
+if __name__ == "__main__":
+    main()

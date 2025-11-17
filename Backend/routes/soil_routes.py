@@ -18,7 +18,7 @@ app = APIRouter(prefix="", tags=["soil"])
 # Global model instance
 model = SoilCropTransformer()
 try:
-    model.load_model('models/fert_soil_transformer.h5', 'models/preprocessing_pipeline.pkl')
+    model.load_model('models/soil_crop_transformer.keras', 'models/soil_preprocessing_pipeline.pkl')
     logger.info("Model loaded successfully")
 except Exception as e:
     logger.error(f"Failed to load model: {e}")
@@ -169,7 +169,7 @@ async def health_check():
     return {"status": "healthy", "model_loaded": model is not None and model.model is not None}
 
 @app.get("/soil-data/{barangay}")
-async def get_soil_data(barangay: str, soil_file: str = 'Data/Soilanaly.csv'):
+async def get_soil_data(barangay: str, soil_file: str = 'Data/brgy_soil_dataset.csv'):
     """
     Get soil data for a specific barangay
     
@@ -182,8 +182,7 @@ async def get_soil_data(barangay: str, soil_file: str = 'Data/Soilanaly.csv'):
     try:
         # Load soil analysis data
         try:
-            soil_df = pd.read_csv(soil_file, skiprows=2, usecols=range(1, 8))
-            soil_df.columns = ['Address', 'Crop', 'pH', 'Nitrogen', 'Phosphorus', 'Potassium', 'Fertilizer_Recommendation']
+            soil_df = pd.read_csv(soil_file)
         except Exception as e:
             logger.warning(f"Could not load soil data from {soil_file}: {e}")
             return {"soil_data": {}}
@@ -199,9 +198,9 @@ async def get_soil_data(barangay: str, soil_file: str = 'Data/Soilanaly.csv'):
             row = matching_rows.iloc[0]
             soil_data = {
                 "pH": float(row['pH']),
-                "Nitrogen": row['Nitrogen'],
-                "Phosphorus": row['Phosphorus'],
-                "Potassium": row['Potassium']
+                "Nitrogen": row['Nitrogen(N)'],
+                "Phosphorus": row['Phosphorus(P)'],
+                "Potassium": row['Potassium(K)']
             }
             return {"soil_data": soil_data}
         else:

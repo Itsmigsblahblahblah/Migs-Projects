@@ -68,7 +68,7 @@ const ProfileCard = ({ username, farmerProfile, onEditProfile }: ProfileCardProp
                         <p className="text-sm text-muted-foreground">
                             {farmerProfile.homeAddress 
                                 ? `${farmerProfile.homeAddress}, Majayjay` 
-                                : "Majayjay, Batangas"}
+                                : "Brgy, Majayjay"}
                         </p>
                     </div>
                 </div>

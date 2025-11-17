@@ -1,0 +1,169 @@
+Address,Crop,pH,Nitrogen(N),Phosphorus(P),Potassium(K)
+Brgy. Coralao,Ampalaya (Bitter Gourd),5.8,M,M,M
+Brgy. Gagalot  Purok 2,Green Beans (Baguio Beans),5.8,L,M,M
+Brgy. Burgos,Bataw (Hyacinth Bean),6.2,L,M,M
+Brgy. Pangil,Siling-Tamban (Bell Siling-Tamban (Bell Pepper)),5.8,H,M,H
+Brgy. San Roque,Ampalaya (Bitter Gourd),6,L,H,L
+Brgy. Suba,Ampalaya (Bitter Gourd),5.8,L,H,L
+Brgy. Burgos,Broccoli (Brokoli),5.8,L,L,L
+Brgy. Amonoy,Broccoli (Brokoli),5.8,M,M,M
+Brgy. Taytay,Broccoli (Brokoli),6.2,L,M,M
+Brgy. Piit,Carrots (Karot),6.2,H,M,H
+Brgy. Pangil,Koliflower (Cauliflower) ,5.8,H,M,M
+Brgy. Gagalot  Purok 3,Sayote (Chayote),5.8,L,L,M
+Brgy. Taytay,Sayote (Chayote),5.8,M,M,M
+Brgy. San Roque,Bok Choy (Chinese Cabbage),6,H,M,M
+Brgy. Balayong,Talong (Eggplant),6,L,L,H
+Brgy. Gagalot  Purok 2,Talong (Eggplant),5.8,L,M,M
+Brgy. Malinao,Talong (Eggplant),5.8,L,L,M
+Brgy. Gagalot  Purok 3,Talong (Eggplant),5.8,H,M,H
+Brgy. Burgos,Bawang (Garlic),6,M,M,L
+Brgy. Burgos,Okra,6.2,H,M,H
+Brgy. Taytay,Luyang Dilaw (Turmeric Ginger),6,M,M,H
+Brgy. Olla,Repolyo (Cabbage),5.8,H,M,M
+Brgy. Gagalot  Purok 3,Luya (Ginger),5.8,L,M,H
+Brgy. San Roque,Okra,5.8,H,M,H
+Brgy. Munting Kawayan,Mustasa (Mustard Leave),7.2,H,M,M
+Brgy. Amonoy,Mustasa (Mustard Leave),6,L,L,H
+Brgy. Oobi,Okra,6,L,L,H
+Brgy. Taytay,Sibuyas (Onion),6.8,M,M,L
+Brgy. Malinao,Patani (Lima Bean),5.8,L,M,M
+Brgy. Taytay,Patani (Lima Bean),5.8,M,M,M
+Brgy. Oobi,Patola (Sponge Gourd),5.8,M,M,M
+Brgy. Amonoy,Pechay (Native),6,L,L,H
+Brgy. Munting Kawayan,Pechay (Native),5.8,H,M,M
+Brgy. Taytay,Siling-Tamban (Bell Pepper),5.8,M,M,H
+Brgy. Oobi,Patatas (Potato),5.8,M,M,H
+Brgy. Olla,Labanos (Radish),6,H,M,H
+Brgy. Gagalot  Purok 2,Rice (Dry Season),5.8,H,M,M
+Brgy. Balayong,Rice (Dry Season),6.2,H,M,M
+Brgy. Suba,Rice (Light Soils),5.8,L,M,M
+Brgy. Coralao,Rice (Med-Heavy Soils),5.8,L,M,M
+Brgy. Banga,Rice (Wet Season),7.2,H,M,M
+Brgy. Gagalot  Purok 2,Rice (Wet Season),5.8,H,M,M
+Brgy. Bukal,Rice (Dry Season),5.8,L,L,M
+Brgy. Piit,Rice (Dry Season),5.8,L,L,L
+Brgy. Olla,Rice (Dry Season),5.8,L,M,L
+Brgy. Banga,Rice (Wet Season),5.8,L,L,M
+Brgy. Munting Kawayan,Rice (Wet Season),5.8,L,L,L
+Brgy. Taytay,Rice (Wet Season),5.8,L,M,L
+Brgy. Taytay,Kalabasa (Squash),6,M,M,M
+Brgy. Coralao,Sitaw (String Beans),7.2,L,L,L
+Brgy. Pangil,Sitaw (String Beans),6.8,L,M,L
+Brgy. Suba,Sitaw (String Beans),6,L,M,M
+Brgy. Burgos,Kamatis (Tomato),6.8,H,H,H
+Brgy. Taytay,Upo (Bottle Gourd),7.2,M,M,M
+Brgy.Balanac,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy.Balanac,Kamatis (Tomato),5.8,L,M,M
+Brgy.Balanac,Sayote (Chayote),5.8,L,M,M
+Brgy.Banti,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy.Banti,Kamatis (Tomato),5.8,L,M,M
+Brgy.Botocan,Ampalaya (Bitter Gourd),5.8,L,M,M
+Brgy.Botocan,Labanos (Radish),5.8,L,M,M
+Brgy.Botocan,Rice (Dry Season),5.8,L,M,M
+Brgy.Bitaoy,Rice (Dry Season),5.8,L,M,M
+Brgy.Bitaoy,Kamatis (Tomato),5.8,L,M,M
+Brgy.Bitaoy,Sayote (Chayote),5.8,L,M,M
+Brgy.Burol,Ampalaya (Bitter Gourd),5.8,L,M,M
+Brgy.Burol,Kamatis (Tomato),5.8,L,M,M
+Brgy.Bayucain,Kalabasa (Squash),5.8,L,M,M
+Brgy.Bayucain,Kangkong (Water Spinach),5.8,L,M,M
+Brgy.Isabang,Kamatis (Tomato),5.8,L,M,M
+Brgy.Isabang,Labanos (Radish),5.8,L,M,M
+Brgy.Isabang,Kangkong (Water Spinach),5.8,L,M,M
+Brgy.May-It,Rice (Dry Season),5.8,L,M,M
+Brgy.May-It,Rice (Wet Season),5.8,L,M,M
+Brgy.May-It,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy.Panalaban,Rice (Dry Season),5.8,L,M,M
+Brgy.Panalaban,Kangkong (Water Spinach),5.8,L,M,M
+Brgy.Panalaban,Labanos (Radish),5.8,L,M,M
+Brgy.Panglan,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy.Panglan,Rice (Dry Season),5.8,L,M,M
+Brgy.Panglan,Kamatis (Tomato),5.8,L,M,M
+Brgy.Pook,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy.Pook,Kalabasa (Squash),5.8,L,M,M
+Brgy.Rizal,Kangkong (Water Spinach),5.8,L,M,M
+Brgy.Rizal,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy.Rizal,Kamatis (Tomato),5.8,L,M,M
+Brgy.San Isidro,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy.San Isidro,Pechay (Native),5.8,L,M,M
+Brgy.Talortor,Pechay (Native),5.8,L,M,M
+Brgy.Talortor,Kangkong (Water Spinach),5.8,L,M,M
+Brgy.Talortor,Talong (Eggplant),5.8,L,M,M
+Brgy.Tanawan,Talong (Eggplant),5.8,L,M,M
+Brgy.Tanawan,Kamatis (Tomato),5.8,L,M,M
+Brgy.Tanawan,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy.Pook,Kalabasa (Squash),5.8,L,M,M
+Brgy. Piit,Rice (Dry Season),5.8,L,L,L
+Brgy.Panalaban,Kangkong (Water Spinach),5.8,L,M,M
+Brgy.Isabang,Labanos (Radish),5.8,L,M,M
+Brgy.Isabang,Kangkong (Water Spinach),5.8,L,M,M
+Brgy. Munting Kawayan,Rice (Wet Season),5.8,L,L,L
+Brgy. San Roque,Bok Choy (Chinese Cabbage),6,H,M,M
+Brgy. San Roque,Okra,5.8,H,M,H
+Brgy. Taytay,Luyang Dilaw (Turmeric Ginger),6,M,M,H
+Brgy. Taytay,Sibuyas (Onion),6.8,M,M,L
+Brgy. Piit,Carrots (Karot),6.2,H,M,H
+Brgy. Oobi,Okra,6,L,L,H
+Brgy. Olla,Repolyo (Cabbage),5.8,H,M,M
+Brgy. Olla,Rice (Dry Season),5.8,L,M,L
+Brgy. Oobi,Patatas (Potato),5.8,M,M,H
+Brgy.Banti,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy.Panglan,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy. Burgos,Bawang (Garlic),6,M,M,L
+Brgy. Burgos,Bataw (Hyacinth Bean),6.2,L,M,M
+Brgy. Taytay,Broccoli (Brokoli),6.2,L,M,M
+Brgy. Gagalot  Purok 2,Talong (Eggplant),5.8,L,M,M
+Brgy. Gagalot  Purok 3,Luya (Ginger),5.8,L,M,H
+Brgy. Piit,Carrots (Karot),6.2,H,M,H
+Brgy. Munting Kawayan,Mustasa (Mustard Leave),7.2,H,M,M
+Brgy. Pangil,Koliflower (Cauliflower),5.8,H,M,M
+Brgy.Botocan,Labanos (Radish),5.8,L,M,M
+Brgy. Coralao,Sitaw (String Beans),7.2,L,L,L
+Brgy.Banti,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy.Burol,Kamatis (Tomato),5.8,L,M,M
+Brgy. Munting Kawayan,Rice (Wet Season),5.8,L,L,L
+Brgy. Suba,Ampalaya (Bitter Gourd),5.8,L,H,L
+Brgy. Taytay,Patani (Lima Bean),5.8,M,M,M
+Brgy.May-It,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy. Gagalot  Purok 2,Green Beans (Baguio Beans),5.8,L,M,M
+Brgy. Gagalot  Purok 2,Talong (Eggplant),5.8,L,M,M
+Brgy.Bayucain,Kalabasa (Squash),5.8,L,M,M
+Brgy.Pook,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy. San Roque,Ampalaya (Bitter Gourd),6,L,H,L
+Brgy. Burgos,Bawang (Garlic),6,M,M,L
+Brgy. Taytay,Sayote (Chayote),5.8,M,M,M
+Brgy.San Isidro,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy. Olla,Repolyo (Cabbage),5.8,H,M,M
+Brgy. Taytay,Luyang Dilaw (Turmeric Ginger),6,M,M,H
+Brgy.Tanawan,Kamatis (Tomato),5.8,L,M,M
+Brgy. Taytay,Sibuyas (Onion),6.8,M,M,L
+Brgy.Bitaoy,Rice (Dry Season),5.8,L,M,M
+Brgy. Banga,Rice (Wet Season),5.8,L,L,M
+Brgy.Banti,Kamote (Sweeet Potato),5.8,L,M,M
+Brgy. Taytay,Upo (Bottle Gourd),7.2,M,M,M
+Brgy. Coralao,Ampalaya (Bitter Gourd),5.8,M,M,M
+Brgy. Munting Kawayan,Rice (Wet Season),5.8,L,L,L
+Brgy.Rizal,Kangkong (Water Spinach),5.8,L,M,M
+Brgy.Talortor,Kangkong (Water Spinach),5.8,L,M,M
+Brgy.Botocan,Rice (Dry Season),5.8,L,M,M
+Brgy. San Roque,Bok Choy (Chinese Cabbage),6,H,M,M
+Brgy. Taytay,Sayote (Chayote),5.8,M,M,M
+Brgy. Taytay,Sibuyas (Onion),6.8,M,M,L
+Brgy. Piit,Rice (Dry Season),5.8,L,L,L
+Brgy. Munting Kawayan,Rice (Wet Season),5.8,L,L,L
+Brgy. Munting Kawayan,Pechay (Native),5.8,H,M,M
+Brgy.Panglan,Kamatis (Tomato),5.8,L,M,M
+Brgy. Taytay,Sibuyas (Onion),6.8,M,M,L
+Brgy. Suba,Ampalaya (Bitter Gourd),5.8,L,H,L
+Brgy. Oobi,Okra,6,L,L,H
+Brgy. Olla,Repolyo (Cabbage),5.8,H,M,M
+Brgy.Talortor,Talong (Eggplant),5.8,L,M,M
+Brgy.Botocan,Rice (Dry Season),5.8,L,M,M
+Brgy. Munting Kawayan,Mustasa (Mustard Leave),7.2,H,M,M
+Brgy. Amonoy,Pechay (Native),6,L,L,H
+Brgy.Balanac,Sayote (Chayote),5.8,L,M,M
+Brgy.Botocan,Rice (Dry Season),5.8,L,M,M
+Brgy. Oobi,Okra,6,L,L,H
+Brgy. Olla,Repolyo (Cabbage),5.8,H,M,M
+Brgy. Olla,Rice (Dry Season),5.8,L,M,L
