@@ -16,6 +16,7 @@ import RulesManager from "@/pages/RulesManager";
 import CropHistory from "@/pages/CropHistory";
 import CropDetails from "@/pages/CropDetails";
 import Alerts from "@/pages/Alerts";
+import MarketDemand from "@/pages/MarketDemand";
 import FarmerDetailPage from "@/pages/FarmerDetailPage";
 
 const queryClient = new QueryClient();
@@ -98,6 +99,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Alerts />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/market-demand" 
+              element={
+                <ProtectedRoute>
+                  <MarketDemand />
                 </ProtectedRoute>
               } 
             />

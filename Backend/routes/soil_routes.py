@@ -2,7 +2,7 @@
 API routes for soil analysis and crop recommendation
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from services.soil_crop_service import SoilCropTransformer
 import pandas as pd
@@ -12,18 +12,8 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
-app = FastAPI(title="Soil Crop Recommendation API", 
-              description="Transformer-based crop recommendation based on soil analysis")
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Initialize APIRouter
+app = APIRouter(prefix="", tags=["soil"])
 
 # Global model instance
 model = SoilCropTransformer()

@@ -11,6 +11,7 @@ import ReportForm from "@/components/dashboard/farmer/ReportForm";
 import RecommendationResults from "@/components/dashboard/farmer/RecommendationResults";
 import TaskReminders from "@/components/dashboard/farmer/TaskReminders";
 import QuickStats from "@/components/dashboard/farmer/QuickStats";
+import MarketDemandCard from "@/components/dashboard/farmer/MarketDemandCard";
 import EditProfileDialog from "@/components/dashboard/farmer/EditProfileDialog";
 import AddCropDialog from "@/components/dashboard/farmer/AddCropDialog";
 import UpdateCropDialog from "@/components/dashboard/farmer/UpdateCropDialog";
@@ -329,6 +330,9 @@ const FarmerDashboard = () => {
 
         {/* Task Reminders */}
         <TaskReminders tasks={mockTasks} />
+
+        {/* Market Demand Card */}
+        <MarketDemandCard />
 
         {/* Quick Stats */}
         <QuickStats

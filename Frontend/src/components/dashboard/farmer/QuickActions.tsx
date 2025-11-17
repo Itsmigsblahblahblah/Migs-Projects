@@ -10,7 +10,8 @@ import {
     Bell,
     Lightbulb,
     Sprout,
-    History
+    History,
+    TrendingUp
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import CropPrescriptionDialog from "./CropPrescriptionDialog";
@@ -73,6 +74,11 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
                         <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/alerts')}>
                             <Bell className="h-5 w-5" />
                             <span>Alerts</span>
+                        </Button>
+                        {/* Market Demand Button */}
+                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/market-demand')}>
+                            <TrendingUp className="h-5 w-5" />
+                            <span>Market Demand</span>
                         </Button>
                         {/* History button moved here as requested */}
                         <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/history')}>

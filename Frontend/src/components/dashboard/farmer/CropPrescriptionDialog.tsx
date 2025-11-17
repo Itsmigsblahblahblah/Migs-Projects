@@ -50,6 +50,13 @@ interface PrescriptionDetails {
   weatherCondition: string;
   recommendations: string[];
   avoid: string[];
+  marketDemand?: {
+    predicted_price: number;
+    current_avg_price: number;
+    price_change: number;
+    price_change_percent: number;
+    demand_level: string;
+  };
 }
 
 interface FarmerProfile {
@@ -240,8 +247,17 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
     loadSoilData();
   }, [open, farmerProfile]);
 
-  const handleCropSelect = (crop: PrescriptionDetails) => {
-    setSelectedCrop(crop);
+  const handleCropSelect = async (crop: PrescriptionDetails) => {
+    // Fetch market demand data for the selected crop
+    const marketDemand = await fetchMarketDemand(crop.crop);
+    
+    // Update the crop object with market demand data
+    const updatedCrop = {
+      ...crop,
+      marketDemand: marketDemand || undefined
+    };
+    
+    setSelectedCrop(updatedCrop);
   };
 
   const handleResetSelection = () => {
@@ -270,6 +286,60 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
     }
     
     fetchRecommendations(inputSoilData, weatherDataForRecommendation);
+  };
+
+  // Add function to fetch market demand data for a specific crop
+  const fetchMarketDemand = async (cropName: string) => {
+    try {
+      console.log('Fetching market demand for crop:', cropName);
+      const response = await fetch(`/api/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
+      
+      console.log('Market demand response status:', response.status);
+      console.log('Market demand response ok:', response.ok);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Market demand error response:', errorText);
+        return null;
+      }
+      
+      const data = await response.json();
+      console.log('Market demand response:', data);
+      
+      // If we have vegetable data, we can make a demand prediction
+      if (data.vegetable_data && data.vegetable_data.length > 0) {
+        // Extract historical data for prediction
+        const historicalData = data.vegetable_data.slice(-6); // Last 6 data points
+        const historicalPrices = historicalData.map((item: any) => parseFloat(item.Price));
+        const historicalAnnualPrices = historicalData.map((item: any) => parseFloat(item.Annual_Price));
+        const historicalMonths = historicalData.map((item: any) => parseInt(item.MonthNum));
+        
+        // Make demand prediction
+        const predictionResponse = await fetch('/api/vegetables/predict-demand', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            vegetable_name: cropName,
+            historical_prices: historicalPrices,
+            historical_annual_prices: historicalAnnualPrices,
+            historical_months: historicalMonths
+          }),
+        });
+        
+        if (predictionResponse.ok) {
+          const predictionData = await predictionResponse.json();
+          console.log('Prediction data:', predictionData);
+          return predictionData;
+        }
+      }
+      
+      return null;
+    } catch (err) {
+      console.error('Error fetching market demand:', err);
+      return null;
+    }
   };
 
   return (
@@ -465,48 +535,48 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                         key={index}
                         className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
                         onClick={() => handleCropSelect({
-                        id: index.toString(),
-                        crop: recommendation.crop,
-                        reason: `Recommended based on your soil analysis and current weather conditions with ${Math.round(recommendation.confidence * 100)}% confidence.`,
-                        confidence: Math.round(recommendation.confidence * 100),
-                        plantingSeason: "Based on current conditions",
-                        expectedYield: "Varies by conditions",
-                        marketTrend: "Check local market",
-                        soilType: `pH: ${inputSoilData.pH}, N:${inputSoilData.Nitrogen}, P:${inputSoilData.Phosphorus}, K:${inputSoilData.Potassium}`,
-                        weatherCondition: "Current weather patterns",
-                        recommendations: [
-                          "Follow local agricultural guidelines",
-                          "Monitor soil moisture levels",
-                          "Apply appropriate fertilizers based on soil test"
-                        ],
-                        avoid: [
-                          "Plant in waterlogged areas",
-                          "Over-fertilize without soil testing",
-                          "Ignore local climate conditions"
-                        ]
-                      })}
-                    >
-                      <CardHeader>
-                        <CardTitle className="flex items-center justify-between">
-                          <span>{recommendation.crop}</span>
-                          <Badge variant="secondary">{Math.round(recommendation.confidence * 100)}%</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Recommended based on your soil analysis and current weather conditions with {Math.round(recommendation.confidence * 100)}% confidence.
-                        </p>
-                        <div className="flex items-center gap-2 text-xs">
-                          <Calendar className="h-3 w-3" />
-                          <span>Planting season varies</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs mt-1">
-                          <TrendingUp className="h-3 w-3" />
-                          <span>Check local market trends</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
+                          id: index.toString(),
+                          crop: recommendation.crop,
+                          reason: `Recommended based on your soil analysis and current weather conditions with ${Math.round(recommendation.confidence * 100)}% confidence.`,
+                          confidence: Math.round(recommendation.confidence * 100),
+                          plantingSeason: "Based on current conditions",
+                          expectedYield: "Varies by conditions",
+                          marketTrend: "Check local market",
+                          soilType: `pH: ${inputSoilData.pH}, N:${inputSoilData.Nitrogen}, P:${inputSoilData.Phosphorus}, K:${inputSoilData.Potassium}`,
+                          weatherCondition: "Current weather patterns",
+                          recommendations: [
+                            "Follow local agricultural guidelines",
+                            "Monitor soil moisture levels",
+                            "Apply appropriate fertilizers based on soil test"
+                          ],
+                          avoid: [
+                            "Plant in waterlogged areas",
+                            "Over-fertilize without soil testing",
+                            "Ignore local climate conditions"
+                          ]
+                        })}
+                        >
+                          <CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                              <span>{recommendation.crop}</span>
+                              <Badge variant="secondary">{Math.round(recommendation.confidence * 100)}%</Badge>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Recommended based on your soil analysis and current weather conditions with {Math.round(recommendation.confidence * 100)}% confidence.
+                            </p>
+                            <div className="flex items-center gap-2 text-xs">
+                              <Calendar className="h-3 w-3" />
+                              <span>Planting season varies</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs mt-1">
+                              <TrendingUp className="h-3 w-3" />
+                              <span>Check local market trends</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                    ))
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     No crop recommendations available
@@ -580,6 +650,39 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                     </h4>
                     <p>Optimal growth with current temperature and humidity levels</p>
                   </div>
+                  
+                  {/* Market Demand Information */}
+                  {selectedCrop.marketDemand && (
+                    <div className="p-4 bg-primary/5 rounded-lg border md:col-span-2">
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Market Demand Forecast
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Current Price</p>
+                          <p className="font-medium">₱{selectedCrop.marketDemand.current_avg_price.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Predicted Price</p>
+                          <p className="font-medium">₱{selectedCrop.marketDemand.predicted_price.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Price Change</p>
+                          <p className={`font-medium ${selectedCrop.marketDemand.price_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {selectedCrop.marketDemand.price_change >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change.toFixed(2)} 
+                            ({selectedCrop.marketDemand.price_change_percent >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change_percent.toFixed(2)}%)
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Demand Level</p>
+                          <p className="font-medium">
+                            {selectedCrop.marketDemand.demand_level}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <Separator />
