@@ -15,7 +15,9 @@ import {
   ArrowUp,
   ArrowDown,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft,
+  Calendar
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -50,10 +52,42 @@ const MarketDemand = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [sortBy, setSortBy] = useState<"predicted_price" | "current_avg_price" | "price_change_percent" | "vegetable">("predicted_price");
   const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1); // Default to current month
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()); // Default to current year
+  const [yearRangeStart, setYearRangeStart] = useState<number>(new Date().getFullYear());
+
+  // Generate month options based on selected year
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
+  
+  // For the current year, only show months from current month onwards
+  // For future years, show all months
+  const getAvailableMonths = () => {
+    if (selectedYear === currentYear) {
+      // Only show current month and future months
+      return Array.from({ length: 12 - currentMonth + 1 }, (_, i) => currentMonth + i);
+    } else if (selectedYear > currentYear) {
+      // For future years, show all months
+      return Array.from({ length: 12 }, (_, i) => i + 1);
+    } else {
+      // For past years, show no months (shouldn't happen with our restrictions)
+      return [];
+    }
+  };
+  
+  const months = getAvailableMonths();
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  // Generate year options based on range
+  const years = Array.from({ length: 6 }, (_, i) => yearRangeStart + i);
 
   useEffect(() => {
     fetchMarketData();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   useEffect(() => {
     let result = [...marketData];
@@ -114,7 +148,8 @@ const MarketDemand = () => {
   const fetchMarketData = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/vegetables/recommend-crops?top_n=20");
+      // Include month and year parameters in the API call
+      const response = await fetch(`/api/vegetables/recommend-crops?top_n=20&month=${selectedMonth}&year=${selectedYear}`);
       
       if (!response.ok) {
         throw new Error("Failed to fetch market demand data");
@@ -137,6 +172,28 @@ const MarketDemand = () => {
 
   const handleAccordionChange = (value: string | undefined) => {
     setOpenAccordion(value);
+  };
+
+  const handleMonthChange = (month: number) => {
+    setSelectedMonth(month);
+  };
+
+  const handleYearChange = (year: number) => {
+    // Prevent selecting past years
+    if (year >= currentYear) {
+      setSelectedYear(year);
+    }
+  };
+
+  const navigateYearRange = (direction: 'prev' | 'next') => {
+    const newStart = direction === 'prev' 
+      ? Math.max(currentYear, yearRangeStart - 6) 
+      : yearRangeStart + 6;
+    setYearRangeStart(newStart);
+  };
+
+  const getMonthName = (month: number) => {
+    return monthNames[month - 1];
   };
 
   const getDemandLevelColor = (level: string) => {
@@ -243,6 +300,74 @@ const MarketDemand = () => {
           </div>
           
           <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  {getMonthName(selectedMonth)}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <div className="grid grid-cols-3 gap-1 p-2">
+                  {months.map((month) => (
+                    <DropdownMenuItem
+                      key={month}
+                      onClick={() => handleMonthChange(month)}
+                      className={month === selectedMonth ? "bg-accent" : ""}
+                    >
+                      {getMonthName(month).substring(0, 3)}
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  {selectedYear}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <div className="flex items-center justify-between p-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigateYearRange('prev')}
+                    disabled={yearRangeStart <= currentYear}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium">
+                    {yearRangeStart} - {yearRangeStart + 5}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigateYearRange('next')}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                <DropdownMenuSeparator />
+                <div className="grid grid-cols-3 gap-1 p-2">
+                  {years.map((year) => (
+                    <DropdownMenuItem
+                      key={year}
+                      onClick={() => handleYearChange(year)}
+                      className={year === selectedYear ? "bg-accent" : ""}
+                      disabled={year < currentYear}
+                    >
+                      {year}
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -361,7 +486,7 @@ const MarketDemand = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Recommended Crops
+                  Recommended Crops for {getMonthName(selectedMonth)} {selectedYear}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
                   Based on predicted market demand and price trends
