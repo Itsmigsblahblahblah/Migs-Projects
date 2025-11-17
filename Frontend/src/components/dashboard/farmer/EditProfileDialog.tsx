@@ -69,13 +69,13 @@ const EditProfileDialog = ({
     
     // Home address options
     const homeAddressOptions = [
-        "Amonoy", "Bakia", "Balanac", "Balayong", "Banilad", "Banti", "Bitaoy", 
-        "Botocan", "Bukal", "Burgos", "Burol", "Coralao", "Gagalot", "Ibabang Banga", 
-        "Ibabang Bayucain", "Ilayang Banga", "Ilayang Bayucain", "Isabang", "Malinao", 
-        "May-It", "Munting Kawayan", "Oobi", "Olla", "Origuel (Poblacion)", "Panalaban", 
-        "Pangil", "Panglan", "Piit", "Pook", "Rizal", "San Francisco (Poblacion)", 
-        "San Isidro", "San Miguel (Poblacion)", "San Roque", "Santa Catalina (Poblacion)", 
-        "Suba", "Talortor", "Tanawan", "Taytay", "Villa Nogales"
+        "Brgy. Amonoy", "Brgy. Bakia", "Brgy. Balanac", "Brgy. Balayong", "Brgy. Banilad", "Brgy. Banti", "Brgy. Bitaoy",
+        "Brgy. Botocan", "Brgy. Bukal", "Brgy. Burgos", "Brgy. Burol", "Brgy. Coralao", "Brgy. Gagalot", "Brgy. Ibabang Banga",
+        "Brgy. Ibabang Bayucain", "Brgy. Ilayang Banga", "Brgy. Ilayang Bayucain", "Brgy. Isabang", "Brgy. Malinao",
+        "Brgy. May-It", "Brgy. Munting Kawayan", "Brgy. Oobi", "Brgy. Olla", "Brgy. Origuel (Poblacion)", "Brgy. Panalaban",
+        "Brgy. Pangil", "Brgy. Panglan", "Brgy. Piit", "Brgy. Pook", "Brgy. Rizal", "Brgy. San Francisco (Poblacion)",
+        "Brgy. San Isidro", "Brgy. San Miguel (Poblacion)", "Brgy. San Roque", "Brgy. Santa Catalina (Poblacion)",
+        "Brgy. Suba", "Brgy. Talortor", "Brgy. Tanawan", "Brgy. Taytay", "Brgy. Villa Nogales"
     ];
     
     // Farm address options
