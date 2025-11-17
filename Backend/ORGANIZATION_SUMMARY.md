@@ -7,11 +7,10 @@ This document provides a comprehensive overview of the restructured Backend dire
 ```
 Backend/
 ├── Data/                      # Data files used by the ML model
-│   ├── Soilanaly.csv          # Soil analysis data from different locations
-│   └── FertilizerRecomm.csv   # Fertilizer recommendations for crops
+│   └── brgy_soil_dataset.csv   # Barangay soil analysis data with crop recommendations
 ├── models/                    # Trained ML models and preprocessing pipelines
-│   ├── fert_soil_transformer.h5     # Trained model in Keras HDF5 format
-│   └── preprocessing_pipeline.pkl   # Preprocessing pipeline for data transformation
+│   ├── soil_crop_transformer.keras     # Trained model in Keras format
+│   └── soil_preprocessing_pipeline.pkl   # Preprocessing pipeline for data transformation
 ├── services/                  # Business logic and ML model implementation
 │   └── soil_crop_service.py         # Main model implementation
 ├── routes/                    # API route definitions
@@ -58,6 +57,8 @@ The server will start on `http://localhost:8000` by default.
 - `POST /recommend-with-weather` - Get crop recommendations based on soil and weather data
 - `GET /soil-data/{barangay}` - Get soil data for a specific barangay
 - `GET /health` - Health check endpoint
+- `GET /vegetables/recommend-crops` - Get market demand forecast for crops
+- `GET /vegetables/market-data` - Get current market data for vegetables
 
 ## Testing
 

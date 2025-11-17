@@ -7,11 +7,10 @@ This directory contains all backend-related components for the Majayjay Farm Res
 ```
 Backend/
 ├── Data/                      # Data files used by the ML model
-│   ├── Soilanaly.csv          # Soil analysis data from different locations
-│   └── FertilizerRecomm.csv   # Fertilizer recommendations for crops
+│   └── brgy_soil_dataset.csv   # Barangay soil analysis data with crop recommendations
 ├── models/                    # Trained ML models and preprocessing pipelines
-│   ├── fert_soil_transformer.h5     # Trained model in Keras HDF5 format
-│   └── preprocessing_pipeline.pkl   # Preprocessing pipeline for data transformation
+│   ├── soil_crop_transformer.keras     # Trained model in Keras format
+│   └── soil_preprocessing_pipeline.pkl   # Preprocessing pipeline for data transformation
 ├── services/                  # Business logic and ML model implementation
 │   └── soil_crop_service.py         # Main model implementation
 ├── routes/                    # API route definitions
@@ -34,8 +33,7 @@ Backend/
 - **Output**: Recommended crops with confidence scores
 
 ### 2. Data Files (`Data/`)
-- **Soilanaly.csv**: Contains actual soil analysis results from different barangays
-- **FertilizerRecomm.csv**: Contains standardized fertilizer recommendations for crops
+- **brgy_soil_dataset.csv**: Contains actual soil analysis results from different barangays with crop recommendations
 
 ## Usage
 
