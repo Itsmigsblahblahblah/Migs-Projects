@@ -47,8 +47,8 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <Dialog open={isPrescriptionDialogOpen} onOpenChange={setIsPrescriptionDialogOpen}>
-                    <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
+                    <Dialog open={isPrescriptionDialogOpen} onOpenChange={setIsPrescriptionDialogOpen}>
                         <DialogTrigger asChild>
                             <Button 
                                 variant="outline" 
@@ -58,43 +58,47 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
                                 <span>Prescribe Crop</span>
                             </Button>
                         </DialogTrigger>
-                        <DialogTrigger asChild>
-                            <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={onAddCrop}>
-                                <Plus className="h-5 w-5" />
-                                <span>Add Crop</span>
-                            </Button>
-                        </DialogTrigger>
-                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={onUpdateCrop}>
-                            <Edit className="h-5 w-5" />
-                            <span>Update Crop</span>
-                        </Button>
-                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/crop-history')}>
-                            <Leaf className="h-5 w-5" />
-                            <span>Crop History</span>
-                        </Button>
-                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/alerts')}>
-                            <Bell className="h-5 w-5" />
-                            <span>Alerts</span>
-                        </Button>
-                        {/* Market Demand Button */}
-                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/market-demand')}>
-                            <TrendingUp className="h-5 w-5" />
-                            <span>Market Demand</span>
-                        </Button>
-                        {/* History button moved here as requested */}
-                        <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/history')}>
-                            <History className="h-5 w-5" />
-                            <span>History</span>
-                        </Button>
-                    </div>
+                        
+                        <CropPrescriptionDialog 
+                            open={isPrescriptionDialogOpen} 
+                            onOpenChange={setIsPrescriptionDialogOpen} 
+                            farmerProfile={farmerProfile}
+                            weatherData={weatherData}
+                        />
+                    </Dialog>
                     
-                    <CropPrescriptionDialog 
-                        open={isPrescriptionDialogOpen} 
-                        onOpenChange={setIsPrescriptionDialogOpen} 
-                        farmerProfile={farmerProfile}
-                        weatherData={weatherData}
-                    />
-                </Dialog>
+                    <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={onAddCrop}>
+                        <Plus className="h-5 w-5" />
+                        <span>Add Crop</span>
+                    </Button>
+                    
+                    <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={onUpdateCrop}>
+                        <Edit className="h-5 w-5" />
+                        <span>Update Crop</span>
+                    </Button>
+                    
+                    <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/crop-history')}>
+                        <Leaf className="h-5 w-5" />
+                        <span>Crop History</span>
+                    </Button>
+                    
+                    <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/alerts')}>
+                        <Bell className="h-5 w-5" />
+                        <span>Alerts</span>
+                    </Button>
+                    
+                    {/* Market Demand Button */}
+                    <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/market-demand')}>
+                        <TrendingUp className="h-5 w-5" />
+                        <span>Market Demand</span>
+                    </Button>
+                    
+                    {/* History button moved here as requested */}
+                    <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/history')}>
+                        <History className="h-5 w-5" />
+                        <span>History</span>
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );
