@@ -57,6 +57,7 @@ const FarmerDashboard = () => {
     monthlyReports,
     deletionRequest,
     farmerProfile,
+    editProfileData,
     profileImageFile,
     weatherData,
     weatherLoading,
@@ -69,6 +70,7 @@ const FarmerDashboard = () => {
     handleUpdateProfile,
     handleRequestAccountDeletion,
     handleDeleteAccount,
+    resetEditProfileData,
     // Weather forecast view properties
     forecastView,
     setForecastView,
@@ -344,8 +346,14 @@ const FarmerDashboard = () => {
         {/* Dialogs */}
         <EditProfileDialog
           open={isEditProfileDialogOpen}
-          onOpenChange={setIsEditProfileDialogOpen}
-          farmerProfile={farmerProfile}
+          onOpenChange={(open) => {
+            setIsEditProfileDialogOpen(open);
+            // Reset the edit profile data when the dialog is closed
+            if (!open) {
+              resetEditProfileData();
+            }
+          }}
+          farmerProfile={editProfileData}
           profileImageFile={profileImageFile}
           handleProfileInputChange={handleProfileInputChange}
           handleProfileImageUpload={handleProfileImageUpload}

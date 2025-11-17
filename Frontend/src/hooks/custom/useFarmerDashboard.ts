@@ -67,6 +67,17 @@ export const useFarmerDashboard = () => {
         createdAt: ""
     });
     const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+    // Add a separate state for the edit profile dialog
+    const [editProfileData, setEditProfileData] = useState({
+        fullName: "",
+        email: "",
+        contactNumber: "",
+        homeAddress: "",
+        farmAddress: "",
+        farmArea: "",
+        photoURL: "",
+        createdAt: ""
+    });
     const [weatherData, setWeatherData] = useState<ExtendedWeatherData | null>(null);
     const [weatherLoading, setWeatherLoading] = useState(false);
     const [weatherError, setWeatherError] = useState<string | null>(null);
@@ -108,7 +119,7 @@ export const useFarmerDashboard = () => {
             const farmerDoc = await getDoc(doc(db, "farmers", uid));
             if (farmerDoc.exists()) {
                 const data = farmerDoc.data();
-                setFarmerProfile({
+                const profileData = {
                     fullName: data.fullName || "",
                     email: data.email || "",
                     contactNumber: data.contactNumber || "",
@@ -117,7 +128,10 @@ export const useFarmerDashboard = () => {
                     farmArea: data.farmArea || "2.5 hectares",
                     photoURL: data.photoURL || "",
                     createdAt: data.createdAt || ""
-                });
+                };
+                setFarmerProfile(profileData);
+                // Also initialize the edit profile data with the same values
+                setEditProfileData(profileData);
             }
         } catch (error) {
             console.error("Error loading farmer profile:", error);
@@ -485,7 +499,7 @@ export const useFarmerDashboard = () => {
 
     const handleProfileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFarmerProfile(prev => ({
+        setEditProfileData(prev => ({
             ...prev,
             [name]: value
         }));
@@ -498,7 +512,7 @@ export const useFarmerDashboard = () => {
             // Create preview URL
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFarmerProfile(prev => ({
+                setEditProfileData(prev => ({
                     ...prev,
                     photoURL: reader.result as string
                 }));
@@ -510,25 +524,28 @@ export const useFarmerDashboard = () => {
     const handleUpdateProfile = async () => {
         try {
             const updates: any = {
-                fullName: farmerProfile.fullName,
-                contactNumber: farmerProfile.contactNumber,
-                homeAddress: farmerProfile.homeAddress,
-                farmAddress: farmerProfile.farmAddress,
-                farmArea: farmerProfile.farmArea
+                fullName: editProfileData.fullName,
+                contactNumber: editProfileData.contactNumber,
+                homeAddress: editProfileData.homeAddress,
+                farmAddress: editProfileData.farmAddress,
+                farmArea: editProfileData.farmArea
             };
 
             // If there's a new profile image, save it (for now just save the data URL)
             // In production, you'd upload to Firebase Storage
             if (profileImageFile) {
-                updates.photoURL = farmerProfile.photoURL;
+                updates.photoURL = editProfileData.photoURL;
             }
 
             await updateDoc(doc(db, "farmers", userId), updates);
 
+            // Update the main profile state with the new data
+            setFarmerProfile(editProfileData);
+
             // Update username in localStorage if name changed
-            if (farmerProfile.fullName !== username) {
-                localStorage.setItem('username', farmerProfile.fullName);
-                setUsername(farmerProfile.fullName);
+            if (editProfileData.fullName !== username) {
+                localStorage.setItem('username', editProfileData.fullName);
+                setUsername(editProfileData.fullName);
             }
 
             toast({
@@ -544,6 +561,12 @@ export const useFarmerDashboard = () => {
                 variant: "destructive",
             });
         }
+    };
+
+    // Add a function to reset the edit profile data to match the current profile
+    const resetEditProfileData = () => {
+        setEditProfileData(farmerProfile);
+        setProfileImageFile(null);
     };
 
     const handleRequestAccountDeletion = async (reason?: string) => {
@@ -794,6 +817,9 @@ export const useFarmerDashboard = () => {
         setForecastView,
         selectedDate,
         setSelectedDate,
-        getAvailableDates
+        getAvailableDates,
+        // Add the edit profile data and reset function to the return object
+        editProfileData,
+        resetEditProfileData
     };
 };
