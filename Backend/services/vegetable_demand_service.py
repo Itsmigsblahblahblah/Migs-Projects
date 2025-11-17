@@ -416,12 +416,14 @@ class VegetableDemandTransformer:
             "demand_level": demand_level
         }
     
-    def recommend_crops(self, top_n=10):
+    def recommend_crops(self, top_n=10, target_month=None, target_year=None):
         """
-        Recommend crops based on predicted demand
+        Recommend crops based on predicted demand for a specific month and year
         
         Args:
             top_n (int): Number of top recommendations to return
+            target_month (int): Target month for predictions (1-12)
+            target_year (int): Target year for predictions
             
         Returns:
             list: List of recommended vegetables with demand predictions
@@ -429,37 +431,62 @@ class VegetableDemandTransformer:
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
         
-        # Get all unique vegetables from the current dataset, not from the label encoder
-        # This ensures we only recommend vegetables that are actually in the current dataset
+        # Load current vegetable data
         try:
-            # Load current vegetable data
             veg_df = pd.read_csv('Data/vegetable_prices.csv')
             # Skip the first row which contains the header description
             veg_df = veg_df.iloc[1:]
             veg_df.columns = ['Vegetable', 'Year', 'Month', 'Price', 'Annual_Price', 'MonthNum', 'Date']
             
-            # Get unique vegetables from current dataset
-            current_vegetables = list(veg_df['Vegetable'].unique())
+            # Convert data types
+            veg_df['Price'] = pd.to_numeric(veg_df['Price'], errors='coerce')
+            veg_df['Annual_Price'] = pd.to_numeric(veg_df['Annual_Price'], errors='coerce')
+            veg_df['MonthNum'] = pd.to_numeric(veg_df['MonthNum'], errors='coerce')
+            veg_df['Year'] = pd.to_numeric(veg_df['Year'], errors='coerce')
             
-            # Filter to only include vegetables that were in the training data
-            # (to avoid errors with the label encoder)
-            available_vegetables = [v for v in current_vegetables if v in self.label_encoder.classes_]
+            # Clean the data
+            veg_df = veg_df.dropna()
         except Exception as e:
-            logger.warning(f"Could not load current vegetable data: {e}")
-            # Fallback to using label encoder classes
-            available_vegetables = list(self.label_encoder.classes_)
+            logger.error(f"Could not load vegetable data: {e}")
+            return []
         
-        # For demonstration, we'll create some sample historical data
-        # In practice, this would come from the actual dataset
+        # Get unique vegetables from current dataset
+        current_vegetables = list(veg_df['Vegetable'].unique())
+        
+        # Filter to only include vegetables that were in the training data
+        # (to avoid errors with the label encoder)
+        available_vegetables = [v for v in current_vegetables if v in self.label_encoder.classes_]
+        
         recommendations = []
         
-        for vegetable in available_vegetables[:20]:  # Limit to first 20 for demo
-            # Create sample historical data (in practice, this would come from the dataset)
-            historical_prices = [50 + np.random.normal(0, 10) for _ in range(12)]
-            historical_annual_prices = [55 + np.random.normal(0, 5) for _ in range(12)]
-            historical_months = list(range(1, 13))
-            
+        # For each available vegetable, get historical data and make prediction
+        for vegetable in available_vegetables:
             try:
+                # Filter data for this vegetable
+                veg_data = veg_df[veg_df['Vegetable'] == vegetable].sort_values(['Year', 'MonthNum'])
+                
+                # If target month/year specified, we'll use data leading up to that timeframe
+                if target_month is not None and target_year is not None:
+                    # Filter to only include data before the target date
+                    # We want to predict for the target month/year based on historical data
+                    historical_data = veg_data[
+                        (veg_data['Year'] < target_year) | 
+                        ((veg_data['Year'] == target_year) & (veg_data['MonthNum'] < target_month))
+                    ].tail(12)  # Take the last 12 months of historical data
+                else:
+                    # Use the most recent 12 months of data
+                    historical_data = veg_data.tail(12)
+                
+                # If we don't have enough data, skip this vegetable
+                if len(historical_data) < 3:  # Need at least 3 data points
+                    continue
+                
+                # Extract historical data for prediction
+                historical_prices = historical_data['Price'].tolist()
+                historical_annual_prices = historical_data['Annual_Price'].tolist()
+                historical_months = historical_data['MonthNum'].tolist()
+                
+                # Make prediction
                 prediction = self.predict_demand(vegetable, historical_prices, 
                                                historical_annual_prices, historical_months)
                 recommendations.append(prediction)

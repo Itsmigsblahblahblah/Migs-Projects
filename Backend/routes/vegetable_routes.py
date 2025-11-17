@@ -78,12 +78,14 @@ async def predict_demand(data: dict):
         raise HTTPException(status_code=500, detail=f"Demand prediction error: {str(e)}")
 
 @app.get("/recommend-crops")
-async def recommend_crops(top_n: int = 10):
+async def recommend_crops(top_n: int = 10, month: int | None = None, year: int | None = None):
     """
-    Get recommended crops based on predicted demand
+    Get recommended crops based on predicted demand for a specific month and year
     
     Args:
         top_n (int): Number of recommendations to return (default: 10)
+        month (int | None): Month for which to make predictions (1-12)
+        year (int | None): Year for which to make predictions
         
     Returns:
     {
@@ -105,8 +107,12 @@ async def recommend_crops(top_n: int = 10):
         if model is None:
             raise HTTPException(status_code=500, detail="Model not loaded")
         
-        # Get recommendations
-        recommendations = model.recommend_crops(top_n)
+        # Validate month parameter if provided
+        if month is not None and (month < 1 or month > 12):
+            raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
+        
+        # Get recommendations with time-specific filtering
+        recommendations = model.recommend_crops(top_n, month, year)
         
         return {"recommended_crops": recommendations}
         
