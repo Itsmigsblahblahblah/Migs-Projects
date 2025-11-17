@@ -5,14 +5,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Minus, 
-  AlertTriangle, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  AlertTriangle,
   Search,
-  ArrowLeft
+  ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface MarketDemandData {
   vegetable: string;
@@ -30,21 +47,69 @@ const MarketDemand = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState<"predicted_price" | "current_avg_price" | "price_change_percent" | "vegetable">("predicted_price");
+  const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     fetchMarketData();
   }, []);
 
   useEffect(() => {
+    let result = [...marketData];
+    
+    // Apply search filter
     if (searchTerm) {
-      const filtered = marketData.filter(crop => 
+      result = result.filter(crop => 
         crop.vegetable.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredData(filtered);
-    } else {
-      setFilteredData(marketData);
     }
-  }, [searchTerm, marketData]);
+    
+    // Apply sorting
+    result.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case "predicted_price":
+          aValue = a.predicted_price;
+          bValue = b.predicted_price;
+          break;
+        case "current_avg_price":
+          aValue = a.current_avg_price;
+          bValue = b.current_avg_price;
+          break;
+        case "price_change_percent":
+          aValue = a.price_change_percent;
+          bValue = b.price_change_percent;
+          break;
+        case "vegetable":
+          aValue = a.vegetable.toLowerCase();
+          bValue = b.vegetable.toLowerCase();
+          break;
+        default:
+          aValue = a.predicted_price;
+          bValue = b.predicted_price;
+      }
+      
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        // String comparison
+        if (sortOrder === "asc") {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      } else {
+        // Numeric comparison
+        if (sortOrder === "asc") {
+          return (aValue as number) - (bValue as number);
+        } else {
+          return (bValue as number) - (aValue as number);
+        }
+      }
+    });
+    
+    setFilteredData(result);
+  }, [searchTerm, marketData, sortOrder, sortBy]);
 
   const fetchMarketData = async () => {
     try {
@@ -57,13 +122,21 @@ const MarketDemand = () => {
       
       const data = await response.json();
       setMarketData(data.recommended_crops || []);
-      setFilteredData(data.recommended_crops || []);
     } catch (err) {
       setError("Failed to load market demand data. Please try again later.");
       console.error("Error fetching market data:", err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSortChange = (criteria: "predicted_price" | "current_avg_price" | "price_change_percent" | "vegetable", order: "asc" | "desc") => {
+    setSortBy(criteria);
+    setSortOrder(order);
+  };
+
+  const handleAccordionChange = (value: string | undefined) => {
+    setOpenAccordion(value);
   };
 
   const getDemandLevelColor = (level: string) => {
@@ -80,6 +153,20 @@ const MarketDemand = () => {
     if (change > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;
     if (change < 0) return <TrendingDown className="h-4 w-4 text-red-500" />;
     return <Minus className="h-4 w-4 text-gray-500" />;
+  };
+
+  const getSortByLabel = () => {
+    switch (sortBy) {
+      case "predicted_price": return "Predicted Price";
+      case "current_avg_price": return "Current Price";
+      case "price_change_percent": return "Price Change %";
+      case "vegetable": return "Crop Name";
+      default: return "Predicted Price";
+    }
+  };
+
+  const getOrderLabel = () => {
+    return sortOrder === "asc" ? "Ascending" : "Descending";
   };
 
   if (loading) {
@@ -155,14 +242,116 @@ const MarketDemand = () => {
             <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
           </div>
           
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search crops..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  Sort: {getSortByLabel()} - {getOrderLabel()}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <Accordion 
+                  type="single" 
+                  collapsible 
+                  value={openAccordion} 
+                  onValueChange={handleAccordionChange}
+                  className="w-full"
+                >
+                  <AccordionItem value="predicted-price" className="border-b-0">
+                    <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                      <span className="flex items-center">
+                        <ChevronRight className="h-4 w-4 mr-2" />
+                        Predicted Price
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0">
+                      <DropdownMenuItem onClick={() => handleSortChange("predicted_price", "asc")}>
+                        <ArrowUp className="h-4 w-4 mr-2" />
+                        Ascending
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSortChange("predicted_price", "desc")}>
+                        <ArrowDown className="h-4 w-4 mr-2" />
+                        Descending
+                      </DropdownMenuItem>
+                    </AccordionContent>
+                  </AccordionItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <AccordionItem value="current-price" className="border-b-0">
+                    <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                      <span className="flex items-center">
+                        <ChevronRight className="h-4 w-4 mr-2" />
+                        Current Price
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0">
+                      <DropdownMenuItem onClick={() => handleSortChange("current_avg_price", "asc")}>
+                        <ArrowUp className="h-4 w-4 mr-2" />
+                        Ascending
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSortChange("current_avg_price", "desc")}>
+                        <ArrowDown className="h-4 w-4 mr-2" />
+                        Descending
+                      </DropdownMenuItem>
+                    </AccordionContent>
+                  </AccordionItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <AccordionItem value="price-change" className="border-b-0">
+                    <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                      <span className="flex items-center">
+                        <ChevronRight className="h-4 w-4 mr-2" />
+                        Price Change %
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0">
+                      <DropdownMenuItem onClick={() => handleSortChange("price_change_percent", "asc")}>
+                        <ArrowUp className="h-4 w-4 mr-2" />
+                        Ascending
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSortChange("price_change_percent", "desc")}>
+                        <ArrowDown className="h-4 w-4 mr-2" />
+                        Descending
+                      </DropdownMenuItem>
+                    </AccordionContent>
+                  </AccordionItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <AccordionItem value="crop-name" className="border-b-0">
+                    <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                      <span className="flex items-center">
+                        <ChevronRight className="h-4 w-4 mr-2" />
+                        Crop Name
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0">
+                      <DropdownMenuItem onClick={() => handleSortChange("vegetable", "asc")}>
+                        <ArrowUp className="h-4 w-4 mr-2" />
+                        A to Z
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleSortChange("vegetable", "desc")}>
+                        <ArrowDown className="h-4 w-4 mr-2" />
+                        Z to A
+                      </DropdownMenuItem>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search crops..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
         </div>
         
