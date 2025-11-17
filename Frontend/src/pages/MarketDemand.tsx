@@ -482,7 +482,7 @@ const MarketDemand = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <Card className="shadow-card">
+            <Card className="shadow-card h-full flex flex-col">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
@@ -492,9 +492,9 @@ const MarketDemand = () => {
                   Based on predicted market demand and price trends
                 </p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-grow">
                 {filteredData.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
                     {filteredData.map((crop, index) => (
                       <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors">
                         <div className="flex-1 mb-3 sm:mb-0">
