@@ -17,6 +17,7 @@ import CropHistory from "@/pages/CropHistory";
 import CropDetails from "@/pages/CropDetails";
 import Alerts from "@/pages/Alerts";
 import MarketDemand from "@/pages/MarketDemand";
+import CropPrescriptionPage from "@/pages/CropPrescriptionPage";
 import FarmerDetailPage from "@/pages/FarmerDetailPage";
 
 const queryClient = new QueryClient();
@@ -107,6 +108,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <MarketDemand />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/prescribe-crop" 
+              element={
+                <ProtectedRoute>
+                  <CropPrescriptionPage />
                 </ProtectedRoute>
               } 
             />

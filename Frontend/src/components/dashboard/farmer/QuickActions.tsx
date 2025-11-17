@@ -47,16 +47,17 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <Dialog>
+                <Dialog open={isPrescriptionDialogOpen} onOpenChange={setIsPrescriptionDialogOpen}>
                     <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
-                        <Button 
-                            variant="outline" 
-                            className="h-20 flex flex-col gap-2" 
-                            onClick={() => setIsPrescriptionDialogOpen(true)}
-                        >
-                            <Sprout className="h-5 w-5" />
-                            <span>Prescribe Crop</span>
-                        </Button>
+                        <DialogTrigger asChild>
+                            <Button 
+                                variant="outline" 
+                                className="h-20 flex flex-col gap-2" 
+                            >
+                                <Sprout className="h-5 w-5" />
+                                <span>Prescribe Crop</span>
+                            </Button>
+                        </DialogTrigger>
                         <DialogTrigger asChild>
                             <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={onAddCrop}>
                                 <Plus className="h-5 w-5" />
@@ -86,14 +87,14 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
                             <span>History</span>
                         </Button>
                     </div>
+                    
+                    <CropPrescriptionDialog 
+                        open={isPrescriptionDialogOpen} 
+                        onOpenChange={setIsPrescriptionDialogOpen} 
+                        farmerProfile={farmerProfile}
+                        weatherData={weatherData}
+                    />
                 </Dialog>
-                
-                <CropPrescriptionDialog 
-                    open={isPrescriptionDialogOpen} 
-                    onOpenChange={setIsPrescriptionDialogOpen} 
-                    farmerProfile={farmerProfile}
-                    weatherData={weatherData}
-                />
             </CardContent>
         </Card>
     );

@@ -89,7 +89,6 @@ const MarketDemand = () => {
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Back
             </Button>
             <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
           </div>
@@ -119,7 +118,6 @@ const MarketDemand = () => {
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Back
             </Button>
             <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
           </div>
@@ -153,7 +151,6 @@ const MarketDemand = () => {
           <div className="flex items-center gap-4">
             <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Back
             </Button>
             <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
           </div>

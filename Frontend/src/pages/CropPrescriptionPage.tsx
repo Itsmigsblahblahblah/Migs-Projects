@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,14 +72,13 @@ interface FarmerProfile {
   createdAt: string;
 }
 
-interface CropPrescriptionDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface CropPrescriptionPageProps {
   farmerProfile?: FarmerProfile;
   weatherData?: any; // Add weather data prop
 }
 
-const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData }: CropPrescriptionDialogProps) => {
+const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPageProps) => {
+  const navigate = useNavigate();
   const [selectedCrop, setSelectedCrop] = useState<PrescriptionDetails | null>(null);
   // Add state for loading and recommendations
   const [recommendations, setRecommendations] = useState<CropRecommendation[]>([]);
@@ -255,11 +256,11 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
     }
   };
 
-  // Fetch soil data when dialog opens and farmer profile is available
+  // Fetch soil data when component mounts and farmer profile is available
   useEffect(() => {
-    console.log('useEffect triggered - open:', open, 'farmerProfile:', farmerProfile);
+    console.log('useEffect triggered - farmerProfile:', farmerProfile);
     const loadSoilData = async () => {
-      if (open && farmerProfile?.farmAddress) {
+      if (farmerProfile?.farmAddress) {
         console.log('Fetching soil data for farm address:', farmerProfile.farmAddress);
         const barangay = extractBarangay(farmerProfile.farmAddress);
         console.log('Extracted barangay:', barangay);
@@ -291,7 +292,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
           console.log('No soil data found, using input soil data:', inputSoilData);
           fetchRecommendations(inputSoilData, weatherDataForRecommendation);
         }
-      } else if (open) {
+      } else {
         // If no farm address, use default values
         console.log('No farm address, using default input soil data:', inputSoilData);
         fetchRecommendations(inputSoilData);
@@ -299,7 +300,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
     };
 
     loadSoilData();
-  }, [open, farmerProfile]);
+  }, [farmerProfile]);
 
   const handleCropSelect = async (crop: PrescriptionDetails) => {
     // Fetch market demand data for the selected crop
@@ -342,23 +343,19 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
     fetchRecommendations(inputSoilData, weatherDataForRecommendation);
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 bg-background z-50 overflow-y-auto">
-      <div className="container mx-auto py-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => onOpenChange(false)}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Crop Prescription</h1>
-              <p className="text-muted-foreground">AI-powered crop recommendations based on current weather, soil conditions, and market trends</p>
-            </div>
+    <Layout>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Crop Prescription</h1>
+            <p className="text-muted-foreground">AI-powered crop recommendations based on current weather, soil conditions, and market trends</p>
           </div>
         </div>
-        
+
         {!selectedCrop ? (
           <div className="space-y-6">
             {/* Soil Data Input */}
@@ -743,8 +740,8 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
           </div>
         )}
       </div>
-    </div>
+    </Layout>
   );
 };
 
-export default CropPrescriptionDialog;
+export default CropPrescriptionPage;
