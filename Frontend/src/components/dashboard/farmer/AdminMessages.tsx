@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { db } from "@/firebaseConfig";
-import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, Timestamp, deleteDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, Timestamp, deleteDoc, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Send, CheckCircle, Trash2 } from "lucide-react";
 
@@ -24,36 +24,137 @@ interface AdminMessagesProps {
 
 const AdminMessages = ({ userId }: AdminMessagesProps) => {
   const [messages, setMessages] = useState<AdminMessage[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Fetch admin messages for this farmer
   useEffect(() => {
-    if (!userId) return;
+    // Reset loading state when userId changes
+    setLoading(true);
+    
+    // If userId is not available, don't fetch messages
+    if (!userId || userId === 'default-user') {
+      console.log("AdminMessages: No valid userId, setting empty messages");
+      setMessages([]);
+      setLoading(false);
+      return;
+    }
 
-    const messagesQuery = query(
+    console.log("AdminMessages: Fetching messages for userId:", userId);
+
+    // First try the query without orderBy to avoid index issues
+    const simpleQuery = query(
       collection(db, "adminMessages"),
-      where("receiverId", "==", userId),
-      orderBy("timestamp", "desc")
+      where("receiverId", "==", userId)
     );
 
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData: AdminMessage[] = [];
-      
-      snapshot.forEach((doc) => {
-        messagesData.push({
-          id: doc.id,
-          ...doc.data()
-        } as AdminMessage);
+    console.log("AdminMessages: Trying simple query first");
+    
+    getDocs(simpleQuery).then((simpleSnapshot) => {
+      console.log("AdminMessages: Simple query results:", simpleSnapshot.size, "messages");
+      if (simpleSnapshot.size > 0) {
+        // If we get results, set up the real-time listener with orderBy
+        const messagesQuery = query(
+          collection(db, "adminMessages"),
+          where("receiverId", "==", userId),
+          orderBy("timestamp", "desc")
+        );
+
+        const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+          console.log("AdminMessages: Received snapshot with", snapshot.size, "messages");
+          console.log("AdminMessages: Snapshot metadata:", snapshot.metadata);
+          
+          const messagesData: AdminMessage[] = [];
+          
+          snapshot.forEach((doc) => {
+            console.log("AdminMessages: Processing document:", doc.id, doc.data());
+            messagesData.push({
+              id: doc.id,
+              ...doc.data()
+            } as AdminMessage);
+          });
+
+          console.log("AdminMessages: Final messages array:", messagesData);
+          setMessages(messagesData);
+          setLoading(false);
+        }, (error) => {
+          console.error("Error in onSnapshot listener:", error);
+          console.error("UserId used for query:", userId);
+          console.error("Query details:", {
+            collection: "adminMessages",
+            receiverId: userId,
+            orderBy: "timestamp"
+          });
+          
+          // Log more detailed error information
+          if (error.code) {
+            console.error("Firebase error code:", error.code);
+          }
+          if (error.name) {
+            console.error("Error name:", error.name);
+          }
+          if (error.message) {
+            console.error("Error message:", error.message);
+          }
+          
+          // If it's an index error, fall back to simple query without orderBy
+          if (error.code === 'failed-precondition' || (error.message && error.message.includes('index'))) {
+            console.log("AdminMessages: Falling back to simple query without orderBy due to missing index");
+            const fallbackMessages: AdminMessage[] = [];
+            simpleSnapshot.docs.forEach((doc) => {
+              fallbackMessages.push({
+                id: doc.id,
+                ...doc.data()
+              } as AdminMessage);
+            });
+            // Sort by timestamp manually if it exists
+            fallbackMessages.sort((a, b) => {
+              if (a.timestamp && b.timestamp) {
+                try {
+                  const dateA = a.timestamp.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+                  const dateB = b.timestamp.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+                  return dateB.getTime() - dateA.getTime(); // Descending order
+                } catch (e) {
+                  return 0;
+                }
+              }
+              return 0;
+            });
+            setMessages(fallbackMessages);
+            setLoading(false);
+            return;
+          }
+          
+          setLoading(false);
+          toast({
+            title: "Error",
+            description: `Failed to load messages. Error: ${error.message || 'Unknown error'}`,
+            variant: "destructive",
+          });
+        });
+
+        return () => {
+          console.log("AdminMessages: Cleaning up listener");
+          unsubscribe();
+          setLoading(false);
+        };
+      } else {
+        // No messages found, set empty array and stop loading
+        console.log("AdminMessages: No messages found for user");
+        setMessages([]);
+        setLoading(false);
+      }
+    }).catch((error) => {
+      console.error("AdminMessages: Error in simple query:", error);
+      setLoading(false);
+      toast({
+        title: "Error",
+        description: `Failed to load messages. Error: ${error.message || 'Unknown error'}`,
+        variant: "destructive",
       });
-
-      setMessages(messagesData);
-    }, (error) => {
-      console.error("Error in onSnapshot listener:", error);
     });
-
-    return () => unsubscribe();
-  }, [userId]);
+  }, [userId, toast]);
 
   // Mark message as read
   const markAsRead = async (messageId: string) => {
@@ -132,7 +233,12 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
         </div>
       </CardHeader>
       <CardContent>
-        {messages.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-3"></div>
+            <p>Loading messages...</p>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Send className="h-12 w-12 mx-auto text-muted-foreground/20 mb-3" />
             <p>No messages from admin yet.</p>
@@ -190,8 +296,8 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
                   </div>
                   <p className="whitespace-pre-wrap">{message.message}</p>
                   <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                    <span>Click to view report:</span>
-                    <span className="font-mono">{message.reportId.substring(0, 8)}...</span>
+                    <span>From sender:</span>
+                    <span className="font-mono">{message.senderId.substring(0, 8)}...</span>
                   </div>
                 </div>
               ))}

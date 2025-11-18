@@ -91,7 +91,9 @@ export const useFarmerDashboard = () => {
     useEffect(() => {
         const role = localStorage.getItem('userRole');
         const user = localStorage.getItem('username');
-        const uid = localStorage.getItem('userId') || user || 'default-user';
+        const uid = localStorage.getItem('userId') || 'default-user';
+
+        console.log("useFarmerDashboard: role=", role, "user=", user, "uid=", uid);
 
         if (role !== 'farmer') {
             navigate('/');

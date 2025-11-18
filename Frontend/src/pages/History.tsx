@@ -43,7 +43,7 @@ const History = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const userRole = localStorage.getItem('userRole');
-  const currentUserId = localStorage.getItem('userId') || localStorage.getItem('username') || '';
+  const currentUserId = localStorage.getItem('userId') || 'default-user';
 
   useEffect(() => {
     if (!userRole) {
