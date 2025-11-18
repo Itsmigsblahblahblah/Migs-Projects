@@ -232,6 +232,9 @@ export const useFarmerDashboard = () => {
             };
             
             setWeatherData(processedWeatherData);
+            // Save to localStorage so other components can access it
+            console.log("Saving weather data to localStorage:", processedWeatherData);
+            localStorage.setItem('weatherData', JSON.stringify(processedWeatherData));
         } catch (error: any) {
             console.error("Error loading weather data:", error);
             setWeatherError(error.message || "Failed to load weather data");

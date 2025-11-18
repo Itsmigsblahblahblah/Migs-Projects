@@ -15,6 +15,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X } from "lucide-react";
 import AdminMessages from "@/components/dashboard/farmer/AdminMessages";
+import { useWeatherAlerts } from "@/hooks/custom/useWeatherAlerts";
 
 // Get userId from localStorage
 const getUserId = () => {
@@ -24,6 +25,10 @@ const getUserId = () => {
 const Alerts = () => {
   const navigate = useNavigate();
   const userId = getUserId();
+  const { weatherAlerts, loading: weatherLoading, error: weatherError, getAlertColor } = useWeatherAlerts();
+
+  // Debugging: Log the alerts to see what we're getting
+  console.log("Weather alerts in Alerts page:", weatherAlerts);
 
   return (
     <Layout>
@@ -36,8 +41,59 @@ const Alerts = () => {
           </p>
         </div>
 
+        {/* Weather Alerts */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span className="text-xl">🌤️</span>
+              Weather Alerts
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {weatherLoading ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Loading weather alerts...
+              </div>
+            ) : weatherError ? (
+              <div className="text-center py-4 text-destructive">
+                {weatherError}
+              </div>
+            ) : weatherAlerts.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                No weather alerts at this time
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {weatherAlerts.map((alert, index) => (
+                  <div 
+                    key={index} 
+                    className={`flex items-center gap-3 p-3 rounded-lg border ${getAlertColor(alert.severity)}`}
+                  >
+                    <span className="text-2xl">{alert.icon}</span>
+                    <div className="flex-1">
+                      <p className="font-medium">{alert.description}</p>
+                      <div className="flex justify-between items-center mt-1">
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {alert.type.replace(/([A-Z])/g, ' $1').trim()} Alert
+                        </p>
+                        {alert.date && (
+                          <span className="text-xs bg-secondary px-2 py-1 rounded">
+                            {alert.date}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Admin Messages */}
-        <AdminMessages userId={userId} />
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+          <AdminMessages userId={userId} />
+        </div>
       </div>
 
       {/* Alert Detail Dialog */}

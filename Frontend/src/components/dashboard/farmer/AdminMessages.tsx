@@ -222,6 +222,22 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
     navigate(`/farmer/reports/${reportId}`);
   };
 
+  // Calculate dynamic height based on number of messages
+  const calculateDynamicHeight = () => {
+    if (messages.length === 0) {
+      return "auto";
+    }
+    // Base height for one message + padding
+    const baseHeight = 120;
+    // Additional height per message
+    const perMessageHeight = 100;
+    // Maximum height
+    const maxHeight = 400;
+    
+    const calculatedHeight = baseHeight + (messages.length - 1) * perMessageHeight;
+    return Math.min(calculatedHeight, maxHeight);
+  };
+
   return (
     <Card className="shadow-card">
       <CardHeader>
@@ -245,7 +261,13 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
             <p className="text-sm mt-1">When admins send you messages, they will appear here.</p>
           </div>
         ) : (
-          <ScrollArea className="h-[400px] pr-4">
+          <div 
+            className="pr-4"
+            style={{ 
+              maxHeight: `${calculateDynamicHeight()}px`,
+              overflowY: messages.length > 3 ? 'auto' : 'visible'
+            }}
+          >
             <div className="space-y-4">
               {messages.map((message) => (
                 <div 
@@ -302,7 +324,7 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
                 </div>
               ))}
             </div>
-          </ScrollArea>
+          </div>
         )}
       </CardContent>
     </Card>
