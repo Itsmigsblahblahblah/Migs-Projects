@@ -111,6 +111,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   const [activeTab, setActiveTab] = useState("recommendations");
   // Add state for showing more recommendations
   const [showAllRecommendations, setShowAllRecommendations] = useState(false);
+  // Add state to track if recommendations have been fetched at least once
+  const [hasFetchedRecommendations, setHasFetchedRecommendations] = useState(false);
 
   // Function to extract barangay name from farm address
   const extractBarangay = (farmAddress: string) => {
@@ -174,6 +176,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     setLoading(true);
     setError(null);
     setRecommendations([]); // Clear previous recommendations
+    setHasFetchedRecommendations(true); // Mark that we've fetched at least once
     
     try {
       // Prepare request body with all data sources
@@ -330,6 +333,29 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
     loadSoilData();
   }, [effectiveFarmerProfile]);
+
+  // Add useEffect to automatically fetch recommendations when soil data changes
+  useEffect(() => {
+    // Only fetch automatically if we've already fetched recommendations at least once
+    // This prevents fetching on initial load before user interaction
+    if (hasFetchedRecommendations) {
+      console.log('Soil data changed, fetching new recommendations:', inputSoilData);
+      
+      // Prepare weather data if available
+      let weatherDataForRecommendation: WeatherData | undefined;
+      if (effectiveWeatherData) {
+        weatherDataForRecommendation = {
+          temperature: effectiveWeatherData.temperature || 25,
+          humidity: effectiveWeatherData.humidity || 50,
+          precipitation_probability: effectiveWeatherData.extendedForecast?.[0]?.precipitationProbability || 0,
+          wind_speed: effectiveWeatherData.extendedForecast?.[0]?.windSpeed || 5,
+          uv_index: effectiveWeatherData.extendedForecast?.[0]?.uvIndex || 5
+        };
+      }
+      
+      fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
+    }
+  }, [inputSoilData]); // Only re-run when inputSoilData changes
 
   const handleCropSelect = async (crop: PrescriptionDetails) => {
     // Fetch market demand data for the selected crop

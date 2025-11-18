@@ -77,6 +77,14 @@ def test_predictions():
         "Potassium": "M"
     }
     
+    # Test case 4: Specific case for Ampalaya
+    soil_data_4 = {
+        "pH": 5.8,
+        "Nitrogen": "M",
+        "Phosphorus": "M",
+        "Potassium": "M"
+    }
+    
     weather_data = {
         "temperature": 28.5,
         "humidity": 65,
@@ -88,7 +96,8 @@ def test_predictions():
     test_cases = [
         ("Low Nitrogen Soil", soil_data_1),
         ("High Nitrogen Soil", soil_data_2),
-        ("Medium Everything Soil", soil_data_3)
+        ("Medium Everything Soil", soil_data_3),
+        ("Ampalaya Soil Conditions", soil_data_4)
     ]
     
     for name, soil_data in test_cases:
@@ -96,63 +105,21 @@ def test_predictions():
         logger.info(f"Testing {name}")
         logger.info(f"Soil data: {soil_data}")
         
-        # Get predictions
+        # Get predictions using the model's predict method
         predictions = model.predict(soil_data, weather_data, {})
         
         logger.info(f"Predictions: {predictions}")
         
-        # Show detailed breakdown
-        nitrogen_map = {'L': 0, 'M': 1, 'H': 2}
-        phosphorus_map = {'L': 0, 'M': 1, 'H': 2}
-        potassium_map = {'L': 0, 'M': 1, 'H': 2}
+        # Check specifically for Ampalaya in predictions
+        ampalaya_found = False
+        for i, (crop, confidence, market_score) in enumerate(predictions):
+            if crop == 'Ampalaya (Bitter Gourd)':
+                logger.info(f"Ampalaya found at position {i+1} with confidence {confidence}")
+                ampalaya_found = True
+                break
         
-        input_data = np.array([[
-            soil_data['pH'],
-            nitrogen_map[soil_data['Nitrogen']],
-            phosphorus_map[soil_data['Phosphorus']],
-            potassium_map[soil_data['Potassium']],
-            weather_data.get('temperature', 25.0),
-            weather_data.get('humidity', 60.0),
-            weather_data.get('precipitation_probability', 50.0),
-            weather_data.get('wind_speed', 10.0),
-            weather_data.get('uv_index', 5.0),
-            0.5  # Default market demand score
-        ]])
-        
-        logger.info(f"Input data: {input_data}")
-        
-        # Scale input data
-        input_scaled = model.scaler.transform(input_data)
-        logger.info(f"Scaled input: {input_scaled}")
-        
-        # Make prediction
-        if model.model is not None:
-            raw_predictions = model.model.predict(input_scaled, verbose=0)[0]
-            logger.info(f"Raw predictions: {raw_predictions}")
-            
-            # Get top indices
-            top_indices = np.argsort(raw_predictions)[-5:][::-1]
-            top_crops = model.crop_label_encoder.inverse_transform(top_indices)
-            top_confidences = raw_predictions[top_indices]
-            
-            logger.info(f"Top crops with raw confidences: {list(zip(top_crops, top_confidences))}")
-            
-            # Check market demand scores for these crops
-            market_scores = []
-            if model.preprocessor is not None:
-                for crop in top_crops:
-                    score = model.preprocessor.get('market_scores', {}).get(crop, 0.5)
-                    market_scores.append(score)
-            else:
-                market_scores = [0.5] * len(top_crops)
-            
-            logger.info(f"Market demand scores: {list(zip(top_crops, market_scores))}")
-            
-            # Combined scores calculation
-            combined_scores = 0.6 * top_confidences + 0.4 * np.array(market_scores)
-            logger.info(f"Combined scores: {list(zip(top_crops, combined_scores))}")
-        else:
-            logger.error("Model not loaded properly")
+        if not ampalaya_found:
+            logger.info("Ampalaya (Bitter Gourd) not in top predictions")
 
 if __name__ == "__main__":
     analyze_training_data()
