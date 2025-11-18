@@ -318,7 +318,7 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
                   </div>
                   <p className="whitespace-pre-wrap">{message.message}</p>
                   <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                    <span>From sender:</span>
+                    <span>Click this to open...</span>
                     <span className="font-mono">{message.senderId.substring(0, 8)}...</span>
                   </div>
                 </div>

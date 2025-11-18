@@ -15,6 +15,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X } from "lucide-react";
 import AdminMessages from "@/components/dashboard/farmer/AdminMessages";
+import UserAnnouncements from "@/components/dashboard/farmer/UserAnnouncements";
 import { useWeatherAlerts } from "@/hooks/custom/useWeatherAlerts";
 
 // Get userId from localStorage
@@ -26,9 +27,6 @@ const Alerts = () => {
   const navigate = useNavigate();
   const userId = getUserId();
   const { weatherAlerts, loading: weatherLoading, error: weatherError, getAlertColor } = useWeatherAlerts();
-
-  // Debugging: Log the alerts to see what we're getting
-  console.log("Weather alerts in Alerts page:", weatherAlerts);
 
   return (
     <Layout>
@@ -87,6 +85,16 @@ const Alerts = () => {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Announcements */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle>Announcements</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <UserAnnouncements />
           </CardContent>
         </Card>
 
