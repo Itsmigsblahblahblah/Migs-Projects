@@ -416,7 +416,7 @@ class VegetableDemandTransformer:
             "demand_level": demand_level
         }
     
-    def recommend_crops(self, top_n=10, target_month=None, target_year=None):
+    def recommend_crops(self, top_n=10, target_month=None, target_year=None, demand_level=None):
         """
         Recommend crops based on predicted demand for a specific month and year
         
@@ -424,6 +424,7 @@ class VegetableDemandTransformer:
             top_n (int): Number of top recommendations to return
             target_month (int): Target month for predictions (1-12)
             target_year (int): Target year for predictions
+            demand_level (str): Filter by demand level (High, Moderate, Stable, Low)
             
         Returns:
             list: List of recommended vegetables with demand predictions
@@ -489,7 +490,13 @@ class VegetableDemandTransformer:
                 # Make prediction
                 prediction = self.predict_demand(vegetable, historical_prices, 
                                                historical_annual_prices, historical_months)
-                recommendations.append(prediction)
+                
+                # Filter by demand level if specified
+                if demand_level is not None:
+                    if prediction['demand_level'].lower() == demand_level.lower():
+                        recommendations.append(prediction)
+                else:
+                    recommendations.append(prediction)
             except Exception as e:
                 logger.warning(f"Could not generate prediction for {vegetable}: {e}")
                 continue

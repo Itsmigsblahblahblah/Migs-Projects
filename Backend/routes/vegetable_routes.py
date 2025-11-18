@@ -78,7 +78,7 @@ async def predict_demand(data: dict):
         raise HTTPException(status_code=500, detail=f"Demand prediction error: {str(e)}")
 
 @app.get("/recommend-crops")
-async def recommend_crops(top_n: int = 10, month: int | None = None, year: int | None = None):
+async def recommend_crops(top_n: int = 10, month: int | None = None, year: int | None = None, demand_level: str | None = None):
     """
     Get recommended crops based on predicted demand for a specific month and year
     
@@ -86,6 +86,7 @@ async def recommend_crops(top_n: int = 10, month: int | None = None, year: int |
         top_n (int): Number of recommendations to return (default: 10)
         month (int | None): Month for which to make predictions (1-12)
         year (int | None): Year for which to make predictions
+        demand_level (str | None): Filter by demand level (High, Moderate, Stable, Low)
         
     Returns:
     {
@@ -111,8 +112,12 @@ async def recommend_crops(top_n: int = 10, month: int | None = None, year: int |
         if month is not None and (month < 1 or month > 12):
             raise HTTPException(status_code=400, detail="Month must be between 1 and 12")
         
+        # Validate demand_level parameter if provided
+        if demand_level is not None and demand_level.lower() not in ['high', 'moderate', 'stable', 'low']:
+            raise HTTPException(status_code=400, detail="Demand level must be one of: High, Moderate, Stable, Low")
+        
         # Get recommendations with time-specific filtering
-        recommendations = model.recommend_crops(top_n, month, year)
+        recommendations = model.recommend_crops(top_n, month, year, demand_level)
         
         return {"recommended_crops": recommendations}
         

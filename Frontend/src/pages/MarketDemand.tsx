@@ -55,6 +55,7 @@ const MarketDemand = () => {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1); // Default to current month
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()); // Default to current year
   const [yearRangeStart, setYearRangeStart] = useState<number>(new Date().getFullYear());
+  const [selectedDemandLevel, setSelectedDemandLevel] = useState<string | null>(null); // New state for demand level filtering
 
   // Generate month options based on selected year
   const currentDate = new Date();
@@ -87,7 +88,7 @@ const MarketDemand = () => {
 
   useEffect(() => {
     fetchMarketData();
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, selectedDemandLevel]);
 
   useEffect(() => {
     let result = [...marketData];
@@ -97,6 +98,11 @@ const MarketDemand = () => {
       result = result.filter(crop => 
         crop.vegetable.toLowerCase().includes(searchTerm.toLowerCase())
       );
+    }
+    
+    // Apply demand level filter
+    if (selectedDemandLevel) {
+      result = result.filter(crop => crop.demand_level.toLowerCase() === selectedDemandLevel.toLowerCase());
     }
     
     // Apply sorting
@@ -143,13 +149,18 @@ const MarketDemand = () => {
     });
     
     setFilteredData(result);
-  }, [searchTerm, marketData, sortOrder, sortBy]);
+  }, [searchTerm, marketData, sortOrder, sortBy, selectedDemandLevel]);
 
   const fetchMarketData = async () => {
     try {
       setLoading(true);
-      // Include month and year parameters in the API call
-      const response = await fetch(`/api/vegetables/recommend-crops?top_n=20&month=${selectedMonth}&year=${selectedYear}`);
+      // Include month, year, and demand_level parameters in the API call
+      let url = `/api/vegetables/recommend-crops?top_n=20&month=${selectedMonth}&year=${selectedYear}`;
+      if (selectedDemandLevel) {
+        url += `&demand_level=${selectedDemandLevel}`;
+      }
+      
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error("Failed to fetch market demand data");
@@ -537,22 +548,58 @@ const MarketDemand = () => {
                 <CardTitle>Demand Levels</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-green-100 rounded-lg">
+                <button
+                  className={`flex items-center justify-between p-3 rounded-lg w-full text-left transition-all ${
+                    selectedDemandLevel === "High" 
+                      ? "bg-green-200 ring-2 ring-green-500" 
+                      : "bg-green-100 hover:bg-green-200"
+                  }`}
+                  onClick={() => setSelectedDemandLevel("High")}
+                >
                   <span className="font-medium">High Demand</span>
                   <Badge className="bg-green-800 text-green-100">+10%</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-blue-100 rounded-lg">
+                </button>
+                <button
+                  className={`flex items-center justify-between p-3 rounded-lg w-full text-left transition-all ${
+                    selectedDemandLevel === "Moderate" 
+                      ? "bg-blue-200 ring-2 ring-blue-500" 
+                      : "bg-blue-100 hover:bg-blue-200"
+                  }`}
+                  onClick={() => setSelectedDemandLevel("Moderate")}
+                >
                   <span className="font-medium">Moderate Demand</span>
                   <Badge className="bg-blue-800 text-blue-100">+5% to +10%</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-yellow-100 rounded-lg">
+                </button>
+                <button
+                  className={`flex items-center justify-between p-3 rounded-lg w-full text-left transition-all ${
+                    selectedDemandLevel === "Stable" 
+                      ? "bg-yellow-200 ring-2 ring-yellow-500" 
+                      : "bg-yellow-100 hover:bg-yellow-200"
+                  }`}
+                  onClick={() => setSelectedDemandLevel("Stable")}
+                >
                   <span className="font-medium">Stable Demand</span>
                   <Badge className="bg-yellow-800 text-yellow-100">-5% to +5%</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-red-100 rounded-lg">
+                </button>
+                <button
+                  className={`flex items-center justify-between p-3 rounded-lg w-full text-left transition-all ${
+                    selectedDemandLevel === "Low" 
+                      ? "bg-red-200 ring-2 ring-red-500" 
+                      : "bg-red-100 hover:bg-red-200"
+                  }`}
+                  onClick={() => setSelectedDemandLevel("Low")}
+                >
                   <span className="font-medium">Low Demand</span>
                   <Badge className="bg-red-800 text-red-100">-5% or less</Badge>
-                </div>
+                </button>
+                {selectedDemandLevel && (
+                  <button
+                    className="flex items-center justify-center p-3 rounded-lg w-full text-left bg-gray-100 hover:bg-gray-200 transition-all"
+                    onClick={() => setSelectedDemandLevel(null)}
+                  >
+                    <span className="font-medium text-gray-700">Show All Crops</span>
+                  </button>
+                )}
               </CardContent>
             </Card>
             
