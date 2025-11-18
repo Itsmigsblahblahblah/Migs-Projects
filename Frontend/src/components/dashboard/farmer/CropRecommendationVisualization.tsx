@@ -44,8 +44,14 @@ const CropRecommendationVisualization: React.FC<CropRecommendationVisualizationP
   soilData,
   weatherData
 }) => {
-  // Prepare data for charts
-  const chartData = recommendations.map(rec => ({
+  // Prepare data for charts - filter duplicates and limit to 6 items to match the recommendations display
+  const filteredRecommendations = recommendations
+    .filter((recommendation, index, self) => 
+      index === self.findIndex(r => r.crop.trim() === recommendation.crop.trim())
+    )
+    .slice(0, 6);
+    
+  const chartData = filteredRecommendations.map(rec => ({
     name: rec.crop,
     confidence: Math.round(rec.confidence * 100),
     marketDemand: rec.market_demand_score ? Math.round(rec.market_demand_score * 100) : 0
