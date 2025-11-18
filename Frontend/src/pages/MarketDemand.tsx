@@ -158,7 +158,8 @@ const MarketDemand = () => {
     try {
       setLoading(true);
       // Include month, year, and demand_level parameters in the API call
-      let url = `/vegetables/recommend-crops?top_n=20&month=${selectedMonth}&year=${selectedYear}`;
+      // Request all crops instead of just 20
+      let url = `/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
       if (selectedDemandLevel) {
         url += `&demand_level=${selectedDemandLevel}`;
       }

@@ -131,11 +131,12 @@ class VegetableDemandTransformer:
             price_change_percent = (price_change / current_avg_price) * 100 if current_avg_price != 0 else 0
             
             # Determine demand level based on price change percentage
-            if price_change_percent > 10:
+            # Adjusted thresholds for more realistic distribution across demand levels
+            if price_change_percent > 3:
                 demand_level = "High"
-            elif price_change_percent > 5:
+            elif price_change_percent > 1:
                 demand_level = "Moderate"
-            elif price_change_percent > -5:
+            elif price_change_percent > -1:
                 demand_level = "Stable"
             else:
                 demand_level = "Low"
