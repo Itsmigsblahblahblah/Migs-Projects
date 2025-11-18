@@ -20,7 +20,7 @@ export const useCropManagement = () => {
     });
 
     const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
-    const { addCrop, updateCrop } = useCrops();
+    const { addCrop, updateCrop, deleteCrop } = useCrops(); // Added deleteCrop
     const { toast } = useToast();
 
     // Handle crop input changes
@@ -170,6 +170,26 @@ export const useCropManagement = () => {
         }
     };
 
+    // Handle crop deletion
+    const handleDeleteCrop = async (id: string, name: string) => {
+        try {
+            await deleteCrop(id);
+            toast({
+                title: "Crop Deleted Successfully",
+                description: `${name} has been removed from the database.`,
+            });
+            return true;
+        } catch (error) {
+            console.error("Error deleting crop:", error);
+            toast({
+                title: "Error",
+                description: "Failed to delete crop from database. Please try again.",
+                variant: "destructive",
+            });
+            return false;
+        }
+    };
+
     const selectCropForEditing = (crop: any) => {
         setSelectedCropId(crop.id);
         setEditCrop({
@@ -194,6 +214,7 @@ export const useCropManagement = () => {
         handleEditSoilTypeChange,
         handleAddCrop,
         handleEditCropSubmit,
+        handleDeleteCrop, // Added delete function
         selectCropForEditing
     };
 };

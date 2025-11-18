@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, orderBy, setDoc } from "firebase/firestore"; // Added setDoc import
+import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, orderBy, setDoc, deleteDoc } from "firebase/firestore"; // Added deleteDoc import
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "@/firebaseConfig";
 import { generateFarmerCropId } from "@/lib/idUtils";
@@ -21,12 +21,14 @@ interface Crop {
     puhunan: number;
     createdAt: any;
     checklist?: ChecklistItem[]; // Add checklist field
+    harvestData?: any; // Add harvest data field
 }
 
 interface CropContextType {
     crops: Crop[];
     addCrop: (crop: Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>) => Promise<void>;
     updateCrop: (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>>) => Promise<void>;
+    deleteCrop: (id: string) => Promise<void>; // Add delete function
     getCropById: (id: string) => Crop | undefined;
     loadCrops: () => Promise<void>;
 }
@@ -172,12 +174,26 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const deleteCrop = async (id: string) => {
+        try {
+            // Delete from Firestore
+            const cropRef = doc(db, "farmerCrops", id);
+            await deleteDoc(cropRef);
+
+            // Update local state
+            setCrops(prev => prev.filter(crop => crop.id !== id));
+        } catch (error) {
+            console.error("Error deleting crop from Firestore:", error);
+            throw error;
+        }
+    };
+
     const getCropById = (id: string) => {
         return crops.find(crop => crop.id === id);
     };
 
     return (
-        <CropContext.Provider value={{ crops, addCrop, updateCrop, getCropById, loadCrops }}>
+        <CropContext.Provider value={{ crops, addCrop, updateCrop, deleteCrop, getCropById, loadCrops }}>
             {children}
         </CropContext.Provider>
     );

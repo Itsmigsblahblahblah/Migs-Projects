@@ -83,15 +83,27 @@ const CropDetails = () => {
                     
                     setProductivityData(initialData);
 
-                    // Fetch harvest estimate from Gemini API
-                    if (cropData.plantedDate) {
+                    // Fetch harvest estimate from Gemini API only if not already saved
+                    if (cropData.plantedDate && (!cropData.harvestData || !cropData.harvestData.estimatedHarvestDate)) {
                         try {
                             const plantedDate = cropData.plantedDate.toDate ? cropData.plantedDate.toDate() : new Date(cropData.plantedDate);
                             const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
+                            
+                            // Save harvest data to crop record
+                            if (cropData.id) {
+                                await updateCrop(cropData.id, { harvestData: harvestInfo });
+                            }
+                            
                             setHarvestData(harvestInfo);
                         } catch (error) {
                             console.error("Error fetching harvest estimate:", error);
                         }
+                    } else if (cropData.harvestData) {
+                        // Use existing harvest data
+                        setHarvestData(cropData.harvestData);
+                    } else {
+                        // Reset harvest data if no conditions are met
+                        setHarvestData(null);
                     }
                 }
             } catch (error) {
