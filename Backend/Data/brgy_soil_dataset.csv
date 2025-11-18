@@ -3,38 +3,38 @@ Brgy. Coralao,Ampalaya (Bitter Gourd),5.8,M,M,M
 Brgy. Gagalot  Purok 2,Green Beans (Baguio Beans),5.8,L,M,M
 Brgy. Burgos,Bataw (Hyacinth Bean),6.2,L,M,M
 Brgy. Pangil,Siling-Tamban (Bell Pepper),5.8,H,M,H
-Brgy. San Roque,Ampalaya (Bitter Gourd),6,L,H,L
+Brgy. San Roque,Ampalaya (Bitter Gourd),6.0,L,H,L
 Brgy. Suba,Ampalaya (Bitter Gourd),5.8,L,H,L
 Brgy. Burgos,Broccoli (Brokoli),5.8,L,L,L
 Brgy. Amonoy,Broccoli (Brokoli),5.8,M,M,M
 Brgy. Taytay,Broccoli (Brokoli),6.2,L,M,M
 Brgy. Piit,Carrots (Karot),6.2,H,M,H
-Brgy. Pangil,Koliflower (Cauliflower) ,5.8,H,M,M
+Brgy. Pangil,Koliflower (Cauliflower),5.8,H,M,M
 Brgy. Gagalot  Purok 3,Sayote (Chayote),5.8,L,L,M
 Brgy. Taytay,Sayote (Chayote),5.8,M,M,M
-Brgy. San Roque,Bok Choy (Chinese Cabbage),6,H,M,M
-Brgy. Balayong,Talong (Eggplant - Native),6,L,L,H
+Brgy. San Roque,Bok Choy (Chinese Cabbage),6.0,H,M,M
+Brgy. Balayong,Talong (Eggplant - Native),6.0,L,L,H
 Brgy. Gagalot  Purok 2,Talong (Eggplant - Native),5.8,L,M,M
 Brgy. Malinao,Talong (Eggplant - Native),5.8,L,L,M
 Brgy. Gagalot  Purok 3,Talong (Eggplant - Native),5.8,H,M,H
-Brgy. Burgos,Bawang (Garlic),6,M,M,L
+Brgy. Burgos,Bawang (Garlic),6.0,M,M,L
 Brgy. Burgos,Okra (Lady's Finger),6.2,H,M,H
-Brgy. Taytay,Luyang Dilaw (Turmeric Ginger),6,M,M,H
+Brgy. Taytay,Luyang Dilaw (Turmeric Ginger),6.0,M,M,H
 Brgy. Olla,Repolyo (Cabbage),5.8,H,M,M
 Brgy. Gagalot  Purok 3,Luya (Ginger),5.8,L,M,H
 Brgy. San Roque,Okra (Lady's Finger),5.8,H,M,H
 Brgy. Munting Kawayan,Mustasa (Mustard Leave),7.2,H,M,M
-Brgy. Amonoy,Mustasa (Mustard Leave),6,L,L,H
-Brgy. Oobi,Okra (Lady's Finger),6,L,L,H
+Brgy. Amonoy,Mustasa (Mustard Leave),6.0,L,L,H
+Brgy. Oobi,Okra (Lady's Finger),6.0,L,L,H
 Brgy. Taytay,Sibuyas (Onion),6.8,M,M,L
 Brgy. Malinao,Patani (Lima Bean),5.8,L,M,M
 Brgy. Taytay,Patani (Lima Bean),5.8,M,M,M
 Brgy. Oobi,Patola (Sponge Gourd),5.8,M,M,M
-Brgy. Amonoy,Pechay (Native),6,L,L,H
+Brgy. Amonoy,Pechay (Native),6.0,L,L,H
 Brgy. Munting Kawayan,Pechay (Native),5.8,H,M,M
 Brgy. Taytay,Siling-Tamban (Bell Pepper),5.8,M,M,H
 Brgy. Oobi,Patatas (Potato),5.8,M,M,H
-Brgy. Olla,Labanos (Radish),6,H,M,H
+Brgy. Olla,Labanos (Radish),6.0,H,M,H
 Brgy. Gagalot  Purok 2,Dinorado Rice,5.8,H,M,M
 Brgy. Balayong,Dinorado Rice,6.2,H,M,M
 Brgy. Suba,Brown Rice,5.8,L,M,M
@@ -47,10 +47,10 @@ Brgy. Olla,Dinorado Rice,5.8,L,M,L
 Brgy. Banga,Sinandomeng Rice,5.8,L,L,M
 Brgy. Munting Kawayan,Sinandomeng Rice,5.8,L,L,L
 Brgy. Taytay,Sinandomeng Rice,5.8,L,M,L
-Brgy. Taytay,Kalabasa (Squash),6,M,M,M
+Brgy. Taytay,Kalabasa (Squash),6.0,M,M,M
 Brgy. Coralao,Sitaw (String Beans),7.2,L,L,L
 Brgy. Pangil,Sitaw (String Beans),6.8,L,M,L
-Brgy. Suba,Sitaw (String Beans),6,L,M,M
+Brgy. Suba,Sitaw (String Beans),6.0,L,M,M
 Brgy. Burgos,Kamatis (Tomato),6.8,H,H,H
 Brgy. Taytay,Upo (Bottle Gourd),7.2,M,M,M
 Brgy.Balanac,Kamote (Sweeet Potato),5.8,L,M,M
@@ -99,18 +99,18 @@ Brgy.Panalaban,Kangkong (Water Spinach),5.8,L,M,M
 Brgy.Isabang,Labanos (Radish),5.8,L,M,M
 Brgy.Isabang,Kangkong (Water Spinach),5.8,L,M,M
 Brgy. Munting Kawayan,Sinandomeng Rice,5.8,L,L,L
-Brgy. San Roque,Bok Choy (Chinese Cabbage),6,H,M,M
+Brgy. San Roque,Bok Choy (Chinese Cabbage),6.0,H,M,M
 Brgy. San Roque,Okra (Lady's Finger),5.8,H,M,H
-Brgy. Taytay,Luyang Dilaw (Turmeric Ginger),6,M,M,H
+Brgy. Taytay,Luyang Dilaw (Turmeric Ginger),6.0,M,M,H
 Brgy. Taytay,Sibuyas (Onion),6.8,M,M,L
 Brgy. Piit,Carrots (Karot),6.2,H,M,H
-Brgy. Oobi,Okra (Lady's Finger),6,L,L,H
+Brgy. Oobi,Okra (Lady's Finger),6.0,L,L,H
 Brgy. Olla,Repolyo (Cabbage),5.8,H,M,M
 Brgy. Olla,Dinorado Rice,5.8,L,M,L
 Brgy. Oobi,Patatas (Potato),5.8,M,M,H
 Brgy.Banti,Kamote (Sweeet Potato),5.8,L,M,M
 Brgy.Panglan,Kamote (Sweeet Potato),5.8,L,M,M
-Brgy. Burgos,Bawang (Garlic),6,M,M,L
+Brgy. Burgos,Bawang (Garlic),6.0,M,M,L
 Brgy. Burgos,Bataw (Hyacinth Bean),6.2,L,M,M
 Brgy. Taytay,Broccoli (Brokoli),6.2,L,M,M
 Brgy. Gagalot  Purok 2,Talong (Eggplant - Native),5.8,L,M,M
@@ -130,12 +130,12 @@ Brgy. Gagalot  Purok 2,Green Beans (Baguio Beans),5.8,L,M,M
 Brgy. Gagalot  Purok 2,Talong (Eggplant - Native),5.8,L,M,M
 Brgy.Bayucain,Kalabasa (Squash),5.8,L,M,M
 Brgy.Pook,Kamote (Sweeet Potato),5.8,L,M,M
-Brgy. San Roque,Ampalaya (Bitter Gourd),6,L,H,L
-Brgy. Burgos,Bawang (Garlic),6,M,M,L
+Brgy. San Roque,Ampalaya (Bitter Gourd),6.0,L,H,L
+Brgy. Burgos,Bawang (Garlic),6.0,M,M,L
 Brgy. Taytay,Sayote (Chayote),5.8,M,M,M
 Brgy.San Isidro,Kamote (Sweeet Potato),5.8,L,M,M
 Brgy. Olla,Repolyo (Cabbage),5.8,H,M,M
-Brgy. Taytay,Luyang Dilaw (Turmeric Ginger),6,M,M,H
+Brgy. Taytay,Luyang Dilaw (Turmeric Ginger),6.0,M,M,H
 Brgy.Tanawan,Kamatis (Tomato),5.8,L,M,M
 Brgy. Taytay,Sibuyas (Onion),6.8,M,M,L
 Brgy.Bitaoy,Dinorado Rice,5.8,L,M,M
@@ -147,7 +147,7 @@ Brgy. Munting Kawayan,Sinandomeng Rice,5.8,L,L,L
 Brgy.Rizal,Kangkong (Water Spinach),5.8,L,M,M
 Brgy.Talortor,Kangkong (Water Spinach),5.8,L,M,M
 Brgy.Botocan,Dinorado Rice,5.8,L,M,M
-Brgy. San Roque,Bok Choy (Chinese Cabbage),6,H,M,M
+Brgy. San Roque,Bok Choy (Chinese Cabbage),6.0,H,M,M
 Brgy. Taytay,Sayote (Chayote),5.8,M,M,M
 Brgy. Taytay,Sibuyas (Onion),6.8,M,M,L
 Brgy. Piit,Dinorado Rice,5.8,L,L,L
@@ -156,19 +156,19 @@ Brgy. Munting Kawayan,Pechay (Native),5.8,H,M,M
 Brgy.Panglan,Kamatis (Tomato),5.8,L,M,M
 Brgy. Taytay,Sibuyas (Onion),6.8,M,M,L
 Brgy. Suba,Ampalaya (Bitter Gourd),5.8,L,H,L
-Brgy. Oobi,Okra (Lady's Finger),6,L,L,H
+Brgy. Oobi,Okra (Lady's Finger),6.0,L,L,H
 Brgy. Olla,Repolyo (Cabbage),5.8,H,M,M
 Brgy.Talortor,Talong (Eggplant - Native),5.8,L,M,M
 Brgy.Botocan,Dinorado Rice,5.8,L,M,M
 Brgy. Munting Kawayan,Mustasa (Mustard Leave),7.2,H,M,M
-Brgy. Amonoy,Pechay (Native),6,L,L,H
+Brgy. Amonoy,Pechay (Native),6.0,L,L,H
 Brgy.Balanac,Sayote (Chayote),5.8,L,M,M
 Brgy.Botocan,Dinorado Rice,5.8,L,M,M
-Brgy. Oobi,Okra (Lady's Finger),6,L,L,H
+Brgy. Oobi,Okra (Lady's Finger),6.0,L,L,H
 Brgy. Olla,Repolyo (Cabbage),5.8,H,M,M
 Brgy. Olla,Dinorado Rice,5.8,L,M,L
 Brgy. Pangil,Broccoli (Brokoli),5.94,M,M,L
-Brgy.Isabang,Broccoli (Brokoli),6,H,H,L
+Brgy.Isabang,Broccoli (Brokoli),6.0,H,H,L
 Brgy.Talortor,Broccoli (Brokoli),7.03,M,M,M
 Brgy.Talortor,Broccoli (Brokoli),6.95,L,L,L
 Brgy. Suba,Broccoli (Brokoli),5.88,M,H,M
@@ -224,7 +224,7 @@ Brgy.Isabang,Broccoli (Brokoli),6.13,L,M,H
 Brgy.Botocan,Broccoli (Brokoli),7.39,L,H,H
 Brgy.Panglan,Broccoli (Brokoli),6.08,L,H,M
 Brgy. Coralao,Broccoli (Brokoli),7.08,M,M,L
-Brgy. Malinao,Broccoli (Brokoli),7,L,H,M
+Brgy. Malinao,Broccoli (Brokoli),7.0,L,H,M
 Brgy. Balayong,Broccoli (Brokoli),5.87,L,H,M
 Brgy.Isabang,Broccoli (Brokoli),7.41,H,M,M
 Brgy. Olla,Broccoli (Brokoli),6.84,M,L,L
@@ -316,7 +316,7 @@ Brgy.Rizal,Broccoli (Brokoli),7.02,H,M,L
 Brgy. Balayong,Broccoli (Brokoli),6.57,L,M,H
 Brgy. Gagalot  Purok 2,Broccoli (Brokoli),6.7,M,M,L
 Brgy.Botocan,Broccoli (Brokoli),5.64,H,L,L
-Brgy. Bukal,Broccoli (Brokoli),6,H,M,H
+Brgy. Bukal,Broccoli (Brokoli),6.0,H,M,H
 Brgy. Pangil,Broccoli (Brokoli),5.81,H,M,H
 Brgy.Talortor,Broccoli (Brokoli),7.2,L,M,M
 Brgy.Pook,Broccoli (Brokoli),5.55,H,H,M
@@ -521,7 +521,7 @@ Brgy.Panglan,Kangkong (Water Spinach),6.67,M,M,H
 Brgy. San Roque,Kangkong (Water Spinach),5.7,M,H,M
 Brgy. Piit,Kangkong (Water Spinach),6.56,L,L,H
 Brgy. Taytay,Kangkong (Water Spinach),5.77,M,L,M
-Brgy.Bitaoy,Kangkong (Water Spinach),7,M,L,L
+Brgy.Bitaoy,Kangkong (Water Spinach),7.0,M,L,L
 Brgy. Olla,Kangkong (Water Spinach),6.26,M,H,H
 Brgy. Burgos,Kangkong (Water Spinach),7.19,H,H,H
 Brgy.Botocan,Kangkong (Water Spinach),5.79,M,L,M
@@ -749,7 +749,7 @@ Brgy. Piit,Sitaw (String Beans),6.83,H,M,L
 Brgy.Balanac,Sitaw (String Beans),5.51,M,L,M
 Brgy.Burol,Sitaw (String Beans),7.46,L,M,L
 Brgy. Balayong,Sitaw (String Beans),6.87,L,H,H
-Brgy. Gagalot  Purok 3,Sitaw (String Beans),6,M,M,L
+Brgy. Gagalot  Purok 3,Sitaw (String Beans),6.0,M,M,L
 Brgy. Munting Kawayan,Labanos (Radish),7.25,M,M,M
 Brgy. Olla,Labanos (Radish),7.31,M,M,M
 Brgy. Malinao,Labanos (Radish),7.37,M,M,M
@@ -891,7 +891,7 @@ Brgy.San Isidro,Labanos (Radish),6.78,M,H,M
 Brgy. Suba,Labanos (Radish),6.03,M,H,H
 Brgy. Balayong,Labanos (Radish),5.97,L,L,H
 Brgy.Burol,Labanos (Radish),7.03,L,M,L
-Brgy.Banti,Labanos (Radish),6,M,L,M
+Brgy.Banti,Labanos (Radish),6.0,M,L,M
 Brgy. Balayong,Labanos (Radish),5.82,L,L,M
 Brgy. Taytay,Labanos (Radish),7.16,M,L,H
 Brgy.Panglan,Labanos (Radish),5.9,L,M,H
@@ -1238,7 +1238,7 @@ Brgy. Burgos,Patola (Sponge Gourd),7.12,L,M,L
 Brgy. Olla,Patola (Sponge Gourd),6.81,H,L,M
 Brgy.Panglan,Patola (Sponge Gourd),5.54,M,H,H
 Brgy.Talortor,Patola (Sponge Gourd),7.36,H,L,H
-Brgy.Panglan,Patola (Sponge Gourd),6,L,H,M
+Brgy.Panglan,Patola (Sponge Gourd),6.0,L,H,M
 Brgy. Bukal,Patola (Sponge Gourd),6.34,H,H,H
 Brgy.Bayucain,Patola (Sponge Gourd),7.37,H,L,L
 Brgy.Burol,Patola (Sponge Gourd),6.29,M,L,H
@@ -1392,7 +1392,7 @@ Brgy.San Isidro,Bok Choy (Chinese Cabbage),6.57,M,H,L
 Brgy.Botocan,Bok Choy (Chinese Cabbage),6.62,L,M,L
 Brgy. Oobi,Bok Choy (Chinese Cabbage),6.47,M,H,M
 Brgy. Olla,Bok Choy (Chinese Cabbage),6.27,M,H,L
-Brgy. Banga,Bok Choy (Chinese Cabbage),7,H,L,M
+Brgy. Banga,Bok Choy (Chinese Cabbage),7.0,H,L,M
 Brgy.Botocan,Bok Choy (Chinese Cabbage),7.08,L,L,M
 Brgy. Malinao,Bok Choy (Chinese Cabbage),6.36,L,H,H
 Brgy.Balanac,Bok Choy (Chinese Cabbage),7.27,H,H,L
@@ -1497,7 +1497,7 @@ Brgy. Bukal,Bok Choy (Chinese Cabbage),6.72,L,M,H
 Brgy. Suba,Bok Choy (Chinese Cabbage),5.59,L,H,M
 Brgy.Tanawan,Bok Choy (Chinese Cabbage),5.83,M,M,L
 Brgy.Talortor,Bok Choy (Chinese Cabbage),6.87,L,H,H
-Brgy.Balanac,Bok Choy (Chinese Cabbage),6,M,H,M
+Brgy.Balanac,Bok Choy (Chinese Cabbage),6.0,M,H,M
 Brgy. Pangil,Bok Choy (Chinese Cabbage),5.69,L,L,L
 Brgy. Olla,Bok Choy (Chinese Cabbage),7.3,M,H,M
 Brgy.Tanawan,Bok Choy (Chinese Cabbage),6.83,L,L,M
@@ -1626,7 +1626,7 @@ Brgy. Gagalot  Purok 3,Luya (Ginger),6.64,M,H,M
 Brgy. Burgos,Luya (Ginger),6.19,M,H,M
 Brgy. Piit,Luya (Ginger),6.29,M,M,H
 Brgy. Coralao,Luya (Ginger),7.11,M,L,H
-Brgy. San Roque,Luya (Ginger),7,H,H,H
+Brgy. San Roque,Luya (Ginger),7.0,H,H,H
 Brgy. Suba,Luya (Ginger),6.4,L,H,L
 Brgy. Olla,Luya (Ginger),7.44,H,L,L
 Brgy.San Isidro,Luya (Ginger),6.62,L,M,M
@@ -1674,7 +1674,7 @@ Brgy.Burol,Luya (Ginger),6.32,M,H,M
 Brgy.Tanawan,Luya (Ginger),7.07,H,L,M
 Brgy. Gagalot  Purok 2,Luya (Ginger),6.6,M,H,M
 Brgy. Bukal,Luya (Ginger),6.2,L,H,L
-Brgy. Balayong,Luya (Ginger),7,L,L,M
+Brgy. Balayong,Luya (Ginger),7.0,L,L,M
 Brgy. Malinao,Luya (Ginger),5.79,L,M,M
 Brgy. Suba,Luya (Ginger),6.37,L,H,H
 Brgy. Coralao,Luya (Ginger),6.91,L,M,L
@@ -1723,11 +1723,11 @@ Brgy. Malinao,Luya (Ginger),5.88,L,H,H
 Brgy.Panglan,Luya (Ginger),7.14,M,L,L
 Brgy. Coralao,Luya (Ginger),6.9,H,H,L
 Brgy.Tanawan,Luya (Ginger),6.91,M,L,H
-Brgy. Banga,Luya (Ginger),6,H,M,H
+Brgy. Banga,Luya (Ginger),6.0,H,M,H
 Brgy. Piit,Luya (Ginger),6.99,H,L,H
 Brgy. Munting Kawayan,Luya (Ginger),7.02,H,M,L
 Brgy. Suba,Luya (Ginger),6.56,M,M,H
-Brgy.Bitaoy,Luya (Ginger),6,M,H,L
+Brgy.Bitaoy,Luya (Ginger),6.0,M,H,L
 Brgy.Panglan,Luya (Ginger),7.08,H,L,H
 Brgy.Botocan,Luya (Ginger),7.05,L,L,H
 Brgy.Bitaoy,Luya (Ginger),6.52,M,L,L
@@ -1755,7 +1755,7 @@ Brgy. Balayong,Kamote (Sweeet Potato),6.01,H,M,L
 Brgy.Bitaoy,Kamote (Sweeet Potato),5.76,H,H,M
 Brgy.Bayucain,Kamote (Sweeet Potato),6.58,L,M,H
 Brgy.Bitaoy,Kamote (Sweeet Potato),6.92,H,H,M
-Brgy.Panglan,Kamote (Sweeet Potato),6,H,L,H
+Brgy.Panglan,Kamote (Sweeet Potato),6.0,H,L,H
 Brgy. Munting Kawayan,Kamote (Sweeet Potato),7.39,M,L,H
 Brgy. San Roque,Kamote (Sweeet Potato),5.64,M,L,L
 Brgy. Gagalot  Purok 2,Kamote (Sweeet Potato),7.31,H,L,M
@@ -1891,7 +1891,7 @@ Brgy. Piit,Kamote (Sweeet Potato),6.34,M,L,L
 Brgy. Taytay,Kamote (Sweeet Potato),7.02,M,H,H
 Brgy. Gagalot  Purok 2,Kamote (Sweeet Potato),6.28,M,L,L
 Brgy.Pook,Kamote (Sweeet Potato),6.05,H,H,H
-Brgy.Pook,Kamote (Sweeet Potato),6,H,H,L
+Brgy.Pook,Kamote (Sweeet Potato),6.0,H,H,L
 Brgy.Talortor,Kamote (Sweeet Potato),6.24,M,L,H
 Brgy.Tanawan,Kamote (Sweeet Potato),6.48,L,H,M
 Brgy. Piit,Kamote (Sweeet Potato),6.38,L,L,L
@@ -1974,13 +1974,13 @@ Brgy. Suba,Green Beans (Baguio Beans),5.96,L,M,H
 Brgy. Malinao,Green Beans (Baguio Beans),6.67,L,H,L
 Brgy.May-It,Green Beans (Baguio Beans),5.77,L,L,M
 Brgy.Pook,Green Beans (Baguio Beans),7.03,L,H,L
-Brgy.Tanawan,Green Beans (Baguio Beans),7,L,H,M
+Brgy.Tanawan,Green Beans (Baguio Beans),7.0,L,H,M
 Brgy. Balayong,Green Beans (Baguio Beans),6.77,H,M,M
 Brgy.May-It,Green Beans (Baguio Beans),6.02,M,L,L
 Brgy. Olla,Green Beans (Baguio Beans),6.92,L,L,H
 Brgy. Piit,Green Beans (Baguio Beans),5.91,M,M,L
 Brgy.San Isidro,Green Beans (Baguio Beans),6.87,L,L,M
-Brgy. Balayong,Green Beans (Baguio Beans),7,H,M,H
+Brgy. Balayong,Green Beans (Baguio Beans),7.0,H,M,H
 Brgy. Banga,Green Beans (Baguio Beans),7.48,H,M,M
 Brgy. Gagalot  Purok 3,Green Beans (Baguio Beans),6.27,H,M,H
 Brgy.San Isidro,Green Beans (Baguio Beans),6.98,H,M,L
@@ -2257,7 +2257,7 @@ Brgy. Oobi,Gabi (Taro),6.05,H,M,L
 Brgy. Taytay,Gabi (Taro),7.37,M,M,H
 Brgy. Banga,Gabi (Taro),7.44,H,H,M
 Brgy.Isabang,Gabi (Taro),7.22,L,H,H
-Brgy. Coralao,Gabi (Taro),7,L,H,H
+Brgy. Coralao,Gabi (Taro),7.0,L,H,H
 Brgy.Tanawan,Gabi (Taro),6.84,M,L,L
 Brgy. Banga,Gabi (Taro),5.97,H,M,H
 Brgy.Bayucain,Gabi (Taro),6.74,M,L,M
@@ -2395,7 +2395,7 @@ Brgy. Taytay,Mustasa (Mustard Leave),7.47,L,M,H
 Brgy.Bayucain,Mustasa (Mustard Leave),7.13,L,M,H
 Brgy. Amonoy,Mustasa (Mustard Leave),6.29,L,H,M
 Brgy.Burol,Mustasa (Mustard Leave),5.75,H,L,L
-Brgy.Isabang,Mustasa (Mustard Leave),7,H,H,H
+Brgy.Isabang,Mustasa (Mustard Leave),7.0,H,H,H
 Brgy. Banga,Mustasa (Mustard Leave),6.59,L,H,L
 Brgy.Talortor,Mustasa (Mustard Leave),5.65,H,L,M
 Brgy. Banga,Mustasa (Mustard Leave),6.21,L,M,M
@@ -2532,7 +2532,7 @@ Brgy.Talortor,Siling Haba (Long Chili),5.87,H,H,M
 Brgy. Coralao,Siling Haba (Long Chili),6.64,H,M,L
 Brgy. Olla,Siling Haba (Long Chili),6.43,L,L,M
 Brgy. Gagalot  Purok 2,Siling Haba (Long Chili),5.78,M,H,L
-Brgy.Panalaban,Siling Haba (Long Chili),6,M,M,L
+Brgy.Panalaban,Siling Haba (Long Chili),6.0,M,M,L
 Brgy. Banga,Siling Haba (Long Chili),6.02,H,H,M
 Brgy. Bukal,Siling Haba (Long Chili),5.52,M,M,M
 Brgy. Pangil,Siling Haba (Long Chili),6.28,M,H,M
@@ -2608,7 +2608,7 @@ Brgy. Coralao,Siling Haba (Long Chili),6.47,H,M,H
 Brgy. Coralao,Siling Haba (Long Chili),6.73,H,L,L
 Brgy.May-It,Siling Haba (Long Chili),5.77,M,L,M
 Brgy. Balayong,Siling Haba (Long Chili),7.36,M,L,M
-Brgy.Bayucain,Siling Haba (Long Chili),7,M,M,L
+Brgy.Bayucain,Siling Haba (Long Chili),7.0,M,M,L
 Brgy. Banga,Siling Haba (Long Chili),7.24,H,L,M
 Brgy.Bayucain,Siling Haba (Long Chili),7.22,L,L,M
 Brgy.Talortor,Siling Haba (Long Chili),5.65,M,H,M
@@ -2828,7 +2828,7 @@ Brgy. Malinao,Sayote (Chayote),6.74,H,L,H
 Brgy. Amonoy,Sayote (Chayote),7.07,H,H,L
 Brgy.Rizal,Sayote (Chayote),6.19,L,L,H
 Brgy. Gagalot  Purok 2,Sayote (Chayote),6.89,H,M,L
-Brgy. Olla,Sayote (Chayote),7,M,H,H
+Brgy. Olla,Sayote (Chayote),7.0,M,H,H
 Brgy.Banti,Sayote (Chayote),7.03,H,L,L
 Brgy. Gagalot  Purok 2,Sayote (Chayote),6.18,L,M,L
 Brgy. Munting Kawayan,Sayote (Chayote),6.84,L,L,L
@@ -2880,7 +2880,7 @@ Brgy.Bitaoy,Sayote (Chayote),7.17,L,M,H
 Brgy.Banti,Sayote (Chayote),6.03,M,L,L
 Brgy. Gagalot  Purok 2,Sayote (Chayote),5.65,H,H,M
 Brgy.Isabang,Sayote (Chayote),6.43,M,H,L
-Brgy.Panglan,Sayote (Chayote),7,M,L,H
+Brgy.Panglan,Sayote (Chayote),7.0,M,L,H
 Brgy. Gagalot  Purok 3,Sayote (Chayote),6.19,L,M,L
 Brgy. Burgos,Sayote (Chayote),6.54,L,L,H
 Brgy. Taytay,Sayote (Chayote),7.43,M,M,H
@@ -2896,7 +2896,7 @@ Brgy. Malinao,Sayote (Chayote),6.06,H,M,L
 Brgy. Piit,Sayote (Chayote),7.29,H,L,M
 Brgy.Burol,Sayote (Chayote),6.7,H,L,H
 Brgy. Balayong,Sayote (Chayote),5.74,L,H,L
-Brgy. San Roque,Sayote (Chayote),6,H,L,L
+Brgy. San Roque,Sayote (Chayote),6.0,H,L,L
 Brgy.Panalaban,Sayote (Chayote),6.55,H,H,M
 Brgy.San Isidro,Sayote (Chayote),6.23,L,L,M
 Brgy. Pangil,Sayote (Chayote),5.81,H,M,L
@@ -2926,7 +2926,7 @@ Brgy. Malinao,Tanglad (Lemon Grass),6.69,L,L,M
 Brgy.Botocan,Tanglad (Lemon Grass),5.88,H,M,H
 Brgy.Bayucain,Tanglad (Lemon Grass),6.18,M,M,H
 Brgy.Pook,Tanglad (Lemon Grass),6.33,H,L,H
-Brgy. San Roque,Tanglad (Lemon Grass),6,M,H,L
+Brgy. San Roque,Tanglad (Lemon Grass),6.0,M,H,L
 Brgy.Pook,Tanglad (Lemon Grass),7.48,M,H,H
 Brgy. Bukal,Tanglad (Lemon Grass),7.21,L,H,H
 Brgy. Banga,Tanglad (Lemon Grass),7.46,L,H,L
@@ -3034,7 +3034,7 @@ Brgy.Bitaoy,Tanglad (Lemon Grass),6.64,H,M,H
 Brgy. Oobi,Tanglad (Lemon Grass),6.11,M,H,M
 Brgy. Suba,Tanglad (Lemon Grass),6.43,M,H,M
 Brgy.Balanac,Tanglad (Lemon Grass),6.23,L,M,M
-Brgy.Bayucain,Tanglad (Lemon Grass),7,H,L,H
+Brgy.Bayucain,Tanglad (Lemon Grass),7.0,H,L,H
 Brgy. Banga,Tanglad (Lemon Grass),6.37,M,H,H
 Brgy.Banti,Tanglad (Lemon Grass),5.57,H,H,M
 Brgy.Isabang,Tanglad (Lemon Grass),6.92,H,M,M
@@ -3108,7 +3108,7 @@ Brgy.Panglan,Tanglad (Lemon Grass),6.62,M,L,H
 Brgy.Banti,Tanglad (Lemon Grass),5.93,M,L,M
 Brgy.Balanac,Tanglad (Lemon Grass),7.04,M,H,L
 Brgy. Piit,Tanglad (Lemon Grass),6.76,M,H,H
-Brgy.Botocan,Tanglad (Lemon Grass),7,M,M,L
+Brgy.Botocan,Tanglad (Lemon Grass),7.0,M,M,L
 Brgy.Bitaoy,Bataw (Hyacinth Bean),6.5,L,H,L
 Brgy. Olla,Bataw (Hyacinth Bean),6.65,M,L,L
 Brgy.Tanawan,Bataw (Hyacinth Bean),7.46,L,H,H
@@ -3118,7 +3118,7 @@ Brgy.San Isidro,Bataw (Hyacinth Bean),6.27,M,H,H
 Brgy. Burgos,Bataw (Hyacinth Bean),6.47,M,L,M
 Brgy. Gagalot  Purok 3,Bataw (Hyacinth Bean),6.22,M,H,M
 Brgy. Oobi,Bataw (Hyacinth Bean),6.53,M,H,L
-Brgy.Banti,Bataw (Hyacinth Bean),7,M,M,M
+Brgy.Banti,Bataw (Hyacinth Bean),7.0,M,M,M
 Brgy.Banti,Bataw (Hyacinth Bean),6.38,M,L,L
 Brgy. Amonoy,Bataw (Hyacinth Bean),5.67,H,M,H
 Brgy. Munting Kawayan,Bataw (Hyacinth Bean),5.92,L,L,M
@@ -3243,7 +3243,7 @@ Brgy.Banti,Bataw (Hyacinth Bean),6.49,L,H,H
 Brgy.Bayucain,Bataw (Hyacinth Bean),5.93,M,H,H
 Brgy.Pook,Bataw (Hyacinth Bean),6.05,H,L,M
 Brgy. Oobi,Bataw (Hyacinth Bean),6.44,M,M,L
-Brgy.San Isidro,Bataw (Hyacinth Bean),6,H,H,L
+Brgy.San Isidro,Bataw (Hyacinth Bean),6.0,H,H,L
 Brgy. Piit,Bataw (Hyacinth Bean),5.65,L,H,H
 Brgy. Amonoy,Bataw (Hyacinth Bean),6.67,L,H,H
 Brgy. Burgos,Bataw (Hyacinth Bean),7.22,M,H,L
@@ -3307,205 +3307,205 @@ Brgy.May-It,Bataw (Hyacinth Bean),6.54,M,L,H
 Brgy. Bukal,Bataw (Hyacinth Bean),5.61,L,L,L
 Brgy. Banga,Bataw (Hyacinth Bean),7.23,M,M,M
 Brgy. Burgos,Bataw (Hyacinth Bean),6.08,H,H,L
-Brgy.Tanawan,Koliflower (Cauliflower) ,6.44,M,H,M
-Brgy. San Roque,Koliflower (Cauliflower) ,6.54,L,H,M
-Brgy. Banga,Koliflower (Cauliflower) ,7.17,H,M,M
-Brgy. Pangil,Koliflower (Cauliflower) ,6.57,L,H,L
-Brgy.Isabang,Koliflower (Cauliflower) ,7.28,H,H,H
-Brgy.Panglan,Koliflower (Cauliflower) ,6.01,H,M,M
-Brgy. Burgos,Koliflower (Cauliflower) ,6.99,H,H,L
-Brgy. Piit,Koliflower (Cauliflower) ,6.47,L,M,H
-Brgy.Botocan,Koliflower (Cauliflower) ,7.29,M,L,M
-Brgy.Rizal,Koliflower (Cauliflower) ,7.3,L,L,H
-Brgy. Gagalot  Purok 2,Koliflower (Cauliflower) ,6.55,L,M,M
-Brgy.Talortor,Koliflower (Cauliflower) ,5.94,M,L,L
-Brgy. Pangil,Koliflower (Cauliflower) ,7.27,L,M,H
-Brgy.May-It,Koliflower (Cauliflower) ,6.19,M,H,M
-Brgy. Suba,Koliflower (Cauliflower) ,6.73,L,M,M
-Brgy. Coralao,Koliflower (Cauliflower) ,6.55,M,H,H
-Brgy.Panalaban,Koliflower (Cauliflower) ,6.24,L,M,M
-Brgy. Munting Kawayan,Koliflower (Cauliflower) ,6.02,M,L,L
-Brgy.May-It,Koliflower (Cauliflower) ,7.36,M,L,L
-Brgy.Panalaban,Koliflower (Cauliflower) ,5.53,L,H,M
-Brgy. Oobi,Koliflower (Cauliflower) ,7.39,M,M,H
-Brgy.Pook,Koliflower (Cauliflower) ,7.06,M,L,H
-Brgy.Botocan,Koliflower (Cauliflower) ,5.53,H,L,H
-Brgy. Bukal,Koliflower (Cauliflower) ,5.99,L,M,M
-Brgy. Banga,Koliflower (Cauliflower) ,6.42,H,L,H
-Brgy.San Isidro,Koliflower (Cauliflower) ,6.23,L,H,L
-Brgy.Talortor,Koliflower (Cauliflower) ,5.77,H,L,L
-Brgy.May-It,Koliflower (Cauliflower) ,5.59,L,L,H
-Brgy. Gagalot  Purok 2,Koliflower (Cauliflower) ,5.72,L,H,L
-Brgy. Bukal,Koliflower (Cauliflower) ,6.27,M,L,L
-Brgy.Bitaoy,Koliflower (Cauliflower) ,6.73,H,M,L
-Brgy.Bayucain,Koliflower (Cauliflower) ,6.24,L,H,L
-Brgy.Banti,Koliflower (Cauliflower) ,7.41,M,L,H
-Brgy.San Isidro,Koliflower (Cauliflower) ,6.45,H,H,H
-Brgy.Bayucain,Koliflower (Cauliflower) ,5.67,L,M,H
-Brgy.Panglan,Koliflower (Cauliflower) ,5.86,M,M,L
-Brgy. Olla,Koliflower (Cauliflower) ,7.36,M,M,L
-Brgy. Suba,Koliflower (Cauliflower) ,5.89,L,M,H
-Brgy.Panglan,Koliflower (Cauliflower) ,6.51,L,M,L
-Brgy.May-It,Koliflower (Cauliflower) ,6.97,L,H,M
-Brgy. Bukal,Koliflower (Cauliflower) ,6.66,H,M,H
-Brgy. Munting Kawayan,Koliflower (Cauliflower) ,6.96,M,L,H
-Brgy.Burol,Koliflower (Cauliflower) ,7.17,L,H,M
-Brgy.Talortor,Koliflower (Cauliflower) ,5.81,H,H,H
-Brgy. Taytay,Koliflower (Cauliflower) ,6.54,M,H,L
-Brgy.Botocan,Koliflower (Cauliflower) ,6.37,M,M,H
-Brgy.Panalaban,Koliflower (Cauliflower) ,6.37,M,L,H
-Brgy.Pook,Koliflower (Cauliflower) ,7.24,L,H,L
-Brgy.Panglan,Koliflower (Cauliflower) ,6.33,H,L,M
-Brgy.Balanac,Koliflower (Cauliflower) ,6.46,M,L,H
-Brgy. Burgos,Koliflower (Cauliflower) ,6.46,L,M,H
-Brgy. Taytay,Koliflower (Cauliflower) ,5.6,L,H,H
-Brgy. Oobi,Koliflower (Cauliflower) ,7.16,H,M,H
-Brgy. Bukal,Koliflower (Cauliflower) ,6.29,M,L,H
-Brgy.Rizal,Koliflower (Cauliflower) ,7.06,M,L,L
-Brgy. Oobi,Koliflower (Cauliflower) ,7.26,M,L,M
-Brgy.May-It,Koliflower (Cauliflower) ,7.02,H,M,M
-Brgy. Balayong,Koliflower (Cauliflower) ,7.34,L,L,M
-Brgy. Balayong,Koliflower (Cauliflower) ,5.92,L,L,M
-Brgy.Balanac,Koliflower (Cauliflower) ,6.19,H,H,L
-Brgy.Panalaban,Koliflower (Cauliflower) ,5.75,H,H,L
-Brgy.Burol,Koliflower (Cauliflower) ,7.01,M,H,L
-Brgy. Taytay,Koliflower (Cauliflower) ,6.92,L,H,L
-Brgy. Coralao,Koliflower (Cauliflower) ,6.26,L,H,L
-Brgy.Panglan,Koliflower (Cauliflower) ,6.44,M,M,M
-Brgy.Balanac,Koliflower (Cauliflower) ,6.85,L,M,M
-Brgy.Banti,Koliflower (Cauliflower) ,6.77,H,H,M
-Brgy.Isabang,Koliflower (Cauliflower) ,6.79,M,M,M
-Brgy.Burol,Koliflower (Cauliflower) ,7.36,H,H,L
-Brgy. Banga,Koliflower (Cauliflower) ,5.76,M,M,L
-Brgy.Banti,Koliflower (Cauliflower) ,6.88,M,M,M
-Brgy. Suba,Koliflower (Cauliflower) ,5.56,L,M,H
-Brgy. Amonoy,Koliflower (Cauliflower) ,7.33,H,M,L
-Brgy. Pangil,Koliflower (Cauliflower) ,7.43,M,H,H
-Brgy. San Roque,Koliflower (Cauliflower) ,6.34,M,M,L
-Brgy. Gagalot  Purok 3,Koliflower (Cauliflower) ,5.78,M,L,H
-Brgy. San Roque,Koliflower (Cauliflower) ,6.5,L,H,M
-Brgy.Tanawan,Koliflower (Cauliflower) ,6.03,L,M,L
-Brgy. Olla,Koliflower (Cauliflower) ,6.32,L,M,L
-Brgy. Burgos,Koliflower (Cauliflower) ,6.94,M,M,M
-Brgy.Tanawan,Koliflower (Cauliflower) ,5.89,M,L,L
-Brgy.May-It,Koliflower (Cauliflower) ,5.85,H,L,H
-Brgy.Pook,Koliflower (Cauliflower) ,5.58,M,L,L
-Brgy. Piit,Koliflower (Cauliflower) ,6.62,H,L,L
-Brgy. Suba,Koliflower (Cauliflower) ,6.94,L,L,L
-Brgy. Piit,Koliflower (Cauliflower) ,5.64,L,M,L
-Brgy.Talortor,Koliflower (Cauliflower) ,7.23,M,H,M
-Brgy.Talortor,Koliflower (Cauliflower) ,6.49,H,H,L
-Brgy. Banga,Koliflower (Cauliflower) ,6,L,L,H
-Brgy.Botocan,Koliflower (Cauliflower) ,5.56,L,M,H
-Brgy. San Roque,Koliflower (Cauliflower) ,6.24,L,M,L
-Brgy. Gagalot  Purok 3,Koliflower (Cauliflower) ,5.94,L,H,L
-Brgy. Oobi,Koliflower (Cauliflower) ,6.99,H,M,H
-Brgy. Balayong,Koliflower (Cauliflower) ,7.2,L,M,L
-Brgy. Munting Kawayan,Koliflower (Cauliflower) ,6.25,M,H,L
-Brgy.Botocan,Koliflower (Cauliflower) ,6.47,M,H,M
-Brgy. Burgos,Koliflower (Cauliflower) ,6.7,H,M,M
-Brgy. Amonoy,Koliflower (Cauliflower) ,6.9,M,M,M
-Brgy.Panglan,Koliflower (Cauliflower) ,6,L,M,L
-Brgy.Talortor,Koliflower (Cauliflower) ,7.37,H,H,M
-Brgy.Panalaban,Koliflower (Cauliflower) ,7.18,H,H,L
-Brgy. Malinao,Koliflower (Cauliflower) ,5.76,M,H,L
-Brgy.Tanawan,Koliflower (Cauliflower) ,5.53,L,H,H
-Brgy. Burgos,Koliflower (Cauliflower) ,6.34,L,M,H
-Brgy.Isabang,Koliflower (Cauliflower) ,7.45,H,H,H
-Brgy.Balanac,Koliflower (Cauliflower) ,5.84,H,H,L
-Brgy. Banga,Koliflower (Cauliflower) ,5.55,H,M,L
-Brgy. Gagalot  Purok 2,Koliflower (Cauliflower) ,7.49,H,H,H
-Brgy.Talortor,Koliflower (Cauliflower) ,7.33,M,L,M
-Brgy.Talortor,Koliflower (Cauliflower) ,6.02,M,L,M
-Brgy. Amonoy,Koliflower (Cauliflower) ,5.61,M,M,H
-Brgy. Banga,Koliflower (Cauliflower) ,6.41,H,L,H
-Brgy. Oobi,Koliflower (Cauliflower) ,5.62,L,L,H
-Brgy.Talortor,Koliflower (Cauliflower) ,6.71,L,M,M
-Brgy.May-It,Koliflower (Cauliflower) ,7.1,M,L,L
-Brgy.Bayucain,Koliflower (Cauliflower) ,7.1,H,L,L
-Brgy. Burgos,Koliflower (Cauliflower) ,7.31,M,H,H
-Brgy. Munting Kawayan,Koliflower (Cauliflower) ,7.4,L,M,L
-Brgy.Rizal,Koliflower (Cauliflower) ,7.45,H,M,L
-Brgy. San Roque,Koliflower (Cauliflower) ,6.31,L,H,M
-Brgy. Malinao,Koliflower (Cauliflower) ,5.71,L,H,H
-Brgy. Burgos,Koliflower (Cauliflower) ,5.85,M,L,L
-Brgy.Bitaoy,Koliflower (Cauliflower) ,6.85,H,M,M
-Brgy. Munting Kawayan,Koliflower (Cauliflower) ,5.93,M,L,L
-Brgy.Bayucain,Koliflower (Cauliflower) ,5.66,M,M,M
-Brgy. Burgos,Koliflower (Cauliflower) ,5.52,M,H,H
-Brgy.May-It,Koliflower (Cauliflower) ,7.11,H,L,M
-Brgy. Suba,Koliflower (Cauliflower) ,6.06,L,H,H
-Brgy. Olla,Koliflower (Cauliflower) ,6.06,L,M,H
-Brgy. Munting Kawayan,Koliflower (Cauliflower) ,6.15,L,H,M
-Brgy.May-It,Koliflower (Cauliflower) ,6.84,H,H,H
-Brgy.Rizal,Koliflower (Cauliflower) ,5.89,M,M,M
-Brgy.Tanawan,Koliflower (Cauliflower) ,6.11,M,H,M
-Brgy.Botocan,Koliflower (Cauliflower) ,7.38,L,L,M
-Brgy. Oobi,Koliflower (Cauliflower) ,6.18,M,L,M
-Brgy.Burol,Koliflower (Cauliflower) ,7.02,H,M,L
-Brgy.Balanac,Koliflower (Cauliflower) ,5.88,L,H,M
-Brgy. Oobi,Koliflower (Cauliflower) ,5.86,L,H,M
-Brgy. Taytay,Koliflower (Cauliflower) ,6.83,L,M,H
-Brgy. Taytay,Koliflower (Cauliflower) ,6.86,H,H,L
-Brgy. Pangil,Koliflower (Cauliflower) ,5.9,M,L,H
-Brgy. Burgos,Koliflower (Cauliflower) ,6.65,M,L,H
-Brgy.Tanawan,Koliflower (Cauliflower) ,7.4,H,M,H
-Brgy. Balayong,Koliflower (Cauliflower) ,6.73,M,M,L
-Brgy. Malinao,Koliflower (Cauliflower) ,6.62,L,L,L
-Brgy.Bitaoy,Koliflower (Cauliflower) ,6.92,L,H,M
-Brgy.Burol,Koliflower (Cauliflower) ,6.51,H,M,M
-Brgy. Malinao,Koliflower (Cauliflower) ,6.89,H,L,M
-Brgy.Bitaoy,Koliflower (Cauliflower) ,7.26,L,M,L
-Brgy.Tanawan,Koliflower (Cauliflower) ,6.27,L,H,L
-Brgy. Balayong,Koliflower (Cauliflower) ,6.04,M,L,M
-Brgy.Panglan,Koliflower (Cauliflower) ,7.03,L,H,L
-Brgy. Balayong,Koliflower (Cauliflower) ,5.79,L,L,M
-Brgy.Bitaoy,Koliflower (Cauliflower) ,6.64,M,H,M
-Brgy.Talortor,Koliflower (Cauliflower) ,7.39,L,H,H
-Brgy. Bukal,Koliflower (Cauliflower) ,6.65,H,M,M
-Brgy.Bitaoy,Koliflower (Cauliflower) ,6.19,H,H,H
-Brgy.Talortor,Koliflower (Cauliflower) ,6.54,L,H,H
-Brgy.Tanawan,Koliflower (Cauliflower) ,7.48,H,H,L
-Brgy. Gagalot  Purok 2,Koliflower (Cauliflower) ,5.54,H,H,M
-Brgy.Tanawan,Koliflower (Cauliflower) ,6.15,M,L,M
-Brgy.San Isidro,Koliflower (Cauliflower) ,6.57,M,L,M
-Brgy. Balayong,Koliflower (Cauliflower) ,6.77,L,H,L
-Brgy. Gagalot  Purok 3,Koliflower (Cauliflower) ,5.56,H,H,M
-Brgy.Botocan,Koliflower (Cauliflower) ,6.94,H,L,L
-Brgy.San Isidro,Koliflower (Cauliflower) ,6.15,L,M,M
-Brgy. Pangil,Koliflower (Cauliflower) ,5.92,H,L,H
-Brgy. Bukal,Koliflower (Cauliflower) ,5.61,L,M,H
-Brgy.Isabang,Koliflower (Cauliflower) ,5.97,M,L,H
-Brgy. San Roque,Koliflower (Cauliflower) ,5.7,M,L,M
-Brgy.Botocan,Koliflower (Cauliflower) ,6.95,L,M,H
-Brgy.Panglan,Koliflower (Cauliflower) ,5.64,L,L,H
-Brgy. Taytay,Koliflower (Cauliflower) ,6.57,L,L,M
-Brgy. Munting Kawayan,Koliflower (Cauliflower) ,7.23,H,L,H
-Brgy. Amonoy,Koliflower (Cauliflower) ,7.03,L,L,L
-Brgy.San Isidro,Koliflower (Cauliflower) ,6.65,H,L,L
-Brgy. Pangil,Koliflower (Cauliflower) ,6.57,L,H,M
-Brgy. Piit,Koliflower (Cauliflower) ,7.46,M,H,H
-Brgy.Bitaoy,Koliflower (Cauliflower) ,6.27,L,L,H
-Brgy. Pangil,Koliflower (Cauliflower) ,7.29,H,H,H
-Brgy.Rizal,Koliflower (Cauliflower) ,6.94,L,H,H
-Brgy.Bitaoy,Koliflower (Cauliflower) ,6.91,M,L,L
-Brgy.May-It,Koliflower (Cauliflower) ,5.67,M,M,L
-Brgy. Gagalot  Purok 2,Koliflower (Cauliflower) ,6.97,H,L,M
-Brgy. Burgos,Koliflower (Cauliflower) ,6.91,M,H,L
-Brgy.Pook,Koliflower (Cauliflower) ,6.03,L,L,L
-Brgy. Gagalot  Purok 2,Koliflower (Cauliflower) ,5.92,H,H,M
-Brgy. Suba,Koliflower (Cauliflower) ,6.86,M,H,H
-Brgy.Banti,Koliflower (Cauliflower) ,6.02,H,M,M
-Brgy.Banti,Koliflower (Cauliflower) ,5.65,M,L,M
-Brgy.Burol,Koliflower (Cauliflower) ,6.69,L,H,L
-Brgy. Oobi,Koliflower (Cauliflower) ,5.76,L,M,H
-Brgy.Isabang,Koliflower (Cauliflower) ,7.03,L,H,L
-Brgy.Bitaoy,Koliflower (Cauliflower) ,6.8,L,L,L
-Brgy. San Roque,Koliflower (Cauliflower) ,6.35,M,M,H
-Brgy.Bayucain,Koliflower (Cauliflower) ,6.26,M,M,M
-Brgy. Malinao,Koliflower (Cauliflower) ,5.67,M,M,M
-Brgy.Pook,Koliflower (Cauliflower) ,7.33,M,H,L
-Brgy.Bayucain,Koliflower (Cauliflower) ,5.77,L,L,M
+Brgy.Tanawan,Koliflower (Cauliflower),6.44,M,H,M
+Brgy. San Roque,Koliflower (Cauliflower),6.54,L,H,M
+Brgy. Banga,Koliflower (Cauliflower),7.17,H,M,M
+Brgy. Pangil,Koliflower (Cauliflower),6.57,L,H,L
+Brgy.Isabang,Koliflower (Cauliflower),7.28,H,H,H
+Brgy.Panglan,Koliflower (Cauliflower),6.01,H,M,M
+Brgy. Burgos,Koliflower (Cauliflower),6.99,H,H,L
+Brgy. Piit,Koliflower (Cauliflower),6.47,L,M,H
+Brgy.Botocan,Koliflower (Cauliflower),7.29,M,L,M
+Brgy.Rizal,Koliflower (Cauliflower),7.3,L,L,H
+Brgy. Gagalot  Purok 2,Koliflower (Cauliflower),6.55,L,M,M
+Brgy.Talortor,Koliflower (Cauliflower),5.94,M,L,L
+Brgy. Pangil,Koliflower (Cauliflower),7.27,L,M,H
+Brgy.May-It,Koliflower (Cauliflower),6.19,M,H,M
+Brgy. Suba,Koliflower (Cauliflower),6.73,L,M,M
+Brgy. Coralao,Koliflower (Cauliflower),6.55,M,H,H
+Brgy.Panalaban,Koliflower (Cauliflower),6.24,L,M,M
+Brgy. Munting Kawayan,Koliflower (Cauliflower),6.02,M,L,L
+Brgy.May-It,Koliflower (Cauliflower),7.36,M,L,L
+Brgy.Panalaban,Koliflower (Cauliflower),5.53,L,H,M
+Brgy. Oobi,Koliflower (Cauliflower),7.39,M,M,H
+Brgy.Pook,Koliflower (Cauliflower),7.06,M,L,H
+Brgy.Botocan,Koliflower (Cauliflower),5.53,H,L,H
+Brgy. Bukal,Koliflower (Cauliflower),5.99,L,M,M
+Brgy. Banga,Koliflower (Cauliflower),6.42,H,L,H
+Brgy.San Isidro,Koliflower (Cauliflower),6.23,L,H,L
+Brgy.Talortor,Koliflower (Cauliflower),5.77,H,L,L
+Brgy.May-It,Koliflower (Cauliflower),5.59,L,L,H
+Brgy. Gagalot  Purok 2,Koliflower (Cauliflower),5.72,L,H,L
+Brgy. Bukal,Koliflower (Cauliflower),6.27,M,L,L
+Brgy.Bitaoy,Koliflower (Cauliflower),6.73,H,M,L
+Brgy.Bayucain,Koliflower (Cauliflower),6.24,L,H,L
+Brgy.Banti,Koliflower (Cauliflower),7.41,M,L,H
+Brgy.San Isidro,Koliflower (Cauliflower),6.45,H,H,H
+Brgy.Bayucain,Koliflower (Cauliflower),5.67,L,M,H
+Brgy.Panglan,Koliflower (Cauliflower),5.86,M,M,L
+Brgy. Olla,Koliflower (Cauliflower),7.36,M,M,L
+Brgy. Suba,Koliflower (Cauliflower),5.89,L,M,H
+Brgy.Panglan,Koliflower (Cauliflower),6.51,L,M,L
+Brgy.May-It,Koliflower (Cauliflower),6.97,L,H,M
+Brgy. Bukal,Koliflower (Cauliflower),6.66,H,M,H
+Brgy. Munting Kawayan,Koliflower (Cauliflower),6.96,M,L,H
+Brgy.Burol,Koliflower (Cauliflower),7.17,L,H,M
+Brgy.Talortor,Koliflower (Cauliflower),5.81,H,H,H
+Brgy. Taytay,Koliflower (Cauliflower),6.54,M,H,L
+Brgy.Botocan,Koliflower (Cauliflower),6.37,M,M,H
+Brgy.Panalaban,Koliflower (Cauliflower),6.37,M,L,H
+Brgy.Pook,Koliflower (Cauliflower),7.24,L,H,L
+Brgy.Panglan,Koliflower (Cauliflower),6.33,H,L,M
+Brgy.Balanac,Koliflower (Cauliflower),6.46,M,L,H
+Brgy. Burgos,Koliflower (Cauliflower),6.46,L,M,H
+Brgy. Taytay,Koliflower (Cauliflower),5.6,L,H,H
+Brgy. Oobi,Koliflower (Cauliflower),7.16,H,M,H
+Brgy. Bukal,Koliflower (Cauliflower),6.29,M,L,H
+Brgy.Rizal,Koliflower (Cauliflower),7.06,M,L,L
+Brgy. Oobi,Koliflower (Cauliflower),7.26,M,L,M
+Brgy.May-It,Koliflower (Cauliflower),7.02,H,M,M
+Brgy. Balayong,Koliflower (Cauliflower),7.34,L,L,M
+Brgy. Balayong,Koliflower (Cauliflower),5.92,L,L,M
+Brgy.Balanac,Koliflower (Cauliflower),6.19,H,H,L
+Brgy.Panalaban,Koliflower (Cauliflower),5.75,H,H,L
+Brgy.Burol,Koliflower (Cauliflower),7.01,M,H,L
+Brgy. Taytay,Koliflower (Cauliflower),6.92,L,H,L
+Brgy. Coralao,Koliflower (Cauliflower),6.26,L,H,L
+Brgy.Panglan,Koliflower (Cauliflower),6.44,M,M,M
+Brgy.Balanac,Koliflower (Cauliflower),6.85,L,M,M
+Brgy.Banti,Koliflower (Cauliflower),6.77,H,H,M
+Brgy.Isabang,Koliflower (Cauliflower),6.79,M,M,M
+Brgy.Burol,Koliflower (Cauliflower),7.36,H,H,L
+Brgy. Banga,Koliflower (Cauliflower),5.76,M,M,L
+Brgy.Banti,Koliflower (Cauliflower),6.88,M,M,M
+Brgy. Suba,Koliflower (Cauliflower),5.56,L,M,H
+Brgy. Amonoy,Koliflower (Cauliflower),7.33,H,M,L
+Brgy. Pangil,Koliflower (Cauliflower),7.43,M,H,H
+Brgy. San Roque,Koliflower (Cauliflower),6.34,M,M,L
+Brgy. Gagalot  Purok 3,Koliflower (Cauliflower),5.78,M,L,H
+Brgy. San Roque,Koliflower (Cauliflower),6.5,L,H,M
+Brgy.Tanawan,Koliflower (Cauliflower),6.03,L,M,L
+Brgy. Olla,Koliflower (Cauliflower),6.32,L,M,L
+Brgy. Burgos,Koliflower (Cauliflower),6.94,M,M,M
+Brgy.Tanawan,Koliflower (Cauliflower),5.89,M,L,L
+Brgy.May-It,Koliflower (Cauliflower),5.85,H,L,H
+Brgy.Pook,Koliflower (Cauliflower),5.58,M,L,L
+Brgy. Piit,Koliflower (Cauliflower),6.62,H,L,L
+Brgy. Suba,Koliflower (Cauliflower),6.94,L,L,L
+Brgy. Piit,Koliflower (Cauliflower),5.64,L,M,L
+Brgy.Talortor,Koliflower (Cauliflower),7.23,M,H,M
+Brgy.Talortor,Koliflower (Cauliflower),6.49,H,H,L
+Brgy. Banga,Koliflower (Cauliflower),6.0,L,L,H
+Brgy.Botocan,Koliflower (Cauliflower),5.56,L,M,H
+Brgy. San Roque,Koliflower (Cauliflower),6.24,L,M,L
+Brgy. Gagalot  Purok 3,Koliflower (Cauliflower),5.94,L,H,L
+Brgy. Oobi,Koliflower (Cauliflower),6.99,H,M,H
+Brgy. Balayong,Koliflower (Cauliflower),7.2,L,M,L
+Brgy. Munting Kawayan,Koliflower (Cauliflower),6.25,M,H,L
+Brgy.Botocan,Koliflower (Cauliflower),6.47,M,H,M
+Brgy. Burgos,Koliflower (Cauliflower),6.7,H,M,M
+Brgy. Amonoy,Koliflower (Cauliflower),6.9,M,M,M
+Brgy.Panglan,Koliflower (Cauliflower),6.0,L,M,L
+Brgy.Talortor,Koliflower (Cauliflower),7.37,H,H,M
+Brgy.Panalaban,Koliflower (Cauliflower),7.18,H,H,L
+Brgy. Malinao,Koliflower (Cauliflower),5.76,M,H,L
+Brgy.Tanawan,Koliflower (Cauliflower),5.53,L,H,H
+Brgy. Burgos,Koliflower (Cauliflower),6.34,L,M,H
+Brgy.Isabang,Koliflower (Cauliflower),7.45,H,H,H
+Brgy.Balanac,Koliflower (Cauliflower),5.84,H,H,L
+Brgy. Banga,Koliflower (Cauliflower),5.55,H,M,L
+Brgy. Gagalot  Purok 2,Koliflower (Cauliflower),7.49,H,H,H
+Brgy.Talortor,Koliflower (Cauliflower),7.33,M,L,M
+Brgy.Talortor,Koliflower (Cauliflower),6.02,M,L,M
+Brgy. Amonoy,Koliflower (Cauliflower),5.61,M,M,H
+Brgy. Banga,Koliflower (Cauliflower),6.41,H,L,H
+Brgy. Oobi,Koliflower (Cauliflower),5.62,L,L,H
+Brgy.Talortor,Koliflower (Cauliflower),6.71,L,M,M
+Brgy.May-It,Koliflower (Cauliflower),7.1,M,L,L
+Brgy.Bayucain,Koliflower (Cauliflower),7.1,H,L,L
+Brgy. Burgos,Koliflower (Cauliflower),7.31,M,H,H
+Brgy. Munting Kawayan,Koliflower (Cauliflower),7.4,L,M,L
+Brgy.Rizal,Koliflower (Cauliflower),7.45,H,M,L
+Brgy. San Roque,Koliflower (Cauliflower),6.31,L,H,M
+Brgy. Malinao,Koliflower (Cauliflower),5.71,L,H,H
+Brgy. Burgos,Koliflower (Cauliflower),5.85,M,L,L
+Brgy.Bitaoy,Koliflower (Cauliflower),6.85,H,M,M
+Brgy. Munting Kawayan,Koliflower (Cauliflower),5.93,M,L,L
+Brgy.Bayucain,Koliflower (Cauliflower),5.66,M,M,M
+Brgy. Burgos,Koliflower (Cauliflower),5.52,M,H,H
+Brgy.May-It,Koliflower (Cauliflower),7.11,H,L,M
+Brgy. Suba,Koliflower (Cauliflower),6.06,L,H,H
+Brgy. Olla,Koliflower (Cauliflower),6.06,L,M,H
+Brgy. Munting Kawayan,Koliflower (Cauliflower),6.15,L,H,M
+Brgy.May-It,Koliflower (Cauliflower),6.84,H,H,H
+Brgy.Rizal,Koliflower (Cauliflower),5.89,M,M,M
+Brgy.Tanawan,Koliflower (Cauliflower),6.11,M,H,M
+Brgy.Botocan,Koliflower (Cauliflower),7.38,L,L,M
+Brgy. Oobi,Koliflower (Cauliflower),6.18,M,L,M
+Brgy.Burol,Koliflower (Cauliflower),7.02,H,M,L
+Brgy.Balanac,Koliflower (Cauliflower),5.88,L,H,M
+Brgy. Oobi,Koliflower (Cauliflower),5.86,L,H,M
+Brgy. Taytay,Koliflower (Cauliflower),6.83,L,M,H
+Brgy. Taytay,Koliflower (Cauliflower),6.86,H,H,L
+Brgy. Pangil,Koliflower (Cauliflower),5.9,M,L,H
+Brgy. Burgos,Koliflower (Cauliflower),6.65,M,L,H
+Brgy.Tanawan,Koliflower (Cauliflower),7.4,H,M,H
+Brgy. Balayong,Koliflower (Cauliflower),6.73,M,M,L
+Brgy. Malinao,Koliflower (Cauliflower),6.62,L,L,L
+Brgy.Bitaoy,Koliflower (Cauliflower),6.92,L,H,M
+Brgy.Burol,Koliflower (Cauliflower),6.51,H,M,M
+Brgy. Malinao,Koliflower (Cauliflower),6.89,H,L,M
+Brgy.Bitaoy,Koliflower (Cauliflower),7.26,L,M,L
+Brgy.Tanawan,Koliflower (Cauliflower),6.27,L,H,L
+Brgy. Balayong,Koliflower (Cauliflower),6.04,M,L,M
+Brgy.Panglan,Koliflower (Cauliflower),7.03,L,H,L
+Brgy. Balayong,Koliflower (Cauliflower),5.79,L,L,M
+Brgy.Bitaoy,Koliflower (Cauliflower),6.64,M,H,M
+Brgy.Talortor,Koliflower (Cauliflower),7.39,L,H,H
+Brgy. Bukal,Koliflower (Cauliflower),6.65,H,M,M
+Brgy.Bitaoy,Koliflower (Cauliflower),6.19,H,H,H
+Brgy.Talortor,Koliflower (Cauliflower),6.54,L,H,H
+Brgy.Tanawan,Koliflower (Cauliflower),7.48,H,H,L
+Brgy. Gagalot  Purok 2,Koliflower (Cauliflower),5.54,H,H,M
+Brgy.Tanawan,Koliflower (Cauliflower),6.15,M,L,M
+Brgy.San Isidro,Koliflower (Cauliflower),6.57,M,L,M
+Brgy. Balayong,Koliflower (Cauliflower),6.77,L,H,L
+Brgy. Gagalot  Purok 3,Koliflower (Cauliflower),5.56,H,H,M
+Brgy.Botocan,Koliflower (Cauliflower),6.94,H,L,L
+Brgy.San Isidro,Koliflower (Cauliflower),6.15,L,M,M
+Brgy. Pangil,Koliflower (Cauliflower),5.92,H,L,H
+Brgy. Bukal,Koliflower (Cauliflower),5.61,L,M,H
+Brgy.Isabang,Koliflower (Cauliflower),5.97,M,L,H
+Brgy. San Roque,Koliflower (Cauliflower),5.7,M,L,M
+Brgy.Botocan,Koliflower (Cauliflower),6.95,L,M,H
+Brgy.Panglan,Koliflower (Cauliflower),5.64,L,L,H
+Brgy. Taytay,Koliflower (Cauliflower),6.57,L,L,M
+Brgy. Munting Kawayan,Koliflower (Cauliflower),7.23,H,L,H
+Brgy. Amonoy,Koliflower (Cauliflower),7.03,L,L,L
+Brgy.San Isidro,Koliflower (Cauliflower),6.65,H,L,L
+Brgy. Pangil,Koliflower (Cauliflower),6.57,L,H,M
+Brgy. Piit,Koliflower (Cauliflower),7.46,M,H,H
+Brgy.Bitaoy,Koliflower (Cauliflower),6.27,L,L,H
+Brgy. Pangil,Koliflower (Cauliflower),7.29,H,H,H
+Brgy.Rizal,Koliflower (Cauliflower),6.94,L,H,H
+Brgy.Bitaoy,Koliflower (Cauliflower),6.91,M,L,L
+Brgy.May-It,Koliflower (Cauliflower),5.67,M,M,L
+Brgy. Gagalot  Purok 2,Koliflower (Cauliflower),6.97,H,L,M
+Brgy. Burgos,Koliflower (Cauliflower),6.91,M,H,L
+Brgy.Pook,Koliflower (Cauliflower),6.03,L,L,L
+Brgy. Gagalot  Purok 2,Koliflower (Cauliflower),5.92,H,H,M
+Brgy. Suba,Koliflower (Cauliflower),6.86,M,H,H
+Brgy.Banti,Koliflower (Cauliflower),6.02,H,M,M
+Brgy.Banti,Koliflower (Cauliflower),5.65,M,L,M
+Brgy.Burol,Koliflower (Cauliflower),6.69,L,H,L
+Brgy. Oobi,Koliflower (Cauliflower),5.76,L,M,H
+Brgy.Isabang,Koliflower (Cauliflower),7.03,L,H,L
+Brgy.Bitaoy,Koliflower (Cauliflower),6.8,L,L,L
+Brgy. San Roque,Koliflower (Cauliflower),6.35,M,M,H
+Brgy.Bayucain,Koliflower (Cauliflower),6.26,M,M,M
+Brgy. Malinao,Koliflower (Cauliflower),5.67,M,M,M
+Brgy.Pook,Koliflower (Cauliflower),7.33,M,H,L
+Brgy.Bayucain,Koliflower (Cauliflower),5.77,L,L,M
 Brgy.Tanawan,Litsugas (Lettuce),5.51,H,M,L
 Brgy. Munting Kawayan,Litsugas (Lettuce),7.38,H,M,M
 Brgy. Gagalot  Purok 2,Litsugas (Lettuce),6.15,H,M,M
@@ -3642,7 +3642,7 @@ Brgy.Rizal,Litsugas (Lettuce),5.57,M,L,M
 Brgy. Bukal,Litsugas (Lettuce),5.55,L,L,M
 Brgy.May-It,Litsugas (Lettuce),7.44,L,H,H
 Brgy. Banga,Litsugas (Lettuce),7.16,M,M,H
-Brgy.Burol,Litsugas (Lettuce),7,H,L,L
+Brgy.Burol,Litsugas (Lettuce),7.0,H,L,L
 Brgy. Amonoy,Litsugas (Lettuce),6.74,M,M,L
 Brgy. Burgos,Litsugas (Lettuce),6.85,H,H,H
 Brgy.Tanawan,Litsugas (Lettuce),7.07,L,L,H
@@ -3653,7 +3653,7 @@ Brgy. Munting Kawayan,Litsugas (Lettuce),5.89,M,H,L
 Brgy. Pangil,Litsugas (Lettuce),6.52,M,L,M
 Brgy. Gagalot  Purok 2,Litsugas (Lettuce),6.73,M,M,H
 Brgy. Banga,Litsugas (Lettuce),6.42,H,H,H
-Brgy. Taytay,Litsugas (Lettuce),7,L,L,L
+Brgy. Taytay,Litsugas (Lettuce),7.0,L,L,L
 Brgy. Oobi,Litsugas (Lettuce),5.78,M,L,H
 Brgy.Pook,Litsugas (Lettuce),6.75,L,H,M
 Brgy. Olla,Litsugas (Lettuce),6.44,H,L,H
@@ -3701,7 +3701,7 @@ Brgy.San Isidro,Litsugas (Lettuce),6.29,M,H,H
 Brgy.Isabang,Litsugas (Lettuce),5.79,M,L,M
 Brgy.Botocan,Litsugas (Lettuce),6.34,H,M,M
 Brgy.Botocan,Litsugas (Lettuce),6.87,M,M,L
-Brgy. Oobi,Litsugas (Lettuce),7,L,H,L
+Brgy. Oobi,Litsugas (Lettuce),7.0,L,H,L
 Brgy.Balanac,Litsugas (Lettuce),5.78,L,L,H
 Brgy. Piit,Litsugas (Lettuce),5.87,M,H,L
 Brgy. Amonoy,Litsugas (Lettuce),6.68,M,L,L
@@ -3726,7 +3726,7 @@ Brgy. San Roque,Upo (Bottle Gourd),6.1,L,M,L
 Brgy.Banti,Upo (Bottle Gourd),7.06,L,H,M
 Brgy.May-It,Upo (Bottle Gourd),6.9,H,L,M
 Brgy. Malinao,Upo (Bottle Gourd),5.7,L,M,H
-Brgy.Burol,Upo (Bottle Gourd),7,H,M,M
+Brgy.Burol,Upo (Bottle Gourd),7.0,H,M,M
 Brgy. Pangil,Upo (Bottle Gourd),7.23,H,H,M
 Brgy. Banga,Upo (Bottle Gourd),5.84,L,L,L
 Brgy. Gagalot  Purok 2,Upo (Bottle Gourd),6.69,L,M,M
@@ -3752,7 +3752,7 @@ Brgy.Panglan,Upo (Bottle Gourd),7.39,L,H,L
 Brgy. Olla,Upo (Bottle Gourd),6.04,H,L,L
 Brgy. Suba,Upo (Bottle Gourd),5.68,L,L,M
 Brgy. Banga,Upo (Bottle Gourd),7.04,H,L,H
-Brgy. Burgos,Upo (Bottle Gourd),6,M,M,L
+Brgy. Burgos,Upo (Bottle Gourd),6.0,M,M,L
 Brgy.Burol,Upo (Bottle Gourd),6.98,L,L,H
 Brgy.Balanac,Upo (Bottle Gourd),6.99,L,L,L
 Brgy. Suba,Upo (Bottle Gourd),7.37,M,H,L
@@ -3767,7 +3767,7 @@ Brgy.Burol,Upo (Bottle Gourd),5.63,H,H,L
 Brgy.Botocan,Upo (Bottle Gourd),6.4,H,M,H
 Brgy. Piit,Upo (Bottle Gourd),5.86,M,M,M
 Brgy.Burol,Upo (Bottle Gourd),7.12,M,M,H
-Brgy. Gagalot  Purok 2,Upo (Bottle Gourd),6,L,M,M
+Brgy. Gagalot  Purok 2,Upo (Bottle Gourd),6.0,L,M,M
 Brgy. Malinao,Upo (Bottle Gourd),6.14,M,M,L
 Brgy.Burol,Upo (Bottle Gourd),7.09,H,L,H
 Brgy. Burgos,Upo (Bottle Gourd),5.96,M,M,L
@@ -3877,7 +3877,7 @@ Brgy. Taytay,Upo (Bottle Gourd),7.15,M,M,M
 Brgy. Suba,Upo (Bottle Gourd),7.28,M,H,L
 Brgy. Bukal,Upo (Bottle Gourd),5.51,L,L,M
 Brgy.Rizal,Upo (Bottle Gourd),5.57,M,M,M
-Brgy.Bitaoy,Upo (Bottle Gourd),7,M,H,M
+Brgy.Bitaoy,Upo (Bottle Gourd),7.0,M,H,M
 Brgy.Pook,Upo (Bottle Gourd),6.62,M,L,L
 Brgy. Malinao,Upo (Bottle Gourd),6.5,H,L,L
 Brgy. Burgos,Upo (Bottle Gourd),7.19,L,L,L
@@ -4200,7 +4200,7 @@ Brgy.Burol,Labong (Bamboo Shoot),6.31,H,L,M
 Brgy.Panalaban,Labong (Bamboo Shoot),6.58,L,M,H
 Brgy.Panalaban,Labong (Bamboo Shoot),5.72,M,M,L
 Brgy. Pangil,Labong (Bamboo Shoot),6.33,H,M,H
-Brgy. Olla,Labong (Bamboo Shoot),6,H,L,L
+Brgy. Olla,Labong (Bamboo Shoot),6.0,H,L,L
 Brgy. San Roque,Labong (Bamboo Shoot),6.37,M,M,M
 Brgy.Bayucain,Labong (Bamboo Shoot),6.9,M,L,H
 Brgy. Piit,Labong (Bamboo Shoot),6.51,M,H,L
@@ -4320,7 +4320,7 @@ Brgy.Panalaban,Ampalaya (Bitter Gourd),7.2,M,H,M
 Brgy.Burol,Ampalaya (Bitter Gourd),6.46,M,H,M
 Brgy. Munting Kawayan,Ampalaya (Bitter Gourd),5.85,M,L,H
 Brgy. Gagalot  Purok 2,Ampalaya (Bitter Gourd),6.83,L,M,L
-Brgy. Banga,Ampalaya (Bitter Gourd),6,H,M,M
+Brgy. Banga,Ampalaya (Bitter Gourd),6.0,H,M,M
 Brgy. Burgos,Ampalaya (Bitter Gourd),5.85,H,M,H
 Brgy. Suba,Ampalaya (Bitter Gourd),5.67,L,H,L
 Brgy. Oobi,Ampalaya (Bitter Gourd),7.31,L,M,L
@@ -4493,7 +4493,7 @@ Brgy.Balanac,Ampalaya (Bitter Gourd),5.88,L,M,H
 Brgy. Coralao,Ampalaya (Bitter Gourd),5.65,L,M,H
 Brgy. Coralao,Ampalaya (Bitter Gourd),6.05,H,H,H
 Brgy. Gagalot  Purok 2,Siling-Tamban (Bell Pepper),5.87,H,M,M
-Brgy. Piit,Siling-Tamban (Bell Pepper),6,H,H,L
+Brgy. Piit,Siling-Tamban (Bell Pepper),6.0,H,H,L
 Brgy. Burgos,Siling-Tamban (Bell Pepper),5.88,M,M,L
 Brgy. Gagalot  Purok 3,Siling-Tamban (Bell Pepper),5.83,L,M,H
 Brgy. Taytay,Siling-Tamban (Bell Pepper),7.23,M,L,H
@@ -4780,7 +4780,7 @@ Brgy. Banga,Kamatis (Tomato),6.45,L,H,M
 Brgy.Rizal,Kamatis (Tomato),6.76,L,L,H
 Brgy. Bukal,Kamatis (Tomato),7.04,L,H,H
 Brgy.Panglan,Kamatis (Tomato),6.23,H,M,H
-Brgy. Balayong,Kamatis (Tomato),6,L,M,M
+Brgy. Balayong,Kamatis (Tomato),6.0,L,M,M
 Brgy. Olla,Kamatis (Tomato),6.34,M,H,H
 Brgy.Banti,Kamatis (Tomato),6.75,H,L,H
 Brgy.San Isidro,Kamatis (Tomato),7.34,L,H,H
@@ -4865,7 +4865,7 @@ Brgy.Talortor,Kamatis (Tomato),7.21,H,L,H
 Brgy.Botocan,Kamatis (Tomato),5.68,M,L,L
 Brgy. San Roque,Kamatis (Tomato),6.9,L,L,L
 Brgy. Gagalot  Purok 3,Kamatis (Tomato),6.09,H,H,M
-Brgy. Olla,Kamatis (Tomato),7,H,M,M
+Brgy. Olla,Kamatis (Tomato),7.0,H,M,M
 Brgy.Tanawan,Kamatis (Tomato),6.04,H,L,L
 Brgy. Oobi,Kamatis (Tomato),5.5,H,M,L
 Brgy.Burol,Kamatis (Tomato),6.24,M,L,M
@@ -4880,7 +4880,7 @@ Brgy. Taytay,Kamatis (Tomato),6.8,H,M,H
 Brgy.Tanawan,Kamatis (Tomato),7.28,M,M,M
 Brgy. Amonoy,Patani (Lima Bean),6.9,M,H,L
 Brgy. Burgos,Patani (Lima Bean),6.61,H,M,L
-Brgy. Malinao,Patani (Lima Bean),6,M,L,M
+Brgy. Malinao,Patani (Lima Bean),6.0,M,L,M
 Brgy.Rizal,Patani (Lima Bean),5.51,H,M,M
 Brgy. Burgos,Patani (Lima Bean),6.31,L,M,M
 Brgy. Oobi,Patani (Lima Bean),7.13,H,H,L
@@ -4933,7 +4933,7 @@ Brgy.Balanac,Patani (Lima Bean),6.39,M,L,M
 Brgy. Oobi,Patani (Lima Bean),5.96,M,L,L
 Brgy. Malinao,Patani (Lima Bean),6.44,M,M,L
 Brgy.Bitaoy,Patani (Lima Bean),6.77,M,L,L
-Brgy. Piit,Patani (Lima Bean),6,M,H,H
+Brgy. Piit,Patani (Lima Bean),6.0,M,H,H
 Brgy.Botocan,Patani (Lima Bean),6.37,L,H,H
 Brgy. Oobi,Patani (Lima Bean),7.13,H,H,L
 Brgy.Burol,Patani (Lima Bean),7.13,M,L,H
@@ -5171,8 +5171,8 @@ Brgy.Tanawan,Okra (Lady's Finger),5.92,H,L,L
 Brgy. Pangil,Okra (Lady's Finger),6.2,L,L,M
 Brgy. Coralao,Okra (Lady's Finger),6.71,H,L,M
 Brgy.Isabang,Okra (Lady's Finger),6.79,H,H,M
-Brgy. Balayong,Okra (Lady's Finger),7,L,M,L
-Brgy. Coralao,Okra (Lady's Finger),6,H,M,M
+Brgy. Balayong,Okra (Lady's Finger),7.0,L,M,L
+Brgy. Coralao,Okra (Lady's Finger),6.0,H,M,M
 Brgy.Rizal,Okra (Lady's Finger),5.99,M,L,L
 Brgy. Banga,Okra (Lady's Finger),7.38,L,M,L
 Brgy.Isabang,Okra (Lady's Finger),5.89,L,H,H
@@ -5248,7 +5248,7 @@ Brgy.Balanac,Okra (Lady's Finger),6.78,L,H,L
 Brgy.May-It,Okra (Lady's Finger),6.57,M,H,L
 Brgy. Gagalot  Purok 3,Okra (Lady's Finger),5.83,M,L,H
 Brgy.San Isidro,Okra (Lady's Finger),5.97,H,L,H
-Brgy.Panalaban,Okra (Lady's Finger),6,H,L,L
+Brgy.Panalaban,Okra (Lady's Finger),6.0,H,L,L
 Brgy.Balanac,Okra (Lady's Finger),6.91,M,H,L
 Brgy. Gagalot  Purok 3,Okra (Lady's Finger),5.54,L,M,M
 Brgy.Bayucain,Okra (Lady's Finger),6.53,L,L,M
@@ -5401,11 +5401,11 @@ Brgy. Munting Kawayan,Sibuyas (Onion),7.28,M,L,L
 Brgy. Malinao,Sibuyas (Onion),5.67,H,H,L
 Brgy.Bitaoy,Sibuyas (Onion),6.57,M,M,L
 Brgy.San Isidro,Sibuyas (Onion),7.25,H,M,M
-Brgy. Malinao,Sibuyas (Onion),7,L,H,L
+Brgy. Malinao,Sibuyas (Onion),7.0,L,H,L
 Brgy.Tanawan,Sibuyas (Onion),7.07,L,L,L
 Brgy.Isabang,Sibuyas (Onion),7.18,L,H,H
 Brgy. Munting Kawayan,Sibuyas (Onion),6.64,M,H,H
-Brgy. Bukal,Sibuyas (Onion),6,L,M,H
+Brgy. Bukal,Sibuyas (Onion),6.0,L,M,H
 Brgy. Piit,Sibuyas (Onion),6.48,M,H,L
 Brgy.Panglan,Sibuyas (Onion),6.28,H,H,M
 Brgy. Gagalot  Purok 3,Sibuyas (Onion),6.66,L,L,M
@@ -5710,7 +5710,7 @@ Brgy. Burgos,Kamoteng Kahoy (Cassava),6.99,L,M,H
 Brgy. San Roque,Kamoteng Kahoy (Cassava),5.84,H,H,H
 Brgy. Olla,Kamoteng Kahoy (Cassava),6.93,L,M,L
 Brgy. Olla,Kamoteng Kahoy (Cassava),7.36,H,M,M
-Brgy. Oobi,Kamoteng Kahoy (Cassava),6,M,L,L
+Brgy. Oobi,Kamoteng Kahoy (Cassava),6.0,M,L,L
 Brgy. Amonoy,Kamoteng Kahoy (Cassava),5.85,H,L,H
 Brgy.Isabang,Kamoteng Kahoy (Cassava),7.23,H,M,M
 Brgy.May-It,Kamoteng Kahoy (Cassava),7.1,L,M,H
@@ -5757,7 +5757,7 @@ Brgy. Olla,Kamoteng Kahoy (Cassava),6.77,M,H,M
 Brgy.Bitaoy,Kamoteng Kahoy (Cassava),6.35,M,H,H
 Brgy. Malinao,Kamoteng Kahoy (Cassava),5.71,M,H,H
 Brgy.Banti,Kamoteng Kahoy (Cassava),6.78,H,L,L
-Brgy.Burol,Kamoteng Kahoy (Cassava),7,L,L,L
+Brgy.Burol,Kamoteng Kahoy (Cassava),7.0,L,L,L
 Brgy.Botocan,Kamoteng Kahoy (Cassava),6.19,H,L,L
 Brgy. Bukal,Kamoteng Kahoy (Cassava),6.05,L,M,H
 Brgy. San Roque,Kamoteng Kahoy (Cassava),5.61,L,L,M
@@ -5768,7 +5768,7 @@ Brgy.Talortor,Kamoteng Kahoy (Cassava),7.35,L,L,L
 Brgy.Burol,Kamoteng Kahoy (Cassava),7.28,L,H,M
 Brgy. Balayong,Kamoteng Kahoy (Cassava),6.81,M,L,M
 Brgy. Malinao,Kamoteng Kahoy (Cassava),6.68,H,L,L
-Brgy.Talortor,Kamoteng Kahoy (Cassava),6,H,H,M
+Brgy.Talortor,Kamoteng Kahoy (Cassava),6.0,H,H,M
 Brgy. Gagalot  Purok 2,Kamoteng Kahoy (Cassava),5.84,L,H,L
 Brgy.Bayucain,Kamoteng Kahoy (Cassava),7.49,L,L,M
 Brgy. Olla,Kamoteng Kahoy (Cassava),7.37,M,L,M
@@ -5877,7 +5877,7 @@ Brgy. Taytay,Patatas (Potato),6.74,M,M,L
 Brgy. Olla,Patatas (Potato),6.75,H,H,L
 Brgy. Gagalot  Purok 3,Patatas (Potato),5.51,H,M,H
 Brgy.Pook,Patatas (Potato),6.71,H,M,M
-Brgy. Balayong,Patatas (Potato),6,H,H,H
+Brgy. Balayong,Patatas (Potato),6.0,H,H,H
 Brgy.San Isidro,Patatas (Potato),6.94,L,L,M
 Brgy.Talortor,Patatas (Potato),7.27,L,L,M
 Brgy. Balayong,Patatas (Potato),7.19,H,H,H
@@ -5899,7 +5899,7 @@ Brgy. Malinao,Patatas (Potato),6.98,M,M,H
 Brgy. Suba,Patatas (Potato),6.84,L,H,L
 Brgy.Banti,Patatas (Potato),6.11,H,L,M
 Brgy. San Roque,Patatas (Potato),5.57,L,H,H
-Brgy.Bayucain,Patatas (Potato),6,H,M,H
+Brgy.Bayucain,Patatas (Potato),6.0,H,M,H
 Brgy. Gagalot  Purok 3,Patatas (Potato),6.87,M,M,M
 Brgy. Burgos,Patatas (Potato),6.77,H,L,H
 Brgy. Oobi,Patatas (Potato),7.46,L,H,L
@@ -6012,7 +6012,7 @@ Brgy. Piit,Patatas (Potato),5.75,M,H,H
 Brgy.Banti,Patatas (Potato),6.42,L,H,H
 Brgy. Piit,Patatas (Potato),6.17,M,M,M
 Brgy. Malinao,Patatas (Potato),6.34,L,M,L
-Brgy.Balanac,Patatas (Potato),6,L,H,M
+Brgy.Balanac,Patatas (Potato),6.0,L,H,M
 Brgy.Botocan,Patatas (Potato),6.65,H,H,H
 Brgy.San Isidro,Patatas (Potato),7.19,L,M,H
 Brgy. Taytay,Patatas (Potato),6.89,L,L,L
@@ -6104,7 +6104,7 @@ Brgy.Isabang,Repolyo (Cabbage),5.82,L,M,H
 Brgy.Rizal,Repolyo (Cabbage),6.52,L,L,H
 Brgy.Burol,Repolyo (Cabbage),7.42,M,M,L
 Brgy.Bayucain,Repolyo (Cabbage),6.01,M,L,M
-Brgy. Burgos,Repolyo (Cabbage),7,H,L,H
+Brgy. Burgos,Repolyo (Cabbage),7.0,H,L,H
 Brgy.Panalaban,Repolyo (Cabbage),6.93,M,L,H
 Brgy.Rizal,Repolyo (Cabbage),5.64,L,L,M
 Brgy. Amonoy,Repolyo (Cabbage),6.91,H,H,H
@@ -6145,7 +6145,7 @@ Brgy. Munting Kawayan,Repolyo (Cabbage),7.3,M,H,H
 Brgy. Balayong,Repolyo (Cabbage),6.72,H,M,L
 Brgy. San Roque,Repolyo (Cabbage),6.35,L,H,L
 Brgy. San Roque,Repolyo (Cabbage),6.08,M,L,H
-Brgy.Panalaban,Repolyo (Cabbage),7,L,H,L
+Brgy.Panalaban,Repolyo (Cabbage),7.0,L,H,L
 Brgy.Burol,Repolyo (Cabbage),6.68,M,L,L
 Brgy. Suba,Repolyo (Cabbage),6.57,M,L,M
 Brgy. Burgos,Repolyo (Cabbage),6.62,L,M,M
@@ -6159,7 +6159,7 @@ Brgy. Piit,Repolyo (Cabbage),7.05,M,H,M
 Brgy. Malinao,Repolyo (Cabbage),5.87,L,L,H
 Brgy.Panglan,Repolyo (Cabbage),5.52,M,H,H
 Brgy. Munting Kawayan,Repolyo (Cabbage),5.92,M,L,L
-Brgy. Banga,Repolyo (Cabbage),7,L,H,L
+Brgy. Banga,Repolyo (Cabbage),7.0,L,H,L
 Brgy. Munting Kawayan,Repolyo (Cabbage),6.07,M,H,M
 Brgy.Panglan,Repolyo (Cabbage),7.33,M,L,M
 Brgy.Talortor,Repolyo (Cabbage),5.86,L,H,M
@@ -6291,7 +6291,7 @@ Brgy.Panglan,Pechay (Native),6.67,H,L,M
 Brgy. Gagalot  Purok 2,Pechay (Native),6.9,H,M,M
 Brgy.Rizal,Pechay (Native),6.51,M,H,H
 Brgy.Banti,Pechay (Native),6.66,H,H,H
-Brgy.Isabang,Pechay (Native),6,M,H,L
+Brgy.Isabang,Pechay (Native),6.0,M,H,L
 Brgy. Piit,Pechay (Native),6.27,L,H,M
 Brgy. Suba,Pechay (Native),7.07,M,H,H
 Brgy. Coralao,Pechay (Native),5.64,M,L,L
@@ -6328,7 +6328,7 @@ Brgy.Tanawan,Pechay (Native),6.98,L,H,M
 Brgy. Gagalot  Purok 2,Pechay (Native),5.66,L,H,M
 Brgy. Taytay,Pechay (Native),6.82,L,M,H
 Brgy.Balanac,Pechay (Native),6.43,L,H,M
-Brgy.Pook,Pechay (Native),6,L,H,H
+Brgy.Pook,Pechay (Native),6.0,L,H,H
 Brgy. Suba,Pechay (Native),5.53,L,M,L
 Brgy. Gagalot  Purok 2,Pechay (Native),6.6,L,H,L
 Brgy. Amonoy,Pechay (Native),6.52,H,M,L
@@ -6388,7 +6388,7 @@ Brgy.Panglan,Pechay (Native),7.01,L,L,H
 Brgy.Banti,Pechay (Native),7.31,L,L,H
 Brgy. Gagalot  Purok 3,Pechay (Native),6.74,L,L,H
 Brgy. Gagalot  Purok 2,Pechay (Native),6.77,L,H,L
-Brgy.San Isidro,Pechay (Native),7,L,H,L
+Brgy.San Isidro,Pechay (Native),7.0,L,H,L
 Brgy. Banga,Pechay (Native),5.8,L,H,M
 Brgy.Talortor,Pechay (Native),5.6,M,L,L
 Brgy. Bukal,Pechay (Native),6.64,L,L,M
@@ -6784,7 +6784,7 @@ Brgy. Suba,Siling Labuyo (Wild Chili),6.41,M,L,H
 Brgy. Taytay,Siling Labuyo (Wild Chili),6.56,L,H,M
 Brgy. Taytay,Siling Labuyo (Wild Chili),5.86,L,H,H
 Brgy. Amonoy,Siling Labuyo (Wild Chili),7.09,L,H,M
-Brgy. Taytay,Siling Labuyo (Wild Chili),6,M,M,H
+Brgy. Taytay,Siling Labuyo (Wild Chili),6.0,M,M,H
 Brgy.Tanawan,Siling Labuyo (Wild Chili),6.14,L,L,L
 Brgy. Oobi,Siling Labuyo (Wild Chili),7.42,M,M,H
 Brgy. Malinao,Siling Labuyo (Wild Chili),7.03,L,L,L
@@ -6912,7 +6912,7 @@ Brgy.Bayucain,Talong (Eggplant - Native),6.82,M,H,L
 Brgy. Munting Kawayan,Talong (Eggplant - Native),5.59,L,L,L
 Brgy. Gagalot  Purok 3,Talong (Eggplant - Native),6.97,M,H,L
 Brgy. Olla,Talong (Eggplant - Native),6.06,M,H,H
-Brgy. Gagalot  Purok 2,Talong (Eggplant - Native),6,M,M,M
+Brgy. Gagalot  Purok 2,Talong (Eggplant - Native),6.0,M,M,M
 Brgy.Talortor,Talong (Eggplant - Native),6.63,L,M,L
 Brgy. Piit,Talong (Eggplant - Native),7.25,H,H,M
 Brgy.Isabang,Talong (Eggplant - Native),7.04,H,M,H
@@ -6944,7 +6944,7 @@ Brgy. Olla,Talong (Eggplant - Native),6.04,H,M,L
 Brgy. Piit,Talong (Eggplant - Native),5.86,H,H,L
 Brgy. Amonoy,Talong (Eggplant - Native),7.03,L,M,L
 Brgy. Munting Kawayan,Talong (Eggplant - Native),6.23,M,M,H
-Brgy.Rizal,Talong (Eggplant - Native),6,M,M,H
+Brgy.Rizal,Talong (Eggplant - Native),6.0,M,M,H
 Brgy. Piit,Talong (Eggplant - Native),6.95,H,M,M
 Brgy.Bayucain,Talong (Eggplant - Native),6.28,H,H,L
 Brgy. Amonoy,Talong (Eggplant - Native),7.39,M,H,H
@@ -6961,7 +6961,7 @@ Brgy. Taytay,Talong (Eggplant - Native),5.77,M,M,L
 Brgy. Piit,Talong (Eggplant - Native),6.57,H,H,H
 Brgy. Gagalot  Purok 2,Talong (Eggplant - Native),7.15,M,H,H
 Brgy. Banga,Talong (Eggplant - Native),6.04,M,L,M
-Brgy. Burgos,Talong (Eggplant - Native),7,H,L,H
+Brgy. Burgos,Talong (Eggplant - Native),7.0,H,L,H
 Brgy.Isabang,Talong (Eggplant - Native),7.39,M,H,H
 Brgy. Balayong,Talong (Eggplant - Native),5.71,H,H,L
 Brgy.Panalaban,Talong (Eggplant - Native),6.1,M,M,M
@@ -6992,7 +6992,7 @@ Brgy.Bayucain,Talong (Eggplant - Native),7.43,M,H,H
 Brgy.Isabang,Talong (Eggplant - Native),6.51,M,M,M
 Brgy. Gagalot  Purok 3,Talong (Eggplant - Native),7.11,H,H,L
 Brgy. Malinao,Talong (Eggplant - Native),7.44,L,M,H
-Brgy. San Roque,Talong (Eggplant - Native),6,L,H,L
+Brgy. San Roque,Talong (Eggplant - Native),6.0,L,H,L
 Brgy.Isabang,Talong (Eggplant - Native),6.59,M,M,L
 Brgy. San Roque,Talong (Eggplant - Native),5.75,H,H,L
 Brgy.May-It,Talong (Eggplant - Native),5.96,M,M,L
@@ -7320,7 +7320,7 @@ Brgy.Bitaoy,Kalabasa (Squash),7.3,L,L,L
 Brgy. Bukal,Kalabasa (Squash),6.48,L,M,M
 Brgy. Taytay,Kalabasa (Squash),7.06,H,L,L
 Brgy.Balanac,Kalabasa (Squash),7.09,M,L,L
-Brgy. Taytay,Kalabasa (Squash),6,H,M,L
+Brgy. Taytay,Kalabasa (Squash),6.0,H,M,L
 Brgy.May-It,Kalabasa (Squash),5.67,L,L,L
 Brgy.Botocan,Kalabasa (Squash),6.63,L,L,M
 Brgy.Rizal,Kalabasa (Squash),6.21,M,M,H
@@ -7601,7 +7601,7 @@ Brgy. Coralao,Alugbati (Malabar Spinach),7.37,L,H,H
 Brgy.Isabang,Alugbati (Malabar Spinach),6.83,M,H,M
 Brgy. Banga,Alugbati (Malabar Spinach),6.48,L,L,M
 Brgy. Burgos,Alugbati (Malabar Spinach),6.47,L,M,H
-Brgy.Tanawan,Alugbati (Malabar Spinach),6,L,H,L
+Brgy.Tanawan,Alugbati (Malabar Spinach),6.0,L,H,L
 Brgy.Bitaoy,Alugbati (Malabar Spinach),7.03,H,M,M
 Brgy. Gagalot  Purok 2,Alugbati (Malabar Spinach),7.25,L,M,H
 Brgy.Bitaoy,Alugbati (Malabar Spinach),7.04,L,H,L
@@ -7695,7 +7695,7 @@ Brgy.Panalaban,Brown Rice,5.82,H,L,M
 Brgy. San Roque,Brown Rice,7.3,L,M,L
 Brgy.Panglan,Brown Rice,6.91,M,L,L
 Brgy.Panalaban,Brown Rice,6.77,L,H,H
-Brgy. Munting Kawayan,Brown Rice,7,M,H,H
+Brgy. Munting Kawayan,Brown Rice,7.0,M,H,H
 Brgy. Pangil,Brown Rice,6.22,L,H,M
 Brgy.Balanac,Brown Rice,6.04,M,M,M
 Brgy.Botocan,Brown Rice,6.35,L,M,L
@@ -7961,7 +7961,7 @@ Brgy. Pangil,Sampaloc (Tamarind),6.15,M,L,L
 Brgy. Munting Kawayan,Sampaloc (Tamarind),6.44,H,H,M
 Brgy. Coralao,Sampaloc (Tamarind),5.73,L,H,H
 Brgy. Oobi,Sampaloc (Tamarind),6.17,L,H,H
-Brgy.Balanac,Sampaloc (Tamarind),6,H,M,L
+Brgy.Balanac,Sampaloc (Tamarind),6.0,H,M,L
 Brgy.Bitaoy,Sampaloc (Tamarind),7.03,L,H,M
 Brgy. Banga,Sampaloc (Tamarind),6.05,H,H,M
 Brgy. Burgos,Sampaloc (Tamarind),6.65,H,M,H
@@ -8015,7 +8015,7 @@ Brgy.Burol,Sampaloc (Tamarind),6.42,H,H,M
 Brgy. Bukal,Sampaloc (Tamarind),7.12,L,L,M
 Brgy.Banti,Sampaloc (Tamarind),6.4,H,H,H
 Brgy.Talortor,Carrots (Karot),6.41,H,L,M
-Brgy.Panalaban,Carrots (Karot),7,H,H,L
+Brgy.Panalaban,Carrots (Karot),7.0,H,H,L
 Brgy. Taytay,Carrots (Karot),6.81,L,L,L
 Brgy.Rizal,Carrots (Karot),7.22,L,L,H
 Brgy. Amonoy,Carrots (Karot),6.16,M,H,L
@@ -8200,7 +8200,7 @@ Brgy.Tanawan,Carrots (Karot),7.03,H,H,L
 Brgy. Banga,Carrots (Karot),7.4,M,M,M
 Brgy. Amonoy,Carrots (Karot),6.37,M,M,L
 Brgy.Pook,Carrots (Karot),6.88,M,M,H
-Brgy. Taytay,Carrots (Karot),6,H,H,H
+Brgy. Taytay,Carrots (Karot),6.0,H,H,H
 Brgy.Bitaoy,Carrots (Karot),6.52,M,M,H
 Brgy. Gagalot  Purok 3,Carrots (Karot),6.05,M,H,H
 Brgy.Isabang,Carrots (Karot),7.02,H,M,L
@@ -8265,7 +8265,7 @@ Brgy. Pangil,Ube (Purple Yam),6.82,M,M,H
 Brgy.Bayucain,Ube (Purple Yam),6.98,H,M,H
 Brgy.Botocan,Ube (Purple Yam),7.33,H,L,H
 Brgy. Oobi,Ube (Purple Yam),5.77,M,H,H
-Brgy.Tanawan,Ube (Purple Yam),6,H,M,H
+Brgy.Tanawan,Ube (Purple Yam),6.0,H,M,H
 Brgy. Pangil,Ube (Purple Yam),5.89,L,H,H
 Brgy. Munting Kawayan,Ube (Purple Yam),7.45,H,M,H
 Brgy.San Isidro,Ube (Purple Yam),7.03,L,H,H
@@ -8313,7 +8313,7 @@ Brgy. San Roque,Ube (Purple Yam),6.68,L,M,H
 Brgy.San Isidro,Ube (Purple Yam),6.85,H,M,H
 Brgy.Botocan,Ube (Purple Yam),7.15,M,M,H
 Brgy.Bitaoy,Ube (Purple Yam),6.73,L,L,L
-Brgy.Banti,Ube (Purple Yam),6,L,M,H
+Brgy.Banti,Ube (Purple Yam),6.0,L,M,H
 Brgy.Talortor,Ube (Purple Yam),6.09,L,L,L
 Brgy. Suba,Ube (Purple Yam),6.42,L,M,M
 Brgy. Banga,Ube (Purple Yam),6.52,H,L,H
@@ -8390,7 +8390,7 @@ Brgy.Panalaban,Ube (Purple Yam),6.42,M,L,M
 Brgy. Banga,Ube (Purple Yam),5.86,H,L,M
 Brgy. Malinao,Ube (Purple Yam),6.92,L,L,M
 Brgy.Pook,Ube (Purple Yam),6.96,M,L,M
-Brgy. Malinao,Ube (Purple Yam),6,H,L,L
+Brgy. Malinao,Ube (Purple Yam),6.0,H,L,L
 Brgy.Pook,Ube (Purple Yam),6.36,L,L,L
 Brgy.Burol,Ube (Purple Yam),6.09,L,H,H
 Brgy. Coralao,Ube (Purple Yam),6.99,H,H,M
@@ -8468,7 +8468,7 @@ Brgy. Gagalot  Purok 3,Sinandomeng Rice,5.54,H,M,L
 Brgy. Munting Kawayan,Sinandomeng Rice,5.65,M,L,M
 Brgy.San Isidro,Sinandomeng Rice,6.01,H,M,M
 Brgy.Pook,Sinandomeng Rice,5.81,L,M,H
-Brgy.Panalaban,Sinandomeng Rice,6,M,M,H
+Brgy.Panalaban,Sinandomeng Rice,6.0,M,M,H
 Brgy. Gagalot  Purok 2,Sinandomeng Rice,6.8,L,L,L
 Brgy. Burgos,Sinandomeng Rice,6.51,H,L,H
 Brgy. Bukal,Sinandomeng Rice,6.68,L,M,H
@@ -8518,7 +8518,7 @@ Brgy.Tanawan,Sinandomeng Rice,6.08,L,M,H
 Brgy. Suba,Sinandomeng Rice,6.06,L,L,L
 Brgy. Piit,Sinandomeng Rice,6.72,H,M,M
 Brgy. Coralao,Sinandomeng Rice,6.31,L,L,L
-Brgy.Isabang,Sinandomeng Rice,7,M,M,H
+Brgy.Isabang,Sinandomeng Rice,7.0,M,M,H
 Brgy. Balayong,Sinandomeng Rice,6.67,H,L,H
 Brgy.Tanawan,Sinandomeng Rice,6.8,M,L,H
 Brgy.Balanac,Sinandomeng Rice,6.38,L,H,L
@@ -8584,7 +8584,7 @@ Brgy. Gagalot  Purok 2,Sinandomeng Rice,6.79,H,L,M
 Brgy.Bitaoy,Sinandomeng Rice,7.01,L,L,L
 Brgy. Taytay,Sinandomeng Rice,6.72,H,L,M
 Brgy.Isabang,Sinandomeng Rice,7.37,M,M,L
-Brgy. Olla,Sinandomeng Rice,6,L,L,M
+Brgy. Olla,Sinandomeng Rice,6.0,L,L,M
 Brgy.San Isidro,Sinandomeng Rice,6.49,H,L,L
 Brgy.San Isidro,Sinandomeng Rice,5.65,L,M,M
 Brgy. Gagalot  Purok 3,Sinandomeng Rice,5.79,M,H,M

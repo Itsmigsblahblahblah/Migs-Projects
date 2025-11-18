@@ -111,9 +111,6 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   const [activeTab, setActiveTab] = useState("recommendations");
   // Add state for showing more recommendations
   const [showAllRecommendations, setShowAllRecommendations] = useState(false);
-  // Add state to track if recommendations have been fetched at least once
-  const [hasFetchedRecommendations, setHasFetchedRecommendations] = useState(false);
-
   // Function to extract barangay name from farm address
   const extractBarangay = (farmAddress: string) => {
     console.log('Extracting barangay from farm address:', farmAddress);
@@ -176,7 +173,6 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     setLoading(true);
     setError(null);
     setRecommendations([]); // Clear previous recommendations
-    setHasFetchedRecommendations(true); // Mark that we've fetched at least once
     
     try {
       // Prepare request body with all data sources
@@ -333,29 +329,6 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
     loadSoilData();
   }, [effectiveFarmerProfile]);
-
-  // Add useEffect to automatically fetch recommendations when soil data changes
-  useEffect(() => {
-    // Only fetch automatically if we've already fetched recommendations at least once
-    // This prevents fetching on initial load before user interaction
-    if (hasFetchedRecommendations) {
-      console.log('Soil data changed, fetching new recommendations:', inputSoilData);
-      
-      // Prepare weather data if available
-      let weatherDataForRecommendation: WeatherData | undefined;
-      if (effectiveWeatherData) {
-        weatherDataForRecommendation = {
-          temperature: effectiveWeatherData.temperature || 25,
-          humidity: effectiveWeatherData.humidity || 50,
-          precipitation_probability: effectiveWeatherData.extendedForecast?.[0]?.precipitationProbability || 0,
-          wind_speed: effectiveWeatherData.extendedForecast?.[0]?.windSpeed || 5,
-          uv_index: effectiveWeatherData.extendedForecast?.[0]?.uvIndex || 5
-        };
-      }
-      
-      fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
-    }
-  }, [inputSoilData]); // Only re-run when inputSoilData changes
 
   const handleCropSelect = async (crop: PrescriptionDetails) => {
     // Fetch market demand data for the selected crop
@@ -617,8 +590,13 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                       {recommendations.length > 0 ? (
                         <>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {/* Show all 6 recommendations in a 3x2 grid */}
-                            {recommendations.slice(0, 6).map((recommendation, index) => (
+                            {/* Show all 6 recommendations in a 3x2 grid, but filter out duplicates */}
+                            {recommendations
+                              .filter((recommendation, index, self) => 
+                                index === self.findIndex(r => r.crop.trim() === recommendation.crop.trim())
+                              )
+                              .slice(0, 6)
+                              .map((recommendation, index) => (
                               <Card 
                                 key={index}
                                 className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"

@@ -443,6 +443,7 @@ class EnhancedSoilCropTransformer:
                 nutrient_boost = 1.0 if soil_conditions['Nitrogen'] == 'M' and soil_conditions['Phosphorus'] == 'M' and soil_conditions['Potassium'] == 'M' else 0.5
                 boost_factor = 0.3 * ph_boost * nutrient_boost
                 boosted_predictions[i] = min(1.0, boosted_predictions[i] + boost_factor)
+                print(f"Boosted Ampalaya prediction from {predictions[i]} to {boosted_predictions[i]}")
             
             # Boost Sayote for similar conditions
             if crop == 'Sayote (Chayote)' and 5.5 <= soil_conditions['pH'] <= 7.0:
@@ -451,6 +452,16 @@ class EnhancedSoilCropTransformer:
                 nutrient_boost = 1.0 if soil_conditions['Nitrogen'] == 'M' and soil_conditions['Phosphorus'] == 'M' and soil_conditions['Potassium'] == 'M' else 0.5
                 boost_factor = 0.25 * ph_boost * nutrient_boost
                 boosted_predictions[i] = min(1.0, boosted_predictions[i] + boost_factor)
+                print(f"Boosted Sayote prediction from {predictions[i]} to {boosted_predictions[i]}")
+            
+            # Boost Koliflower for a wide range of conditions since it's common
+            if crop == 'Koliflower (Cauliflower)' and 5.5 <= soil_conditions['pH'] <= 7.5:
+                # Calculate boost based on how well the conditions match
+                ph_boost = 1.0 - abs(soil_conditions['pH'] - 6.5) / 2.0  # Max boost at pH 6.5
+                nutrient_boost = 1.0 if soil_conditions['Nitrogen'] in ['M', 'H'] else 0.7
+                boost_factor = 0.2 * ph_boost * nutrient_boost
+                boosted_predictions[i] = min(1.0, boosted_predictions[i] + boost_factor)
+                print(f"Boosted Koliflower prediction from {predictions[i]} to {boosted_predictions[i]}")
         
         # Get top predictions
         top_indices = np.argsort(boosted_predictions)[-12:][::-1]  # Get more predictions to ensure variety
