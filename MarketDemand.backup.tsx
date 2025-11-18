@@ -53,17 +53,14 @@ const MarketDemand = () => {
   const [sortBy, setSortBy] = useState<"predicted_price" | "current_avg_price" | "price_change_percent" | "vegetable">("predicted_price");
   const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1); // Default to current month
-  const [selectedYear, setSelectedYear] = useState<number>(2025); // Default to 2025 instead of current year
-  const [yearRangeStart, setYearRangeStart] = useState<number>(2025); // Start from 2025 instead of current year
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear()); // Default to current year
+  const [yearRangeStart, setYearRangeStart] = useState<number>(new Date().getFullYear());
   const [selectedDemandLevel, setSelectedDemandLevel] = useState<string | null>(null); // New state for demand level filtering
 
   // Generate month options based on selected year
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
-  
-  // Set the minimum forecastable year to 2025 (the first year after our data ends in 2024)
-  const minForecastYear = 2025;
   
   // For the current year, only show months from current month onwards
   // For future years, show all months
@@ -75,7 +72,7 @@ const MarketDemand = () => {
       // For future years, show all months
       return Array.from({ length: 12 }, (_, i) => i + 1);
     } else {
-      // For past years (shouldn't happen with our restrictions)
+      // For past years, show no months (shouldn't happen with our restrictions)
       return [];
     }
   };
@@ -86,8 +83,8 @@ const MarketDemand = () => {
     "July", "August", "September", "October", "November", "December"
   ];
   
-  // Generate year options based on range - start from 2025 (first forecastable year)
-  const years = Array.from({ length: 6 }, (_, i) => Math.max(minForecastYear, yearRangeStart) + i);
+  // Generate year options based on range
+  const years = Array.from({ length: 6 }, (_, i) => yearRangeStart + i);
 
   useEffect(() => {
     fetchMarketData();
@@ -158,7 +155,7 @@ const MarketDemand = () => {
     try {
       setLoading(true);
       // Include month, year, and demand_level parameters in the API call
-      let url = `/vegetables/recommend-crops?top_n=20&month=${selectedMonth}&year=${selectedYear}`;
+      let url = `/api/vegetables/recommend-crops?top_n=20&month=${selectedMonth}&year=${selectedYear}`;
       if (selectedDemandLevel) {
         url += `&demand_level=${selectedDemandLevel}`;
       }
@@ -193,15 +190,15 @@ const MarketDemand = () => {
   };
 
   const handleYearChange = (year: number) => {
-    // Only allow selection of years from 2025 onwards (forecastable future dates)
-    if (year >= 2025) {
+    // Prevent selecting past years
+    if (year >= currentYear) {
       setSelectedYear(year);
     }
   };
 
   const navigateYearRange = (direction: 'prev' | 'next') => {
     const newStart = direction === 'prev' 
-      ? Math.max(2025, yearRangeStart - 6) // Minimum year is 2025
+      ? Math.max(currentYear, yearRangeStart - 6) 
       : yearRangeStart + 6;
     setYearRangeStart(newStart);
   };
@@ -351,7 +348,7 @@ const MarketDemand = () => {
                     variant="outline" 
                     size="sm" 
                     onClick={() => navigateYearRange('prev')}
-                    disabled={yearRangeStart <= minForecastYear}
+                    disabled={yearRangeStart <= currentYear}
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -373,7 +370,7 @@ const MarketDemand = () => {
                       key={year}
                       onClick={() => handleYearChange(year)}
                       className={year === selectedYear ? "bg-accent" : ""}
-                      disabled={year < minForecastYear}
+                      disabled={year < currentYear}
                     >
                       {year}
                     </DropdownMenuItem>
