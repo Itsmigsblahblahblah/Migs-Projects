@@ -87,7 +87,9 @@ const FarmerDashboard = () => {
     setEditCrop,
     setSelectedCropId,
     handleCropInputChange,
+    handleSoilTypeChange,
     handleEditCropInputChange,
+    handleEditSoilTypeChange,
     handleAddCrop,
     handleEditCropSubmit,
     selectCropForEditing
@@ -370,22 +372,24 @@ const FarmerDashboard = () => {
           onOpenChange={setIsAddCropDialogOpen}
           newCrop={newCrop}
           handleCropInputChange={handleCropInputChange}
+          handleSoilTypeChange={handleSoilTypeChange}
           handleAddCrop={handleAddCrop}
         />
 
         <UpdateCropDialog
           open={isUpdateCropDialogOpen}
           onOpenChange={setIsUpdateCropDialogOpen}
-          crops={crops}
           selectCropForEditing={selectCropForEditing}
           setIsEditCropDialogOpen={setIsEditCropDialogOpen}
         />
+        {/* crops prop removed from UpdateCropDialog - now using CropContext internally */}
 
         <EditCropDialog
           open={isEditCropDialogOpen}
           onOpenChange={setIsEditCropDialogOpen}
           editCrop={editCrop}
           handleEditCropInputChange={handleEditCropInputChange}
+          handleEditSoilTypeChange={handleEditSoilTypeChange}
           handleEditCropSubmit={handleEditCropSubmit}
         />
 

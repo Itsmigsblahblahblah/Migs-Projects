@@ -5,23 +5,17 @@ import { useCrops } from "@/contexts/CropContext";
 export const useCropManagement = () => {
     const [newCrop, setNewCrop] = useState({
         name: "",
-        landArea: "",
-        quantity: "",
         soilType: "",
-        nitrogen: "",
-        phosphorus: "",
-        potassium: "",
+        landArea: "",
+        plantedDate: "",
         puhunan: ""
     });
 
     const [editCrop, setEditCrop] = useState({
         name: "",
-        landArea: "",
-        quantity: "",
         soilType: "",
-        nitrogen: "",
-        phosphorus: "",
-        potassium: "",
+        landArea: "",
+        plantedDate: "",
         puhunan: ""
     });
 
@@ -38,6 +32,14 @@ export const useCropManagement = () => {
         }));
     };
 
+    // Handle soil type change
+    const handleSoilTypeChange = (value: string) => {
+        setNewCrop(prev => ({
+            ...prev,
+            soilType: value
+        }));
+    };
+
     // Handle edit crop input changes
     const handleEditCropInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -47,11 +49,19 @@ export const useCropManagement = () => {
         }));
     };
 
+    // Handle edit soil type change
+    const handleEditSoilTypeChange = (value: string) => {
+        setEditCrop(prev => ({
+            ...prev,
+            soilType: value
+        }));
+    };
+
     // Handle crop submission
     const handleAddCrop = async () => {
         // Validate inputs
-        if (!newCrop.name || !newCrop.landArea || !newCrop.quantity ||
-            !newCrop.soilType || !newCrop.puhunan) {
+        if (!newCrop.name || !newCrop.soilType || !newCrop.landArea ||
+            !newCrop.plantedDate || !newCrop.puhunan) {
             toast({
                 title: "Incomplete Information",
                 description: "Please fill in all required fields.",
@@ -64,12 +74,9 @@ export const useCropManagement = () => {
             // Prepare crop data (userId is added automatically in CropContext)
             const cropData = {
                 name: newCrop.name,
-                landArea: newCrop.landArea,
-                quantity: parseFloat(newCrop.quantity),
                 soilType: newCrop.soilType,
-                nitrogen: parseFloat(newCrop.nitrogen) || 0,
-                phosphorus: parseFloat(newCrop.phosphorus) || 0,
-                potassium: parseFloat(newCrop.potassium) || 0,
+                landArea: parseFloat(newCrop.landArea),
+                plantedDate: newCrop.plantedDate,
                 puhunan: parseFloat(newCrop.puhunan),
             };
 
@@ -84,12 +91,9 @@ export const useCropManagement = () => {
             // Reset form
             setNewCrop({
                 name: "",
-                landArea: "",
-                quantity: "",
                 soilType: "",
-                nitrogen: "",
-                phosphorus: "",
-                potassium: "",
+                landArea: "",
+                plantedDate: "",
                 puhunan: ""
             });
 
@@ -108,8 +112,8 @@ export const useCropManagement = () => {
     // Handle edit crop submission
     const handleEditCropSubmit = async () => {
         // Validate inputs
-        if (!editCrop.name || !editCrop.landArea || !editCrop.quantity ||
-            !editCrop.soilType || !editCrop.puhunan) {
+        if (!editCrop.name || !editCrop.soilType || !editCrop.landArea ||
+            !editCrop.plantedDate || !editCrop.puhunan) {
             toast({
                 title: "Incomplete Information",
                 description: "Please fill in all required fields.",
@@ -131,12 +135,9 @@ export const useCropManagement = () => {
             // Prepare crop data
             const cropData = {
                 name: editCrop.name,
-                landArea: editCrop.landArea,
-                quantity: parseFloat(editCrop.quantity),
                 soilType: editCrop.soilType,
-                nitrogen: parseFloat(editCrop.nitrogen) || 0,
-                phosphorus: parseFloat(editCrop.phosphorus) || 0,
-                potassium: parseFloat(editCrop.potassium) || 0,
+                landArea: parseFloat(editCrop.landArea),
+                plantedDate: editCrop.plantedDate,
                 puhunan: parseFloat(editCrop.puhunan),
             };
 
@@ -151,12 +152,9 @@ export const useCropManagement = () => {
             // Reset form
             setEditCrop({
                 name: "",
-                landArea: "",
-                quantity: "",
                 soilType: "",
-                nitrogen: "",
-                phosphorus: "",
-                potassium: "",
+                landArea: "",
+                plantedDate: "",
                 puhunan: ""
             });
 
@@ -176,12 +174,9 @@ export const useCropManagement = () => {
         setSelectedCropId(crop.id);
         setEditCrop({
             name: crop.name,
-            landArea: crop.landArea,
-            quantity: crop.quantity.toString(),
             soilType: crop.soilType,
-            nitrogen: crop.nitrogen.toString(),
-            phosphorus: crop.phosphorus.toString(),
-            potassium: crop.potassium.toString(),
+            landArea: crop.landArea.toString(),
+            plantedDate: crop.plantedDate || "",
             puhunan: crop.puhunan.toString()
         });
     };
@@ -194,7 +189,9 @@ export const useCropManagement = () => {
         setEditCrop,
         setSelectedCropId,
         handleCropInputChange,
+        handleSoilTypeChange,
         handleEditCropInputChange,
+        handleEditSoilTypeChange,
         handleAddCrop,
         handleEditCropSubmit,
         selectCropForEditing

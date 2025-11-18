@@ -4,21 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCrops } from "@/contexts/CropContext";
-import { Leaf, Calendar, MapPin, Wheat, TrendingUp } from "lucide-react";
-
-interface Crop {
-    id: string;
-    name: string;
-    landArea: string;
-    quantity: number;
-    soilType: string;
-    nitrogen: number;
-    phosphorus: number;
-    potassium: number;
-    puhunan: number;
-    plantedDate: any;
-    createdAt: any;
-}
+import { Leaf, Calendar, MapPin, Wheat, TrendingUp, Plus, Sprout } from "lucide-react";
 
 const CropHistory = () => {
     const { crops } = useCrops();
@@ -90,16 +76,78 @@ const CropHistory = () => {
     return (
         <Layout>
             <div className="space-y-6">
-                {/* Header */}
+                {/* Header with Add Crop Button */}
                 <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Leaf className="h-6 w-6" />
-                        <h1 className="text-2xl font-bold">Crop History</h1>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <Leaf className="h-6 w-6" />
+                                <h1 className="text-2xl font-bold">Crop History</h1>
+                            </div>
+                            <p className="text-primary-foreground/90">
+                                View and manage all your crop plantings
+                            </p>
+                        </div>
+                        <Button 
+                            onClick={() => navigate('/farmer')} 
+                            className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add New Crop
+                        </Button>
                     </div>
-                    <p className="text-primary-foreground/90">
-                        View and manage all your crop plantings
-                    </p>
                 </div>
+
+                {/* Stats Cards */}
+                {crops.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="shadow-card">
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                        <Sprout className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Total Crops</p>
+                                        <p className="text-2xl font-bold">{crops.length}</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        
+                        <Card className="shadow-card">
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-success/10 rounded-lg">
+                                        <TrendingUp className="h-5 w-5 text-success" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Total Investment</p>
+                                        <p className="text-2xl font-bold">
+                                            ₱{(crops.reduce((sum, crop) => sum + (Number(crop.puhunan) || 0), 0)).toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        
+                        <Card className="shadow-card">
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                                        <MapPin className="h-5 w-5 text-blue-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Total Area</p>
+                                        <p className="text-2xl font-bold">
+                                            {(crops.reduce((sum, crop) => sum + (Number(crop.landArea) || 0), 0)).toFixed(1)} ha
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
                 {/* Crops List */}
                 {crops.length === 0 ? (
@@ -111,62 +159,76 @@ const CropHistory = () => {
                                 You haven't added any crops yet. Start by adding your first crop.
                             </p>
                             <Button onClick={() => navigate('/farmer')}>
+                                <Plus className="h-4 w-4 mr-2" />
                                 Add Crop
                             </Button>
                         </CardContent>
                     </Card>
                 ) : (
                     <div className="grid gap-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold">Your Crops</h2>
+                            <p className="text-muted-foreground">{crops.length} crops</p>
+                        </div>
+                        
                         {crops.map((crop) => (
                             <Card
                                 key={crop.id}
-                                className="shadow-card hover:shadow-md transition-shadow cursor-pointer"
+                                className="shadow-card hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-primary"
                                 onClick={() => navigate(`/crop/${crop.id}`)}
                             >
                                 <CardHeader>
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <CardTitle className="flex items-center gap-2">
-                                                <Wheat className="h-5 w-5" />
+                                                <Wheat className="h-5 w-5 text-primary" />
                                                 {crop.name}
                                             </CardTitle>
                                             <CardDescription>
                                                 Planted on {formatDate(crop.plantedDate)}
                                             </CardDescription>
                                         </div>
-                                        <Button variant="outline" size="sm">
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate(`/crop/${crop.id}`);
+                                            }}
+                                        >
+                                            <Leaf className="h-4 w-4 mr-1" />
                                             View Details
                                         </Button>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                         <div className="flex items-center gap-2">
                                             <MapPin className="h-4 w-4 text-muted-foreground" />
                                             <div>
-                                                <p className="text-sm text-muted-foreground">Land Area</p>
-                                                <p className="font-medium">{crop.landArea}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Wheat className="h-4 w-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Quantity</p>
-                                                <p className="font-medium">{crop.quantity} kg</p>
+                                                <p className="text-xs text-muted-foreground">Land Area</p>
+                                                <p className="font-medium">{Number(crop.landArea)} hectares</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <TrendingUp className="h-4 w-4 text-muted-foreground" />
                                             <div>
-                                                <p className="text-sm text-muted-foreground">Puhunan</p>
-                                                <p className="font-medium">₱{crop.puhunan.toLocaleString()}</p>
+                                                <p className="text-xs text-muted-foreground">Capital</p>
+                                                <p className="font-medium">₱{Number(crop.puhunan).toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Leaf className="h-4 w-4 text-muted-foreground" />
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">Soil Type</p>
+                                                <p className="font-medium">{crop.soilType}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4 text-muted-foreground" />
                                             <div>
-                                                <p className="text-sm text-muted-foreground">Soil Type</p>
-                                                <p className="font-medium">{crop.soilType}</p>
+                                                <p className="text-xs text-muted-foreground">Planting Date</p>
+                                                <p className="font-medium">{formatDate(crop.plantedDate)}</p>
                                             </div>
                                         </div>
                                     </div>

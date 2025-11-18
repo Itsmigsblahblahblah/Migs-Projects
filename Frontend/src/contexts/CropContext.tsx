@@ -15,14 +15,10 @@ interface Crop {
     id: string;
     userId: string;
     name: string;
-    landArea: string;
-    quantity: number;
+    landArea: number;
     soilType: string;
-    nitrogen: number;
-    phosphorus: number;
-    potassium: number;
-    puhunan: number;
     plantedDate: any;
+    puhunan: number;
     createdAt: any;
     checklist?: ChecklistItem[]; // Add checklist field
 }
@@ -99,13 +95,9 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                     userId: data.userId,
                     name: data.name,
                     landArea: data.landArea,
-                    quantity: data.quantity,
                     soilType: data.soilType,
-                    nitrogen: data.nitrogen || 0,
-                    phosphorus: data.phosphorus || 0,
-                    potassium: data.potassium || 0,
-                    puhunan: data.puhunan,
                     plantedDate: data.plantedDate,
+                    puhunan: data.puhunan,
                     createdAt: data.createdAt,
                     checklist: data.checklist || [] // Load checklist data
                 });
