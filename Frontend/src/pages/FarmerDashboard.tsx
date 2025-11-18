@@ -19,6 +19,7 @@ import EditCropDialog from "@/components/dashboard/farmer/EditCropDialog";
 import RequestAccountDeletionDialog from "@/components/dashboard/farmer/RequestAccountDeletionDialog";
 import DeleteAccountDialog from "@/components/dashboard/farmer/DeleteAccountDialog";
 import DeleteConfirmationDialog from "@/components/dashboard/farmer/DeleteConfirmationDialog";
+import AdminMessages from "@/components/dashboard/farmer/AdminMessages";
 import { useFarmerDashboard } from "@/hooks/custom/useFarmerDashboard";
 import { useCropManagement } from "@/hooks/custom/useCropManagement";
 import { useReportManagement } from "@/hooks/custom/useReportManagement";
@@ -304,6 +305,7 @@ const FarmerDashboard = () => {
           onUpdateCrop={() => setIsUpdateCropDialogOpen(true)}
           farmerProfile={farmerProfile}
           weatherData={weatherData}
+          userId={userId} // Pass userId to QuickActions
         />
 
         <div className="grid lg:grid-cols-2 gap-6">
@@ -331,6 +333,9 @@ const FarmerDashboard = () => {
             )}
           </div>
         </div>
+
+        {/* Admin Messages */}
+        <AdminMessages userId={userId} />
 
         {/* Task Reminders */}
         <TaskReminders tasks={mockTasks} />
