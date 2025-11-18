@@ -31,7 +31,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import classification_report
 import tensorflow as tf
-from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
@@ -143,19 +142,28 @@ class EnhancedSoilCropTransformer:
         soil_df['uv_index'] = np.random.uniform(0, 10, n_samples)     # UV index
         
         # Add market demand scores based on vegetable price trends
-        # For simplicity, we'll calculate a basic demand score for each crop
+        # Calculate a more sensitive demand score for each crop
         market_scores = {}
         unique_crops = soil_df['Crop'].unique()
         for vegetable in unique_crops:
             # Find matching vegetable in price data (fuzzy matching)
             matching_veg = veg_df[veg_df['Vegetable'].str.contains(str(vegetable).split('(')[0].strip(), case=False, na=False)]
             if not matching_veg.empty:
-                # Calculate price trend as a simple demand indicator
-                recent_prices = matching_veg.tail(6)['Price'].values  # Last 6 months
+                # Calculate price trend as a demand indicator
+                recent_prices = matching_veg.tail(12)['Price'].values  # Last 12 months for better trend analysis
                 if len(recent_prices) > 1:
-                    price_trend = (recent_prices[-1] - recent_prices[0]) / len(recent_prices)
-                    # Normalize to 0-1 range where higher means higher demand
-                    market_scores[vegetable] = max(0, min(1, (price_trend + 5) / 10))
+                    # Calculate price change percentage
+                    price_change_pct = ((recent_prices[-1] - recent_prices[0]) / recent_prices[0]) * 100 if recent_prices[0] != 0 else 0
+                    
+                    # Calculate price volatility (standard deviation)
+                    price_volatility = np.std(recent_prices) / np.mean(recent_prices) if np.mean(recent_prices) != 0 else 0
+                    
+                    # Calculate demand score: positive trend = higher demand, but high volatility = lower demand
+                    # Scale to 0-1 range where higher means higher demand
+                    demand_score = (price_change_pct - (price_volatility * 50))  # Adjust volatility impact
+                    
+                    # Normalize to 0-1 range
+                    market_scores[vegetable] = max(0, min(1, (demand_score + 100) / 200))
                 else:
                     market_scores[vegetable] = 0.5  # Neutral demand
             else:
@@ -258,10 +266,15 @@ class EnhancedSoilCropTransformer:
         # Input layer
         inputs = layers.Input(shape=input_shape)
         
-        # Dense layers
-        x = layers.Dense(128, activation='relu')(inputs)
+        # Enhanced architecture with more layers to capture soil variations
+        x = layers.Dense(256, activation='relu')(inputs)
+        x = layers.BatchNormalization()(x)
+        x = layers.Dropout(self.hyperparams['dropout_rate'])(x)
+        x = layers.Dense(128, activation='relu')(x)
+        x = layers.BatchNormalization()(x)
         x = layers.Dropout(self.hyperparams['dropout_rate'])(x)
         x = layers.Dense(64, activation='relu')(x)
+        x = layers.BatchNormalization()(x)
         x = layers.Dropout(self.hyperparams['dropout_rate'])(x)
         x = layers.Dense(32, activation='relu')(x)
         x = layers.Dropout(self.hyperparams['dropout_rate'])(x)
@@ -272,9 +285,10 @@ class EnhancedSoilCropTransformer:
         # Create model
         model = Model(inputs=inputs, outputs=outputs)
         
-        # Compile model
+        # Compile model with a lower learning rate for better convergence
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self.hyperparams['learning_rate'])
         model.compile(
-            optimizer='adam',
+            optimizer=optimizer,
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy']
         )
@@ -314,7 +328,7 @@ class EnhancedSoilCropTransformer:
         # Callbacks
         early_stopping = EarlyStopping(
             monitor='val_loss',
-            patience=15,
+            patience=20,
             restore_best_weights=True
         )
         
@@ -407,8 +421,8 @@ class EnhancedSoilCropTransformer:
         # Make prediction
         predictions = self.model.predict(input_scaled, verbose=0)[0]
         
-        # Get top 5 predictions
-        top_indices = np.argsort(predictions)[-5:][::-1]
+        # Get top 6 predictions instead of just 5
+        top_indices = np.argsort(predictions)[-6:][::-1]
         top_crops = self.crop_label_encoder.inverse_transform(top_indices)
         top_confidences = predictions[top_indices]
         
@@ -419,6 +433,7 @@ class EnhancedSoilCropTransformer:
             market_scores.append(score)
         
         # Combine confidence and market demand scores (weighted average)
+        # Increase sensitivity to model predictions
         combined_scores = 0.7 * top_confidences + 0.3 * np.array(market_scores)
         
         # Sort by combined score
@@ -469,7 +484,7 @@ class EnhancedSoilCropTransformer:
             preprocessor_path (str): Path to load the preprocessing pipeline from
         """
         # Load model
-        self.model = keras.models.load_model(model_path)
+        self.model = tf.keras.models.load_model(model_path)
         logger.info(f"Model loaded from {model_path}")
         
         # Load preprocessing pipeline

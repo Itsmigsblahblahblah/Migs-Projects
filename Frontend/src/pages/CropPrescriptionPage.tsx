@@ -19,7 +19,9 @@ import {
   ArrowLeft,
   BarChart3,
   DollarSign,
-  Eye
+  Eye,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import CropRecommendationVisualization from "@/components/dashboard/farmer/CropRecommendationVisualization";
 
@@ -107,6 +109,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   });
   const [soilDataLoading, setSoilDataLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("recommendations");
+  // Add state for showing more recommendations
+  const [showAllRecommendations, setShowAllRecommendations] = useState(false);
 
   // Function to extract barangay name from farm address
   const extractBarangay = (farmAddress: string) => {
@@ -583,71 +587,76 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                   )}
                   
                   {!loading && !error && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-4">
                       {recommendations.length > 0 ? (
-                        recommendations.map((recommendation, index) => (
-                          <Card 
-                            key={index}
-                            className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
-                            onClick={() => handleCropSelect({
-                              id: index.toString(),
-                              crop: recommendation.crop,
-                              reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
-                              confidence: Math.round(recommendation.confidence * 100),
-                              plantingSeason: "Based on current conditions",
-                              expectedYield: "Varies by conditions",
-                              marketTrend: "Check local market",
-                              soilType: `pH: ${inputSoilData.pH}, N:${inputSoilData.Nitrogen}, P:${inputSoilData.Phosphorus}, K:${inputSoilData.Potassium}`,
-                              weatherCondition: "Current weather patterns",
-                              recommendations: [
-                                "Follow local agricultural guidelines",
-                                "Monitor soil moisture levels",
-                                "Apply appropriate fertilizers based on soil test"
-                              ],
-                              avoid: [
-                                "Plant in waterlogged areas",
-                                "Over-fertilize without soil testing",
-                                "Ignore local climate conditions"
-                              ]
-                            })}
-                            >
-                              <CardHeader>
-                                <CardTitle className="flex items-center justify-between">
-                                  <span>{recommendation.crop}</span>
-                                  <div className="flex flex-col gap-1">
-                                    <Badge variant={getConfidenceVariant(recommendation.confidence)}>
-                                      {Math.round(recommendation.confidence * 100)}%
-                                    </Badge>
-                                    {recommendation.market_demand_score !== undefined && (
-                                      <Badge variant={getMarketDemandVariant(recommendation.market_demand_score)} className="text-xs">
-                                        <TrendingUp className="h-3 w-3 mr-1" />
-                                        {Math.round(recommendation.market_demand_score * 100)}%
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Show all 6 recommendations in a 3x2 grid */}
+                            {recommendations.slice(0, 6).map((recommendation, index) => (
+                              <Card 
+                                key={index}
+                                className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
+                                onClick={() => handleCropSelect({
+                                  id: index.toString(),
+                                  crop: recommendation.crop,
+                                  reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
+                                  confidence: Math.round(recommendation.confidence * 100),
+                                  plantingSeason: "Based on current conditions",
+                                  expectedYield: "Varies by conditions",
+                                  marketTrend: "Check local market",
+                                  soilType: `pH: ${inputSoilData.pH}, N:${inputSoilData.Nitrogen}, P:${inputSoilData.Phosphorus}, K:${inputSoilData.Potassium}`,
+                                  weatherCondition: "Current weather patterns",
+                                  recommendations: [
+                                    "Follow local agricultural guidelines",
+                                    "Monitor soil moisture levels",
+                                    "Apply appropriate fertilizers based on soil test"
+                                  ],
+                                  avoid: [
+                                    "Plant in waterlogged areas",
+                                    "Over-fertilize without soil testing",
+                                    "Ignore local climate conditions"
+                                  ]
+                                })}
+                                >
+                                <CardHeader>
+                                  <CardTitle className="flex items-center justify-between">
+                                    <span>{recommendation.crop}</span>
+                                    <div className="flex flex-col gap-1">
+                                      <Badge variant={getConfidenceVariant(recommendation.confidence)}>
+                                        {Math.round(recommendation.confidence * 100)}%
                                       </Badge>
-                                    )}
+                                      {recommendation.market_demand_score !== undefined && (
+                                        <Badge variant={getMarketDemandVariant(recommendation.market_demand_score)} className="text-xs">
+                                          <TrendingUp className="h-3 w-3 mr-1" />
+                                          {Math.round(recommendation.market_demand_score * 100)}%
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <p className="text-sm text-muted-foreground mb-3">
+                                    Recommended based on your soil analysis, weather conditions, and market demand with {Math.round(recommendation.confidence * 100)}% confidence.
+                                  </p>
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>Planting season varies</span>
                                   </div>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <p className="text-sm text-muted-foreground mb-3">
-                                  Recommended based on your soil analysis, weather conditions, and market demand with {Math.round(recommendation.confidence * 100)}% confidence.
-                                </p>
-                                <div className="flex items-center gap-2 text-xs">
-                                  <Calendar className="h-3 w-3" />
-                                  <span>Planting season varies</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs mt-1">
-                                  <TrendingUp className="h-3 w-3" />
-                                  <span>Check local market trends</span>
-                                </div>
-                                {recommendation.market_demand_score !== undefined && (
                                   <div className="flex items-center gap-2 text-xs mt-1">
-                                    <BarChart3 className="h-3 w-3" />
-                                    <span>Market demand: {Math.round(recommendation.market_demand_score * 100)}%</span>
+                                    <TrendingUp className="h-3 w-3" />
+                                    <span>Check local market trends</span>
                                   </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                        ))
+                                  {recommendation.market_demand_score !== undefined && (
+                                    <div className="flex items-center gap-2 text-xs mt-1">
+                                      <BarChart3 className="h-3 w-3" />
+                                      <span>Market demand: {Math.round(recommendation.market_demand_score * 100)}%</span>
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </>
                       ) : (
                         <div className="text-center py-8 text-muted-foreground">
                           No crop recommendations available
