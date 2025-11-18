@@ -23,12 +23,12 @@ const mockRecommendationsResponse = {
   ]
 };
 
-describe('CropPrescriptionDialog Integration', () => {
+describe('CropPrescriptionPage Integration', () => {
   beforeEach(() => {
     fetch.mockClear();
   });
 
-  test('should fetch soil data when dialog opens with farm address', async () => {
+  test('should fetch soil data when page loads with farm address', async () => {
     // Mock the API responses
     fetch
       .mockResolvedValueOnce({
@@ -40,12 +40,12 @@ describe('CropPrescriptionDialog Integration', () => {
         json: () => Promise.resolve(mockRecommendationsResponse)
       });
 
-    // Simulate opening the dialog with a farmer profile
+    // Simulate loading the page with a farmer profile
     const farmerProfile = {
       farmAddress: 'Brgy. San Roque'
     };
 
-    // In a real implementation, this would trigger the useEffect in CropPrescriptionDialog
+    // In a real implementation, this would trigger the useEffect in CropPrescriptionPage
     // For testing purposes, we'll directly call the functions
     
     // Extract barangay (this is done in the component)
@@ -91,7 +91,7 @@ describe('CropPrescriptionDialog Integration', () => {
         json: () => Promise.resolve(mockRecommendationsResponse)
       });
 
-    // Simulate opening the dialog with a farmer profile for a non-existent barangay
+    // Simulate loading the page with a farmer profile for a non-existent barangay
     const farmerProfile = {
       farmAddress: 'Brgy. NonExistent'
     };

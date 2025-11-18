@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import routes.soil_routes
 import routes.vegetable_routes
+import routes.enhanced_soil_routes  # Add the new enhanced routes
 import subprocess
 import sys
 import os
@@ -28,12 +29,14 @@ app.add_middleware(
 # Include routers
 app.include_router(routes.soil_routes.app)
 app.include_router(routes.vegetable_routes.app)
+app.include_router(routes.enhanced_soil_routes.app)  # Add the new enhanced routes
 
 @app.get("/")
 async def root():
     return {"message": "Farm Resource Management System API", 
             "soil_endpoints": "/docs for soil analysis endpoints",
-            "vegetable_endpoints": "/vegetables/docs for vegetable demand prediction endpoints"}
+            "vegetable_endpoints": "/vegetables/docs for vegetable demand prediction endpoints",
+            "enhanced_soil_endpoints": "/enhanced-soil/docs for enhanced soil analysis endpoints"}
 
 @app.post("/train-demand-level-models")
 async def train_demand_level_models():

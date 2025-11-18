@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import {
     Eye,
     Plus,
@@ -14,7 +12,6 @@ import {
     TrendingUp
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import CropPrescriptionDialog from "./CropPrescriptionDialog";
 
 interface FarmerProfile {
     fullName: string;
@@ -36,7 +33,16 @@ interface QuickActionsProps {
 
 const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: QuickActionsProps) => {
     const navigate = useNavigate();
-    const [isPrescriptionDialogOpen, setIsPrescriptionDialogOpen] = useState(false);
+
+    const handlePrescribeCrop = () => {
+        // Pass the weatherData and farmerProfile as state when navigating
+        navigate('/prescribe-crop', { 
+            state: { 
+                weatherData: weatherData,
+                farmerProfile: farmerProfile
+            } 
+        });
+    };
 
     return (
         <Card className="shadow-card">
@@ -48,24 +54,14 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
-                    <Dialog open={isPrescriptionDialogOpen} onOpenChange={setIsPrescriptionDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button 
-                                variant="outline" 
-                                className="h-20 flex flex-col gap-2" 
-                            >
-                                <Sprout className="h-5 w-5" />
-                                <span>Prescribe Crop</span>
-                            </Button>
-                        </DialogTrigger>
-                        
-                        <CropPrescriptionDialog 
-                            open={isPrescriptionDialogOpen} 
-                            onOpenChange={setIsPrescriptionDialogOpen} 
-                            farmerProfile={farmerProfile}
-                            weatherData={weatherData}
-                        />
-                    </Dialog>
+                    <Button 
+                        variant="outline" 
+                        className="h-20 flex flex-col gap-2"
+                        onClick={handlePrescribeCrop}
+                    >
+                        <Sprout className="h-5 w-5" />
+                        <span>Prescribe Crop</span>
+                    </Button>
                     
                     <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={onAddCrop}>
                         <Plus className="h-5 w-5" />

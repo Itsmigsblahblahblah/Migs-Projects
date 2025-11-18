@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Sprout, 
   Thermometer, 
@@ -15,13 +16,18 @@ import {
   Calendar,
   MapPin,
   FlaskConical,
-  ArrowLeft
+  ArrowLeft,
+  BarChart3,
+  DollarSign,
+  Eye
 } from "lucide-react";
+import CropRecommendationVisualization from "@/components/dashboard/farmer/CropRecommendationVisualization";
 
 // Add this interface for the API response
 interface CropRecommendation {
   crop: string;
   confidence: number;
+  market_demand_score?: number;
 }
 
 interface SoilData {
@@ -73,12 +79,20 @@ interface FarmerProfile {
 }
 
 interface CropPrescriptionPageProps {
+  // These props are now optional since we're getting them from location state
   farmerProfile?: FarmerProfile;
   weatherData?: any; // Add weather data prop
 }
 
 const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPageProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get data from location state if not passed as props
+  const locationState: any = location.state || {};
+  const effectiveFarmerProfile = farmerProfile || locationState.farmerProfile;
+  const effectiveWeatherData = weatherData || locationState.weatherData;
+
   const [selectedCrop, setSelectedCrop] = useState<PrescriptionDetails | null>(null);
   // Add state for loading and recommendations
   const [recommendations, setRecommendations] = useState<CropRecommendation[]>([]);
@@ -92,6 +106,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     Potassium: 'M'
   });
   const [soilDataLoading, setSoilDataLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("recommendations");
 
   // Function to extract barangay name from farm address
   const extractBarangay = (farmAddress: string) => {
@@ -150,23 +165,33 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     }
   };
 
-  // Add function to fetch recommendations
-  const fetchRecommendations = async (soilData: SoilData, weatherDataForRecommendation?: WeatherData) => {
+  // Add function to fetch recommendations using enhanced model
+  const fetchEnhancedRecommendations = async (soilData: SoilData, weatherDataForRecommendation?: WeatherData) => {
     setLoading(true);
     setError(null);
     setRecommendations([]); // Clear previous recommendations
     
     try {
-      // Use the weather-enhanced endpoint if weather data is available
-      const endpoint = weatherDataForRecommendation ? '/api/recommend-with-weather' : '/api/recommend';
-      const requestBody = weatherDataForRecommendation 
-        ? { soil_data: soilData, weather_data: weatherDataForRecommendation }
-        : soilData;
+      // Prepare request body with all data sources
+      const requestBody = {
+        soil_data: soilData,
+        weather_data: weatherDataForRecommendation || {
+          temperature: 25,
+          humidity: 60,
+          precipitation_probability: 50,
+          wind_speed: 10,
+          uv_index: 5
+        },
+        market_context: {
+          season: weatherDataForRecommendation ? 
+            (weatherDataForRecommendation.temperature > 30 ? "dry" : "wet") : "dry",
+          month: new Date().getMonth() + 1
+        }
+      };
       
-      console.log('Fetching recommendations from:', endpoint);
-      console.log('Request body:', requestBody);
+      console.log('Fetching enhanced recommendations with request body:', requestBody);
       
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/enhanced-soil/enhanced-recommend', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -174,29 +199,29 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         body: JSON.stringify(requestBody),
       });
       
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
+      console.log('Enhanced recommendation response status:', response.status);
+      console.log('Enhanced recommendation response ok:', response.ok);
       
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Error response:', errorText);
-        throw new Error(`Failed to fetch recommendations: ${response.status} ${response.statusText}`);
+        throw new Error(`Failed to fetch enhanced recommendations: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
-      console.log('Response data:', data);
+      console.log('Enhanced recommendation response data:', data);
       
       // Check if recommended_crops exists and is an array
       if (data.recommended_crops && Array.isArray(data.recommended_crops)) {
-        console.log('Setting recommendations:', data.recommended_crops);
+        console.log('Setting enhanced recommendations:', data.recommended_crops);
         setRecommendations(data.recommended_crops);
       } else {
         console.error('Invalid response format:', data);
-        setError('Invalid response format from server');
+        setError('Invalid response format from enhanced recommendation server');
       }
     } catch (err) {
-      setError('Failed to load crop recommendations. Please try again.');
-      console.error('Error fetching recommendations:', err);
+      setError('Failed to load enhanced crop recommendations. Please try again.');
+      console.error('Error fetching enhanced recommendations:', err);
     } finally {
       setLoading(false);
     }
@@ -258,30 +283,30 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
   // Fetch soil data when component mounts and farmer profile is available
   useEffect(() => {
-    console.log('useEffect triggered - farmerProfile:', farmerProfile);
+    console.log('useEffect triggered - farmerProfile:', effectiveFarmerProfile);
     const loadSoilData = async () => {
-      if (farmerProfile?.farmAddress) {
-        console.log('Fetching soil data for farm address:', farmerProfile.farmAddress);
-        const barangay = extractBarangay(farmerProfile.farmAddress);
+      if (effectiveFarmerProfile?.farmAddress) {
+        console.log('Fetching soil data for farm address:', effectiveFarmerProfile.farmAddress);
+        const barangay = extractBarangay(effectiveFarmerProfile.farmAddress);
         console.log('Extracted barangay:', barangay);
         const soilData = await fetchSoilDataByBarangay(barangay);
         
         // Prepare weather data if available
         let weatherDataForRecommendation: WeatherData | undefined;
-        if (weatherData) {
+        if (effectiveWeatherData) {
           weatherDataForRecommendation = {
-            temperature: weatherData.temperature || 25,
-            humidity: weatherData.humidity || 50,
-            precipitation_probability: weatherData.extendedForecast?.[0]?.precipitationProbability || 0,
-            wind_speed: weatherData.extendedForecast?.[0]?.windSpeed || 5,
-            uv_index: weatherData.extendedForecast?.[0]?.uvIndex || 5
+            temperature: effectiveWeatherData.temperature || 25,
+            humidity: effectiveWeatherData.humidity || 50,
+            precipitation_probability: effectiveWeatherData.extendedForecast?.[0]?.precipitationProbability || 0,
+            wind_speed: effectiveWeatherData.extendedForecast?.[0]?.windSpeed || 5,
+            uv_index: effectiveWeatherData.extendedForecast?.[0]?.uvIndex || 5
           };
         }
         
         // If we got soil data, use it for recommendations
         if (soilData) {
-          console.log('Using fetched soil data for recommendations:', soilData);
-          fetchRecommendations({
+          console.log('Using fetched soil data for enhanced recommendations:', soilData);
+          fetchEnhancedRecommendations({
             pH: soilData.pH,
             Nitrogen: soilData.Nitrogen,
             Phosphorus: soilData.Phosphorus,
@@ -290,17 +315,17 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         } else {
           // If no soil data found, use current input values
           console.log('No soil data found, using input soil data:', inputSoilData);
-          fetchRecommendations(inputSoilData, weatherDataForRecommendation);
+          fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
         }
       } else {
         // If no farm address, use default values
         console.log('No farm address, using default input soil data:', inputSoilData);
-        fetchRecommendations(inputSoilData);
+        fetchEnhancedRecommendations(inputSoilData);
       }
     };
 
     loadSoilData();
-  }, [farmerProfile]);
+  }, [effectiveFarmerProfile]);
 
   const handleCropSelect = async (crop: PrescriptionDetails) => {
     // Fetch market demand data for the selected crop
@@ -317,30 +342,46 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
   const handleResetSelection = () => {
     setSelectedCrop(null);
+    setActiveTab("recommendations");
   };
 
   const handleGetRecommendations = () => {
-    console.log('Get Recommendations button clicked');
+    console.log('Get Enhanced Recommendations button clicked');
     console.log('Current input soil data:', inputSoilData);
-    console.log('Current weather data:', weatherData);
+    console.log('Current weather data:', effectiveWeatherData);
     
     // Clear any previous error
     setError(null);
     
     // Prepare weather data if available
     let weatherDataForRecommendation: WeatherData | undefined;
-    if (weatherData) {
+    if (effectiveWeatherData) {
       weatherDataForRecommendation = {
-        temperature: weatherData.temperature || 25,
-        humidity: weatherData.humidity || 50,
-        precipitation_probability: weatherData.extendedForecast?.[0]?.precipitationProbability || 0,
-        wind_speed: weatherData.extendedForecast?.[0]?.windSpeed || 5,
-        uv_index: weatherData.extendedForecast?.[0]?.uvIndex || 5
+        temperature: effectiveWeatherData.temperature || 25,
+        humidity: effectiveWeatherData.humidity || 50,
+        precipitation_probability: effectiveWeatherData.extendedForecast?.[0]?.precipitationProbability || 0,
+        wind_speed: effectiveWeatherData.extendedForecast?.[0]?.windSpeed || 5,
+        uv_index: effectiveWeatherData.extendedForecast?.[0]?.uvIndex || 5
       };
-      console.log('Prepared weather data for recommendation:', weatherDataForRecommendation);
+      console.log('Prepared weather data for enhanced recommendation:', weatherDataForRecommendation);
     }
     
-    fetchRecommendations(inputSoilData, weatherDataForRecommendation);
+    fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
+  };
+
+  // Function to get confidence level badge variant
+  const getConfidenceVariant = (confidence: number) => {
+    if (confidence >= 0.8) return "default";
+    if (confidence >= 0.6) return "secondary";
+    return "outline";
+  };
+
+  // Function to get market demand level badge variant
+  const getMarketDemandVariant = (marketScore: number | undefined) => {
+    if (!marketScore) return "outline";
+    if (marketScore >= 0.8) return "default"; // High demand
+    if (marketScore >= 0.6) return "secondary"; // Moderate demand
+    return "outline"; // Low demand
   };
 
   return (
@@ -351,249 +392,292 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Crop Prescription</h1>
-            <p className="text-muted-foreground">AI-powered crop recommendations based on current weather, soil conditions, and market trends</p>
+            <h1 className="text-2xl font-bold">Enhanced Crop Prescription</h1>
+            <p className="text-muted-foreground">AI-powered crop recommendations based on soil, weather, and market data</p>
           </div>
         </div>
 
         {!selectedCrop ? (
-          <div className="space-y-6">
-            {/* Soil Data Input */}
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FlaskConical className="h-5 w-5" />
-                  Soil Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {(soilDataLoading || loading) && (
-                  <div className="flex justify-center items-center h-8">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                    <span>Loading soil data...</span>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="ph" className="block text-sm font-medium mb-1">pH Level</label>
-                    <input
-                      id="ph"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="14"
-                      value={inputSoilData.pH}
-                      onChange={(e) => setInputSoilData({...inputSoilData, pH: parseFloat(e.target.value) || 0})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                      disabled={soilDataLoading || loading}
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Nitrogen</label>
-                      <select 
-                        value={inputSoilData.Nitrogen} 
-                        onChange={(e) => setInputSoilData({...inputSoilData, Nitrogen: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                        disabled={soilDataLoading || loading}
-                      >
-                        <option value="L">Low (L)</option>
-                        <option value="M">Medium (M)</option>
-                        <option value="H">High (H)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Phosphorus</label>
-                      <select 
-                        value={inputSoilData.Phosphorus} 
-                        onChange={(e) => setInputSoilData({...inputSoilData, Phosphorus: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                        disabled={soilDataLoading || loading}
-                      >
-                        <option value="L">Low (L)</option>
-                        <option value="M">Medium (M)</option>
-                        <option value="H">High (H)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Potassium</label>
-                      <select 
-                        value={inputSoilData.Potassium} 
-                        onChange={(e) => setInputSoilData({...inputSoilData, Potassium: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                        disabled={soilDataLoading || loading}
-                      >
-                        <option value="L">Low (L)</option>
-                        <option value="M">Medium (M)</option>
-                        <option value="H">High (H)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleGetRecommendations}
-                  disabled={loading || soilDataLoading}
-                  className="w-full"
-                >
-                  {loading ? "Analyzing..." : "Get Recommendations"}
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Environmental Factors */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Thermometer className="h-5 w-5 text-primary" />
-                  Current Conditions
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-accent/10 rounded-lg border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Thermometer className="h-4 w-4 text-accent" />
-                    <span className="font-medium">Temperature</span>
-                  </div>
-                  <p className="text-2xl font-bold">{weatherData?.temperature ? `${Math.round(weatherData.temperature)}°C` : '28°C'}</p>
-                  <p className="text-sm text-muted-foreground">Current temperature</p>
-                </div>
-                
-                <div className="p-4 bg-accent/10 rounded-lg border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Droplets className="h-4 w-4 text-accent" />
-                    <span className="font-medium">Humidity</span>
-                  </div>
-                  <p className="text-2xl font-bold">{weatherData?.humidity ? `${Math.round(weatherData.humidity)}%` : '65%'}</p>
-                  <p className="text-sm text-muted-foreground">Relative humidity</p>
-                </div>
-                
-                <div className="p-4 bg-accent/10 rounded-lg border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sun className="h-4 w-4 text-accent" />
-                    <span className="font-medium">Weather</span>
-                  </div>
-                  <p className="text-2xl font-bold">{weatherData?.condition || 'Sunny'}</p>
-                  <p className="text-sm text-muted-foreground">Current conditions</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* 7-Day Forecast */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  7-Day Forecast
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {weatherData?.extendedForecast && weatherData.extendedForecast.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
-                    {weatherData.extendedForecast.slice(0, 7).map((day: any, index: number) => (
-                      <div key={index} className="p-2 bg-accent/5 rounded-lg border text-center">
-                        <p className="text-xs font-medium">{day.dayOfWeek}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                        <p className="text-sm mt-1">{day.condition}</p>
-                        <div className="flex justify-center gap-1 mt-1">
-                          <span className="text-sm font-bold">{Math.round(day.high)}°</span>
-                          <span className="text-sm text-muted-foreground">/</span>
-                          <span className="text-sm">{Math.round(day.low)}°</span>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="recommendations" className="flex items-center gap-2">
+                <Sprout className="h-4 w-4" />
+                Recommendations
+              </TabsTrigger>
+              <TabsTrigger value="visualization" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Visualization
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="recommendations">
+              <div className="space-y-6">
+                {/* Soil Data Input */}
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FlaskConical className="h-5 w-5" />
+                      Soil Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(soilDataLoading || loading) && (
+                      <div className="flex justify-center items-center h-8">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                        <span>Loading soil data...</span>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="ph" className="block text-sm font-medium mb-1">pH Level</label>
+                        <input
+                          id="ph"
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="14"
+                          value={inputSoilData.pH}
+                          onChange={(e) => setInputSoilData({...inputSoilData, pH: parseFloat(e.target.value) || 0})}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                          disabled={soilDataLoading || loading}
+                        />
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Nitrogen</label>
+                          <select 
+                            value={inputSoilData.Nitrogen} 
+                            onChange={(e) => setInputSoilData({...inputSoilData, Nitrogen: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                            disabled={soilDataLoading || loading}
+                          >
+                            <option value="L">Low (L)</option>
+                            <option value="M">Medium (M)</option>
+                            <option value="H">High (H)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Phosphorus</label>
+                          <select 
+                            value={inputSoilData.Phosphorus} 
+                            onChange={(e) => setInputSoilData({...inputSoilData, Phosphorus: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                            disabled={soilDataLoading || loading}
+                          >
+                            <option value="L">Low (L)</option>
+                            <option value="M">Medium (M)</option>
+                            <option value="H">High (H)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Potassium</label>
+                          <select 
+                            value={inputSoilData.Potassium} 
+                            onChange={(e) => setInputSoilData({...inputSoilData, Potassium: e.target.value})}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                            disabled={soilDataLoading || loading}
+                          >
+                            <option value="L">Low (L)</option>
+                            <option value="M">Medium (M)</option>
+                            <option value="H">High (H)</option>
+                          </select>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">7-day forecast data not available</p>
-                )}
-              </CardContent>
-            </Card>
+                    </div>
+                    <Button 
+                      onClick={handleGetRecommendations}
+                      disabled={loading || soilDataLoading}
+                      className="w-full"
+                    >
+                      {loading ? "Analyzing..." : "Get Enhanced Recommendations"}
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            {/* Prescribed Crops */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Recommended Crops</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Based on your soil conditions and current weather patterns
-              </p>
-              
-              {loading && (
-                <div className="flex justify-center items-center h-32">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  <span className="ml-2">Analyzing soil and weather data...</span>
-                </div>
-              )}
-              
-              {error && (
-                <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 text-destructive">
-                  {error}
-                </div>
-              )}
-              
-              {!loading && !error && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {recommendations.length > 0 ? (
-                    recommendations.map((recommendation, index) => (
-                      <Card 
-                        key={index}
-                        className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
-                        onClick={() => handleCropSelect({
-                          id: index.toString(),
-                          crop: recommendation.crop,
-                          reason: `Recommended based on your soil analysis and current weather conditions with ${Math.round(recommendation.confidence * 100)}% confidence.`,
-                          confidence: Math.round(recommendation.confidence * 100),
-                          plantingSeason: "Based on current conditions",
-                          expectedYield: "Varies by conditions",
-                          marketTrend: "Check local market",
-                          soilType: `pH: ${inputSoilData.pH}, N:${inputSoilData.Nitrogen}, P:${inputSoilData.Phosphorus}, K:${inputSoilData.Potassium}`,
-                          weatherCondition: "Current weather patterns",
-                          recommendations: [
-                            "Follow local agricultural guidelines",
-                            "Monitor soil moisture levels",
-                            "Apply appropriate fertilizers based on soil test"
-                          ],
-                          avoid: [
-                            "Plant in waterlogged areas",
-                            "Over-fertilize without soil testing",
-                            "Ignore local climate conditions"
-                          ]
-                        })}
-                        >
-                          <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                              <span>{recommendation.crop}</span>
-                              <Badge variant="secondary">{Math.round(recommendation.confidence * 100)}%</Badge>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              Recommended based on your soil analysis and current weather conditions with {Math.round(recommendation.confidence * 100)}% confidence.
-                            </p>
-                            <div className="flex items-center gap-2 text-xs">
-                              <Calendar className="h-3 w-3" />
-                              <span>Planting season varies</span>
+                {/* Environmental Factors */}
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Thermometer className="h-5 w-5 text-primary" />
+                      Current Conditions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-accent/10 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Thermometer className="h-4 w-4 text-accent" />
+                        <span className="font-medium">Temperature</span>
+                      </div>
+                      <p className="text-2xl font-bold">{effectiveWeatherData?.temperature ? `${Math.round(effectiveWeatherData.temperature)}°C` : '28°C'}</p>
+                      <p className="text-sm text-muted-foreground">Current temperature</p>
+                    </div>
+                    
+                    <div className="p-4 bg-accent/10 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Droplets className="h-4 w-4 text-accent" />
+                        <span className="font-medium">Humidity</span>
+                      </div>
+                      <p className="text-2xl font-bold">{effectiveWeatherData?.humidity ? `${Math.round(effectiveWeatherData.humidity)}%` : '65%'}</p>
+                      <p className="text-sm text-muted-foreground">Relative humidity</p>
+                    </div>
+                    
+                    <div className="p-4 bg-accent/10 rounded-lg border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sun className="h-4 w-4 text-accent" />
+                        <span className="font-medium">Weather</span>
+                      </div>
+                      <p className="text-2xl font-bold">{effectiveWeatherData?.condition || 'Sunny'}</p>
+                      <p className="text-sm text-muted-foreground">Current conditions</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 7-Day Forecast */}
+                <Card className="shadow-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Calendar className="h-5 w-5 text-primary" />
+                      7-Day Forecast
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {effectiveWeatherData?.extendedForecast && effectiveWeatherData.extendedForecast.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
+                        {effectiveWeatherData.extendedForecast.slice(0, 7).map((day: any, index: number) => (
+                          <div key={index} className="p-2 bg-accent/5 rounded-lg border text-center">
+                            <p className="text-xs font-medium">{day.dayOfWeek}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                            <p className="text-sm mt-1">{day.condition}</p>
+                            <div className="flex justify-center gap-1 mt-1">
+                              <span className="text-sm font-bold">{Math.round(day.high)}°</span>
+                              <span className="text-sm text-muted-foreground">/</span>
+                              <span className="text-sm">{Math.round(day.low)}°</span>
                             </div>
-                            <div className="flex items-center gap-2 text-xs mt-1">
-                              <TrendingUp className="h-3 w-3" />
-                              <span>Check local market trends</span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No crop recommendations available
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">7-day forecast data not available</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Enhanced Prescribed Crops */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Enhanced Crop Recommendations</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Based on your soil conditions, current weather patterns, and market demand predictions
+                  </p>
+                  
+                  {loading && (
+                    <div className="flex justify-center items-center h-32">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <span className="ml-2">Analyzing soil, weather, and market data...</span>
+                    </div>
+                  )}
+                  
+                  {error && (
+                    <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 text-destructive">
+                      {error}
+                    </div>
+                  )}
+                  
+                  {!loading && !error && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {recommendations.length > 0 ? (
+                        recommendations.map((recommendation, index) => (
+                          <Card 
+                            key={index}
+                            className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
+                            onClick={() => handleCropSelect({
+                              id: index.toString(),
+                              crop: recommendation.crop,
+                              reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
+                              confidence: Math.round(recommendation.confidence * 100),
+                              plantingSeason: "Based on current conditions",
+                              expectedYield: "Varies by conditions",
+                              marketTrend: "Check local market",
+                              soilType: `pH: ${inputSoilData.pH}, N:${inputSoilData.Nitrogen}, P:${inputSoilData.Phosphorus}, K:${inputSoilData.Potassium}`,
+                              weatherCondition: "Current weather patterns",
+                              recommendations: [
+                                "Follow local agricultural guidelines",
+                                "Monitor soil moisture levels",
+                                "Apply appropriate fertilizers based on soil test"
+                              ],
+                              avoid: [
+                                "Plant in waterlogged areas",
+                                "Over-fertilize without soil testing",
+                                "Ignore local climate conditions"
+                              ]
+                            })}
+                            >
+                              <CardHeader>
+                                <CardTitle className="flex items-center justify-between">
+                                  <span>{recommendation.crop}</span>
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant={getConfidenceVariant(recommendation.confidence)}>
+                                      {Math.round(recommendation.confidence * 100)}%
+                                    </Badge>
+                                    {recommendation.market_demand_score !== undefined && (
+                                      <Badge variant={getMarketDemandVariant(recommendation.market_demand_score)} className="text-xs">
+                                        <DollarSign className="h-3 w-3 mr-1" />
+                                        {Math.round(recommendation.market_demand_score * 100)}%
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-sm text-muted-foreground mb-3">
+                                  Recommended based on your soil analysis, weather conditions, and market demand with {Math.round(recommendation.confidence * 100)}% confidence.
+                                </p>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>Planting season varies</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs mt-1">
+                                  <TrendingUp className="h-3 w-3" />
+                                  <span>Check local market trends</span>
+                                </div>
+                                {recommendation.market_demand_score !== undefined && (
+                                  <div className="flex items-center gap-2 text-xs mt-1">
+                                    <BarChart3 className="h-3 w-3" />
+                                    <span>Market demand: {Math.round(recommendation.market_demand_score * 100)}%</span>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No crop recommendations available
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            {/* Disclaimer */}
-            <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
-              <p className="text-sm">
-                <strong>Note:</strong> These recommendations are based on real soil analysis data processed by our AI model.
-              </p>
-            </div>
-          </div>
+                {/* Disclaimer */}
+                <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
+                  <p className="text-sm">
+                    <strong>Note:</strong> These enhanced recommendations are based on real soil analysis data, weather patterns, and market demand predictions processed by our AI model.
+                  </p>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="visualization">
+              <CropRecommendationVisualization 
+                recommendations={recommendations}
+                soilData={inputSoilData}
+                weatherData={{
+                  temperature: effectiveWeatherData?.temperature || 25,
+                  humidity: effectiveWeatherData?.humidity || 60,
+                  condition: effectiveWeatherData?.condition || 'Sunny'
+                }}
+              />
+            </TabsContent>
+          </Tabs>
         ) : (
           <div className="space-y-6">
             {/* Back Button */}
