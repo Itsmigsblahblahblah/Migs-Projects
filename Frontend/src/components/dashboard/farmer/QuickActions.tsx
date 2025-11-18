@@ -9,9 +9,16 @@ import {
     Lightbulb,
     Sprout,
     History,
-    TrendingUp
+    TrendingUp,
+    ChevronDown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface FarmerProfile {
     fullName: string;
@@ -53,7 +60,7 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <Button 
                         variant="outline" 
                         className="h-20 flex flex-col gap-2"
@@ -63,20 +70,32 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
                         <span>Prescribe Crop</span>
                     </Button>
                     
-                    <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={onAddCrop}>
-                        <Plus className="h-5 w-5" />
-                        <span>Add Crop</span>
-                    </Button>
-                    
-                    <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={onUpdateCrop}>
-                        <Edit className="h-5 w-5" />
-                        <span>Update Crop</span>
-                    </Button>
-                    
-                    <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/crop-history')}>
-                        <Leaf className="h-5 w-5" />
-                        <span>Crop History</span>
-                    </Button>
+                    {/* Combined Crop Management Button with Dropdown */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="h-20 flex flex-col gap-2">
+                                <Leaf className="h-5 w-5" />
+                                <span className="flex items-center gap-1">
+                                    Crop Management
+                                    <ChevronDown className="h-4 w-4" />
+                                </span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="center" className="w-48">
+                            <DropdownMenuItem onClick={onAddCrop} className="flex items-center gap-2">
+                                <Plus className="h-4 w-4" />
+                                Add Crop
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={onUpdateCrop} className="flex items-center gap-2">
+                                <Edit className="h-4 w-4" />
+                                Edit Crop
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate('/crop-history')} className="flex items-center gap-2">
+                                <History className="h-4 w-4" />
+                                Crop History
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     
                     <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/alerts')}>
                         <Bell className="h-5 w-5" />
