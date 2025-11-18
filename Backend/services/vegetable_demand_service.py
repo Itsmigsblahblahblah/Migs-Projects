@@ -221,6 +221,10 @@ class VegetableDemandTransformer:
                     # Enhancement: Add seasonal adjustment factor based on target month
                     # This will make predictions vary more based on the target month
                     seasonal_factor = 1.0
+                    # Enhancement: Add year-based trend factor to make predictions vary based on target year
+                    # This creates a small variation based on how far in the future the prediction is
+                    year_trend_factor = 1.0
+                    
                     if len(historical_data) >= 12:
                         # Calculate seasonal trends based on historical data for the target month
                         monthly_avg = historical_data.groupby('MonthNum')['Price'].mean()
@@ -235,10 +239,19 @@ class VegetableDemandTransformer:
                             available_neighbors = [m for m in neighbors if m in monthly_avg.index]
                             if available_neighbors:
                                 seasonal_factor = monthly_avg[available_neighbors].mean() / monthly_avg.mean()
+                        
+                        # Calculate year trend factor based on the difference between target year and last available year
+                        last_available_year = historical_data['Year'].max()
+                        if target_year > last_available_year:
+                            # Apply a small increasing trend factor for each year into the future
+                            # This ensures different results for different future years
+                            year_difference = target_year - last_available_year
+                            year_trend_factor = 1.0 + (year_difference * 0.02)  # 2% increase per year
                 else:
                     # Use the most recent 12 months of data
                     historical_data = veg_data.tail(12)
                     seasonal_factor = 1.0
+                    year_trend_factor = 1.0
                 
                 # If we don't have enough data, skip this vegetable
                 if len(historical_data) < 3:  # Need at least 3 data points
@@ -254,9 +267,12 @@ class VegetableDemandTransformer:
                                                historical_annual_prices, historical_months)
                 
                 # Apply seasonal adjustment to make predictions more varied based on target month
+                # Apply year trend factor to make predictions vary based on target year
                 if target_month is not None and target_year is not None:
-                    prediction['predicted_price'] = prediction['predicted_price'] * seasonal_factor
-                    prediction['current_avg_price'] = prediction['current_avg_price'] * seasonal_factor
+                    # Apply both seasonal and year trend factors
+                    combined_factor = seasonal_factor * year_trend_factor
+                    prediction['predicted_price'] = prediction['predicted_price'] * combined_factor
+                    prediction['current_avg_price'] = prediction['current_avg_price'] * combined_factor
                     prediction['price_change'] = prediction['predicted_price'] - prediction['current_avg_price']
                     prediction['price_change_percent'] = (prediction['price_change'] / prediction['current_avg_price']) * 100 if prediction['current_avg_price'] != 0 else 0
                 
