@@ -14,20 +14,12 @@ interface GrowthInsightsCardProps {
     growthStage: string;
     harvestDate: string;
     productivity: number;
-    prescribedCrops: PrescribedCrop[];
-    selectedPrescribedCrop: PrescribedCrop | null;
-    onPrescribedCropSelect: (crop: PrescribedCrop) => void;
-    onResetSelection: () => void;
 }
 
 const GrowthInsightsCard = ({
     growthStage,
     harvestDate,
-    productivity,
-    prescribedCrops,
-    selectedPrescribedCrop,
-    onPrescribedCropSelect,
-    onResetSelection
+    productivity
 }: GrowthInsightsCardProps) => {
     return (
         <Card className="shadow-card">
@@ -37,7 +29,7 @@ const GrowthInsightsCard = ({
                     Growth Insights
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
                         <div className="flex items-center gap-2 mb-2">
@@ -70,42 +62,8 @@ const GrowthInsightsCard = ({
                     </div>
                 </div>
 
-                {/* Prescribed Crops Section */}
-                <div>
-                    <h3 className="font-medium mb-3 flex items-center gap-2">
-                        <Leaf className="h-4 w-4 text-primary" />
-                        Recommended Crops
-                    </h3>
-                    {prescribedCrops.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                            {prescribedCrops.map((prescribedCrop) => (
-                                <Badge
-                                    key={prescribedCrop.id}
-                                    variant={selectedPrescribedCrop?.id === prescribedCrop.id ? "default" : "secondary"}
-                                    className="cursor-pointer hover:bg-primary/80 transition-colors py-2 px-3 text-sm"
-                                    onClick={() => onPrescribedCropSelect(prescribedCrop)}
-                                >
-                                    {prescribedCrop.name}
-                                </Badge>
-                            ))}
-                            {selectedPrescribedCrop && (
-                                <button
-                                    className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
-                                    onClick={onResetSelection}
-                                >
-                                    Clear Selection
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <p className="text-sm text-muted-foreground">
-                            No crop prescriptions available at the moment. Please check again later or adjust your soil/forecast settings.
-                        </p>
-                    )}
-                </div>
-
                 {/* Common Issues & Solutions */}
-                <div>
+                <div className="pb-2">
                     <h3 className="font-medium mb-3 flex items-center gap-2">
                         <Bug className="h-4 w-4 text-primary" />
                         Common Issues & Solutions

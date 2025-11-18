@@ -4,25 +4,17 @@ import Layout from "@/components/Layout";
 import { ArrowLeft, Sprout, Leaf, Calendar, Droplets, Sun, Activity, AlertTriangle, CheckCircle, XCircle, Wheat, TrendingUp, Package, MapPin } from "lucide-react";
 import { useCrops } from "@/contexts/CropContext";
 import { Button } from "@/components/ui/button";
-import CropInfoCard from "@/components/dashboard/farmer/CropInfoCard";
 import GrowthInsightsCard from "@/components/dashboard/farmer/GrowthInsightsCard";
-import RecommendationsCard from "@/components/dashboard/farmer/RecommendationsCard";
-import SalesForecastCard from "@/components/dashboard/farmer/SalesForecastCard";
 import MaintenanceChecklistCard from "@/components/dashboard/farmer/MaintenanceChecklistCard";
+import EnhancedCropInfoCard from "@/components/dashboard/farmer/EnhancedCropInfoCard";
+import EnhancedSalesForecastCard from "@/components/dashboard/farmer/EnhancedSalesForecastCard";
+import { getHarvestEstimate } from "@/services/geminiService";
 
 interface ChecklistItem {
     id: string;
     title: string;
     completed: boolean;
     category: string;
-}
-
-interface PrescribedCrop {
-    id: string;
-    name: string;
-    reason: string;
-    recommendations: string[];
-    practices: string[];
 }
 
 const CropDetails = () => {
@@ -33,41 +25,7 @@ const CropDetails = () => {
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [productivityData, setProductivityData] = useState<{ task: string; productivity: number }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedPrescribedCrop, setSelectedPrescribedCrop] = useState<PrescribedCrop | null>(null);
-
-    // Mock prescribed crops data
-    const prescribedCrops: PrescribedCrop[] = crop ? [
-        {
-            id: "1",
-            name: "Squash",
-            reason: "High nitrogen levels in your soil are perfect for squash, which requires nitrogen-rich soil for optimal leaf growth.",
-            recommendations: [
-                "Plant seeds 1 inch deep with 3-4 feet spacing",
-                "Water consistently but avoid waterlogging",
-                "Apply mulch to retain moisture"
-            ],
-            practices: [
-                "Harvest when fruits are 6-8 inches long",
-                "Prune lateral shoots to focus energy on main fruits",
-                "Monitor for squash bugs and cucumber beetles"
-            ]
-        },
-        {
-            id: "2",
-            name: "Eggplant",
-            reason: "Your soil's potassium levels are ideal for eggplant, which requires high potassium for fruit development.",
-            recommendations: [
-                "Plant in full sun with well-draining soil",
-                "Space plants 18-24 inches apart",
-                "Stake plants to support fruit weight"
-            ],
-            practices: [
-                "Harvest when fruits are glossy and firm",
-                "Prune lower leaves to improve air circulation",
-                "Apply compost tea every 2 weeks"
-            ]
-        }
-    ] : [];
+    const [harvestData, setHarvestData] = useState<any>(null);
 
     // Mock checklist data
     const generateChecklist = (cropName: string) => {
@@ -124,6 +82,17 @@ const CropDetails = () => {
                     });
                     
                     setProductivityData(initialData);
+
+                    // Fetch harvest estimate from Gemini API
+                    if (cropData.plantedDate) {
+                        try {
+                            const plantedDate = cropData.plantedDate.toDate ? cropData.plantedDate.toDate() : new Date(cropData.plantedDate);
+                            const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
+                            setHarvestData(harvestInfo);
+                        } catch (error) {
+                            console.error("Error fetching harvest estimate:", error);
+                        }
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching crop:", error);
@@ -173,6 +142,11 @@ const CropDetails = () => {
     };
 
     const calculateHarvestDate = (plantedDate: any, cropName: string) => {
+        // Use Gemini API data if available, otherwise fall back to original logic
+        if (harvestData && harvestData.formattedHarvestDate) {
+            return harvestData.formattedHarvestDate;
+        }
+
         if (!plantedDate || !plantedDate.toDate) return 'Unknown date';
 
         try {
@@ -198,6 +172,11 @@ const CropDetails = () => {
 
     // Calculate growth stage based on planting date
     const calculateGrowthStage = (plantedDate: any) => {
+        // Use Gemini API data if available, otherwise fall back to original logic
+        if (harvestData && harvestData.growthStage) {
+            return harvestData.growthStage;
+        }
+
         if (!plantedDate || !plantedDate.toDate) return 'Unknown';
         
         try {
@@ -354,33 +333,17 @@ const CropDetails = () => {
                     </div>
                 </div>
 
-                <div className="grid lg:grid-cols-3 gap-6">
-                    <CropInfoCard crop={crop} />
+                <div className="grid lg:grid-cols-2 gap-6">
+                    <EnhancedCropInfoCard crop={crop} />
                     <GrowthInsightsCard 
                         growthStage={growthStage}
                         harvestDate={harvestDate}
                         productivity={productivity}
-                        prescribedCrops={prescribedCrops}
-                        selectedPrescribedCrop={selectedPrescribedCrop}
-                        onPrescribedCropSelect={setSelectedPrescribedCrop}
-                        onResetSelection={() => setSelectedPrescribedCrop(null)}
                     />
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-6">
-                    <RecommendationsCard 
-                        selectedPrescribedCrop={selectedPrescribedCrop}
-                    />
-                    <SalesForecastCard 
-                        puhunan={crop.puhunan}
-                        estimatedSales={crop.puhunan * 2.5} // Mock calculation
-                        netProfit={crop.puhunan * 1.5} // Mock calculation
-                        salesForecastData={[
-                            { stage: "Planting", puhunan: crop.puhunan, grossSales: 0, netProfit: -crop.puhunan },
-                            { stage: "Growth", puhunan: 0, grossSales: crop.puhunan * 1.5, netProfit: crop.puhunan * 0.5 },
-                            { stage: "Harvest", puhunan: 0, grossSales: crop.puhunan * 2.5, netProfit: crop.puhunan * 1.5 }
-                        ]}
-                    />
+                <div className="grid lg:grid-cols-1 gap-6">
+                    <EnhancedSalesForecastCard crop={crop} />
                 </div>
 
                 <MaintenanceChecklistCard 
@@ -388,7 +351,6 @@ const CropDetails = () => {
                     productivityData={productivityData}
                     checklistProductivity={checklistProductivity}
                     onToggleItem={toggleChecklistItem} 
-                    selectedPrescribedCrop={selectedPrescribedCrop}
                 />
             </div>
         </Layout>
