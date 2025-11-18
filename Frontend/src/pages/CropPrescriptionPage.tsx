@@ -620,7 +620,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                                     </Badge>
                                     {recommendation.market_demand_score !== undefined && (
                                       <Badge variant={getMarketDemandVariant(recommendation.market_demand_score)} className="text-xs">
-                                        <DollarSign className="h-3 w-3 mr-1" />
+                                        <TrendingUp className="h-3 w-3 mr-1" />
                                         {Math.round(recommendation.market_demand_score * 100)}%
                                       </Badge>
                                     )}
