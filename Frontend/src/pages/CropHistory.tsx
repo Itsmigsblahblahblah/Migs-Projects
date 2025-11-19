@@ -4,15 +4,39 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCrops } from "@/contexts/CropContext";
-import { Leaf, Calendar, MapPin, Wheat, TrendingUp, Plus, Sprout, Trash2 } from "lucide-react"; // Added Trash2 icon
+import { Leaf, Calendar, MapPin, Wheat, TrendingUp, Plus, Sprout, Trash2, Edit } from "lucide-react"; // Added Edit icon
+import AddCropDialog from "@/components/dashboard/farmer/AddCropDialog";
+import UpdateCropDialog from "@/components/dashboard/farmer/UpdateCropDialog";
+import EditCropDialog from "@/components/dashboard/farmer/EditCropDialog";
+import { useCropManagement } from "@/hooks/custom/useCropManagement"; // Import the hook
 
 const CropHistory = () => {
-    const { crops, deleteCrop } = useCrops(); // Added deleteCrop
+    const { crops, deleteCrop } = useCrops();
     const [username, setUsername] = useState("");
     const [loading, setLoading] = useState(true);
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false); // Added state for delete dialog
-    const [cropToDelete, setCropToDelete] = useState<{id: string, name: string} | null>(null); // Added state for crop to delete
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [cropToDelete, setCropToDelete] = useState<{id: string, name: string} | null>(null);
+    const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false); // Add state for add crop dialog
+    const [isUpdateCropDialogOpen, setIsUpdateCropDialogOpen] = useState(false); // Add state for update crop dialog
+    const [isEditCropDialogOpen, setIsEditCropDialogOpen] = useState(false); // Add state for edit crop dialog
     const navigate = useNavigate();
+
+    // Use the crop management hook
+    const {
+        newCrop,
+        editCrop,
+        selectedCropId,
+        setNewCrop,
+        setEditCrop,
+        setSelectedCropId,
+        handleCropInputChange,
+        handleSoilTypeChange,
+        handleEditCropInputChange,
+        handleEditSoilTypeChange,
+        handleAddCrop,
+        handleEditCropSubmit,
+        selectCropForEditing
+    } = useCropManagement();
 
     useEffect(() => {
         const role = localStorage.getItem('userRole');
@@ -131,15 +155,39 @@ const CropHistory = () => {
     return (
         <Layout>
             <div className="space-y-6">
-                {/* Header - Removed Add Crop Button */}
+                {/* Header - Added Add Crop Button */}
                 <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Leaf className="h-6 w-6" />
-                        <h1 className="text-2xl font-bold">Crop History</h1>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <Leaf className="h-6 w-6" />
+                                <h1 className="text-2xl font-bold">Crop History</h1>
+                            </div>
+                            <p className="text-primary-foreground/90">
+                                View and manage all your crop plantings
+                            </p>
+                        </div>
+                        {/* Add Crop Button - Moved to the right side with improved contrast */}
+                        <div className="flex gap-2">
+                            <Button 
+                                onClick={() => setIsAddCropDialogOpen(true)}
+                                className="bg-white text-primary hover:bg-white/90"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Crop
+                            </Button>
+                            {crops.length > 0 && (
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => setIsUpdateCropDialogOpen(true)}
+                                    className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+                                >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Crop
+                                </Button>
+                            )}
+                        </div>
                     </div>
-                    <p className="text-primary-foreground/90">
-                        View and manage all your crop plantings
-                    </p>
                 </div>
 
                 {/* Stats Cards */}
@@ -202,7 +250,7 @@ const CropHistory = () => {
                             <p className="text-muted-foreground mb-4">
                                 You haven't added any crops yet. Start by adding your first crop.
                             </p>
-                            <Button onClick={() => navigate('/farmer')}>
+                            <Button onClick={() => setIsAddCropDialogOpen(true)}>
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Crop
                             </Button>
@@ -301,6 +349,32 @@ const CropHistory = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Add Crop Dialog */}
+                <AddCropDialog
+                    open={isAddCropDialogOpen}
+                    onOpenChange={setIsAddCropDialogOpen}
+                    newCrop={newCrop}
+                    handleCropInputChange={handleCropInputChange}
+                    handleSoilTypeChange={handleSoilTypeChange}
+                    handleAddCrop={handleAddCrop}
+                />
+
+                <UpdateCropDialog
+                    open={isUpdateCropDialogOpen}
+                    onOpenChange={setIsUpdateCropDialogOpen}
+                    selectCropForEditing={selectCropForEditing}
+                    setIsEditCropDialogOpen={setIsEditCropDialogOpen}
+                />
+
+                <EditCropDialog
+                    open={isEditCropDialogOpen}
+                    onOpenChange={setIsEditCropDialogOpen}
+                    editCrop={editCrop}
+                    handleEditCropInputChange={handleEditCropInputChange}
+                    handleEditSoilTypeChange={handleEditSoilTypeChange}
+                    handleEditCropSubmit={handleEditCropSubmit}
+                />
             </div>
         </Layout>
     );
