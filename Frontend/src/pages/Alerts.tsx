@@ -150,7 +150,10 @@ const Alerts = () => {
                 className="flex items-center gap-2"
               >
                 Warning
-                <Badge variant="secondary" className="ml-2">
+                <Badge 
+                  variant="secondary" 
+                  className="ml-2 bg-yellow-500 text-white hover:bg-yellow-600"
+                >
                   {alertCounts.warning}
                 </Badge>
               </Button>
@@ -160,7 +163,10 @@ const Alerts = () => {
                 className="flex items-center gap-2"
               >
                 Informational
-                <Badge variant="secondary" className="ml-2">
+                <Badge 
+                  variant="secondary" 
+                  className="ml-2 bg-blue-500 text-white hover:bg-blue-600"
+                >
                   {alertCounts.informational}
                 </Badge>
               </Button>
@@ -200,10 +206,14 @@ const Alerts = () => {
                       <div className="flex justify-between items-start">
                         <p className="font-medium">{alert.title}</p>
                         <Badge 
-                          variant={
-                            alert.category === 'critical' ? 'destructive' :
-                            alert.category === 'warning' ? 'secondary' : 'default'
-                          }
+                          variant="secondary"
+                          className={`
+                            ml-2
+                            ${alert.category === 'critical' ? 'bg-red-500 hover:bg-red-600' : ''}
+                            ${alert.category === 'warning' ? 'bg-yellow-500 hover:bg-yellow-600' : ''}
+                            ${alert.category === 'informational' ? 'bg-blue-500 hover:bg-blue-600' : ''}
+                            text-white
+                          `}
                         >
                           {alert.category.charAt(0).toUpperCase() + alert.category.slice(1)}
                         </Badge>
