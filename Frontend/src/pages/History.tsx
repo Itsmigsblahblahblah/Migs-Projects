@@ -296,10 +296,12 @@ const History = () => {
                   <option value="pending">Pending</option>
                   <option value="resolved">Resolved</option>
                 </select>
-                <Button variant="outline" onClick={exportToCSV}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
+                {userRole !== 'farmer' && (
+                  <Button variant="outline" onClick={exportToCSV}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
