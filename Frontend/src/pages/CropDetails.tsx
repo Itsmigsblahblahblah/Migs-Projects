@@ -408,8 +408,11 @@ const CropDetails = () => {
                     </div>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-6">
+                <div className="grid lg:grid-cols-1 gap-6">
                     <EnhancedCropInfoCard crop={crop} />
+                </div>
+                
+                <div className="grid lg:grid-cols-1 gap-6">
                     <GrowthInsightsCard 
                         growthStage={growthStage}
                         harvestDate={harvestDate}

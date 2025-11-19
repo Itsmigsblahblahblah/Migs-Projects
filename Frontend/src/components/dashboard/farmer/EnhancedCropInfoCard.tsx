@@ -79,11 +79,11 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Leaf className="h-5 w-5 text-primary" />
-                    Enhanced Crop Information
+                    Crop Information
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
                         <div className="flex items-center gap-2 mb-2">
                             <Wheat className="h-4 w-4 text-primary" />
@@ -227,7 +227,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                 </div>
 
                 {insights?.fertilizer?.recommendations && insights.fertilizer.recommendations.length > 0 && (
-                    <div className="md:col-span-2">
+                    <div className="md:col-span-4">
                         <div className="p-3 bg-muted/50 rounded-lg">
                             <div className="flex items-center gap-2 mb-2">
                                 <Scale className="h-4 w-4 text-primary" />
@@ -246,7 +246,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                 )}
 
                 {insights?.profit && (
-                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="md:col-span-4 grid grid-cols-1 md:grid-cols-4 gap-3">
                         <div className="p-3 bg-green-500/5 rounded-lg border border-green-500/20">
                             <p className="text-xs text-muted-foreground mb-1">Est. Yield</p>
                             <p className="font-medium">
@@ -263,6 +263,12 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                             <p className="text-xs text-muted-foreground mb-1">Net Profit</p>
                             <p className={`font-medium ${insights.profit.netProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                 ₱{insights.profit.netProfit?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}
+                            </p>
+                        </div>
+                        <div className="p-3 bg-yellow-500/5 rounded-lg border border-yellow-500/20">
+                            <p className="text-xs text-muted-foreground mb-1">Suggested Capital</p>
+                            <p className="font-medium">
+                                ₱{insights.profit.suggestedCapital?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}
                             </p>
                         </div>
                     </div>

@@ -216,6 +216,11 @@ export const calculateProfitProjection = async (
     const netProfit = potentialRevenue - totalCosts;
     const profitMargin = (netProfit / potentialRevenue) * 100;
     
+    // Calculate suggested capital to avoid shortage
+    // This ensures at least 20% buffer over the minimum required capital
+    const minimumRequiredCapital = totalSeedCost / 0.7; // If 30% goes to other costs, then 70% is seed cost
+    const suggestedCapital = minimumRequiredCapital * 1.2; // Add 20% buffer
+    
     return {
       estimatedYield: totalEstimatedYield,
       potentialRevenue,
@@ -223,7 +228,8 @@ export const calculateProfitProjection = async (
       netProfit,
       profitMargin,
       marketTrend: marketInfo.trend,
-      averageMarketPrice: marketInfo.averagePrice
+      averageMarketPrice: marketInfo.averagePrice,
+      suggestedCapital: suggestedCapital
     };
   } catch (error) {
     console.error('Error calculating profit projection:', error);
@@ -234,7 +240,8 @@ export const calculateProfitProjection = async (
       netProfit: 0,
       profitMargin: 0,
       marketTrend: 'unknown',
-      averageMarketPrice: 0
+      averageMarketPrice: 0,
+      suggestedCapital: 0
     };
   }
 };

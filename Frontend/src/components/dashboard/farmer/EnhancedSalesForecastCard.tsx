@@ -140,7 +140,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                     <div className="p-4 bg-primary/5 rounded-lg border">
                         <p className="text-sm text-muted-foreground mb-1">Total Investment</p>
                         <p className="text-2xl font-bold text-primary">₱{Number(crop.puhunan).toLocaleString()}</p>
@@ -153,6 +153,12 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                         <p className="text-sm text-muted-foreground mb-1">Projected Net Profit</p>
                         <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                             ₱{netProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </p>
+                    </div>
+                    <div className="p-4 bg-yellow-500/5 rounded-lg border">
+                        <p className="text-sm text-muted-foreground mb-1">Suggested Capital</p>
+                        <p className="text-2xl font-bold text-yellow-500">
+                            ₱{insights?.profit?.suggestedCapital?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}
                         </p>
                     </div>
                 </div>
