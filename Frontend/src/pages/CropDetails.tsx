@@ -40,9 +40,32 @@ const CropDetails = () => {
             { id: "5", title: "Monitor for pests and diseases", completed: false, category: "Maintenance" },
             { id: "6", title: "Apply additional fertilizer as needed", completed: false, category: "Maintenance" },
             { id: "7", title: "Harvest when crop is mature", completed: false, category: "Harvesting" },
+            { id: "8", title: "Sort and store harvested crops properly", completed: false, category: "Post-Harvest" },
         ];
 
         return baseItems;
+    };
+    
+    // Function to ensure all checklist items are present
+    const ensureCompleteChecklist = (existingChecklist: ChecklistItem[], cropName: string): ChecklistItem[] => {
+        const baseChecklist = generateChecklist(cropName);
+        
+        // Check if the new item exists in the existing checklist by title
+        const hasPostHarvestItem = existingChecklist.some(item => 
+            item.title === "Sort and store harvested crops properly"
+        );
+        
+        // If the new item doesn't exist, add it
+        if (!hasPostHarvestItem) {
+            const postHarvestItem = baseChecklist.find(item => 
+                item.title === "Sort and store harvested crops properly"
+            );
+            if (postHarvestItem) {
+                return [...existingChecklist, postHarvestItem];
+            }
+        }
+        
+        return existingChecklist;
     };
 
     useEffect(() => {
@@ -66,8 +89,20 @@ const CropDetails = () => {
                     // Load checklist from database or generate new one
                     let loadedChecklist: ChecklistItem[] = [];
                     if (cropData.checklist && cropData.checklist.length > 0) {
-                        // Use existing checklist from database
-                        loadedChecklist = cropData.checklist;
+                        // Use existing checklist from database but ensure it has all items
+                        loadedChecklist = ensureCompleteChecklist(cropData.checklist, cropData.name);
+                        
+                        // If we added new items, save the updated checklist to the database
+                        const originalLength = cropData.checklist.length;
+                        const newLength = loadedChecklist.length;
+                        if (newLength > originalLength) {
+                            // Save updated checklist to database
+                            try {
+                                await updateCrop(cropData.id, { checklist: loadedChecklist });
+                            } catch (error) {
+                                console.error("Error saving updated checklist to database:", error);
+                            }
+                        }
                     } else {
                         // Generate new checklist based on crop type
                         loadedChecklist = generateChecklist(cropData.name);
