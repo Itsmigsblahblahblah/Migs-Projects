@@ -11,9 +11,10 @@ import EditCropDialog from "@/components/dashboard/farmer/EditCropDialog";
 import { useCropManagement } from "@/hooks/custom/useCropManagement"; // Import the hook
 
 const CropHistory = () => {
-    const { crops, deleteCrop } = useCrops();
+    const { crops, loadCrops, deleteCrop } = useCrops();
     const [username, setUsername] = useState("");
     const [loading, setLoading] = useState(true);
+    const [cropsLoaded, setCropsLoaded] = useState(false); // Add state to track if crops are loaded
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [cropToDelete, setCropToDelete] = useState<{id: string, name: string} | null>(null);
     const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false); // Add state for add crop dialog
@@ -49,13 +50,23 @@ const CropHistory = () => {
 
         setUsername(user || 'Farmer');
 
-        // Simulate loading state
-        const timer = setTimeout(() => {
-            setLoading(false);
-        }, 500);
+        // Load crops when component mounts
+        const loadCropsData = async () => {
+            try {
+                // Wait for crops to be loaded
+                if (!cropsLoaded) {
+                    await loadCrops();
+                    setCropsLoaded(true);
+                }
+            } catch (error) {
+                console.error("Error loading crops:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        return () => clearTimeout(timer);
-    }, [navigate]);
+        loadCropsData();
+    }, [navigate, loadCrops, cropsLoaded]);
 
     const formatDate = (timestamp: any) => {
         if (!timestamp) return 'Unknown date';

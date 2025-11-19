@@ -21,13 +21,14 @@ interface ChecklistItem {
 const CropDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getCropById, updateCrop } = useCrops();
+    const { getCropById, updateCrop, loadCrops } = useCrops();
     const [crop, setCrop] = useState<any | null>(null);
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [productivityData, setProductivityData] = useState<{ task: string; productivity: number }[]>([]);
     const [loading, setLoading] = useState(true);
     const [harvestData, setHarvestData] = useState<any>(null);
     const [marketData, setMarketData] = useState<any>(null);
+    const [cropsLoaded, setCropsLoaded] = useState(false);
 
     // Mock checklist data
     const generateChecklist = (cropName: string) => {
@@ -52,6 +53,12 @@ const CropDetails = () => {
             }
 
             try {
+                // Wait for crops to be loaded
+                if (!cropsLoaded) {
+                    await loadCrops();
+                    setCropsLoaded(true);
+                }
+
                 const cropData = getCropById(id);
                 if (cropData) {
                     setCrop(cropData);
@@ -147,7 +154,7 @@ const CropDetails = () => {
         };
 
         fetchCrop();
-    }, [id, getCropById]);
+    }, [id, getCropById, loadCrops, cropsLoaded]);
 
     const toggleChecklistItem = async (itemId: string) => {
         const updatedChecklist = checklist.map(item =>
@@ -256,7 +263,7 @@ const CropDetails = () => {
         );
     }
 
-    if (!crop) {
+    if (!crop && !loading) {
         return (
             <Layout>
                 <div className="max-w-4xl mx-auto p-4">
@@ -286,37 +293,27 @@ const CropDetails = () => {
 
     return (
         <Layout>
-            <div className="max-w-6xl mx-auto p-4 space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
-                    <Button variant="outline" onClick={() => navigate(-1)} className="w-fit">
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Back to Crop History
-                    </Button>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => navigate(`/crop-history`)}>
-                            <Package className="h-4 w-4 mr-2" />
-                            All Crops
-                        </Button>
-                    </div>
-                </div>
+            <div className="space-y-6">
+                {/* Header - Modified to match CropHistory styling */}
 
-                <div className="bg-gradient-primary rounded-xl p-6 text-primary-foreground">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <Sprout className="h-8 w-8" />
-                                <h1 className="text-3xl font-bold">{crop.name} Details</h1>
-                            </div>
-                            <p className="text-primary-foreground/90">
-                                Detailed information and management tools for your {crop.name} crop.
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            <div className="bg-primary-foreground/10 px-3 py-1 rounded-full text-sm">
-                                {crop.soilType}
-                            </div>
-                            <div className="bg-primary-foreground/10 px-3 py-1 rounded-full text-sm">
-                                {crop.landArea} ha
+                <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <Button 
+                                variant="outline" 
+                                onClick={() => navigate(-1)} 
+                                className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20"
+>
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Sprout className="h-6 w-6" />
+                                    <h1 className="text-2xl font-bold">{crop.name} Details</h1>
+                                </div>
+                                <p className="text-primary-foreground/90">
+                                    Detailed information and management tools for your {crop.name} crop.
+                                </p>
                             </div>
                         </div>
                     </div>
