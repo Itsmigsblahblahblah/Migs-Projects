@@ -395,7 +395,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Enhanced Crop Prescription</h1>
+            <h1 className="text-2xl font-bold">Crop Prescription</h1>
             <p className="text-muted-foreground">AI-powered crop recommendations based on soil, weather, and market data</p>
           </div>
         </div>
@@ -492,7 +492,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                       disabled={loading || soilDataLoading}
                       className="w-full"
                     >
-                      {loading ? "Analyzing..." : "Get Enhanced Recommendations"}
+                      {loading ? "Analyzing..." : "Get Recommendations"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -565,9 +565,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                   </CardContent>
                 </Card>
 
-                {/* Enhanced Prescribed Crops */}
+                {/* Prescribed Crops */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Enhanced Crop Recommendations</h3>
+                  <h3 className="text-lg font-semibold mb-4">Crop Recommendations</h3>
                   <p className="text-sm text-muted-foreground mb-4">
                     Based on your soil conditions, current weather patterns, and market demand predictions
                   </p>
@@ -673,7 +673,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                 {/* Disclaimer */}
                 <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
                   <p className="text-sm">
-                    <strong>Note:</strong> These enhanced recommendations are based on real soil analysis data, weather patterns, and market demand predictions processed by our AI model.
+                    <strong>Note:</strong> These recommendations are based on real soil analysis data, weather patterns, and market demand predictions processed by our AI model.
                   </p>
                 </div>
               </div>
