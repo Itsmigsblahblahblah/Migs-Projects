@@ -101,7 +101,8 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 plantedDate: data.plantedDate,
                 puhunan: data.puhunan,
                 createdAt: data.createdAt,
-                checklist: data.checklist || [] // Load checklist data
+                checklist: data.checklist || [], // Load checklist data
+                harvestData: data.harvestData || null // Load harvest data
             });
         });
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Sprout, Leaf, X, RotateCcw } from "lucide-react";
+import { Sprout, Leaf, X, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import ProfileCard from "@/components/dashboard/farmer/ProfileCard";
 import WeatherCard from "@/components/dashboard/farmer/WeatherCard";
 import CropStatusCard from "@/components/dashboard/farmer/CropStatusCard";
@@ -23,24 +23,12 @@ import AdminMessages from "@/components/dashboard/farmer/AdminMessages";
 import { useFarmerDashboard } from "@/hooks/custom/useFarmerDashboard";
 import { useCropManagement } from "@/hooks/custom/useCropManagement";
 import { useReportManagement } from "@/hooks/custom/useReportManagement";
+import { useCrops } from "@/contexts/CropContext"; // Added import
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
-// Mock data for other components
-const mockCropData = {
-  currentCrop: "Rice",
-  plantedArea: "2 hectares",
-  nextHarvest: "Nov 15, 2025",
-  growthStage: "Flowering",
-  productivityIndex: 85
-};
-
-const mockTasks = [
-  { id: 1, title: "Fertilize rice field", dueDate: "2025-10-15", priority: "high" as const },
-  { id: 2, title: "Check irrigation system", dueDate: "2025-10-18", priority: "medium" as const },
-  { id: 3, title: "Pest inspection", dueDate: "2025-10-20", priority: "low" as const }
-];
+// Removed mock data
 
 const FarmerDashboard = () => {
   const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false);
@@ -51,6 +39,7 @@ const FarmerDashboard = () => {
   const [isRequestDeleteDialogOpen, setIsRequestDeleteDialogOpen] = useState(false);
   const [isRequestingDeletion, setIsRequestingDeletion] = useState(false);
   const [showDeletionNotification, setShowDeletionNotification] = useState(true);
+  const [currentCropIndex, setCurrentCropIndex] = useState(0); // Added state for crop navigation
 
   const {
     username,
@@ -79,6 +68,9 @@ const FarmerDashboard = () => {
     setSelectedDate,
     getAvailableDates
   } = useFarmerDashboard();
+
+  // Added useCrops hook
+  const { crops: cropHistory } = useCrops();
 
   const {
     newCrop,
@@ -202,6 +194,105 @@ const FarmerDashboard = () => {
     setRecommendation(null);
   };
 
+  // Function to get crop data for the CropStatusCard
+  const getCropData = () => {
+    if (cropHistory.length === 0) {
+      return {
+        currentCrop: "No crops available",
+        plantedArea: "0 hectares",
+        nextHarvest: "N/A",
+        growthStage: "N/A",
+        productivityIndex: 0
+      };
+    }
+
+    const currentCrop = cropHistory[currentCropIndex];
+    
+    // Calculate harvest date (similar to CropDetails page)
+    let harvestDate = "Unknown date";
+    // Use Gemini API data if available, otherwise fall back to original logic
+    if (currentCrop.harvestData && currentCrop.harvestData.formattedHarvestDate) {
+      harvestDate = currentCrop.harvestData.formattedHarvestDate;
+    } else if (currentCrop.plantedDate) {
+      try {
+        const planted = currentCrop.plantedDate.toDate ? currentCrop.plantedDate.toDate() : new Date(currentCrop.plantedDate);
+        const baseDate = new Date(planted);
+        let daysToHarvest = 90; // Default
+        
+        if (currentCrop.name.toLowerCase().includes("rice")) {
+          daysToHarvest = 120;
+        } else if (currentCrop.name.toLowerCase().includes("corn")) {
+          daysToHarvest = 100;
+        }
+        
+        baseDate.setDate(baseDate.getDate() + daysToHarvest);
+        harvestDate = baseDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      } catch (e) {
+        harvestDate = "Unknown date";
+      }
+    }
+    
+    // Calculate growth stage (similar to CropDetails page)
+    let growthStage = "Unknown";
+    // Use Gemini API data if available, otherwise fall back to original logic
+    if (currentCrop.harvestData && currentCrop.harvestData.growthStage) {
+      growthStage = currentCrop.harvestData.growthStage;
+    } else if (currentCrop.plantedDate) {
+      try {
+        const planted = currentCrop.plantedDate.toDate ? currentCrop.plantedDate.toDate() : new Date(currentCrop.plantedDate);
+        const now = new Date();
+        const diffDays = Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 30) growthStage = 'Germination';
+        else if (diffDays < 60) growthStage = 'Vegetative';
+        else if (diffDays < 90) growthStage = 'Flowering';
+        else growthStage = 'Fruiting';
+      } catch (e) {
+        growthStage = "Unknown";
+      }
+    }
+    
+    // Calculate productivity based on checklist completion (similar to CropDetails)
+    let productivityIndex = 0;
+    if (currentCrop.checklist && currentCrop.checklist.length > 0) {
+      const completed = currentCrop.checklist.filter((item: any) => item.completed).length;
+      productivityIndex = Math.round((completed / currentCrop.checklist.length) * 100);
+    }
+
+    return {
+      currentCrop: currentCrop.name,
+      plantedArea: `${currentCrop.landArea} hectares`,
+      nextHarvest: harvestDate,
+      growthStage: growthStage,
+      productivityIndex: productivityIndex
+    };
+  };
+
+  // Navigation functions
+  const goToPreviousCrop = () => {
+    if (cropHistory.length > 1) {
+      setCurrentCropIndex(prev => (prev === 0 ? cropHistory.length - 1 : prev - 1));
+    }
+  };
+
+  const goToNextCrop = () => {
+    if (cropHistory.length > 1) {
+      setCurrentCropIndex(prev => (prev === cropHistory.length - 1 ? 0 : prev + 1));
+    }
+  };
+
+  // Get the crop data for display
+  const cropData = getCropData();
+  
+  // Reset current crop index when crop history changes
+  useEffect(() => {
+    setCurrentCropIndex(0);
+  }, [cropHistory]);
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -296,7 +387,30 @@ const FarmerDashboard = () => {
             onDateChange={setSelectedDate}
             availableDates={getAvailableDates()}
           />
-          <CropStatusCard cropData={mockCropData} />
+          {/* Updated CropStatusCard with navigation buttons */}
+          <div className="relative">
+            {cropHistory.length > 1 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="absolute top-4 left-4 h-8 w-8 p-0 z-10"
+                  onClick={goToPreviousCrop}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="absolute top-4 right-4 h-8 w-8 p-0 z-10"
+                  onClick={goToNextCrop}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            <CropStatusCard cropData={cropData} />
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -338,7 +452,7 @@ const FarmerDashboard = () => {
         <AdminMessages userId={userId} />
         
         {/* Task Reminders */}
-        <TaskReminders tasks={mockTasks} />
+        <TaskReminders tasks={[]} />
 
         {/* Market Demand Card */}
         <MarketDemandCard />
