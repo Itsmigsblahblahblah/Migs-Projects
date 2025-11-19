@@ -541,7 +541,7 @@ const MarketDemand = () => {
                   Recommended Crops for {getMonthName(selectedMonth)} {selectedYear}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-grow">
+              <CardContent className="flex-grow overflow-y-auto" style={{ maxHeight: 'calc(100vh - 100px)' }}>
                 {filteredData.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground">
                     <TrendingUp className="h-12 w-12 mb-4" />
