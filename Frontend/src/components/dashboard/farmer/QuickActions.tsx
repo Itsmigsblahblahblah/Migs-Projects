@@ -93,32 +93,15 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, use
                         <span>Prescribe Crop</span>
                     </Button>
                     
-                    {/* Combined Crop Management Button with Dropdown */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="h-20 flex flex-col gap-2">
-                                <Leaf className="h-5 w-5" />
-                                <span className="flex items-center gap-1">
-                                    Crop Management
-                                    <ChevronDown className="h-4 w-4" />
-                                </span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="center" className="w-48">
-                            <DropdownMenuItem onClick={onAddCrop} className="flex items-center gap-2">
-                                <Plus className="h-4 w-4" />
-                                Add Crop
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={onUpdateCrop} className="flex items-center gap-2">
-                                <Edit className="h-4 w-4" />
-                                Edit Crop
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate('/crop-history')} className="flex items-center gap-2">
-                                <History className="h-4 w-4" />
-                                Crop History
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Direct Crop Management Button - No Dropdown */}
+                    <Button 
+                        variant="outline" 
+                        className="h-20 flex flex-col gap-2"
+                        onClick={() => navigate('/crop-history')}
+                    >
+                        <Leaf className="h-5 w-5" />
+                        <span>Crop Management</span>
+                    </Button>
                     
                     <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/alerts')}>
                         <div className="relative">
