@@ -9,7 +9,6 @@ import CropStatusCard from "@/components/dashboard/farmer/CropStatusCard";
 import QuickActions from "@/components/dashboard/farmer/QuickActions";
 import ReportForm from "@/components/dashboard/farmer/ReportForm";
 import RecommendationResults from "@/components/dashboard/farmer/RecommendationResults";
-import TaskReminders from "@/components/dashboard/farmer/TaskReminders";
 import QuickStats from "@/components/dashboard/farmer/QuickStats";
 import MarketDemandCard from "@/components/dashboard/farmer/MarketDemandCard";
 import EditProfileDialog from "@/components/dashboard/farmer/EditProfileDialog";
@@ -452,9 +451,6 @@ const FarmerDashboard = () => {
         {/* Admin Messages */}
         <AdminMessages userId={userId} />
         
-        {/* Task Reminders */}
-        <TaskReminders tasks={[]} />
-
         {/* Market Demand Card */}
         <MarketDemandCard />
 
