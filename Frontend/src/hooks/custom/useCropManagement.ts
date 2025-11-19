@@ -20,7 +20,7 @@ export const useCropManagement = () => {
     });
 
     const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
-    const { addCrop, updateCrop, deleteCrop } = useCrops(); // Added deleteCrop
+    const { crops, addCrop, updateCrop, deleteCrop } = useCrops(); // Added deleteCrop
     const { toast } = useToast();
 
     // Handle crop input changes
@@ -76,7 +76,7 @@ export const useCropManagement = () => {
                 name: newCrop.name,
                 soilType: newCrop.soilType,
                 landArea: parseFloat(newCrop.landArea),
-                plantedDate: newCrop.plantedDate,
+                plantedDate: newCrop.plantedDate, // This is already a string in YYYY-MM-DD format
                 puhunan: parseFloat(newCrop.puhunan),
             };
 
@@ -132,14 +132,25 @@ export const useCropManagement = () => {
                 return;
             }
 
+            // Get the current crop data to check if plantedDate changed
+            const currentCrop = crops.find(crop => crop.id === selectedCropId);
+            const plantedDateChanged = currentCrop?.plantedDate !== editCrop.plantedDate;
+
             // Prepare crop data
             const cropData = {
                 name: editCrop.name,
                 soilType: editCrop.soilType,
                 landArea: parseFloat(editCrop.landArea),
-                plantedDate: editCrop.plantedDate,
+                plantedDate: editCrop.plantedDate, // This is already a string in YYYY-MM-DD format
                 puhunan: parseFloat(editCrop.puhunan),
             };
+
+            // If planted date changed, we need to recalculate harvest data
+            if (plantedDateChanged) {
+                // Remove old harvest data so it can be recalculated
+                // @ts-ignore - we need to add harvestData to the type
+                cropData.harvestData = null;
+            }
 
             // Update crop in Firestore via context
             await updateCrop(selectedCropId, cropData);
@@ -192,11 +203,28 @@ export const useCropManagement = () => {
 
     const selectCropForEditing = (crop: any) => {
         setSelectedCropId(crop.id);
+        
+        // Format the plantedDate for the input field
+        let plantedDate = "";
+        if (crop.plantedDate) {
+            if (typeof crop.plantedDate === 'string') {
+                // If it's already a string in YYYY-MM-DD format, use it directly
+                plantedDate = crop.plantedDate;
+            } else if (crop.plantedDate.toDate) {
+                // If it's a Firestore Timestamp, convert it to YYYY-MM-DD format
+                const date = crop.plantedDate.toDate();
+                plantedDate = date.toISOString().split('T')[0];
+            } else if (crop.plantedDate instanceof Date) {
+                // If it's a JavaScript Date object, convert it to YYYY-MM-DD format
+                plantedDate = crop.plantedDate.toISOString().split('T')[0];
+            }
+        }
+        
         setEditCrop({
             name: crop.name,
             soilType: crop.soilType,
             landArea: crop.landArea.toString(),
-            plantedDate: crop.plantedDate || "",
+            plantedDate: plantedDate,
             puhunan: crop.puhunan.toString()
         });
     };

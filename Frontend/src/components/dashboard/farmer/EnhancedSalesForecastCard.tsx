@@ -30,6 +30,7 @@ interface SalesData {
 
 interface EnhancedSalesForecastCardProps {
     crop: any;
+    marketData?: any; // Added optional marketData prop
 }
 
 // Chart configuration for ShadCN chart
@@ -48,7 +49,7 @@ const salesChartConfig = {
     },
 } satisfies ChartConfig;
 
-const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => {
+const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCardProps) => {
     const [insights, setInsights] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [salesForecastData, setSalesForecastData] = useState<SalesData[]>([]);
@@ -57,12 +58,20 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
         const fetchInsights = async () => {
             try {
                 setLoading(true);
-                const cropInsights = await getCropInsights(
-                    crop.name,
-                    crop.soilType,
-                    crop.landArea,
-                    crop.puhunan
-                );
+                
+                // Use provided marketData or fetch new insights
+                let cropInsights;
+                if (marketData) {
+                    cropInsights = marketData;
+                } else {
+                    cropInsights = await getCropInsights(
+                        crop.name,
+                        crop.soilType,
+                        crop.landArea,
+                        crop.puhunan
+                    );
+                }
+                
                 setInsights(cropInsights);
                 
                 // Generate sales forecast data based on insights
@@ -98,7 +107,7 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
         if (crop) {
             fetchInsights();
         }
-    }, [crop]);
+    }, [crop, marketData]);
 
     if (loading) {
         return (

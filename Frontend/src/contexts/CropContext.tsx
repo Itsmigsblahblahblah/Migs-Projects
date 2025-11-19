@@ -22,6 +22,7 @@ interface Crop {
     createdAt: any;
     checklist?: ChecklistItem[]; // Add checklist field
     harvestData?: any; // Add harvest data field
+    marketData?: any; // Add market data field
 }
 
 interface CropContextType {
@@ -101,7 +102,9 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 plantedDate: data.plantedDate,
                 puhunan: data.puhunan,
                 createdAt: data.createdAt,
-                checklist: data.checklist || [] // Load checklist data
+                checklist: data.checklist || [], // Load checklist data
+                harvestData: data.harvestData, // Load harvest data
+                marketData: data.marketData // Load market data
             });
         });
 

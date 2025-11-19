@@ -65,11 +65,43 @@ const CropInfoCard = ({ crop }: CropInfoCardProps) => {
                         <div>
                             <p className="text-xs text-muted-foreground uppercase tracking-wide">Planting Date</p>
                             <p className="font-medium text-lg">
-                                {crop.plantedDate?.toDate?.().toLocaleDateString('en-US', {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: 'numeric'
-                                }) || 'Unknown date'}
+                                {(() => {
+                                    try {
+                                        // Handle string dates (YYYY-MM-DD format)
+                                        if (typeof crop.plantedDate === 'string') {
+                                            const date = new Date(crop.plantedDate);
+                                            if (!isNaN(date.getTime())) {
+                                                return date.toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric'
+                                                });
+                                            }
+                                        }
+                                        
+                                        // Handle Firestore Timestamp
+                                        if (crop.plantedDate?.toDate) {
+                                            return crop.plantedDate.toDate().toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            });
+                                        }
+                                        
+                                        // Handle JavaScript Date objects
+                                        if (crop.plantedDate instanceof Date) {
+                                            return crop.plantedDate.toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            });
+                                        }
+                                        
+                                        return 'Unknown date';
+                                    } catch (e) {
+                                        return 'Unknown date';
+                                    }
+                                })()}
                             </p>
                         </div>
                     </div>
@@ -81,9 +113,32 @@ const CropInfoCard = ({ crop }: CropInfoCardProps) => {
                         <div>
                             <p className="text-xs text-muted-foreground uppercase tracking-wide">Days Since Planting</p>
                             <p className="font-medium text-lg">
-                                {crop.plantedDate?.toDate ? 
-                                    Math.floor((new Date().getTime() - crop.plantedDate.toDate().getTime()) / (1000 * 60 * 60 * 24)) : 
-                                    'N/A'} days
+                                {(() => {
+                                    try {
+                                        let plantedDate;
+                                        
+                                        // Handle string dates (YYYY-MM-DD format)
+                                        if (typeof crop.plantedDate === 'string') {
+                                            plantedDate = new Date(crop.plantedDate);
+                                        }
+                                        // Handle Firestore Timestamp
+                                        else if (crop.plantedDate?.toDate) {
+                                            plantedDate = crop.plantedDate.toDate();
+                                        }
+                                        // Handle JavaScript Date objects
+                                        else if (crop.plantedDate instanceof Date) {
+                                            plantedDate = crop.plantedDate;
+                                        }
+                                        
+                                        if (plantedDate && !isNaN(plantedDate.getTime())) {
+                                            return Math.floor((new Date().getTime() - plantedDate.getTime()) / (1000 * 60 * 60 * 24));
+                                        }
+                                        
+                                        return 'N/A';
+                                    } catch (e) {
+                                        return 'N/A';
+                                    }
+                                })()} days
                             </p>
                         </div>
                     </div>
