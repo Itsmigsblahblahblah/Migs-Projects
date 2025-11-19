@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCrops } from "@/contexts/CropContext";
-import { Leaf, Calendar, MapPin, Wheat, TrendingUp, Plus, Sprout, Trash2, Edit } from "lucide-react"; // Added Edit icon
+import { Leaf, Calendar, MapPin, Wheat, TrendingUp, Plus, Sprout, Trash2, Edit, ArrowLeft } from "lucide-react"; // Added ArrowLeft icon
 import AddCropDialog from "@/components/dashboard/farmer/AddCropDialog";
 import UpdateCropDialog from "@/components/dashboard/farmer/UpdateCropDialog";
 import EditCropDialog from "@/components/dashboard/farmer/EditCropDialog";
@@ -158,14 +158,19 @@ const CropHistory = () => {
                 {/* Header - Added Add Crop Button */}
                 <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <Leaf className="h-6 w-6" />
-                                <h1 className="text-2xl font-bold">Crop History</h1>
+                        <div className="flex items-center gap-4">
+                            <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Leaf className="h-6 w-6" />
+                                    <h1 className="text-2xl font-bold">Crop History</h1>
+                                </div>
+                                <p className="text-primary-foreground/90">
+                                    View and manage all your crop plantings
+                                </p>
                             </div>
-                            <p className="text-primary-foreground/90">
-                                View and manage all your crop plantings
-                            </p>
                         </div>
                         {/* Add Crop Button - Moved to the right side with improved contrast */}
                         <div className="flex gap-2">
