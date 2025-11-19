@@ -451,13 +451,6 @@ const FarmerDashboard = () => {
         {/* Market Demand Card */}
         <MarketDemandCard />
 
-        {/* Quick Stats */}
-        <QuickStats
-          monthlyReports={monthlyReports}
-          successRate={85}
-          activeFields={3}
-        />
-
         {/* Dialogs */}
         <EditProfileDialog
           open={isEditProfileDialogOpen}
