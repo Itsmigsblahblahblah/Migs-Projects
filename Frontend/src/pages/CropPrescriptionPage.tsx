@@ -390,15 +390,17 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Crop Prescription</h1>
-            <p className="text-muted-foreground">AI-powered crop recommendations based on soil, weather, and market data</p>
+        {!selectedCrop && (
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">Crop Prescription</h1>
+              <p className="text-muted-foreground">AI-powered crop recommendations based on soil, weather, and market data</p>
+            </div>
           </div>
-        </div>
+        )}
 
         {!selectedCrop ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -693,15 +695,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
           </Tabs>
         ) : (
           <div className="space-y-6">
-            {/* Back Button */}
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon" onClick={handleResetSelection}>
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">{selectedCrop.crop} Prescription</h1>
-                <p className="text-muted-foreground">Detailed prescription and market analysis</p>
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold">{selectedCrop.crop} Prescription</h1>
+              <p className="text-muted-foreground">Detailed prescription and market analysis</p>
             </div>
 
             {/* Selected Crop Details */}
