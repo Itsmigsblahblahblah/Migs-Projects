@@ -1,21 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle } from "lucide-react";
-import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer
+import { 
+    RadialBarChart, 
+    RadialBar, 
+    Legend, 
+    ResponsiveContainer 
 } from "recharts";
-import {
-    ChartConfig,
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-} from "@/components/ui/chart";
 
 interface ChecklistItem {
     id: string;
@@ -37,20 +28,18 @@ interface MaintenanceChecklistCardProps {
     selectedPrescribedCrop?: any;
 }
 
-// Chart configuration for productivity chart
-const productivityChartConfig = {
-    productivity: {
-        label: "Productivity (%)",
-        color: "hsl(var(--chart-1))",
-    },
-} satisfies ChartConfig;
-
 const MaintenanceChecklistCard = ({
     checklist,
     productivityData,
     checklistProductivity,
     onToggleItem
 }: MaintenanceChecklistCardProps) => {
+    // Prepare data for the radial bar chart
+    const radialData = [
+        { name: 'Completed', value: checklistProductivity, fill: '#10b981' }, // green
+        { name: 'Remaining', value: 100 - checklistProductivity, fill: '#bbf7d0' } // light green
+    ];
+
     return (
         <Card className="shadow-card">
             <CardHeader>
@@ -85,58 +74,33 @@ const MaintenanceChecklistCard = ({
                 {/* Productivity Visualization based on checklist completion */}
                 <div className="mt-4">
                     <h3 className="font-medium mb-4">Maintenance Progress</h3>
-                    <div className="h-64 w-full">
-                        <ChartContainer config={productivityChartConfig} className="h-full w-full">
-                            <LineChart
-                                accessibilityLayer
-                                data={productivityData}
-                                margin={{
-                                    left: 12,
-                                    right: 12,
-                                    top: 12,
-                                    bottom: 12,
-                                }}
-                            >
-                                <CartesianGrid vertical={false} />
-                                <XAxis
-                                    dataKey="task"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={8}
-                                    tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value}
-                                />
-                                <YAxis
-                                    domain={[0, 100]}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={8}
-                                    tickFormatter={(value) => `${value}%`}
-                                />
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={<ChartTooltipContent
-                                        formatter={(value) => `${Number(value).toFixed(0)}%`}
-                                        labelFormatter={(value) => `Task: ${value}`}
-                                    />}
-                                />
-                                <Line
-                                    dataKey="productivity"
-                                    type="monotone"
-                                    stroke="var(--color-productivity)"
-                                    strokeWidth={2}
-                                    fill="var(--color-productivity)"
-                                    dot={{ r: 4, fill: "var(--color-productivity)", strokeWidth: 2, stroke: "var(--color-productivity)" }}
-                                    activeDot={{ r: 6, stroke: "var(--color-productivity)", strokeWidth: 2 }}
-                                    connectNulls={false}
-                                />
-                            </LineChart>
-                        </ChartContainer>
-                    </div>
-                    <div className="mt-4 text-center">
-                        <p className="text-sm font-medium">{checklistProductivity}% Complete</p>
-                        <p className="text-xs text-muted-foreground">
-                            {checklist.filter(item => item.completed).length} of {checklist.length} tasks completed
-                        </p>
+                    <div className="flex flex-col items-center">
+                        <div className="w-48 h-48 relative">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <RadialBarChart 
+                                    innerRadius="60%" 
+                                    outerRadius="90%" 
+                                    barSize={12}
+                                    data={radialData}
+                                    startAngle={90}
+                                    endAngle={-270}
+                                >
+                                    <RadialBar
+                                        background
+                                        dataKey="value"
+                                    />
+                                </RadialBarChart>
+                            </ResponsiveContainer>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <p className="text-3xl font-bold text-green-600">{checklistProductivity}%</p>
+                                <p className="text-sm text-muted-foreground">Complete</p>
+                            </div>
+                        </div>
+                        <div className="mt-4 text-center">
+                            <p className="text-sm text-muted-foreground">
+                                {checklist.filter(item => item.completed).length} of {checklist.length} tasks completed
+                            </p>
+                        </div>
                     </div>
                 </div>
             </CardContent>
