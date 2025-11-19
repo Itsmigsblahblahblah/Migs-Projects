@@ -213,11 +213,11 @@ const MarketDemand = () => {
 
   const getDemandLevelColor = (level: string) => {
     switch (level.toLowerCase()) {
-      case "high": return "bg-green-100 text-green-800";
-      case "moderate": return "bg-blue-100 text-blue-800";
-      case "stable": return "bg-yellow-100 text-yellow-800";
-      case "low": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "high": return "bg-green-100 text-green-800 hover:bg-green-200";
+      case "moderate": return "bg-blue-100 text-blue-800 hover:bg-blue-200";
+      case "stable": return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+      case "low": return "bg-red-100 text-red-800 hover:bg-red-200";
+      default: return "bg-gray-100 text-gray-800 hover:bg-gray-200";
     }
   };
 
@@ -622,7 +622,7 @@ const MarketDemand = () => {
                       <div className="w-3 h-3 rounded-full bg-green-500"></div>
                       <span>High Demand</span>
                     </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">
                       {filteredData.filter(crop => crop.demand_level.toLowerCase() === 'high').length}
                     </Badge>
                   </div>
@@ -631,7 +631,7 @@ const MarketDemand = () => {
                       <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                       <span>Moderate Demand</span>
                     </div>
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
                       {filteredData.filter(crop => crop.demand_level.toLowerCase() === 'moderate').length}
                     </Badge>
                   </div>
@@ -640,7 +640,7 @@ const MarketDemand = () => {
                       <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                       <span>Stable Demand</span>
                     </div>
-                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
                       {filteredData.filter(crop => crop.demand_level.toLowerCase() === 'stable').length}
                     </Badge>
                   </div>
@@ -649,7 +649,7 @@ const MarketDemand = () => {
                       <div className="w-3 h-3 rounded-full bg-red-500"></div>
                       <span>Low Demand</span>
                     </div>
-                    <Badge variant="secondary" className="bg-red-100 text-red-800">
+                    <Badge variant="secondary" className="bg-red-100 text-red-800 hover:bg-red-200">
                       {filteredData.filter(crop => crop.demand_level.toLowerCase() === 'low').length}
                     </Badge>
                   </div>
