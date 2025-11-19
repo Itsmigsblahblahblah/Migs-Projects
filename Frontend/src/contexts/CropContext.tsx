@@ -124,7 +124,7 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    const addCrop = async (cropData: Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>) => {
+    const addCrop = async (cropData: Omit<Crop, 'id' | 'createdAt' | 'userId'>) => {
       try {
         const userId = currentUserId || localStorage.getItem('userId') || 'default-user';
         if (!userId) {
@@ -137,7 +137,7 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
         const newCropData = {
           ...cropData,
           userId: userId,
-          plantedDate: Timestamp.now(),
+          plantedDate: cropData.plantedDate, // Use the provided plantedDate instead of Timestamp.now()
           createdAt: Timestamp.now()
         };
 
