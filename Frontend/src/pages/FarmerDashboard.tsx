@@ -245,7 +245,8 @@ const FarmerDashboard = () => {
       try {
         const planted = currentCrop.plantedDate.toDate ? currentCrop.plantedDate.toDate() : new Date(currentCrop.plantedDate);
         const now = new Date();
-        const diffDays = Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
+        const diffTime = Math.abs(now.getTime() - planted.getTime());
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         
         if (diffDays < 30) growthStage = 'Germination';
         else if (diffDays < 60) growthStage = 'Vegetative';
