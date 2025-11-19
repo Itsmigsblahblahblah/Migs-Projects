@@ -447,9 +447,6 @@ const FarmerDashboard = () => {
             )}
           </div>
         </div>
-
-        {/* Admin Messages */}
-        <AdminMessages userId={userId} />
         
         {/* Market Demand Card */}
         <MarketDemandCard />
