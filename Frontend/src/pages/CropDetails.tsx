@@ -9,6 +9,7 @@ import MaintenanceChecklistCard from "@/components/dashboard/farmer/MaintenanceC
 import EnhancedCropInfoCard from "@/components/dashboard/farmer/EnhancedCropInfoCard";
 import EnhancedSalesForecastCard from "@/components/dashboard/farmer/EnhancedSalesForecastCard";
 import { getHarvestEstimate } from "@/services/geminiService";
+import { getCropInsights } from "@/services/cropDataService";
 
 interface ChecklistItem {
     id: string;
@@ -26,6 +27,7 @@ const CropDetails = () => {
     const [productivityData, setProductivityData] = useState<{ task: string; productivity: number }[]>([]);
     const [loading, setLoading] = useState(true);
     const [harvestData, setHarvestData] = useState<any>(null);
+    const [marketData, setMarketData] = useState<any>(null);
 
     // Mock checklist data
     const generateChecklist = (cropName: string) => {
@@ -83,10 +85,15 @@ const CropDetails = () => {
                     
                     setProductivityData(initialData);
 
-                    // Fetch harvest estimate from Gemini API only if not already saved
-                    if (cropData.plantedDate && (!cropData.harvestData || !cropData.harvestData.estimatedHarvestDate)) {
+                    // Fetch harvest estimate from Gemini API only if not already saved or if it was reset
+                    if (cropData.plantedDate && (!cropData.harvestData || Object.keys(cropData.harvestData).length === 0)) {
                         try {
-                            const plantedDate = cropData.plantedDate.toDate ? cropData.plantedDate.toDate() : new Date(cropData.plantedDate);
+                            const plantedDate = typeof cropData.plantedDate === 'string' 
+                                ? new Date(cropData.plantedDate) 
+                                : cropData.plantedDate.toDate 
+                                    ? cropData.plantedDate.toDate() 
+                                    : new Date(cropData.plantedDate);
+                                    
                             const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
                             
                             // Save harvest data to crop record
@@ -104,6 +111,32 @@ const CropDetails = () => {
                     } else {
                         // Reset harvest data if no conditions are met
                         setHarvestData(null);
+                    }
+
+                    // Fetch market demand data only if not already saved or if it's outdated
+                    // Check if we have market data and if it's still valid (same harvest date)
+                    if (cropData.marketData) {
+                        // Use existing market data
+                        setMarketData(cropData.marketData);
+                    } else {
+                        // Fetch new market data
+                        try {
+                            const insights = await getCropInsights(
+                                cropData.name,
+                                cropData.soilType,
+                                cropData.landArea,
+                                cropData.puhunan
+                            );
+                            
+                            // Save market data to crop record
+                            if (cropData.id) {
+                                await updateCrop(cropData.id, { marketData: insights });
+                            }
+                            
+                            setMarketData(insights);
+                        } catch (error) {
+                            console.error("Error fetching market data:", error);
+                        }
                     }
                 }
             } catch (error) {
@@ -299,11 +332,43 @@ const CropDetails = () => {
                             <div>
                                 <p className="text-sm text-muted-foreground">Planting Date</p>
                                 <p className="font-medium">
-                                    {crop.plantedDate?.toDate?.().toLocaleDateString('en-US', {
-                                        year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric'
-                                    }) || 'Unknown date'}
+                                    {(() => {
+                                        try {
+                                            // Handle string dates (YYYY-MM-DD format)
+                                            if (typeof crop.plantedDate === 'string') {
+                                                const date = new Date(crop.plantedDate);
+                                                if (!isNaN(date.getTime())) {
+                                                    return date.toLocaleDateString('en-US', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    });
+                                                }
+                                            }
+                                            
+                                            // Handle Firestore Timestamp
+                                            if (crop.plantedDate?.toDate) {
+                                                return crop.plantedDate.toDate().toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric'
+                                                });
+                                            }
+                                            
+                                            // Handle JavaScript Date objects
+                                            if (crop.plantedDate instanceof Date) {
+                                                return crop.plantedDate.toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric'
+                                                });
+                                            }
+                                            
+                                            return 'Unknown date';
+                                        } catch (e) {
+                                            return 'Unknown date';
+                                        }
+                                    })()}
                                 </p>
                             </div>
                         </div>
@@ -356,7 +421,7 @@ const CropDetails = () => {
                 </div>
 
                 <div className="grid lg:grid-cols-1 gap-6">
-                    <EnhancedSalesForecastCard crop={crop} />
+                    <EnhancedSalesForecastCard crop={crop} marketData={marketData} />
                 </div>
 
                 <MaintenanceChecklistCard 

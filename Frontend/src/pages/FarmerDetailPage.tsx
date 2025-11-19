@@ -114,17 +114,39 @@ const FarmerDetailPage = () => {
     }
   };
 
-  const determineCropStatus = (plantedDate: any): string => {
-    if (!plantedDate?.toDate) return "In Progress";
-    
-    const planted = plantedDate.toDate();
-    const now = new Date();
-    const daysDiff = Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
-    
-    // Simple logic: crops harvested after 90 days
-    if (daysDiff > 90) return "Harvested";
-    return "In Progress";
-  };
+    const determineCropStatus = (plantedDate: any): string => {
+        try {
+            let planted: Date;
+            
+            // Handle string dates (YYYY-MM-DD format)
+            if (typeof plantedDate === 'string') {
+                planted = new Date(plantedDate);
+            }
+            // Handle Firestore Timestamp
+            else if (plantedDate?.toDate) {
+                planted = plantedDate.toDate();
+            }
+            // Handle JavaScript Date objects
+            else if (plantedDate instanceof Date) {
+                planted = plantedDate;
+            } else {
+                return "In Progress";
+            }
+            
+            if (isNaN(planted.getTime())) {
+                return "In Progress";
+            }
+            
+            const now = new Date();
+            const daysDiff = Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
+            
+            // Simple logic: crops harvested after 90 days
+            if (daysDiff > 90) return "Harvested";
+            return "In Progress";
+        } catch {
+            return "In Progress";
+        }
+    };
 
   const getCropsByStatus = (status: string) => {
     return crops.filter(crop => crop.status === status);
@@ -143,13 +165,38 @@ const FarmerDetailPage = () => {
   };
 
   const formatTimestamp = (timestamp: any) => {
-    if (!timestamp?.toDate) return 'Unknown date';
     try {
-      return timestamp.toDate().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+      // Handle string dates (YYYY-MM-DD format)
+      if (typeof timestamp === 'string') {
+        const date = new Date(timestamp);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+        }
+      }
+      
+      // Handle Firestore Timestamp
+      if (timestamp?.toDate) {
+        return timestamp.toDate().toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+      
+      // Handle JavaScript Date objects
+      if (timestamp instanceof Date) {
+        return timestamp.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+      
+      return 'Unknown date';
     } catch {
       return 'Unknown date';
     }

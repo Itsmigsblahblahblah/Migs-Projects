@@ -34,13 +34,40 @@ const CropHistory = () => {
     }, [navigate]);
 
     const formatDate = (timestamp: any) => {
-        if (!timestamp || !timestamp.toDate) return 'Unknown date';
+        if (!timestamp) return 'Unknown date';
+        
         try {
-            return timestamp.toDate().toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
+            // Handle string dates (YYYY-MM-DD format)
+            if (typeof timestamp === 'string') {
+                const date = new Date(timestamp);
+                if (!isNaN(date.getTime())) {
+                    return date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                }
+            }
+            
+            // Handle Firestore Timestamp
+            if (timestamp.toDate) {
+                return timestamp.toDate().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+            
+            // Handle JavaScript Date objects
+            if (timestamp instanceof Date) {
+                return timestamp.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+            
+            return 'Unknown date';
         } catch (e) {
             return 'Unknown date';
         }
