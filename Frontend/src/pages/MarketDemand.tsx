@@ -245,11 +245,22 @@ const MarketDemand = () => {
     return (
       <Layout>
         <div className="space-y-6">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
+          {/* Green Container Header */}
+          <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <TrendingUp className="h-6 w-6" />
+                  <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
+                </div>
+                <p className="text-primary-foreground/90">
+                  Predicted market demand and pricing for agricultural products
+                </p>
+              </div>
+            </div>
           </div>
           
           <Card className="shadow-card">
@@ -274,11 +285,22 @@ const MarketDemand = () => {
     return (
       <Layout>
         <div className="space-y-6">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
+          {/* Green Container Header */}
+          <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <TrendingUp className="h-6 w-6" />
+                  <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
+                </div>
+                <p className="text-primary-foreground/90">
+                  Predicted market demand and pricing for agricultural products
+                </p>
+              </div>
+            </div>
           </div>
           
           <Card className="shadow-card">
@@ -306,11 +328,26 @@ const MarketDemand = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Green Container Header */}
+        <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
           <div className="flex items-center gap-4">
-            <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
               <ArrowLeft className="h-4 w-4" />
             </Button>
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <TrendingUp className="h-6 w-6" />
+                <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
+              </div>
+              <p className="text-primary-foreground/90">
+                Predicted market demand and pricing for agricultural products in {getMonthName(selectedMonth)} {selectedYear}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
           </div>
           
@@ -503,43 +540,50 @@ const MarketDemand = () => {
                   <TrendingUp className="h-5 w-5" />
                   Recommended Crops for {getMonthName(selectedMonth)} {selectedYear}
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Based on predicted market demand and price trends
-                </p>
               </CardHeader>
-              <CardContent className="flex-grow">
-                {filteredData.length > 0 ? (
-                  <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
+              <CardContent className="flex-grow overflow-y-auto" style={{ maxHeight: 'calc(100vh - 100px)' }}>
+                {filteredData.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground">
+                    <TrendingUp className="h-12 w-12 mb-4" />
+                    <p className="text-lg font-medium mb-2">No market data available</p>
+                    <p className="text-sm">
+                      Try adjusting your filters or check back later for updated market forecasts.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
                     {filteredData.map((crop, index) => (
-                      <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors">
-                        <div className="flex-1 mb-3 sm:mb-0">
-                          <div className="font-medium">{crop.vegetable}</div>
-                          <div className="flex flex-wrap items-center gap-4 mt-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">Current:</span>
-                              <span className="font-medium">₱{crop.current_avg_price.toFixed(2)}</span>
+                      <div key={index} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-semibold text-lg">{crop.vegetable}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge className={getDemandLevelColor(crop.demand_level)}>
+                                {crop.demand_level} demand
+                              </Badge>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">Predicted:</span>
-                              <span className="font-medium">₱{crop.predicted_price.toFixed(2)}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold">₱{crop.predicted_price.toFixed(2)}</div>
+                            <div className="text-sm text-muted-foreground">predicted price</div>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                          <div>
+                            <div className="text-sm text-muted-foreground">Current Avg. Price</div>
+                            <div className="font-medium">₱{crop.current_avg_price.toFixed(2)}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-muted-foreground">Price Change</div>
+                            <div className="font-medium flex items-center gap-1">
                               {getPriceChangeIcon(crop.price_change)}
-                              <span className={`text-sm ${crop.price_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {crop.price_change_percent >= 0 ? '+' : ''}{crop.price_change_percent.toFixed(2)}%
-                              </span>
+                              {Math.abs(crop.price_change_percent).toFixed(2)}%
                             </div>
                           </div>
                         </div>
-                        <Badge className={getDemandLevelColor(crop.demand_level)}>
-                          {crop.demand_level} Demand
-                        </Badge>
                       </div>
                     ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {searchTerm ? "No crops match your search" : "No market demand data available"}
                   </div>
                 )}
               </CardContent>
@@ -549,87 +593,97 @@ const MarketDemand = () => {
           <div className="space-y-6">
             <Card className="shadow-card">
               <CardHeader>
-                <CardTitle>Demand Levels</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Forecast Period
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <button
-                  className={`flex items-center justify-between p-3 rounded-lg w-full text-left transition-all ${
-                    selectedDemandLevel === "High" 
-                      ? "bg-green-200 ring-2 ring-green-500" 
-                      : "bg-green-100 hover:bg-green-200"
-                  }`}
-                  onClick={() => setSelectedDemandLevel("High")}
-                >
-                  <span className="font-medium">High Demand</span>
-                  <Badge className="bg-green-800 text-green-100">+10%</Badge>
-                </button>
-                <button
-                  className={`flex items-center justify-between p-3 rounded-lg w-full text-left transition-all ${
-                    selectedDemandLevel === "Moderate" 
-                      ? "bg-blue-200 ring-2 ring-blue-500" 
-                      : "bg-blue-100 hover:bg-blue-200"
-                  }`}
-                  onClick={() => setSelectedDemandLevel("Moderate")}
-                >
-                  <span className="font-medium">Moderate Demand</span>
-                  <Badge className="bg-blue-800 text-blue-100">+5% to +10%</Badge>
-                </button>
-                <button
-                  className={`flex items-center justify-between p-3 rounded-lg w-full text-left transition-all ${
-                    selectedDemandLevel === "Stable" 
-                      ? "bg-yellow-200 ring-2 ring-yellow-500" 
-                      : "bg-yellow-100 hover:bg-yellow-200"
-                  }`}
-                  onClick={() => setSelectedDemandLevel("Stable")}
-                >
-                  <span className="font-medium">Stable Demand</span>
-                  <Badge className="bg-yellow-800 text-yellow-100">-5% to +5%</Badge>
-                </button>
-                <button
-                  className={`flex items-center justify-between p-3 rounded-lg w-full text-left transition-all ${
-                    selectedDemandLevel === "Low" 
-                      ? "bg-red-200 ring-2 ring-red-500" 
-                      : "bg-red-100 hover:bg-red-200"
-                  }`}
-                  onClick={() => setSelectedDemandLevel("Low")}
-                >
-                  <span className="font-medium">Low Demand</span>
-                  <Badge className="bg-red-800 text-red-100">-5% or less</Badge>
-                </button>
-                {selectedDemandLevel && (
-                  <button
-                    className="flex items-center justify-center p-3 rounded-lg w-full text-left bg-gray-100 hover:bg-gray-200 transition-all"
-                    onClick={() => setSelectedDemandLevel(null)}
-                  >
-                    <span className="font-medium text-gray-700">Show All Crops</span>
-                  </button>
-                )}
+              <CardContent>
+                <div className="text-center py-4">
+                  <div className="text-2xl font-bold text-primary">{getMonthName(selectedMonth)} {selectedYear}</div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Market predictions for this period
+                  </p>
+                </div>
               </CardContent>
             </Card>
             
             <Card className="shadow-card">
               <CardHeader>
-                <CardTitle>How It Works</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Demand Levels
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1 w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
-                    <span>AI analyzes historical price trends</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1 w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
-                    <span>Predicts future price movements</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1 w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
-                    <span>Calculates demand levels based on price changes</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-1 w-2 h-2 rounded-full bg-primary flex-shrink-0"></span>
-                    <span>Updates predictions regularly</span>
-                  </li>
-                </ul>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span>High Demand</span>
+                    </div>
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      {filteredData.filter(crop => crop.demand_level.toLowerCase() === 'high').length}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span>Moderate Demand</span>
+                    </div>
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                      {filteredData.filter(crop => crop.demand_level.toLowerCase() === 'moderate').length}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <span>Stable Demand</span>
+                    </div>
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                      {filteredData.filter(crop => crop.demand_level.toLowerCase() === 'stable').length}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <span>Low Demand</span>
+                    </div>
+                    <Badge variant="secondary" className="bg-red-100 text-red-800">
+                      {filteredData.filter(crop => crop.demand_level.toLowerCase() === 'low').length}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Market Insights</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Total Crops Analyzed</div>
+                    <div className="text-2xl font-bold">{filteredData.length}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Avg. Price Change</div>
+                    <div className="text-2xl font-bold">
+                      {filteredData.length > 0 
+                        ? `${(filteredData.reduce((sum, crop) => sum + crop.price_change_percent, 0) / filteredData.length).toFixed(2)}%` 
+                        : '0.00%'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Best Opportunity</div>
+                    <div className="font-medium">
+                      {filteredData.length > 0 
+                        ? filteredData.reduce((max, crop) => crop.price_change_percent > max.price_change_percent ? crop : max, filteredData[0]).vegetable
+                        : 'N/A'}
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
