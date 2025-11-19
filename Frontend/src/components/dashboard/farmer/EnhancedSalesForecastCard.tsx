@@ -115,7 +115,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <BarChart3 className="h-5 w-5" />
-                        Enhanced Sales Forecast
+                        Sales Forecast
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -136,7 +136,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
-                    Enhanced Sales Forecast
+                    Sales Forecast
                 </CardTitle>
             </CardHeader>
             <CardContent>
