@@ -391,13 +391,18 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     <Layout>
       <div className="space-y-6">
         {!selectedCrop && (
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Crop Prescription</h1>
-              <p className="text-muted-foreground">AI-powered crop recommendations based on soil, weather, and market data</p>
+          <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <Leaf className="h-6 w-6" />
+                  <h1 className="text-2xl font-bold">Crop Prescription</h1>
+                </div>
+                <p className="text-primary-foreground/90">AI-powered crop recommendations based on soil, weather, and market data</p>
+              </div>
             </div>
           </div>
         )}
@@ -695,9 +700,23 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
           </Tabs>
         ) : (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-bold">{selectedCrop.crop} Prescription</h1>
-              <p className="text-muted-foreground">Detailed prescription and market analysis</p>
+            <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="outline" 
+                  onClick={handleResetSelection}
+                  className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <Leaf className="h-6 w-6" />
+                    <h1 className="text-2xl font-bold">{selectedCrop.crop} Prescription</h1>
+                  </div>
+                  <p className="text-primary-foreground/90">Detailed prescription and market analysis</p>
+                </div>
+              </div>
             </div>
 
             {/* Selected Crop Details */}
