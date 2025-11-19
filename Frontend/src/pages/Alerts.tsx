@@ -15,7 +15,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, ArrowLeft } from "lucide-react";
 import AdminMessages from "@/components/dashboard/farmer/AdminMessages";
-import UserAnnouncements from "@/components/dashboard/farmer/UserAnnouncements";
+import { useAnnouncements } from "@/components/dashboard/farmer/UserAnnouncements";
 import { useWeatherAlerts } from "@/hooks/custom/useWeatherAlerts";
 
 // Get userId from localStorage
@@ -23,10 +23,79 @@ const getUserId = () => {
   return localStorage.getItem('userId') || 'default-user';
 };
 
+// Define alert types
+type AlertCategory = 'all' | 'critical' | 'warning' | 'informational';
+
+interface AlertItem {
+  id: string;
+  title: string;
+  content: string;
+  category: AlertCategory;
+  date: string;
+  type: string;
+}
+
 const Alerts = () => {
   const navigate = useNavigate();
   const userId = getUserId();
-  const { weatherAlerts, loading: weatherLoading, error: weatherError, getAlertColor } = useWeatherAlerts();
+  const { weatherAlerts, loading: weatherLoading, error: weatherError } = useWeatherAlerts();
+  const { announcements, loading: announcementsLoading } = useAnnouncements();
+  const [activeCategory, setActiveCategory] = useState<AlertCategory>('all');
+
+  // Function to transform weather alerts to our alert format
+  const transformWeatherAlerts = (): AlertItem[] => {
+    if (weatherLoading || weatherError || !weatherAlerts) return [];
+    
+    return weatherAlerts.map((alert, index) => ({
+      id: `weather-${index}`,
+      title: alert.description,
+      content: alert.description,
+      category: 'critical', // Weather alerts are always critical
+      date: alert.date || new Date().toLocaleDateString(),
+      type: 'weather'
+    }));
+  };
+
+  // Function to transform announcements to our alert format
+  const transformAnnouncements = (): AlertItem[] => {
+    if (announcementsLoading || !announcements) return [];
+    
+    return announcements.map(announcement => ({
+      id: `announcement-${announcement.id}`,
+      title: announcement.title,
+      content: announcement.content,
+      category: 'informational', // Announcements are typically informational
+      date: announcement.createdAt?.toDate?.().toLocaleDateString() || new Date().toLocaleDateString(),
+      type: 'announcement'
+    }));
+  };
+
+  // Combine all alerts
+  const getAllAlerts = (): AlertItem[] => {
+    const weatherAlertsFormatted = transformWeatherAlerts();
+    const announcementsFormatted = transformAnnouncements();
+    return [...weatherAlertsFormatted, ...announcementsFormatted];
+  };
+
+  // Filter alerts based on category
+  const filterAlerts = (alerts: AlertItem[]) => {
+    if (activeCategory === 'all') return alerts;
+    return alerts.filter(alert => alert.category === activeCategory);
+  };
+
+  // Count alerts by category
+  const countAlertsByCategory = () => {
+    const allAlerts = getAllAlerts();
+    return {
+      all: allAlerts.length,
+      critical: allAlerts.filter(a => a.category === 'critical').length,
+      warning: allAlerts.filter(a => a.category === 'warning').length,
+      informational: allAlerts.filter(a => a.category === 'informational').length
+    };
+  };
+
+  const alertCounts = countAlertsByCategory();
+  const filteredAlerts = filterAlerts(getAllAlerts());
 
   return (
     <Layout>
@@ -48,62 +117,115 @@ const Alerts = () => {
           </div>
         </div>
 
-        {/* Weather Alerts */}
+        {/* Filter by Category */}
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <span className="text-xl">🌤️</span>
-              Weather Alerts
-            </CardTitle>
+            <CardTitle>Filter by Category</CardTitle>
           </CardHeader>
           <CardContent>
-            {weatherLoading ? (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={activeCategory === 'all' ? 'default' : 'outline'}
+                onClick={() => setActiveCategory('all')}
+                className="flex items-center gap-2"
+              >
+                All Alerts
+                <Badge variant="secondary" className="ml-2">
+                  {alertCounts.all}
+                </Badge>
+              </Button>
+              <Button
+                variant={activeCategory === 'critical' ? 'default' : 'outline'}
+                onClick={() => setActiveCategory('critical')}
+                className="flex items-center gap-2"
+              >
+                Critical
+                <Badge variant="destructive" className="ml-2">
+                  {alertCounts.critical}
+                </Badge>
+              </Button>
+              <Button
+                variant={activeCategory === 'warning' ? 'default' : 'outline'}
+                onClick={() => setActiveCategory('warning')}
+                className="flex items-center gap-2"
+              >
+                Warning
+                <Badge variant="secondary" className="ml-2">
+                  {alertCounts.warning}
+                </Badge>
+              </Button>
+              <Button
+                variant={activeCategory === 'informational' ? 'default' : 'outline'}
+                onClick={() => setActiveCategory('informational')}
+                className="flex items-center gap-2"
+              >
+                Informational
+                <Badge variant="secondary" className="ml-2">
+                  {alertCounts.informational}
+                </Badge>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Unified Alerts List */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle>Categorized Alerts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(weatherLoading || announcementsLoading) ? (
               <div className="text-center py-4 text-muted-foreground">
-                Loading weather alerts...
+                Loading alerts...
               </div>
-            ) : weatherError ? (
-              <div className="text-center py-4 text-destructive">
-                {weatherError}
-              </div>
-            ) : weatherAlerts.length === 0 ? (
+            ) : filteredAlerts.length === 0 ? (
               <div className="text-center py-4 text-muted-foreground">
-                No weather alerts at this time
+                No alerts found
               </div>
             ) : (
               <div className="space-y-3">
-                {weatherAlerts.map((alert, index) => (
+                {filteredAlerts.map((alert) => (
                   <div 
-                    key={index} 
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${getAlertColor(alert.severity)}`}
+                    key={alert.id} 
+                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                      alert.category === 'critical' ? 'bg-red-50 border-red-200' :
+                      alert.category === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                      'bg-blue-50 border-blue-200'
+                    }`}
                   >
-                    <span className="text-2xl">{alert.icon}</span>
+                    <span className="text-2xl">
+                      {alert.type === 'weather' ? '🌤️' : '📢'}
+                    </span>
                     <div className="flex-1">
-                      <p className="font-medium">{alert.description}</p>
+                      <div className="flex justify-between items-start">
+                        <p className="font-medium">{alert.title}</p>
+                        <Badge 
+                          variant={
+                            alert.category === 'critical' ? 'destructive' :
+                            alert.category === 'warning' ? 'secondary' : 'default'
+                          }
+                        >
+                          {alert.category.charAt(0).toUpperCase() + alert.category.slice(1)}
+                        </Badge>
+                      </div>
                       <div className="flex justify-between items-center mt-1">
                         <p className="text-xs text-muted-foreground capitalize">
-                          {alert.type.replace(/([A-Z])/g, ' $1').trim()} Alert
+                          {alert.type === 'weather' ? 'Weather Alert' : 'Announcement'}
                         </p>
-                        {alert.date && (
-                          <span className="text-xs bg-secondary px-2 py-1 rounded">
-                            {alert.date}
-                          </span>
-                        )}
+                        <span className="text-xs bg-secondary px-2 py-1 rounded">
+                          {alert.date}
+                        </span>
                       </div>
+                      {alert.content && alert.type === 'announcement' && (
+                        <p className="text-sm mt-2 text-muted-foreground">
+                          {alert.content}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Announcements */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle>Announcements</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <UserAnnouncements />
           </CardContent>
         </Card>
 

@@ -4,7 +4,7 @@ import { db } from "@/firebaseConfig";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { Bell } from "lucide-react";
 
-interface Announcement {
+export interface Announcement {
   id: string;
   title: string;
   content: string;
@@ -12,7 +12,8 @@ interface Announcement {
   createdBy: string;
 }
 
-const UserAnnouncements = () => {
+// Export the hook for fetching announcements
+export const useAnnouncements = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -33,6 +34,12 @@ const UserAnnouncements = () => {
     return () => unsubscribe();
   }, []);
 
+  return { announcements, loading, unreadCount };
+};
+
+const UserAnnouncements = () => {
+  const { announcements, loading } = useAnnouncements();
+
   if (loading) {
     return (
       <div className="text-center py-4 text-muted-foreground">
@@ -51,11 +58,6 @@ const UserAnnouncements = () => {
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Bell className="h-5 w-5 text-blue-500" />
           Announcements
-          {unreadCount > 0 && (
-            <span className="bg-blue-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {unreadCount}
-            </span>
-          )}
         </h3>
       </div>
       
