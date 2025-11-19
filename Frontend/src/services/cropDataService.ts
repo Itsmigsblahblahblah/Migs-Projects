@@ -246,7 +246,7 @@ export const calculateProfitProjection = async (
     
     // Calculate suggested capital to avoid shortage
     // This ensures at least 20% buffer over the minimum required capital
-    const minimumRequiredCapital = totalSeedCost / 0.7; // If 30% goes to other costs, then 70% is seed cost
+    const minimumRequiredCapital = totalSeedCost / 0.3; // If 30% goes to seed costs, then 70% is other costs
     const suggestedCapital = minimumRequiredCapital * 1.2; // Add 20% buffer
     
     return {
