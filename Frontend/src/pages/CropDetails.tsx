@@ -21,13 +21,14 @@ interface ChecklistItem {
 const CropDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getCropById, updateCrop } = useCrops();
+    const { getCropById, updateCrop, loadCrops } = useCrops();
     const [crop, setCrop] = useState<any | null>(null);
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [productivityData, setProductivityData] = useState<{ task: string; productivity: number }[]>([]);
     const [loading, setLoading] = useState(true);
     const [harvestData, setHarvestData] = useState<any>(null);
     const [marketData, setMarketData] = useState<any>(null);
+    const [cropsLoaded, setCropsLoaded] = useState(false);
 
     // Mock checklist data
     const generateChecklist = (cropName: string) => {
@@ -52,6 +53,12 @@ const CropDetails = () => {
             }
 
             try {
+                // Wait for crops to be loaded
+                if (!cropsLoaded) {
+                    await loadCrops();
+                    setCropsLoaded(true);
+                }
+
                 const cropData = getCropById(id);
                 if (cropData) {
                     setCrop(cropData);
@@ -147,7 +154,7 @@ const CropDetails = () => {
         };
 
         fetchCrop();
-    }, [id, getCropById]);
+    }, [id, getCropById, loadCrops, cropsLoaded]);
 
     const toggleChecklistItem = async (itemId: string) => {
         const updatedChecklist = checklist.map(item =>
@@ -255,7 +262,7 @@ const CropDetails = () => {
         );
     }
 
-    if (!crop) {
+    if (!crop && !loading) {
         return (
             <Layout>
                 <div className="max-w-4xl mx-auto p-4">
@@ -295,7 +302,7 @@ const CropDetails = () => {
                                 variant="outline" 
                                 onClick={() => navigate(-1)} 
                                 className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20"
-                            >
+>
                                 <ArrowLeft className="h-4 w-4" />
                             </Button>
                             <div>
