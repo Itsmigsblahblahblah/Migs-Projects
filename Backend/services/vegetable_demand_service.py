@@ -8,7 +8,11 @@ import logging
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.layers import Dense, Dropout, Input
+from tensorflow.keras.models import Model
 import tensorflow as tf
 
 # Configure logging
@@ -134,21 +138,18 @@ class VegetableDemandTransformer:
             # Instead of capping all predictions, we'll compress extreme values
             # to maintain variation while keeping them realistic
             # Set maximum increase based on realistic price ranges in dataset
-            max_increase_factor = 1.03  # Maximum 3% increase
+            max_increase_factor = 1.02  # Maximum 2% increase above average
             max_predicted_price = current_avg_price * max_increase_factor
+            min_decrease_factor = 0.95  # Maximum 5% decrease below average
+            min_predicted_price = current_avg_price * min_decrease_factor
             
-            if prediction > max_predicted_price:
-                # Compress extreme predictions using a logarithmic function
-                # This maintains relative ranking while reducing extreme values
-                excess_ratio = prediction / max_predicted_price
-                # Apply stronger logarithmic compression to extreme values
-                compressed_excess = 1.0 + 0.0001 * np.log(excess_ratio)  # Much stronger compression factor
-                prediction = max_predicted_price * min(1.001, compressed_excess)  # Cap compression at 0.1% additional
+            # Cap the prediction to realistic ranges
+            prediction = max(min_predicted_price, min(max_predicted_price, prediction))
                 
             # Add small random noise to create variation in predictions while keeping them realistic
             import random
-            noise = random.uniform(-0.1, 0.1)  # Add up to ±0.1% noise
-            prediction = max(current_avg_price * 1.001, prediction + noise)  # Ensure minimum 0.1% increase
+            noise = random.uniform(-0.5, 0.5)  # Add up to ±0.5 PHP noise
+            prediction = max(current_avg_price * 0.95, min(current_avg_price * 1.05, prediction + noise))  # Keep within ±5% of average price
             
             # Calculate updated price change and percentage
             price_change = prediction - current_avg_price
@@ -302,20 +303,18 @@ class VegetableDemandTransformer:
                     # Apply realistic price capping to prevent unrealistic predictions
                     # Instead of hard capping, we'll compress extreme values to maintain variation
                     # Set maximum increase based on realistic price ranges in dataset
-                    max_increase_factor = 1.03  # Maximum 3% increase
+                    max_increase_factor = 1.02  # Maximum 2% increase above average
                     max_predicted_price = prediction['current_avg_price'] * max_increase_factor
+                    min_decrease_factor = 0.95  # Maximum 5% decrease below average
+                    min_predicted_price = prediction['current_avg_price'] * min_decrease_factor
                                 
-                    if prediction['predicted_price'] > max_predicted_price:
-                        # Compress extreme predictions using a logarithmic function
-                        excess_ratio = prediction['predicted_price'] / max_predicted_price
-                        # Apply stronger logarithmic compression to extreme values
-                        compressed_excess = 1.0 + 0.0001 * np.log(excess_ratio)  # Much stronger compression factor
-                        prediction['predicted_price'] = max_predicted_price * min(1.001, compressed_excess)  # Cap compression at 0.1% additional
+                    # Cap the prediction to realistic ranges
+                    prediction['predicted_price'] = max(min_predicted_price, min(max_predicted_price, prediction['predicted_price']))
                                     
                     # Add small random noise to create variation in predictions while keeping them realistic
                     import random
-                    noise = random.uniform(-0.1, 0.1)  # Add up to ±0.1% noise
-                    prediction['predicted_price'] = max(prediction['current_avg_price'] * 1.001, prediction['predicted_price'] + noise)  # Ensure minimum 0.1% increase
+                    noise = random.uniform(-0.5, 0.5)  # Add up to ±0.5 PHP noise
+                    prediction['predicted_price'] = max(prediction['current_avg_price'] * 0.95, min(prediction['current_avg_price'] * 1.05, prediction['predicted_price'] + noise))  # Keep within ±5% of average price
                     
                     prediction['price_change'] = prediction['predicted_price'] - prediction['current_avg_price']
                     prediction['price_change_percent'] = (prediction['price_change'] / prediction['current_avg_price']) * 100 if prediction['current_avg_price'] != 0 else 0
@@ -345,3 +344,241 @@ class VegetableDemandTransformer:
         recommendations.sort(key=lambda x: x['price_change_percent'], reverse=True)
         
         return recommendations[:top_n]
+
+    def load_and_preprocess_data(self, vegetable_file='Data/vegetable_prices.csv'):
+        """
+        Load and preprocess the vegetable price data
+        
+        Args:
+            vegetable_file (str): Path to vegetable_prices.csv
+            
+        Returns:
+            tuple: (X, y) preprocessed features and labels
+        """
+        logger.info("Loading and preprocessing vegetable price data...")
+        
+        # Load vegetable price data
+        try:
+            veg_df = pd.read_csv(vegetable_file)
+            # Skip the first row which contains the header description
+            veg_df = veg_df.iloc[1:]
+            veg_df.columns = ['Vegetable', 'Year', 'Month', 'Price', 'Annual_Price', 'MonthNum', 'Date']
+        except Exception as e:
+            logger.error(f"Could not load vegetable data from {vegetable_file}: {e}")
+            raise e
+        
+        # Convert data types
+        veg_df['Price'] = pd.to_numeric(veg_df['Price'], errors='coerce')
+        veg_df['Annual_Price'] = pd.to_numeric(veg_df['Annual_Price'], errors='coerce')
+        veg_df['MonthNum'] = pd.to_numeric(veg_df['MonthNum'], errors='coerce')
+        veg_df['Year'] = pd.to_numeric(veg_df['Year'], errors='coerce')
+        
+        # Clean the data
+        veg_df = veg_df.dropna()
+        
+        # Create time series features for each vegetable
+        processed_data = []
+        
+        # Get unique vegetables
+        vegetables = veg_df['Vegetable'].unique()
+        
+        for vegetable in vegetables:
+            veg_data = veg_df[veg_df['Vegetable'] == vegetable].sort_values(['Year', 'MonthNum'])
+            
+            # Create sequences for time series prediction
+            prices = veg_data['Price'].values
+            annual_prices = veg_data['Annual_Price'].values
+            months = veg_data['MonthNum'].values
+            
+            # Create sequences
+            seq_length = 12  # 12 months of historical data
+            pred_horizon = 3  # Predict 3 months ahead
+            
+            for i in range(len(prices) - seq_length - pred_horizon + 1):
+                # Input sequence (historical data)
+                price_seq = prices[i:i+seq_length]
+                annual_seq = annual_prices[i:i+seq_length]
+                month_seq = months[i:i+seq_length]
+                
+                # Target (future prices)
+                future_prices = prices[i+seq_length:i+seq_length+pred_horizon]
+                
+                # Calculate features
+                avg_price = np.mean(price_seq)
+                price_trend = (price_seq[-1] - price_seq[0]) / seq_length if seq_length > 1 else 0
+                price_volatility = np.std(price_seq)
+                
+                # Combine features
+                features = np.concatenate([price_seq, annual_seq, month_seq, 
+                                         [avg_price, price_trend, price_volatility]])
+                
+                # Target is the average of future prices (simplified demand indicator)
+                target = np.mean(future_prices)
+                
+                processed_data.append({
+                    'vegetable': vegetable,
+                    'features': features,
+                    'target': target
+                })
+        
+        if not processed_data:
+            logger.warning("No valid sequences generated. Check data quality.")
+            return np.array([]), np.array([])
+        
+        # Convert to arrays
+        X = np.array([item['features'] for item in processed_data])
+        y = np.array([item['target'] for item in processed_data])
+        
+        # Encode vegetable names
+        vegetable_names = [item['vegetable'] for item in processed_data]
+        vegetable_encoded = self.label_encoder.fit_transform(vegetable_names)
+        
+        # Add vegetable encoding as a feature
+        X = np.column_stack([X, vegetable_encoded])
+        
+        # Scale features
+        X_scaled = self.scaler.fit_transform(X)
+        
+        # Save preprocessing pipeline
+        self.preprocessor = {
+            'label_encoder': self.label_encoder,
+            'scaler': self.scaler
+        }
+        
+        logger.info(f"Data preprocessing complete. Shape: {X_scaled.shape}")
+        logger.info(f"Number of unique vegetables: {len(np.unique(vegetable_encoded))}")
+        
+        return X_scaled, y
+
+    def train(self, X, y):
+        """
+        Train the model
+        
+        Args:
+            X (np.array): Input features
+            y (np.array): Target values
+        """
+        if len(X) == 0 or len(y) == 0:
+            logger.error("No training data available")
+            return None, None
+            
+        logger.info("Starting model training...")
+        
+        # Split data
+        X_temp, X_test, y_temp, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+        
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_temp, y_temp, test_size=0.2, random_state=42
+        )
+        
+        logger.info(f"Training samples: {len(X_train)}")
+        logger.info(f"Validation samples: {len(X_val)}")
+        logger.info(f"Test samples: {len(X_test)}")
+        
+        # Build model
+        self.build_model(X_train.shape[1:])
+        
+        # Callbacks
+        early_stopping = EarlyStopping(
+            monitor='val_loss',
+            patience=15,
+            restore_best_weights=True
+        )
+        
+        reduce_lr = ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.5,
+            patience=10,
+            min_lr=1e-7
+        )
+        
+        # Train model
+        history = self.model.fit(
+            X_train, y_train,
+            batch_size=32,
+            epochs=100,
+            validation_data=(X_val, y_val),
+            callbacks=[early_stopping, reduce_lr],
+            verbose=1
+        )
+        
+        # Evaluate on test set
+        test_loss, test_mae = self.model.evaluate(X_test, y_test, verbose=0)
+        logger.info(f"Test Loss (MSE): {test_loss:.4f}")
+        logger.info(f"Test MAE: {test_mae:.4f}")
+        
+        # Calculate additional metrics
+        y_pred = self.model.predict(X_test, verbose=0).flatten()
+        mse = mean_squared_error(y_test, y_pred)
+        mae = mean_absolute_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        
+        logger.info(f"MSE: {mse:.4f}")
+        logger.info(f"MAE: {mae:.4f}")
+        logger.info(f"RMSE: {rmse:.4f}")
+        
+        logger.info("Training completed")
+        return history, {"mse": mse, "mae": mae, "rmse": rmse}
+
+    def build_model(self, input_shape):
+        """
+        Build a neural network model for vegetable demand prediction
+        
+        Args:
+            input_shape (tuple): Shape of input features
+            
+        Returns:
+            Model: Compiled Keras model
+        """
+        logger.info("Building neural network model...")
+        
+        # Input layer
+        inputs = Input(shape=input_shape)
+        
+        # Dense layers
+        x = Dense(128, activation='relu')(inputs)
+        x = Dropout(0.2)(x)
+        x = Dense(64, activation='relu')(x)
+        x = Dropout(0.2)(x)
+        x = Dense(32, activation='relu')(x)
+        x = Dropout(0.2)(x)
+        
+        # Output layer (predicting future price as demand indicator)
+        outputs = Dense(1, activation='linear')(x)
+        
+        # Create model
+        model = Model(inputs=inputs, outputs=outputs)
+        
+        # Compile model
+        model.compile(
+            optimizer='adam',
+            loss='mse',
+            metrics=['mae']
+        )
+        
+        self.model = model
+        logger.info("Model built successfully")
+        return model
+
+    def save_model(self, model_path='models/vegetable_demand_transformer.keras', 
+                   preprocessor_path='models/vegetable_preprocessing_pipeline.pkl'):
+        """
+        Save the trained model and preprocessing pipeline
+        
+        Args:
+            model_path (str): Path to save the model
+            preprocessor_path (str): Path to save the preprocessing pipeline
+        """
+        if self.model is None:
+            raise ValueError("Model not trained yet. Call train() first.")
+        
+        # Save model in the new Keras format
+        self.model.save(model_path)
+        logger.info(f"Model saved to {model_path}")
+        
+        # Save preprocessing pipeline
+        with open(preprocessor_path, 'wb') as f:
+            pickle.dump(self.preprocessor, f)
+        logger.info(f"Preprocessing pipeline saved to {preprocessor_path}")

@@ -2,6 +2,7 @@
  * Service for enhancing crop data with information from datasets
  */
 import { parseCSV, findMatchingRecords, loadCSV } from '@/utils/csvParser';
+import { getVegetableDemandPrediction, getVegetableHistoricalData } from '@/services/vegetableDemandService';
 
 // API endpoints
 const SOIL_DATA_ENDPOINT = '/data/brgy_soil_dataset.csv';
@@ -92,31 +93,28 @@ export const getFertilizerRecommendations = async (cropName: string, soilType: s
  */
 export const getMarketPriceInfo = async (cropName: string) => {
   try {
-    // Fetch from the backend API
-    const priceData = await loadCSV(VEGETABLE_PRICES_ENDPOINT);
+    // Get historical data from the backend API
+    const historicalData = await getVegetableHistoricalData(cropName);
     
-    // Find matching records for the crop
-    const matchingRecords = findMatchingRecords(priceData, 'Vegetable', cropName);
-    
-    if (matchingRecords.length > 0) {
-      // Calculate average price and trend
-      const prices = matchingRecords.map(record => record.Price);
-      const averagePrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+    if (historicalData && historicalData.length > 0) {
+      // Extract price information
+      const prices = historicalData.map((record: any) => parseFloat(record.Price));
+      const averagePrice = prices.reduce((sum: number, price: number) => sum + price, 0) / prices.length;
       
       // Simple trend calculation (in a real implementation, this would be more sophisticated)
       const firstHalf = prices.slice(0, Math.floor(prices.length / 2));
       const secondHalf = prices.slice(Math.floor(prices.length / 2));
-      const firstAvg = firstHalf.reduce((sum, price) => sum + price, 0) / firstHalf.length;
-      const secondAvg = secondHalf.reduce((sum, price) => sum + price, 0) / secondHalf.length;
+      const firstAvg = firstHalf.reduce((sum: number, price: number) => sum + price, 0) / firstHalf.length;
+      const secondAvg = secondHalf.reduce((sum: number, price: number) => sum + price, 0) / secondHalf.length;
       
       const trend = secondAvg > firstAvg ? 'increasing' : secondAvg < firstAvg ? 'decreasing' : 'stable';
       
       return {
         averagePrice,
         trend,
-        priceHistory: matchingRecords.map(record => ({
+        priceHistory: historicalData.map((record: any) => ({
           date: record.Date,
-          price: record.Price,
+          price: parseFloat(record.Price),
           month: record.Month,
           year: record.Year
         }))
@@ -190,8 +188,38 @@ export const calculateProfitProjection = async (
   puhunan: number
 ) => {
   try {
-    // Get market price information
+    // Get market price information from the backend API
     const marketInfo = await getMarketPriceInfo(cropName);
+    
+    // Get demand prediction for more accurate pricing
+    const historicalData = await getVegetableHistoricalData(cropName);
+    
+    let predictedPrice = marketInfo.averagePrice;
+    if (historicalData && historicalData.length > 0) {
+      // Prepare data for demand prediction
+      const prices = historicalData.map((record: any) => parseFloat(record.Price));
+      const annualPrices = historicalData.map((record: any) => parseFloat(record.Annual_Price));
+      const months = historicalData.map((record: any) => parseInt(record.MonthNum));
+      
+      try {
+        // Get demand prediction from the backend API
+        const demandPrediction = await getVegetableDemandPrediction(
+          cropName,
+          prices,
+          annualPrices,
+          months
+        );
+        
+        // Use predicted price if available
+        if (demandPrediction && demandPrediction.predicted_price) {
+          predictedPrice = demandPrediction.predicted_price;
+        }
+      } catch (predictionError) {
+        console.warn('Could not get demand prediction, using average price:', predictionError);
+        // Fall back to average price if prediction fails
+      }
+    }
+    
     const seedInfo = await getSeedPriceInfo(cropName);
     
     // Estimate yield (this would be more sophisticated in a real implementation)
@@ -199,9 +227,9 @@ export const calculateProfitProjection = async (
     const estimatedYieldPerHectare = 10000; // kg per hectare
     const totalEstimatedYield = landArea * estimatedYieldPerHectare;
     
-    // Calculate potential revenue
-    const potentialRevenue = totalEstimatedYield * (marketInfo.averagePrice / 1000); // Price is per kg
-    
+    // Calculate potential revenue using predicted price
+    const potentialRevenue = totalEstimatedYield * predictedPrice; // Revenue = yield (kg) * price (PHP/kg)
+
     // Calculate seed cost (assuming 5kg of seeds needed per hectare)
     const seedCostPerHectare = seedInfo.seedPricePerKilo * 5;
     const totalSeedCost = landArea * seedCostPerHectare;
@@ -228,7 +256,7 @@ export const calculateProfitProjection = async (
       netProfit,
       profitMargin,
       marketTrend: marketInfo.trend,
-      averageMarketPrice: marketInfo.averagePrice,
+      averageMarketPrice: predictedPrice, // Use predicted price instead of average
       suggestedCapital: suggestedCapital
     };
   } catch (error) {
