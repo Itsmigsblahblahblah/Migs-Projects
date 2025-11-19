@@ -14,7 +14,8 @@ import {
   Filter,
   Download,
   Eye,
-  Users
+  Users,
+  ArrowLeft
 } from "lucide-react";
 import { collection, query, getDocs, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -243,16 +244,25 @@ const History = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
-          <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
-            {userRole === 'farmer' ? <Calendar className="h-7 w-7" /> : <Users className="h-7 w-7" />}
-            {userRole === 'farmer' ? 'My Report History' : 'All Community Reports'}
-          </h1>
-          <p className="text-primary-foreground/90">
-            {userRole === 'farmer' 
-              ? "View your farm problem reports and recommendations" 
-              : "Complete history of all farmer reports and system responses"
-            }
-          </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                  {userRole === 'farmer' ? <Calendar className="h-7 w-7" /> : <Users className="h-7 w-7" />}
+                  {userRole === 'farmer' ? 'My Report History' : 'All Community Reports'}
+                </h1>
+                <p className="text-primary-foreground/90">
+                  {userRole === 'farmer' 
+                    ? "View your farm problem reports and recommendations" 
+                    : "Complete history of all farmer reports and system responses"
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -404,11 +414,11 @@ const History = () => {
                       )}
                     </div>
 
-                    {/* Expert Advice */}
+                    {/* AI Advice */}
                     {report.advice && (
-                      <div className="p-3 bg-accent/10 rounded-lg border border-accent/20">
-                        <h4 className="text-sm font-medium text-accent-foreground mb-2">Expert Advice:</h4>
-                        <p className="text-sm text-foreground/80">{report.advice}</p>
+                      <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+                        <h4 className="text-sm font-medium text-primary mb-2">AI Recommendations:</h4>
+                        <p className="text-sm">{report.advice}</p>
                       </div>
                     )}
                   </CardContent>
@@ -417,84 +427,6 @@ const History = () => {
             })
           )}
         </div>
-
-        {/* Summary Stats */}
-        {filteredHistory.length > 0 && (
-          <Card className="shadow-soft">
-            <CardHeader>
-              <CardTitle>
-                {userRole === 'farmer' ? 'My Statistics' : 'Community Statistics'}
-              </CardTitle>
-              <CardDescription>
-                {userRole === 'farmer' 
-                  ? "Overview of your reporting activity" 
-                  : "Overview of all farmer reports"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-primary/5 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{filteredHistory.length}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {userRole === 'farmer' ? 'My Reports' : 'Total Reports'}
-                  </div>
-                </div>
-                <div className="text-center p-4 bg-success/5 rounded-lg">
-                  <div className="text-2xl font-bold text-success">
-                    {filteredHistory.filter(r => r.status === 'resolved').length}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Resolved</div>
-                </div>
-                <div className="text-center p-4 bg-warning/5 rounded-lg">
-                  <div className="text-2xl font-bold text-warning">
-                    {filteredHistory.filter(r => r.status === 'processed').length}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Processed</div>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <div className="text-2xl font-bold">
-                    {filteredHistory.filter(r => r.status === 'pending').length}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Pending</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Info Card */}
-        {userRole === 'farmer' && (
-          <Card className="shadow-soft border-primary/20 bg-primary/5">
-            <CardContent className="p-6">
-              <div className="flex gap-3">
-                <Calendar className="h-5 w-5 text-primary mt-0.5" />
-                <div>
-                  <h3 className="text-base font-medium mb-1">Your Personal History</h3>
-                  <p className="text-sm text-muted-foreground">
-                    This page shows only your farm reports and recommendations. Track your farming issues 
-                    and review the expert advice you've received to improve your harvest.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-        {userRole === 'admin' && (
-          <Card className="shadow-soft border-accent/20 bg-accent/5">
-            <CardContent className="p-6">
-              <div className="flex gap-3">
-                <Users className="h-5 w-5 text-accent mt-0.5" />
-                <div>
-                  <h3 className="text-base font-medium mb-1">Admin View</h3>
-                  <p className="text-sm text-muted-foreground">
-                    You can view all farmer reports from the entire community. Use this to monitor 
-                    farming issues across Majayjay and provide better agricultural support.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </Layout>
   );
