@@ -9,21 +9,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface EditCropDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     editCrop: {
         name: string;
-        landArea: string;
-        quantity: string;
         soilType: string;
-        nitrogen: string;
-        phosphorus: string;
-        potassium: string;
+        landArea: string;
+        plantedDate: string;
         puhunan: string;
     };
     handleEditCropInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    handleEditSoilTypeChange: (value: string) => void;
     handleEditCropSubmit: () => Promise<boolean>;
 }
 
@@ -32,6 +37,7 @@ const EditCropDialog = ({
     onOpenChange,
     editCrop,
     handleEditCropInputChange,
+    handleEditSoilTypeChange,
     handleEditCropSubmit
 }: EditCropDialogProps) => {
     const handleEditCropSubmitWrapper = async () => {
@@ -41,9 +47,15 @@ const EditCropDialog = ({
         }
     };
 
+    const soilTypes = [
+        "Clay", "Loam", "Sandy", "Silty", "Peaty", "Chalky", 
+        "Sandy Loam", "Clay Loam", "Silty Loam", "Sandy Clay", 
+        "Silty Clay", "Organic Soil"
+    ];
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Edit Crop Details</DialogTitle>
                     <DialogDescription>
@@ -61,6 +73,23 @@ const EditCropDialog = ({
                             placeholder="e.g., Rice, Corn"
                         />
                     </div>
+                    
+                    <div className="space-y-2">
+                        <Label htmlFor="editSoilType">Soil Type *</Label>
+                        <Select onValueChange={handleEditSoilTypeChange} value={editCrop.soilType}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select soil type" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-32">
+                                {soilTypes.map((type) => (
+                                    <SelectItem key={type} value={type}>
+                                        {type}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    
                     <div className="space-y-2">
                         <Label htmlFor="editLandArea">Land Area (hectares) *</Label>
                         <Input
@@ -72,64 +101,20 @@ const EditCropDialog = ({
                             placeholder="e.g., 2.5"
                         />
                     </div>
+                    
                     <div className="space-y-2">
-                        <Label htmlFor="editQuantity">Quantity (kg) *</Label>
+                        <Label htmlFor="editPlantedDate">Date of Planting *</Label>
                         <Input
-                            id="editQuantity"
-                            name="quantity"
-                            type="number"
-                            value={editCrop.quantity}
+                            id="editPlantedDate"
+                            name="plantedDate"
+                            type="date"
+                            value={editCrop.plantedDate}
                             onChange={handleEditCropInputChange}
-                            placeholder="e.g., 1000"
                         />
                     </div>
+                    
                     <div className="space-y-2">
-                        <Label htmlFor="editSoilType">Soil Type *</Label>
-                        <Input
-                            id="editSoilType"
-                            name="soilType"
-                            value={editCrop.soilType}
-                            onChange={handleEditCropInputChange}
-                            placeholder="e.g., Clay, Sandy"
-                        />
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="editNitrogen">Nitrogen (N)</Label>
-                            <Input
-                                id="editNitrogen"
-                                name="nitrogen"
-                                type="number"
-                                value={editCrop.nitrogen}
-                                onChange={handleEditCropInputChange}
-                                placeholder="0"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="editPhosphorus">Phosphorus (P)</Label>
-                            <Input
-                                id="editPhosphorus"
-                                name="phosphorus"
-                                type="number"
-                                value={editCrop.phosphorus}
-                                onChange={handleEditCropInputChange}
-                                placeholder="0"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="editPotassium">Potassium (K)</Label>
-                            <Input
-                                id="editPotassium"
-                                name="potassium"
-                                type="number"
-                                value={editCrop.potassium}
-                                onChange={handleEditCropInputChange}
-                                placeholder="0"
-                            />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="editPuhunan">Puhunan (PHP) *</Label>
+                        <Label htmlFor="editPuhunan">Capital (PHP) *</Label>
                         <Input
                             id="editPuhunan"
                             name="puhunan"

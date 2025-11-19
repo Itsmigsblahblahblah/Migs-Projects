@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     Eye,
     Plus,
@@ -19,6 +20,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useEffect, useState } from "react";
+import { db } from "@/firebaseConfig";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 
 interface FarmerProfile {
     fullName: string;
@@ -35,11 +39,30 @@ interface QuickActionsProps {
     onAddCrop: () => void;
     onUpdateCrop: () => void;
     farmerProfile?: FarmerProfile;
-    weatherData?: any; // Add weather data prop
+    weatherData?: any;
+    userId?: string; // Add userId prop
 }
 
-const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: QuickActionsProps) => {
+const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, userId }: QuickActionsProps) => {
     const navigate = useNavigate();
+    const [unreadMessages, setUnreadMessages] = useState(0);
+
+    // Fetch unread admin messages count
+    useEffect(() => {
+        if (!userId) return;
+
+        const messagesQuery = query(
+            collection(db, "adminMessages"),
+            where("receiverId", "==", userId),
+            where("read", "==", false)
+        );
+
+        const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+            setUnreadMessages(snapshot.size);
+        });
+
+        return () => unsubscribe();
+    }, [userId]);
 
     const handlePrescribeCrop = () => {
         // Pass the weatherData and farmerProfile as state when navigating
@@ -98,7 +121,14 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData }: Q
                     </DropdownMenu>
                     
                     <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/alerts')}>
-                        <Bell className="h-5 w-5" />
+                        <div className="relative">
+                            <Bell className="h-5 w-5" />
+                            {unreadMessages > 0 && (
+                                <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                                    {unreadMessages}
+                                </Badge>
+                            )}
+                        </div>
                         <span>Alerts</span>
                     </Button>
                     

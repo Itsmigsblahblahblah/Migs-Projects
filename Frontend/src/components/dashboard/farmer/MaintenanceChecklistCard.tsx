@@ -34,7 +34,7 @@ interface MaintenanceChecklistCardProps {
     productivityData: ProductivityData[];
     checklistProductivity: number;
     onToggleItem: (itemId: string) => void;
-    selectedPrescribedCrop: any;
+    selectedPrescribedCrop?: any;
 }
 
 // Chart configuration for productivity chart
@@ -49,22 +49,21 @@ const MaintenanceChecklistCard = ({
     checklist,
     productivityData,
     checklistProductivity,
-    onToggleItem,
-    selectedPrescribedCrop
+    onToggleItem
 }: MaintenanceChecklistCardProps) => {
     return (
         <Card className="shadow-card">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5" />
-                    {selectedPrescribedCrop ? `${selectedPrescribedCrop.name} Maintenance Checklist` : "Maintenance Checklist"}
+                    Maintenance Checklist
                 </CardTitle>
                 <CardDescription>
                     Track your progress through the growing season
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {checklist.map((item) => (
                         <div key={item.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50">
                             <Checkbox
@@ -84,7 +83,7 @@ const MaintenanceChecklistCard = ({
                 </div>
 
                 {/* Productivity Visualization based on checklist completion */}
-                <div className="mt-8">
+                <div className="mt-4">
                     <h3 className="font-medium mb-4">Maintenance Progress</h3>
                     <div className="h-64 w-full">
                         <ChartContainer config={productivityChartConfig} className="h-full w-full">

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, orderBy, setDoc } from "firebase/firestore"; // Added setDoc import
+import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, orderBy, setDoc, deleteDoc } from "firebase/firestore"; // Added deleteDoc import
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "@/firebaseConfig";
 import { generateFarmerCropId } from "@/lib/idUtils";
@@ -15,22 +15,20 @@ interface Crop {
     id: string;
     userId: string;
     name: string;
-    landArea: string;
-    quantity: number;
+    landArea: number;
     soilType: string;
-    nitrogen: number;
-    phosphorus: number;
-    potassium: number;
-    puhunan: number;
     plantedDate: any;
+    puhunan: number;
     createdAt: any;
     checklist?: ChecklistItem[]; // Add checklist field
+    harvestData?: any; // Add harvest data field
 }
 
 interface CropContextType {
     crops: Crop[];
     addCrop: (crop: Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>) => Promise<void>;
     updateCrop: (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>>) => Promise<void>;
+    deleteCrop: (id: string) => Promise<void>; // Add delete function
     getCropById: (id: string) => Crop | undefined;
     loadCrops: () => Promise<void>;
 }
@@ -68,96 +66,92 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
     }, [currentUserId]);
 
     const loadCrops = async (userId?: string) => {
-        try {
-            const effectiveUserId = userId || currentUserId || localStorage.getItem('userId') || localStorage.getItem('username');
+      try {
+        const effectiveUserId = userId || currentUserId || localStorage.getItem('userId') || 'default-user';
 
-            if (!effectiveUserId) {
-                console.warn("No userId found");
-                setCrops([]);
-                return;
-            }
-
-            console.log("Loading crops for userId:", effectiveUserId);
-
-            const cropsRef = collection(db, "farmerCrops");
-            // Query without orderBy to get ALL data including old records without createdAt
-            const q = query(
-                cropsRef,
-                where("userId", "==", effectiveUserId)
-            );
-
-            const querySnapshot = await getDocs(q);
-            const loadedCrops: Crop[] = [];
-
-            console.log("Found crops:", querySnapshot.size);
-
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                console.log("Crop data:", doc.id, data);
-                loadedCrops.push({
-                    id: doc.id,
-                    userId: data.userId,
-                    name: data.name,
-                    landArea: data.landArea,
-                    quantity: data.quantity,
-                    soilType: data.soilType,
-                    nitrogen: data.nitrogen || 0,
-                    phosphorus: data.phosphorus || 0,
-                    potassium: data.potassium || 0,
-                    puhunan: data.puhunan,
-                    plantedDate: data.plantedDate,
-                    createdAt: data.createdAt,
-                    checklist: data.checklist || [] // Load checklist data
-                });
-            });
-
-            // Sort in memory by createdAt (newest first), put items without createdAt at the end
-            loadedCrops.sort((a, b) => {
-                const dateA = a.createdAt?.toDate?.() || new Date(0);
-                const dateB = b.createdAt?.toDate?.() || new Date(0);
-                return dateB.getTime() - dateA.getTime();
-            });
-
-            console.log("Loaded crops:", loadedCrops.length);
-            setCrops(loadedCrops);
-        } catch (error) {
-            console.error("Error loading crops from Firestore:", error);
-            setCrops([]);
+        if (!effectiveUserId) {
+          console.warn("No userId found");
+          setCrops([]);
+          return;
         }
+
+        console.log("Loading crops for userId:", effectiveUserId);
+
+        const cropsRef = collection(db, "farmerCrops");
+        // Query without orderBy to get ALL data including old records without createdAt
+        const q = query(
+            cropsRef,
+            where("userId", "==", effectiveUserId)
+        );
+
+        const querySnapshot = await getDocs(q);
+        const loadedCrops: Crop[] = [];
+
+        console.log("Found crops:", querySnapshot.size);
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            console.log("Crop data:", doc.id, data);
+            loadedCrops.push({
+                id: doc.id,
+                userId: data.userId,
+                name: data.name,
+                landArea: data.landArea,
+                soilType: data.soilType,
+                plantedDate: data.plantedDate,
+                puhunan: data.puhunan,
+                createdAt: data.createdAt,
+                checklist: data.checklist || [] // Load checklist data
+            });
+        });
+
+        // Sort in memory by createdAt (newest first), put items without createdAt at the end
+        loadedCrops.sort((a, b) => {
+            const dateA = a.createdAt?.toDate?.() || new Date(0);
+            const dateB = b.createdAt?.toDate?.() || new Date(0);
+            return dateB.getTime() - dateA.getTime();
+        });
+
+        console.log("Loaded crops:", loadedCrops.length);
+        setCrops(loadedCrops);
+      } catch (error) {
+        console.error("Error loading crops from Firestore:", error);
+        setCrops([]);
+      }
     };
 
     const addCrop = async (cropData: Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>) => {
-        try {
-            const userId = currentUserId || localStorage.getItem('userId') || localStorage.getItem('username');
-            if (!userId) {
-                throw new Error("No userId found. Please log in again.");
-            }
-
-            // Get username from localStorage
-            const username = localStorage.getItem('username') || userId;
-
-            const newCropData = {
-                ...cropData,
-                userId: userId,
-                plantedDate: Timestamp.now(),
-                createdAt: Timestamp.now()
-            };
-
-            // Add to Firestore with auto-generated ID
-            const cropsRef = collection(db, "farmerCrops");
-            const docRef = await addDoc(cropsRef, newCropData);
-            
-            // Add to local state with the auto-generated ID
-            const newCrop: Crop = {
-                id: docRef.id, // Use the auto-generated ID
-                ...newCropData
-            };
-
-            setCrops(prev => [newCrop, ...prev]);
-        } catch (error) {
-            console.error("Error adding crop to Firestore:", error);
-            throw error;
+      try {
+        const userId = currentUserId || localStorage.getItem('userId') || 'default-user';
+        if (!userId) {
+          throw new Error("No userId found. Please log in again.");
         }
+
+        // Get username from localStorage
+        const username = localStorage.getItem('username') || userId;
+
+        const newCropData = {
+          ...cropData,
+          userId: userId,
+          plantedDate: Timestamp.now(),
+          createdAt: Timestamp.now()
+        };
+
+        // Add to Firestore with auto-generated ID
+        const cropsRef = collection(db, "farmerCrops");
+        const docRef = await addDoc(cropsRef, newCropData);
+            
+        // Add to local state with the auto-generated ID
+        const newCrop: Crop = {
+            id: docRef.id, // Use the auto-generated ID
+            ...newCropData
+        };
+
+        setCrops(prev => [newCrop, ...prev]);
+      } catch (error) {
+        console.error("Error adding crop to Firestore:", error);
+        throw error;
+      }
     };
 
     const updateCrop = async (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>>) => {
@@ -180,12 +174,26 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const deleteCrop = async (id: string) => {
+        try {
+            // Delete from Firestore
+            const cropRef = doc(db, "farmerCrops", id);
+            await deleteDoc(cropRef);
+
+            // Update local state
+            setCrops(prev => prev.filter(crop => crop.id !== id));
+        } catch (error) {
+            console.error("Error deleting crop from Firestore:", error);
+            throw error;
+        }
+    };
+
     const getCropById = (id: string) => {
         return crops.find(crop => crop.id === id);
     };
 
     return (
-        <CropContext.Provider value={{ crops, addCrop, updateCrop, getCropById, loadCrops }}>
+        <CropContext.Provider value={{ crops, addCrop, updateCrop, deleteCrop, getCropById, loadCrops }}>
             {children}
         </CropContext.Provider>
     );

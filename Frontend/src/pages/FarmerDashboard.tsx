@@ -19,6 +19,7 @@ import EditCropDialog from "@/components/dashboard/farmer/EditCropDialog";
 import RequestAccountDeletionDialog from "@/components/dashboard/farmer/RequestAccountDeletionDialog";
 import DeleteAccountDialog from "@/components/dashboard/farmer/DeleteAccountDialog";
 import DeleteConfirmationDialog from "@/components/dashboard/farmer/DeleteConfirmationDialog";
+import AdminMessages from "@/components/dashboard/farmer/AdminMessages";
 import { useFarmerDashboard } from "@/hooks/custom/useFarmerDashboard";
 import { useCropManagement } from "@/hooks/custom/useCropManagement";
 import { useReportManagement } from "@/hooks/custom/useReportManagement";
@@ -87,7 +88,9 @@ const FarmerDashboard = () => {
     setEditCrop,
     setSelectedCropId,
     handleCropInputChange,
+    handleSoilTypeChange,
     handleEditCropInputChange,
+    handleEditSoilTypeChange,
     handleAddCrop,
     handleEditCropSubmit,
     selectCropForEditing
@@ -302,6 +305,7 @@ const FarmerDashboard = () => {
           onUpdateCrop={() => setIsUpdateCropDialogOpen(true)}
           farmerProfile={farmerProfile}
           weatherData={weatherData}
+          userId={userId} // Pass userId to QuickActions
         />
 
         <div className="grid lg:grid-cols-2 gap-6">
@@ -330,6 +334,9 @@ const FarmerDashboard = () => {
           </div>
         </div>
 
+        {/* Admin Messages */}
+        <AdminMessages userId={userId} />
+        
         {/* Task Reminders */}
         <TaskReminders tasks={mockTasks} />
 
@@ -370,22 +377,24 @@ const FarmerDashboard = () => {
           onOpenChange={setIsAddCropDialogOpen}
           newCrop={newCrop}
           handleCropInputChange={handleCropInputChange}
+          handleSoilTypeChange={handleSoilTypeChange}
           handleAddCrop={handleAddCrop}
         />
 
         <UpdateCropDialog
           open={isUpdateCropDialogOpen}
           onOpenChange={setIsUpdateCropDialogOpen}
-          crops={crops}
           selectCropForEditing={selectCropForEditing}
           setIsEditCropDialogOpen={setIsEditCropDialogOpen}
         />
+        {/* crops prop removed from UpdateCropDialog - now using CropContext internally */}
 
         <EditCropDialog
           open={isEditCropDialogOpen}
           onOpenChange={setIsEditCropDialogOpen}
           editCrop={editCrop}
           handleEditCropInputChange={handleEditCropInputChange}
+          handleEditSoilTypeChange={handleEditSoilTypeChange}
           handleEditCropSubmit={handleEditCropSubmit}
         />
 

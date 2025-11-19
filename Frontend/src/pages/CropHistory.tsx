@@ -4,26 +4,14 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useCrops } from "@/contexts/CropContext";
-import { Leaf, Calendar, MapPin, Wheat, TrendingUp } from "lucide-react";
-
-interface Crop {
-    id: string;
-    name: string;
-    landArea: string;
-    quantity: number;
-    soilType: string;
-    nitrogen: number;
-    phosphorus: number;
-    potassium: number;
-    puhunan: number;
-    plantedDate: any;
-    createdAt: any;
-}
+import { Leaf, Calendar, MapPin, Wheat, TrendingUp, Plus, Sprout, Trash2 } from "lucide-react"; // Added Trash2 icon
 
 const CropHistory = () => {
-    const { crops } = useCrops();
+    const { crops, deleteCrop } = useCrops(); // Added deleteCrop
     const [username, setUsername] = useState("");
     const [loading, setLoading] = useState(true);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false); // Added state for delete dialog
+    const [cropToDelete, setCropToDelete] = useState<{id: string, name: string} | null>(null); // Added state for crop to delete
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -58,6 +46,32 @@ const CropHistory = () => {
         }
     };
 
+    // Added delete crop handler
+    const handleDeleteCrop = (id: string, name: string) => {
+        setCropToDelete({ id, name });
+        setShowDeleteDialog(true);
+    };
+
+    // Added confirm delete function
+    const confirmDeleteCrop = async () => {
+        if (cropToDelete) {
+            try {
+                await deleteCrop(cropToDelete.id);
+                setShowDeleteDialog(false);
+                setCropToDelete(null);
+            } catch (error) {
+                console.error("Error deleting crop:", error);
+                // You might want to show an error message to the user here
+            }
+        }
+    };
+
+    // Added cancel delete function
+    const cancelDelete = () => {
+        setShowDeleteDialog(false);
+        setCropToDelete(null);
+    };
+
     if (loading) {
         return (
             <Layout>
@@ -90,7 +104,7 @@ const CropHistory = () => {
     return (
         <Layout>
             <div className="space-y-6">
-                {/* Header */}
+                {/* Header - Removed Add Crop Button */}
                 <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
                     <div className="flex items-center gap-3 mb-2">
                         <Leaf className="h-6 w-6" />
@@ -100,6 +114,57 @@ const CropHistory = () => {
                         View and manage all your crop plantings
                     </p>
                 </div>
+
+                {/* Stats Cards */}
+                {crops.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="shadow-card">
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                        <Sprout className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Total Crops</p>
+                                        <p className="text-2xl font-bold">{crops.length}</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        
+                        <Card className="shadow-card">
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-success/10 rounded-lg">
+                                        <TrendingUp className="h-5 w-5 text-success" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Total Investment</p>
+                                        <p className="text-2xl font-bold">
+                                            ₱{(crops.reduce((sum, crop) => sum + (Number(crop.puhunan) || 0), 0)).toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        
+                        <Card className="shadow-card">
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                                        <MapPin className="h-5 w-5 text-blue-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Total Area</p>
+                                        <p className="text-2xl font-bold">
+                                            {(crops.reduce((sum, crop) => sum + (Number(crop.landArea) || 0), 0)).toFixed(1)} ha
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
                 {/* Crops List */}
                 {crops.length === 0 ? (
@@ -111,68 +176,102 @@ const CropHistory = () => {
                                 You haven't added any crops yet. Start by adding your first crop.
                             </p>
                             <Button onClick={() => navigate('/farmer')}>
+                                <Plus className="h-4 w-4 mr-2" />
                                 Add Crop
                             </Button>
                         </CardContent>
                     </Card>
                 ) : (
                     <div className="grid gap-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold">Your Crops</h2>
+                            <p className="text-muted-foreground">{crops.length} crops</p>
+                        </div>
+                        
                         {crops.map((crop) => (
                             <Card
                                 key={crop.id}
-                                className="shadow-card hover:shadow-md transition-shadow cursor-pointer"
+                                className="shadow-card hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-primary"
                                 onClick={() => navigate(`/crop/${crop.id}`)}
                             >
                                 <CardHeader>
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <CardTitle className="flex items-center gap-2">
-                                                <Wheat className="h-5 w-5" />
+                                                <Wheat className="h-5 w-5 text-primary" />
                                                 {crop.name}
                                             </CardTitle>
                                             <CardDescription>
                                                 Planted on {formatDate(crop.plantedDate)}
                                             </CardDescription>
                                         </div>
-                                        <Button variant="outline" size="sm">
-                                            View Details
+                                        {/* Removed View Details button and kept only Delete button */}
+                                        <Button 
+                                            variant="destructive" 
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteCrop(crop.id, crop.name);
+                                            }}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                         <div className="flex items-center gap-2">
                                             <MapPin className="h-4 w-4 text-muted-foreground" />
                                             <div>
-                                                <p className="text-sm text-muted-foreground">Land Area</p>
-                                                <p className="font-medium">{crop.landArea}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Wheat className="h-4 w-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-sm text-muted-foreground">Quantity</p>
-                                                <p className="font-medium">{crop.quantity} kg</p>
+                                                <p className="text-xs text-muted-foreground">Land Area</p>
+                                                <p className="font-medium">{Number(crop.landArea)} hectares</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <TrendingUp className="h-4 w-4 text-muted-foreground" />
                                             <div>
-                                                <p className="text-sm text-muted-foreground">Puhunan</p>
-                                                <p className="font-medium">₱{crop.puhunan.toLocaleString()}</p>
+                                                <p className="text-xs text-muted-foreground">Capital</p>
+                                                <p className="font-medium">₱{Number(crop.puhunan).toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Leaf className="h-4 w-4 text-muted-foreground" />
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">Soil Type</p>
+                                                <p className="font-medium">{crop.soilType}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4 text-muted-foreground" />
                                             <div>
-                                                <p className="text-sm text-muted-foreground">Soil Type</p>
-                                                <p className="font-medium">{crop.soilType}</p>
+                                                <p className="text-xs text-muted-foreground">Planting Date</p>
+                                                <p className="font-medium">{formatDate(crop.plantedDate)}</p>
                                             </div>
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
                         ))}
+                    </div>
+                )}
+
+                {/* Delete Confirmation Dialog */}
+                {showDeleteDialog && cropToDelete && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                            <h3 className="text-lg font-semibold mb-2">Delete Crop</h3>
+                            <p className="text-muted-foreground mb-4">
+                                Are you sure you want to delete <strong>{cropToDelete.name}</strong>? This action cannot be undone.
+                            </p>
+                            <div className="flex justify-end gap-2">
+                                <Button variant="outline" onClick={cancelDelete}>
+                                    Cancel
+                                </Button>
+                                <Button variant="destructive" onClick={confirmDeleteCrop}>
+                                    Delete
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

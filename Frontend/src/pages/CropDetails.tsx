@@ -1,29 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { ArrowLeft, Sprout, Leaf, Calendar, Droplets, Sun, Activity, AlertTriangle, CheckCircle, XCircle, Wheat, TrendingUp, Package } from "lucide-react";
+import { ArrowLeft, Sprout, Leaf, Calendar, Droplets, Sun, Activity, AlertTriangle, CheckCircle, XCircle, Wheat, TrendingUp, Package, MapPin } from "lucide-react";
 import { useCrops } from "@/contexts/CropContext";
 import { Button } from "@/components/ui/button";
-import CropInfoCard from "@/components/dashboard/farmer/CropInfoCard";
 import GrowthInsightsCard from "@/components/dashboard/farmer/GrowthInsightsCard";
-import RecommendationsCard from "@/components/dashboard/farmer/RecommendationsCard";
-import SalesForecastCard from "@/components/dashboard/farmer/SalesForecastCard";
 import MaintenanceChecklistCard from "@/components/dashboard/farmer/MaintenanceChecklistCard";
-
-interface Crop {
-    id: string;
-    name: string;
-    landArea: string;
-    quantity: number;
-    soilType: string;
-    nitrogen: number;
-    phosphorus: number;
-    potassium: number;
-    puhunan: number;
-    plantedDate: any;
-    createdAt: any;
-    checklist?: ChecklistItem[]; // Add checklist field
-}
+import EnhancedCropInfoCard from "@/components/dashboard/farmer/EnhancedCropInfoCard";
+import EnhancedSalesForecastCard from "@/components/dashboard/farmer/EnhancedSalesForecastCard";
+import { getHarvestEstimate } from "@/services/geminiService";
 
 interface ChecklistItem {
     id: string;
@@ -32,57 +17,15 @@ interface ChecklistItem {
     category: string;
 }
 
-interface PrescribedCrop {
-    id: string;
-    name: string;
-    reason: string;
-    recommendations: string[];
-    practices: string[];
-}
-
 const CropDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { getCropById, updateCrop } = useCrops();
-    const [crop, setCrop] = useState<Crop | null>(null);
+    const [crop, setCrop] = useState<any | null>(null);
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [productivityData, setProductivityData] = useState<{ task: string; productivity: number }[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedPrescribedCrop, setSelectedPrescribedCrop] = useState<PrescribedCrop | null>(null);
-
-    // Mock prescribed crops data
-    const prescribedCrops: PrescribedCrop[] = crop ? [
-        {
-            id: "1",
-            name: "Squash",
-            reason: "High nitrogen levels in your soil are perfect for squash, which requires nitrogen-rich soil for optimal leaf growth.",
-            recommendations: [
-                "Plant seeds 1 inch deep with 3-4 feet spacing",
-                "Water consistently but avoid waterlogging",
-                "Apply mulch to retain moisture"
-            ],
-            practices: [
-                "Harvest when fruits are 6-8 inches long",
-                "Prune lateral shoots to focus energy on main fruits",
-                "Monitor for squash bugs and cucumber beetles"
-            ]
-        },
-        {
-            id: "2",
-            name: "Eggplant",
-            reason: "Your soil's potassium levels are ideal for eggplant, which requires high potassium for fruit development.",
-            recommendations: [
-                "Plant in full sun with well-draining soil",
-                "Space plants 18-24 inches apart",
-                "Stake plants to support fruit weight"
-            ],
-            practices: [
-                "Harvest when fruits are glossy and firm",
-                "Prune lower leaves to improve air circulation",
-                "Apply compost tea every 2 weeks"
-            ]
-        }
-    ] : [];
+    const [harvestData, setHarvestData] = useState<any>(null);
 
     // Mock checklist data
     const generateChecklist = (cropName: string) => {
@@ -139,6 +82,29 @@ const CropDetails = () => {
                     });
                     
                     setProductivityData(initialData);
+
+                    // Fetch harvest estimate from Gemini API only if not already saved
+                    if (cropData.plantedDate && (!cropData.harvestData || !cropData.harvestData.estimatedHarvestDate)) {
+                        try {
+                            const plantedDate = cropData.plantedDate.toDate ? cropData.plantedDate.toDate() : new Date(cropData.plantedDate);
+                            const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
+                            
+                            // Save harvest data to crop record
+                            if (cropData.id) {
+                                await updateCrop(cropData.id, { harvestData: harvestInfo });
+                            }
+                            
+                            setHarvestData(harvestInfo);
+                        } catch (error) {
+                            console.error("Error fetching harvest estimate:", error);
+                        }
+                    } else if (cropData.harvestData) {
+                        // Use existing harvest data
+                        setHarvestData(cropData.harvestData);
+                    } else {
+                        // Reset harvest data if no conditions are met
+                        setHarvestData(null);
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching crop:", error);
@@ -188,6 +154,11 @@ const CropDetails = () => {
     };
 
     const calculateHarvestDate = (plantedDate: any, cropName: string) => {
+        // Use Gemini API data if available, otherwise fall back to original logic
+        if (harvestData && harvestData.formattedHarvestDate) {
+            return harvestData.formattedHarvestDate;
+        }
+
         if (!plantedDate || !plantedDate.toDate) return 'Unknown date';
 
         try {
@@ -198,14 +169,10 @@ const CropDetails = () => {
                 daysToHarvest = 120;
             } else if (cropName.toLowerCase().includes("corn")) {
                 daysToHarvest = 100;
-            } else if (cropName.toLowerCase().includes("tomato")) {
-                daysToHarvest = 80;
             }
 
-            const harvestDate = new Date(baseDate);
-            harvestDate.setDate(baseDate.getDate() + daysToHarvest);
-
-            return harvestDate.toLocaleDateString('en-US', {
+            baseDate.setDate(baseDate.getDate() + daysToHarvest);
+            return baseDate.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
@@ -215,62 +182,41 @@ const CropDetails = () => {
         }
     };
 
+    // Calculate growth stage based on planting date
     const calculateGrowthStage = (plantedDate: any) => {
-        if (!plantedDate || !plantedDate.toDate) return 'Unknown';
+        // Use Gemini API data if available, otherwise fall back to original logic
+        if (harvestData && harvestData.growthStage) {
+            return harvestData.growthStage;
+        }
 
+        if (!plantedDate || !plantedDate.toDate) return 'Unknown';
+        
         try {
             const planted = plantedDate.toDate();
             const now = new Date();
-            const diffTime = Math.abs(now.getTime() - planted.getTime());
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays < 14) return "Germination";
-            if (diffDays < 30) return "Seedling";
-            if (diffDays < 60) return "Vegetative";
-            if (diffDays < 90) return "Flowering";
-            return "Fruiting";
+            const diffDays = Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 30) return 'Germination';
+            if (diffDays < 60) return 'Vegetative';
+            if (diffDays < 90) return 'Flowering';
+            return 'Fruiting';
         } catch (e) {
             return 'Unknown';
         }
     };
 
-    const calculateProductivity = (landArea: string, quantity: number) => {
-        // Simple calculation based on area and yield
-        const areaValue = parseFloat(landArea);
-        if (isNaN(areaValue)) return 75;
-
-        const productivity = Math.min(100, Math.max(0, (quantity / areaValue) / 10));
-        return Math.round(productivity);
-    };
-
-    const calculateEstimatedSales = (quantity: number) => {
-        // Mock pricing
-        const pricePerKg = 25; // PHP
-        return quantity * pricePerKg;
-    };
-
-    const calculateNetProfit = (puhunan: number, estimatedSales: number) => {
-        return estimatedSales - puhunan;
-    };
-
     // Calculate productivity based on checklist completion
-    const checklistProductivity = checklist.length > 0
-        ? Math.round((checklist.filter(item => item.completed).length / checklist.length) * 100)
-        : 0;
-
-    // Sales forecast data for the line chart
-    const salesForecastData = crop ? [
-        { stage: 'Preparation', puhunan: crop.puhunan, grossSales: 0, netProfit: -crop.puhunan },
-        { stage: 'Planting', puhunan: crop.puhunan, grossSales: calculateEstimatedSales(crop.quantity) * 0.2, netProfit: calculateEstimatedSales(crop.quantity) * 0.2 - crop.puhunan },
-        { stage: 'Growth', puhunan: crop.puhunan, grossSales: calculateEstimatedSales(crop.quantity) * 0.6, netProfit: calculateEstimatedSales(crop.quantity) * 0.6 - crop.puhunan },
-        { stage: 'Harvest', puhunan: crop.puhunan, grossSales: calculateEstimatedSales(crop.quantity), netProfit: calculateNetProfit(crop.puhunan, calculateEstimatedSales(crop.quantity)) },
-    ] : [];
+    const calculateProductivity = () => {
+        if (checklist.length === 0) return 0;
+        const completed = checklist.filter(item => item.completed).length;
+        return Math.round((completed / checklist.length) * 100);
+    };
 
     if (loading) {
         return (
             <Layout>
                 <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                 </div>
             </Layout>
         );
@@ -279,69 +225,144 @@ const CropDetails = () => {
     if (!crop) {
         return (
             <Layout>
-                <div className="text-center py-12">
-                    <h2 className="text-xl font-semibold mb-2">Crop not found</h2>
-                    <p className="text-muted-foreground mb-4">The requested crop could not be found.</p>
-                    <Button onClick={() => navigate('/crop-history')}>
-                        Back to Crop History
+                <div className="max-w-4xl mx-auto p-4">
+                    <Button variant="outline" onClick={() => navigate(-1)} className="mb-4">
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back
                     </Button>
+                    <div className="text-center py-12">
+                        <XCircle className="h-16 w-16 mx-auto text-destructive mb-4" />
+                        <h2 className="text-2xl font-bold mb-2">Crop Not Found</h2>
+                        <p className="text-muted-foreground mb-4">
+                            The crop you're looking for doesn't exist or has been removed.
+                        </p>
+                        <Button onClick={() => navigate('/crop-history')}>
+                            View All Crops
+                        </Button>
+                    </div>
                 </div>
             </Layout>
         );
     }
 
-    const estimatedSales = calculateEstimatedSales(crop.quantity);
-    const netProfit = calculateNetProfit(crop.puhunan, estimatedSales);
-    const productivity = calculateProductivity(crop.landArea, crop.quantity);
     const growthStage = calculateGrowthStage(crop.plantedDate);
     const harvestDate = calculateHarvestDate(crop.plantedDate, crop.name);
+    const productivity = calculateProductivity();
+    const checklistProductivity = productivity;
 
     return (
         <Layout>
-            <div className="space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" onClick={() => navigate('/crop-history')}>
-                        <ArrowLeft className="h-4 w-4" />
+            <div className="max-w-6xl mx-auto p-4 space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
+                    <Button variant="outline" onClick={() => navigate(-1)} className="w-fit">
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to Crop History
                     </Button>
-                    <div>
-                        <h1 className="text-2xl font-bold">{crop.name} Details</h1>
-                        <p className="text-muted-foreground">Comprehensive information and management tools</p>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={() => navigate(`/crop-history`)}>
+                            <Package className="h-4 w-4 mr-2" />
+                            All Crops
+                        </Button>
                     </div>
                 </div>
 
-                {/* Basic Crop Information */}
-                <CropInfoCard crop={crop} />
+                <div className="bg-gradient-primary rounded-xl p-6 text-primary-foreground">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <Sprout className="h-8 w-8" />
+                                <h1 className="text-3xl font-bold">{crop.name} Details</h1>
+                            </div>
+                            <p className="text-primary-foreground/90">
+                                Detailed information and management tools for your {crop.name} crop.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <div className="bg-primary-foreground/10 px-3 py-1 rounded-full text-sm">
+                                {crop.soilType}
+                            </div>
+                            <div className="bg-primary-foreground/10 px-3 py-1 rounded-full text-sm">
+                                {crop.landArea} ha
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                {/* Growth and Health Insights */}
-                <GrowthInsightsCard
-                    growthStage={growthStage}
-                    harvestDate={harvestDate}
-                    productivity={productivity}
-                    prescribedCrops={prescribedCrops}
-                    selectedPrescribedCrop={selectedPrescribedCrop}
-                    onPrescribedCropSelect={setSelectedPrescribedCrop}
-                    onResetSelection={() => setSelectedPrescribedCrop(null)}
-                />
+                {/* Key Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-card border rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                                <Calendar className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Planting Date</p>
+                                <p className="font-medium">
+                                    {crop.plantedDate?.toDate?.().toLocaleDateString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric'
+                                    }) || 'Unknown date'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-card border rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-success/10 rounded-lg">
+                                <TrendingUp className="h-5 w-5 text-success" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Capital</p>
+                                <p className="font-medium">₱{crop.puhunan?.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-card border rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-500/10 rounded-lg">
+                                <Leaf className="h-5 w-5 text-blue-500" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Growth Stage</p>
+                                <p className="font-medium">{growthStage}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-card border rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-500/10 rounded-lg">
+                                <Sun className="h-5 w-5 text-green-500" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">Est. Harvest</p>
+                                <p className="font-medium">{harvestDate}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                {/* Recommendations */}
-                <RecommendationsCard selectedPrescribedCrop={selectedPrescribedCrop} />
+                <div className="grid lg:grid-cols-2 gap-6">
+                    <EnhancedCropInfoCard crop={crop} />
+                    <GrowthInsightsCard 
+                        growthStage={growthStage}
+                        harvestDate={harvestDate}
+                        productivity={productivity}
+                    />
+                </div>
 
-                {/* Sales Forecast */}
-                <SalesForecastCard
-                    puhunan={crop.puhunan}
-                    estimatedSales={estimatedSales}
-                    netProfit={netProfit}
-                    salesForecastData={salesForecastData}
-                />
+                <div className="grid lg:grid-cols-1 gap-6">
+                    <EnhancedSalesForecastCard crop={crop} />
+                </div>
 
-                {/* Maintenance Checklist */}
-                <MaintenanceChecklistCard
-                    checklist={checklist}
+                <MaintenanceChecklistCard 
+                    checklist={checklist} 
                     productivityData={productivityData}
                     checklistProductivity={checklistProductivity}
-                    onToggleItem={toggleChecklistItem}
-                    selectedPrescribedCrop={selectedPrescribedCrop}
+                    onToggleItem={toggleChecklistItem} 
                 />
             </div>
         </Layout>

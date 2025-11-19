@@ -30,13 +30,13 @@ except Exception as e:
 
 @app.get("/")
 async def root():
-    return {"message": "Enhanced Soil Crop Recommendation API", 
-            "description": "POST /enhanced-recommend to get enhanced crop recommendations based on soil, weather, and market data"}
+    return {"message": "Soil Crop Recommendation API", 
+            "description": "POST /enhanced-recommend to get crop recommendations based on soil, weather, and market data"}
 
 @app.post("/enhanced-recommend")
 async def enhanced_recommend_crops(data: dict):
     """
-    Get enhanced crop recommendations based on soil, weather, and market data
+    Get crop recommendations based on soil, weather, and market data
     
     Expected input format:
     {
@@ -109,7 +109,7 @@ async def enhanced_recommend_crops(data: dict):
         if not (0 <= soil_data['pH'] <= 14):
             raise HTTPException(status_code=400, detail="pH must be between 0 and 14")
         
-        # Get predictions with enhanced data
+        # Get predictions with data
         predictions = model.predict(soil_data, weather_data, market_context)
         
         # Format response
@@ -125,7 +125,7 @@ async def enhanced_recommend_crops(data: dict):
         return {"recommended_crops": recommended_crops}
         
     except Exception as e:
-        logger.error(f"Error in enhanced prediction: {str(e)}")
+        logger.error(f"Error in prediction: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
 @app.get("/health")

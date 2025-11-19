@@ -34,29 +34,13 @@ interface Farmer {
   farmAddress?: string;
 }
 
-interface Crop {
-  id: string;
-  userId: string;
-  name: string;
-  landArea: string;
-  quantity: number;
-  soilType: string;
-  nitrogen: number;
-  phosphorus: number;
-  potassium: number;
-  puhunan: number;
-  plantedDate: any;
-  createdAt: any;
-  status?: string;
-}
-
 const FarmerDetailPage = () => {
   const { farmerId } = useParams<{ farmerId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [farmer, setFarmer] = useState<Farmer | null>(null);
-  const [crops, setCrops] = useState<Crop[]>([]);
+  const [crops, setCrops] = useState<any[]>([]);
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -94,7 +78,7 @@ const FarmerDetailPage = () => {
       const cropsQuery = query(cropsRef, where("userId", "==", uid));
       const cropsSnapshot = await getDocs(cropsQuery);
 
-      const farmerCrops: Crop[] = [];
+      const farmerCrops: any[] = [];
       cropsSnapshot.forEach((doc) => {
         const data = doc.data();
         farmerCrops.push({
@@ -102,11 +86,7 @@ const FarmerDetailPage = () => {
           userId: data.userId,
           name: data.name,
           landArea: data.landArea,
-          quantity: data.quantity,
           soilType: data.soilType,
-          nitrogen: data.nitrogen || 0,
-          phosphorus: data.phosphorus || 0,
-          potassium: data.potassium || 0,
           puhunan: data.puhunan,
           plantedDate: data.plantedDate,
           createdAt: data.createdAt,
@@ -200,8 +180,23 @@ const FarmerDetailPage = () => {
   if (!farmer) {
     return (
       <Layout>
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Farmer not found</p>
+        <div className="max-w-4xl mx-auto p-6">
+          <Button variant="outline" onClick={() => navigate('/admin')} className="mb-6">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          <div className="text-center py-12">
+            <div className="mx-auto h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
+              <User className="h-8 w-8 text-destructive" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Farmer Not Found</h2>
+            <p className="text-muted-foreground mb-6">
+              The farmer you're looking for doesn't exist or has been removed.
+            </p>
+            <Button onClick={() => navigate('/admin')}>
+              Return to Admin Dashboard
+            </Button>
+          </div>
         </div>
       </Layout>
     );
@@ -209,278 +204,241 @@ const FarmerDetailPage = () => {
 
   const inProgressCrops = getCropsByStatus("In Progress");
   const harvestedCrops = getCropsByStatus("Harvested");
+  const totalInvestment = crops.reduce((sum, crop) => sum + (crop.puhunan || 0), 0);
+  const totalCrops = crops.length;
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Back Button */}
-        <Button
-          variant="outline"
-          onClick={() => navigate('/admin')}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Admin Dashboard
+      <div className="max-w-6xl mx-auto p-6 space-y-6">
+        <Button variant="outline" onClick={() => navigate('/admin')} className="mb-2">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
         </Button>
 
-        {/* Farmer Profile Header */}
+        {/* Farmer Header */}
+        <div className="bg-gradient-primary rounded-xl p-6 text-primary-foreground">
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+            <Avatar className="h-20 w-20 border-4 border-primary-foreground/20">
+              {farmer.photoURL ? (
+                <AvatarImage src={farmer.photoURL} alt={farmer.fullName} />
+              ) : (
+                <AvatarFallback className="text-2xl bg-primary/20">
+                  {getInitials(farmer.fullName)}
+                </AvatarFallback>
+              )}
+            </Avatar>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold mb-2">{farmer.fullName}</h1>
+              <p className="text-primary-foreground/90 mb-4">
+                {farmer.farmName || "No farm name provided"}
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  <span>{farmer.email}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span>Joined {formatDate(farmer.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+            <Badge variant="secondary" className="text-lg py-2 px-4">
+              {totalCrops} Crops
+            </Badge>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Investment</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₱{totalInvestment.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Across all crops</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Crops</CardTitle>
+              <Leaf className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{inProgressCrops.length}</div>
+              <p className="text-xs text-muted-foreground">Currently growing</p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Harvested</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{harvestedCrops.length}</div>
+              <p className="text-xs text-muted-foreground">Successfully grown</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Farmer Information */}
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle className="text-2xl">Farmer Profile</CardTitle>
-            <CardDescription>Detailed information and crop history</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Farmer Information
+            </CardTitle>
+            <CardDescription>Contact and location details</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row gap-6">
-              {/* Profile Image */}
-              <div className="flex justify-center md:justify-start">
-                <Avatar className="h-32 w-32">
-                  <AvatarImage src={farmer.photoURL || undefined} alt={farmer.fullName} />
-                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                    {getInitials(farmer.fullName)}
-                  </AvatarFallback>
-                </Avatar>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Full Name</h3>
+                <p className="font-medium">{farmer.fullName}</p>
               </div>
-
-              {/* Profile Information */}
-              <div className="flex-1 space-y-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">{farmer.fullName}</h2>
-                  <p className="text-muted-foreground">{farmer.farmName}</p>
-                </div>
-
-                <Separator />
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="flex items-start gap-3">
-                    <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{farmer.email}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Registered</p>
-                      <p className="font-medium">{formatDate(farmer.createdAt)}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Home className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Home Address</p>
-                      <p className="font-medium">{farmer.homeAddress || "Not provided"}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Farm Address</p>
-                      <p className="font-medium">{farmer.farmAddress || "Not provided"}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <TrendingUp className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Farm Land Area</p>
-                    <p className="font-medium">
-                      {crops.reduce((sum, crop) => {
-                        const area = parseFloat(crop.landArea) || 0;
-                        return sum + area;
-                      }, 0).toFixed(2)} hectares
-                    </p>
-                  </div>
-                </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Email</h3>
+                <p className="font-medium">{farmer.email}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Member Since</h3>
+                <p className="font-medium">{formatDate(farmer.createdAt)}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Farm Name</h3>
+                <p className="font-medium">{farmer.farmName || "Not provided"}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Home Address</h3>
+                <p className="font-medium">{farmer.homeAddress || "Not provided"}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Farm Address</h3>
+                <p className="font-medium">{farmer.farmAddress || "Not provided"}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Crop Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="shadow-soft">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Leaf className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Crops</p>
-                  <p className="text-2xl font-bold">{crops.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Crops Section */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Sprout className="h-6 w-6" />
+              Crop Management
+            </h2>
+            <Badge variant="outline">{totalCrops} total crops</Badge>
+          </div>
 
-          <Card className="shadow-soft">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-warning/10 rounded-lg">
-                  <Sprout className="h-5 w-5 text-warning" />
+          {/* In Progress Crops */}
+          {inProgressCrops.length > 0 && (
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Leaf className="h-5 w-5 text-green-500" />
+                  In Progress ({inProgressCrops.length})
+                </CardTitle>
+                <CardDescription>Currently growing crops</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {inProgressCrops.map((crop) => (
+                    <Card key={crop.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="font-semibold">{crop.name}</h3>
+                          <Badge variant="secondary">{crop.status}</Badge>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Land Area:</span>
+                            <span>{crop.landArea} hectares</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Soil Type:</span>
+                            <span>{crop.soilType}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Investment:</span>
+                            <span>₱{crop.puhunan?.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Planted:</span>
+                            <span>{formatTimestamp(crop.plantedDate)}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">In Progress</p>
-                  <p className="text-2xl font-bold">{inProgressCrops.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          <Card className="shadow-soft">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-success/10 rounded-lg">
-                  <Package className="h-5 w-5 text-success" />
+          {/* Harvested Crops */}
+          {harvestedCrops.length > 0 && (
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-blue-500" />
+                  Harvested ({harvestedCrops.length})
+                </CardTitle>
+                <CardDescription>Successfully grown crops</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {harvestedCrops.map((crop) => (
+                    <Card key={crop.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="font-semibold">{crop.name}</h3>
+                          <Badge variant="default">{crop.status}</Badge>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Land Area:</span>
+                            <span>{crop.landArea} hectares</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Soil Type:</span>
+                            <span>{crop.soilType}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Investment:</span>
+                            <span>₱{crop.puhunan?.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Planted:</span>
+                            <span>{formatTimestamp(crop.plantedDate)}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Harvested</p>
-                  <p className="text-2xl font-bold">{harvestedCrops.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No Crops Message */}
+          {totalCrops === 0 && (
+            <Card className="shadow-card">
+              <CardContent className="py-12 text-center">
+                <Leaf className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Crops Found</h3>
+                <p className="text-muted-foreground mb-4">
+                  This farmer hasn't added any crops yet.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
-
-        {/* In Progress Crops */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sprout className="h-5 w-5" />
-              In Progress Crops
-            </CardTitle>
-            <CardDescription>{inProgressCrops.length} crops currently growing</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {inProgressCrops.length > 0 ? (
-              <div className="space-y-4">
-                {inProgressCrops.map((crop) => (
-                  <div
-                    key={crop.id}
-                    className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Leaf className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-lg">{crop.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Planted: {formatTimestamp(crop.plantedDate)}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="secondary">In Progress</Badge>
-                    </div>
-
-                    <div className="grid md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Land Area</p>
-                        <p className="font-medium">{crop.landArea} hectares</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Quantity</p>
-                        <p className="font-medium">{crop.quantity} kg</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Soil Type</p>
-                        <p className="font-medium capitalize">{crop.soilType}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Investment</p>
-                        <p className="font-medium">₱{crop.puhunan.toLocaleString()}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>N: {crop.nitrogen}</span>
-                      <span>P: {crop.phosphorus}</span>
-                      <span>K: {crop.potassium}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Sprout className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                <p>No crops in progress</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Harvested Crops */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Harvested Crops
-            </CardTitle>
-            <CardDescription>{harvestedCrops.length} crops successfully harvested</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {harvestedCrops.length > 0 ? (
-              <div className="space-y-4">
-                {harvestedCrops.map((crop) => (
-                  <div
-                    key={crop.id}
-                    className="p-4 border rounded-lg hover:bg-muted/50 transition-colors opacity-75"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-success/10 rounded-lg">
-                          <Package className="h-5 w-5 text-success" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-lg">{crop.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Planted: {formatTimestamp(crop.plantedDate)}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge className="bg-success text-success-foreground">Harvested</Badge>
-                    </div>
-
-                    <div className="grid md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Land Area</p>
-                        <p className="font-medium">{crop.landArea} hectares</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Quantity</p>
-                        <p className="font-medium">{crop.quantity} kg</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Soil Type</p>
-                        <p className="font-medium capitalize">{crop.soilType}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Investment</p>
-                        <p className="font-medium">₱{crop.puhunan.toLocaleString()}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>N: {crop.nitrogen}</span>
-                      <span>P: {crop.phosphorus}</span>
-                      <span>K: {crop.potassium}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-                <p>No harvested crops yet</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </Layout>
   );

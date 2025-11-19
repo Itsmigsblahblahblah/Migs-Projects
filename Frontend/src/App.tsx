@@ -19,6 +19,7 @@ import Alerts from "@/pages/Alerts";
 import MarketDemand from "@/pages/MarketDemand";
 import CropPrescriptionPage from "@/pages/CropPrescriptionPage";
 import FarmerDetailPage from "@/pages/FarmerDetailPage";
+import FarmerReportDetail from "@/pages/FarmerReportDetail";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole="farmer">
                   <FarmerDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/farmer/reports/:reportId" 
+              element={
+                <ProtectedRoute requiredRole="farmer">
+                  <FarmerReportDetail />
                 </ProtectedRoute>
               } 
             />

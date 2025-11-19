@@ -8,29 +8,23 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-
-interface Crop {
-    id: string;
-    name: string;
-    landArea: string;
-    quantity: number | string;
-}
+import { useCrops } from "@/contexts/CropContext";
 
 interface UpdateCropDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    crops: Crop[];
-    selectCropForEditing: (crop: Crop) => void;
+    selectCropForEditing: (crop: any) => void;
     setIsEditCropDialogOpen: (open: boolean) => void;
 }
 
 const UpdateCropDialog = ({
     open,
     onOpenChange,
-    crops,
     selectCropForEditing,
     setIsEditCropDialogOpen
 }: UpdateCropDialogProps) => {
+    const { crops } = useCrops();
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md">
@@ -57,7 +51,7 @@ const UpdateCropDialog = ({
                                     >
                                         <div className="font-medium">{crop.name}</div>
                                         <div className="text-sm text-muted-foreground">
-                                            {crop.landArea} hectares • {crop.quantity} kg
+                                            {crop.landArea} hectares • ₱{crop.puhunan.toLocaleString()}
                                         </div>
                                     </div>
                                 ))}
