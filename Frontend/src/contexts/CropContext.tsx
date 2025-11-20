@@ -9,6 +9,7 @@ interface ChecklistItem {
     title: string;
     completed: boolean;
     category: string;
+    completedAt?: string; // Add timestamp for completion
 }
 
 interface Crop {

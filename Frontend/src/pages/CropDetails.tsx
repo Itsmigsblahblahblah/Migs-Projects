@@ -16,6 +16,7 @@ interface ChecklistItem {
     title: string;
     completed: boolean;
     category: string;
+    completedAt?: string; // Add timestamp for completion
 }
 
 const CropDetails = () => {
@@ -61,7 +62,7 @@ const CropDetails = () => {
                 item.title === "Sort and store harvested crops properly"
             );
             if (postHarvestItem) {
-                return [...existingChecklist, postHarvestItem];
+                return [...existingChecklist, {...postHarvestItem, completed: false, completedAt: undefined}];
             }
         }
         
@@ -192,9 +193,19 @@ const CropDetails = () => {
     }, [id, getCropById, loadCrops, cropsLoaded]);
 
     const toggleChecklistItem = async (itemId: string) => {
-        const updatedChecklist = checklist.map(item =>
-            item.id === itemId ? { ...item, completed: !item.completed } : item
-        );
+        const updatedChecklist = checklist.map(item => {
+            if (item.id === itemId) {
+                // If completing the item, add timestamp
+                // If unchecking, remove timestamp
+                const newCompletedStatus = !item.completed;
+                return {
+                    ...item,
+                    completed: newCompletedStatus,
+                    completedAt: newCompletedStatus ? new Date().toISOString() : undefined
+                };
+            }
+            return item;
+        });
 
         // Update local state
         setChecklist(updatedChecklist);
