@@ -245,34 +245,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                     </div>
                 )}
 
-                {insights?.profit && (
-                    <div className="md:col-span-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <div className="p-3 bg-green-500/5 rounded-lg border border-green-500/20">
-                            <p className="text-xs text-muted-foreground mb-1">Est. Yield</p>
-                            <p className="font-medium">
-                                {insights.profit.estimatedYield?.toLocaleString() || 'N/A'} kg
-                            </p>
-                        </div>
-                        <div className="p-3 bg-blue-500/5 rounded-lg border border-blue-500/20">
-                            <p className="text-xs text-muted-foreground mb-1">Potential Revenue</p>
-                            <p className="font-medium">
-                                ₱{insights.profit.potentialRevenue?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}
-                            </p>
-                        </div>
-                        <div className={`p-3 rounded-lg border ${insights.profit.netProfit >= 0 ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
-                            <p className="text-xs text-muted-foreground mb-1">Net Profit</p>
-                            <p className={`font-medium ${insights.profit.netProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                ₱{insights.profit.netProfit?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}
-                            </p>
-                        </div>
-                        <div className="p-3 bg-yellow-500/5 rounded-lg border border-yellow-500/20">
-                            <p className="text-xs text-muted-foreground mb-1">Suggested Capital</p>
-                            <p className="font-medium">
-                                ₱{insights.profit.suggestedCapital?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}
-                            </p>
-                        </div>
-                    </div>
-                )}
+                {/* Removed financial information boxes to avoid duplication with Sales Forecast section */}
             </CardContent>
         </Card>
     );

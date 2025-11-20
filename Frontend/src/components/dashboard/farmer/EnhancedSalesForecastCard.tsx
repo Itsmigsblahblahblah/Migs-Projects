@@ -140,82 +140,99 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                    <div className="p-4 bg-primary/5 rounded-lg border">
-                        <p className="text-sm text-muted-foreground mb-1">Total Investment</p>
-                        <p className="text-2xl font-bold text-primary">₱{Number(crop.puhunan).toLocaleString()}</p>
-                    </div>
-                    <div className="p-4 bg-success/5 rounded-lg border">
-                        <p className="text-sm text-muted-foreground mb-1">Potential Revenue</p>
-                        <p className="text-2xl font-bold text-success">₱{potentialRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                    </div>
-                    <div className={`p-4 rounded-lg border ${netProfit >= 0 ? 'bg-success/5' : 'bg-destructive/5'}`}>
-                        <p className="text-sm text-muted-foreground mb-1">Projected Net Profit</p>
-                        <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                            ₱{netProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        </p>
-                    </div>
-                    <div className="p-4 bg-yellow-500/5 rounded-lg border">
-                        <p className="text-sm text-muted-foreground mb-1">Suggested Capital</p>
-                        <p className="text-2xl font-bold text-yellow-500">
-                            ₱{insights?.profit?.suggestedCapital?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}
-                        </p>
+                {/* Simplified Financial Flow - Step by step explanation */}
+                <div className="mb-8">
+                    <h3 className="font-bold text-lg mb-4">How Your Money Works</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="p-4 bg-primary/10 rounded-lg border border-primary">
+                            <div className="text-primary font-bold text-xl mb-2">1</div>
+                            <p className="text-sm text-muted-foreground mb-1">Your Investment</p>
+                            <p className="text-xl font-bold text-primary">₱{Number(crop.puhunan).toLocaleString()}</p>
+                            <p className="text-xs mt-2 text-muted-foreground">This is the money you spend to plant and grow your {crop.name}</p>
+                        </div>
+                        <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500">
+                            <div className="text-yellow-500 font-bold text-xl mb-2">2</div>
+                            <p className="text-sm text-muted-foreground mb-1">Suggested Capital</p>
+                            <p className="text-xl font-bold text-yellow-500">₱{insights?.profit?.suggestedCapital?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}</p>
+                            <p className="text-xs mt-2 text-muted-foreground">This is the minimum money needed to successfully grow your {crop.name}</p>
+                        </div>
+                        <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500">
+                            <div className="text-blue-500 font-bold text-xl mb-2">3</div>
+                            <p className="text-sm text-muted-foreground mb-1">Expected Harvest</p>
+                            <p className="text-xl font-bold text-blue-500">{estimatedYield?.toLocaleString()} kg</p>
+                            <p className="text-xs mt-2 text-muted-foreground">This is how much {crop.name} you're expected to harvest</p>
+                        </div>
+                        <div className={`p-4 rounded-lg border ${netProfit >= 0 ? 'bg-success/10 border-success' : 'bg-destructive/10 border-destructive'}`}>
+                            <div className={`font-bold text-xl mb-2 ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>4</div>
+                            <p className="text-sm text-muted-foreground mb-1">Your Profit</p>
+                            <p className={`text-xl font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                                ₱{netProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            </p>
+                            <p className="text-xs mt-2 text-muted-foreground">
+                                {netProfit >= 0 
+                                    ? "This is your expected profit after all expenses" 
+                                    : "You might lose money. Consider adjusting your approach."}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                {insights?.market && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div className="p-4 bg-blue-500/5 rounded-lg border">
-                            <div className="flex items-center gap-2 mb-2">
-                                <TrendingUp className="h-4 w-4 text-blue-500" />
-                                <p className="font-medium">Market Insights</p>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between">
-                                    <span className="text-sm text-muted-foreground">Average Price</span>
-                                    <span className="font-medium">₱{insights.market.averagePrice?.toFixed(2)}/kg</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm text-muted-foreground">Price Trend</span>
-                                    <span className="font-medium capitalize">{insights.market.trend}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm text-muted-foreground">Est. Yield</span>
-                                    <span className="font-medium">{estimatedYield?.toLocaleString()} kg</span>
-                                </div>
-                            </div>
+                {/* Simplified Explanation Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="p-4 bg-blue-500/5 rounded-lg border">
+                        <div className="flex items-center gap-2 mb-3">
+                            <TrendingUp className="h-5 w-5 text-blue-500" />
+                            <p className="font-bold">What Affects Your Earnings</p>
                         </div>
-                        
-                        <div className="p-4 bg-green-500/5 rounded-lg border">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Sprout className="h-4 w-4 text-green-500" />
-                                <p className="font-medium">Profitability</p>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center pb-2 border-b">
+                                <span className="text-sm">Current Market Price</span>
+                                <span className="font-medium">₱{insights?.market?.averagePrice?.toFixed(2)}/kg</span>
                             </div>
-                            <div className="space-y-2">
-                                <div className="flex justify-between">
-                                    <span className="text-sm text-muted-foreground">Profit Margin</span>
-                                    <span className="font-medium">{insights.profit.profitMargin?.toFixed(1) || '0'}%</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm text-muted-foreground">Return on Investment</span>
-                                    <span className="font-medium">
-                                        {crop.puhunan > 0 ? ((netProfit / crop.puhunan) * 100).toFixed(1) : '0'}%
-                                    </span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-sm text-muted-foreground">Break-even Point</span>
-                                    <span className="font-medium">
-                                        {potentialRevenue > 0 ? ((crop.puhunan / potentialRevenue) * 100).toFixed(1) : '0'}%
-                                    </span>
-                                </div>
+                            <div className="flex justify-between items-center pb-2 border-b">
+                                <span className="text-sm">Price Direction</span>
+                                <span className="font-medium capitalize">{insights?.market?.trend || 'Stable'}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-3">
+                                <p>Higher prices mean more earnings. Watch for seasonal changes in prices.</p>
                             </div>
                         </div>
                     </div>
-                )}
+                    
+                    <div className="p-4 bg-green-500/5 rounded-lg border">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Sprout className="h-5 w-5 text-green-500" />
+                            <p className="font-bold">Understanding Your Profit</p>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center pb-2 border-b">
+                                <span className="text-sm">Profit Percentage</span>
+                                <span className="font-medium">
+                                    {crop.puhunan > 0 ? ((netProfit / crop.puhunan) * 100).toFixed(1) : '0'}%
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center pb-2 border-b">
+                                <span className="text-sm">
+                                    {netProfit >= 0 ? "Profit Status" : "Loss Status"}
+                                </span>
+                                <span className={`font-medium ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                                    {netProfit >= 0 ? "Profitable" : "Not Profitable"}
+                                </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-3">
+                                <p>
+                                    {netProfit >= 0 
+                                        ? "Good! Your crop is expected to make money." 
+                                        : "Be careful. You might lose money with current conditions."}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                {/* Sales Forecast Line Chart */}
+                {/* Simplified Visualization */}
                 <div className="mt-6">
-                    <h3 className="font-medium mb-4">Financial Projection Over Time</h3>
+                    <h3 className="font-bold text-lg mb-4">Your Farming Journey</h3>
                     <div className="h-80 w-full">
                         <ChartContainer config={salesChartConfig} className="h-full w-full">
                             <LineChart
@@ -234,7 +251,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                     tickLine={false}
                                     axisLine={false}
                                     tickMargin={8}
-                                    tickFormatter={(value) => value.slice(0, 3)}
+                                    tickFormatter={(value) => value}
                                 />
                                 <YAxis
                                     tickLine={false}
@@ -252,6 +269,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                 <Legend />
                                 <Line
                                     dataKey="puhunan"
+                                    name="Money Spent"
                                     type="monotone"
                                     stroke="var(--color-puhunan)"
                                     strokeWidth={2}
@@ -262,6 +280,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                 />
                                 <Line
                                     dataKey="grossSales"
+                                    name="Money Earned"
                                     type="monotone"
                                     stroke="var(--color-grossSales)"
                                     strokeWidth={2}
@@ -272,6 +291,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                 />
                                 <Line
                                     dataKey="netProfit"
+                                    name="Actual Profit"
                                     type="monotone"
                                     stroke="var(--color-netProfit)"
                                     strokeWidth={2}
@@ -283,58 +303,10 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                             </LineChart>
                         </ChartContainer>
                     </div>
-                </div>
-
-                {/* Monthly Price Trend */}
-                {insights?.market?.priceHistory && insights.market.priceHistory.length > 0 && (
-                    <div className="mt-8">
-                        <h3 className="font-medium mb-4">Price Trend Analysis</h3>
-                        <div className="h-64 w-full">
-                            <ChartContainer config={{ price: { label: "Price", color: "hsl(var(--chart-1))" } }} className="h-full w-full">
-                                <BarChart
-                                    accessibilityLayer
-                                    data={insights.market.priceHistory.slice(0, 6).map((record: any) => ({
-                                        month: `${record.month} ${record.year}`,
-                                        price: record.price
-                                    }))}
-                                    margin={{
-                                        left: 12,
-                                        right: 12,
-                                        top: 12,
-                                        bottom: 12,
-                                    }}
-                                >
-                                    <CartesianGrid vertical={false} />
-                                    <XAxis
-                                        dataKey="month"
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickMargin={8}
-                                        tickFormatter={(value) => value.slice(0, 3)}
-                                    />
-                                    <YAxis
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickMargin={8}
-                                        tickFormatter={(value) => `₱${value}`}
-                                    />
-                                    <ChartTooltip
-                                        cursor={false}
-                                        content={<ChartTooltipContent
-                                            formatter={(value) => `₱${Number(value).toFixed(2)}`}
-                                        />}
-                                    />
-                                    <Bar
-                                        dataKey="price"
-                                        fill="var(--color-price)"
-                                        radius={4}
-                                        barSize={32}
-                                    />
-                                </BarChart>
-                            </ChartContainer>
-                        </div>
+                    <div className="mt-4 text-sm text-muted-foreground">
+                        <p>This chart shows how your money moves from spending to earning throughout the farming process.</p>
                     </div>
-                )}
+                </div>
             </CardContent>
         </Card>
     );
