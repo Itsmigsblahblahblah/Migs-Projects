@@ -39,10 +39,10 @@ interface Report {
 }
 
 const History = () => {
-  const [searchTerm, setSearchTerm] = useState("");
   const [reportHistory, setReportHistory] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterProblem, setFilterProblem] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const reportsPerPage = 5;
   const navigate = useNavigate();
@@ -163,17 +163,19 @@ const History = () => {
   };
 
   const filteredHistory = reportHistory.filter(report => {
-    const matchesSearch = 
-      report.reportText.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.problem.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.username.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = 
+    const matchesStatusFilter = 
       filterStatus === "all" || 
       report.status === filterStatus;
+    
+    const matchesProblemFilter = 
+      filterProblem === "all" || 
+      report.problem === filterProblem;
 
-    return matchesSearch && matchesFilter;
+    return matchesStatusFilter && matchesProblemFilter;
   });
+
+  // Get unique problem types for dropdown
+  const uniqueProblems = [...new Set(reportHistory.map(report => report.problem))];
 
   // Pagination calculations
   const indexOfLastReport = currentPage * reportsPerPage;
@@ -282,53 +284,83 @@ const History = () => {
                     : "Complete history of all farmer reports and system responses"
                   }
                 </p>
-                {/* Total reports indicator */}
-                <p className="text-sm mt-2">
-                  Showing {Math.min(indexOfLastReport, filteredHistory.length)} of {filteredHistory.length} reports
-                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Search and Filters */}
+        {/* Filter Dropdowns with Report Count */}
         <Card className="shadow-soft">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Search & Filter Reports
-            </CardTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                Filter Reports
+              </CardTitle>
+              {/* Report Count Indicator */}
+              <div className="text-sm text-muted-foreground">
+                Showing {Math.min(indexOfLastReport, filteredHistory.length)} of {filteredHistory.length} reports
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder={userRole === 'farmer' 
-                    ? "Search your reports by problem description or issue type..." 
-                    : "Search by problem description, issue type, or farmer name..."}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Status Filter Dropdown - Narrower */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">Status</label>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border rounded-md bg-background"
+                  className="px-2 py-1 text-sm border rounded-md bg-background w-32"
                 >
                   <option value="all">All Status</option>
                   <option value="processed">Processed</option>
                   <option value="pending">Pending</option>
                   <option value="resolved">Resolved</option>
                 </select>
-                {userRole !== 'farmer' && (
-                  <Button variant="outline" onClick={exportToCSV}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
+              </div>
+              
+              {/* Problem Type Filter Dropdown - Narrower */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">Problem Type</label>
+                <select
+                  value={filterProblem}
+                  onChange={(e) => setFilterProblem(e.target.value)}
+                  className="px-2 py-1 text-sm border rounded-md bg-background w-32"
+                >
+                  <option value="all">All Problems</option>
+                  {uniqueProblems.map(problem => (
+                    <option key={problem} value={problem}>
+                      {problem.replace('_', ' ')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Clear Filters Button */}
+              <div className="flex items-end">
+                {(filterStatus !== "all" || filterProblem !== "all") && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setFilterStatus("all");
+                      setFilterProblem("all");
+                    }}
+                    className="h-8 text-sm px-2"
+                  >
+                    Clear Filters
                   </Button>
                 )}
               </div>
+              
+              {userRole !== 'farmer' && (
+                <div className="flex items-end">
+                  <Button variant="outline" onClick={exportToCSV} className="h-8 text-sm">
+                    <Download className="h-4 w-4 mr-1" />
+                    Export
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -341,8 +373,8 @@ const History = () => {
                 <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                 <p className="text-lg font-medium mb-2">No reports found</p>
                 <p className="text-sm">
-                  {searchTerm 
-                    ? "Try adjusting your search or filter criteria." 
+                  {(filterStatus !== "all" || filterProblem !== "all") 
+                    ? "Try adjusting your filter criteria." 
                     : userRole === 'farmer' 
                       ? "You haven't submitted any reports yet. Go to dashboard to report a problem." 
                       : "No reports have been submitted yet."}
