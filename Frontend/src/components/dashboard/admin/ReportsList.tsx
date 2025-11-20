@@ -1,9 +1,22 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle, Eye, Download, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, CheckCircle, Eye, Download, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 import ReportDetailView from "./ReportDetailView";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { doc, deleteDoc } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
+import { useToast } from "@/hooks/use-toast";
 
 interface Report {
     id: string;
@@ -45,8 +58,11 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const [sortOption, setSortOption] = useState<'newest' | 'oldest' | 'barangay'>('newest');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedBarangay, setSelectedBarangay] = useState<string>('all'); // For barangay filtering
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
     const reportsPerPage = 3; // Show 3 reports per page
     const contentRef = useRef<HTMLDivElement>(null); // Ref for scrollable content area
+    const { toast } = useToast();
 
     // Create a map of userId to homeAddress for quick lookup
     const farmerAddressMap = useMemo(() => {
@@ -186,6 +202,38 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         // Scroll to top of content area
         if (contentRef.current) {
             contentRef.current.scrollTop = 0;
+        }
+    };
+
+    // Handle delete request
+    const handleDeleteRequest = (report: Report) => {
+        setReportToDelete(report);
+        setDeleteDialogOpen(true);
+    };
+
+    // Confirm delete
+    const confirmDelete = async () => {
+        if (!reportToDelete) return;
+        
+        try {
+            await deleteDoc(doc(db, "farmReports", reportToDelete.id));
+            
+            // Show success toast
+            toast({
+                title: "Report Deleted",
+                description: "The report has been successfully deleted.",
+            });
+            
+            // Close dialog and reset state
+            setDeleteDialogOpen(false);
+            setReportToDelete(null);
+        } catch (error) {
+            console.error("Error deleting report:", error);
+            toast({
+                title: "Error",
+                description: "Failed to delete the report. Please try again.",
+                variant: "destructive",
+            });
         }
     };
 
@@ -342,6 +390,15 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                     <Eye className="h-4 w-4 mr-1" />
                                                                     View Details
                                                                 </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handleDeleteRequest(report)}
+                                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 mr-1" />
+                                                                    Delete
+                                                                </Button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -488,6 +545,15 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         <Eye className="h-4 w-4 mr-1" />
                                                         View Details
                                                     </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleDeleteRequest(report)}
+                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                        Delete
+                                                    </Button>
                                                 </div>
                                             </div>
                                         </div>
@@ -585,6 +651,33 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     isAdminView={true} // Set to true for admin view
                 />
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this report? This action cannot be undone.
+                            {reportToDelete && (
+                                <div className="mt-2 p-2 bg-muted rounded">
+                                    <p className="font-medium">{reportToDelete.username}</p>
+                                    <p className="text-sm text-muted-foreground line-clamp-2">{reportToDelete.reportText}</p>
+                                </div>
+                            )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={confirmDelete}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 };
