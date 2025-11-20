@@ -15,7 +15,9 @@ import {
   Download,
   Eye,
   Users,
-  ArrowLeft
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { collection, query, getDocs, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -41,6 +43,8 @@ const History = () => {
   const [reportHistory, setReportHistory] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const reportsPerPage = 5;
   const navigate = useNavigate();
   const { toast } = useToast();
   const userRole = localStorage.getItem('userRole');
@@ -171,6 +175,24 @@ const History = () => {
     return matchesSearch && matchesFilter;
   });
 
+  // Pagination calculations
+  const indexOfLastReport = currentPage * reportsPerPage;
+  const indexOfFirstReport = indexOfLastReport - reportsPerPage;
+  const currentReports = filteredHistory.slice(indexOfFirstReport, indexOfLastReport);
+  const totalPages = Math.ceil(filteredHistory.length / reportsPerPage);
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentPage]);
+
+  // Handle page change with scroll to top
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    // Scroll to top of page
+    window.scrollTo(0, 0);
+  };
+
   const getProblemColor = (problem: string) => {
     const colors = {
       flood: 'bg-blue-500/10 text-blue-700 border-blue-200',
@@ -260,6 +282,10 @@ const History = () => {
                     : "Complete history of all farmer reports and system responses"
                   }
                 </p>
+                {/* Total reports indicator */}
+                <p className="text-sm mt-2">
+                  Showing {Math.min(indexOfLastReport, filteredHistory.length)} of {filteredHistory.length} reports
+                </p>
               </div>
             </div>
           </div>
@@ -324,109 +350,183 @@ const History = () => {
               </CardContent>
             </Card>
           ) : (
-            filteredHistory.map((report) => {
-              return (
-                <Card key={report.id} className="shadow-soft hover:shadow-card transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {userRole === 'admin' && (
-                          <Badge variant="outline" className="font-medium">
-                            {report.username}
+            <>
+              {currentReports.map((report) => {
+                return (
+                  <Card key={report.id} className="shadow-soft hover:shadow-card transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {userRole === 'admin' && (
+                            <Badge variant="outline" className="font-medium">
+                              {report.username}
+                            </Badge>
+                          )}
+                          <Badge 
+                            className={`${getProblemColor(report.problem)} border capitalize`}
+                          >
+                            {report.problem.replace('_', ' ')}
                           </Badge>
-                        )}
-                        <Badge 
-                          className={`${getProblemColor(report.problem)} border capitalize`}
-                        >
-                          {report.problem.replace('_', ' ')}
-                        </Badge>
-                        {report.affectedCrop !== 'unknown' && report.affectedCrop !== 'general' && (
-                          <Badge variant="outline" className="capitalize">
-                            {report.affectedCrop}
+                          {report.affectedCrop !== 'unknown' && report.affectedCrop !== 'general' && (
+                            <Badge variant="outline" className="capitalize">
+                              {report.affectedCrop}
+                            </Badge>
+                          )}
+                          <Badge 
+                            variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                            className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {report.status}
                           </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          {report.createdAt?.toDate().toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-4">
+                      {/* Original Problem */}
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-1">Problem Reported:</h4>
+                        <p className="text-foreground bg-muted/50 p-3 rounded-lg">
+                          "{report.reportText}"
+                        </p>
+                        {report.hasImage && (
+                          <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            Image attached: {report.imageName}
+                          </div>
                         )}
-                        <Badge 
-                          variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                          className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          {report.status}
-                        </Badge>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        {report.createdAt?.toDate().toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+
+                      {/* Recommendations Grid */}
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {report.recommendedCrops && report.recommendedCrops.length > 0 && (
+                          <div className="p-3 bg-success/10 rounded-lg border border-success/20">
+                            <h4 className="text-sm font-medium text-success mb-2 flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4" />
+                              Recommended Crops
+                            </h4>
+                            <div className="flex flex-wrap gap-1">
+                              {report.recommendedCrops.map((crop: string, index: number) => (
+                                <Badge key={index} className="bg-success text-success-foreground text-xs">
+                                  {crop}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {report.cropsToAvoid && report.cropsToAvoid.length > 0 && (
+                          <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                            <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
+                              <AlertTriangle className="h-4 w-4" />
+                              Crops to Avoid
+                            </h4>
+                            <div className="flex flex-wrap gap-1">
+                              {report.cropsToAvoid.map((crop: string, index: number) => (
+                                <Badge key={index} variant="destructive" className="text-xs">
+                                  {crop}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </CardHeader>
+
+                      {/* AI Advice */}
+                      {report.advice && (
+                        <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+                          <h4 className="text-sm font-medium text-primary mb-2">AI Recommendations:</h4>
+                          <p className="text-sm">{report.advice}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              
+              {/* Pagination Controls - Updated to match admin design */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="bg-green-600 hover:bg-green-700 text-white border-green-700"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
                   
-                  <CardContent className="space-y-4">
-                    {/* Original Problem */}
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Problem Reported:</h4>
-                      <p className="text-foreground bg-muted/50 p-3 rounded-lg">
-                        "{report.reportText}"
-                      </p>
-                      {report.hasImage && (
-                        <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          Image attached: {report.imageName}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Recommendations Grid */}
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {report.recommendedCrops && report.recommendedCrops.length > 0 && (
-                        <div className="p-3 bg-success/10 rounded-lg border border-success/20">
-                          <h4 className="text-sm font-medium text-success mb-2 flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4" />
-                            Recommended Crops
-                          </h4>
-                          <div className="flex flex-wrap gap-1">
-                            {report.recommendedCrops.map((crop: string, index: number) => (
-                              <Badge key={index} className="bg-success text-success-foreground text-xs">
-                                {crop}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {report.cropsToAvoid && report.cropsToAvoid.length > 0 && (
-                        <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                          <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4" />
-                            Crops to Avoid
-                          </h4>
-                          <div className="flex flex-wrap gap-1">
-                            {report.cropsToAvoid.map((crop: string, index: number) => (
-                              <Badge key={index} variant="destructive" className="text-xs">
-                                {crop}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* AI Advice */}
-                    {report.advice && (
-                      <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
-                        <h4 className="text-sm font-medium text-primary mb-2">AI Recommendations:</h4>
-                        <p className="text-sm">{report.advice}</p>
-                      </div>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      // Calculate start index for pagination window
+                      let start = 1;
+                      if (totalPages > 5) {
+                        if (currentPage <= 3) {
+                          start = 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          start = totalPages - 4;
+                        } else {
+                          start = currentPage - 2;
+                        }
+                      }
+                      
+                      const pageNum = start + i;
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`w-8 h-8 p-0 ${currentPage === pageNum ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                    
+                    {totalPages > 5 && (
+                      <>
+                        {currentPage < totalPages - 2 && (
+                          <>
+                            <span className="px-1">...</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePageChange(totalPages)}
+                              className="w-8 h-8 p-0"
+                            >
+                              {totalPages}
+                            </Button>
+                          </>
+                        )}
+                      </>
                     )}
-                  </CardContent>
-                </Card>
-              );
-            })
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="bg-green-600 hover:bg-green-700 text-white border-green-700"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
