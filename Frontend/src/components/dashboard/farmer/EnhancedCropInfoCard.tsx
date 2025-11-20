@@ -174,7 +174,9 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                     
                                     // Handle string dates (YYYY-MM-DD format)
                                     if (typeof crop.plantedDate === 'string') {
-                                        plantedDate = new Date(crop.plantedDate);
+                                        // Parse date in local timezone to avoid UTC conversion issues
+                                        const [year, month, day] = crop.plantedDate.split('-').map(Number);
+                                        plantedDate = new Date(year, month - 1, day); // month is 0-indexed
                                     }
                                     // Handle Firestore Timestamp
                                     else if (crop.plantedDate?.toDate) {
@@ -186,7 +188,13 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                     }
                                     
                                     if (plantedDate && !isNaN(plantedDate.getTime())) {
-                                        return Math.floor((new Date().getTime() - plantedDate.getTime()) / (1000 * 60 * 60 * 24));
+                                        const now = new Date();
+                                        const diffTime = now.getTime() - plantedDate.getTime();
+                                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                        
+                                        // Ensure we never show negative days
+                                        // On planting date = 0 days, day after = 1 day, etc.
+                                        return Math.max(0, diffDays);
                                     }
                                     
                                     return 'N/A';
