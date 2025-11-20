@@ -56,6 +56,15 @@ const ReportForm = ({ reportText, onReportTextChange, onSubmitReport, isProcessi
         }
     };
 
+    const handleRemoveImage = () => {
+        setSelectedImage(null);
+        // Reset the file input value to allow selecting the same file again
+        const fileInput = document.getElementById('image') as HTMLInputElement;
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    };
+
     const toggleSpeechRecognition = () => {
         if (!isSupported) {
             toast({
@@ -150,9 +159,18 @@ const ReportForm = ({ reportText, onReportTextChange, onSubmitReport, isProcessi
                             {selectedImage ? 'Change Photo' : 'Add Photo'}
                         </Button>
                         {selectedImage && (
-                            <span className="text-sm text-muted-foreground">
-                                {selectedImage.name}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">
+                                    {selectedImage.name}
+                                </span>
+                                <button
+                                    onClick={handleRemoveImage}
+                                    className="text-red-500 hover:text-red-700 font-bold"
+                                    aria-label="Remove image"
+                                >
+                                    X
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
