@@ -602,7 +602,7 @@ const MarketDemand = () => {
                 <div className="text-center py-4">
                   <div className="text-2xl font-bold text-primary">{getMonthName(selectedMonth)} {selectedYear}</div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Market predictions for this period
+                    Est. market predictions for this period
                   </p>
                 </div>
               </CardContent>

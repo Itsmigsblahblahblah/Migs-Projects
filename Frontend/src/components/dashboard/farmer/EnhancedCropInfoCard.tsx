@@ -219,7 +219,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                         <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
                             <div className="flex items-center gap-2 mb-2">
                                 <Banknote className="h-4 w-4 text-primary" />
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Market Price</p>
+                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Est. Market Price</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-lg">
@@ -228,7 +228,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                 {getTrendIcon(insights.market.trend)}
                             </div>
                             <p className={`text-xs ${getTrendColor(insights.market.trend)}`}>
-                                {insights.market.trend?.charAt(0).toUpperCase() + insights.market.trend?.slice(1)} trend
+                                Est. {insights.market.trend?.charAt(0).toUpperCase() + insights.market.trend?.slice(1)} trend
                             </p>
                         </div>
                     )}

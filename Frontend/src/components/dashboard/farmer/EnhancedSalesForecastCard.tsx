@@ -40,11 +40,11 @@ const salesChartConfig = {
         color: "hsl(var(--chart-1))",
     },
     grossSales: {
-        label: "Gross Sales",
+        label: "Est. Gross Sales",
         color: "hsl(var(--chart-2))",
     },
     netProfit: {
-        label: "Net Profit",
+        label: "Est. Net Profit",
         color: "hsl(var(--chart-3))",
     },
 } satisfies ChartConfig;
@@ -160,17 +160,17 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                             <div className="text-blue-500 font-bold text-xl mb-2">3</div>
                             <p className="text-sm text-muted-foreground mb-1">Expected Harvest</p>
                             <p className="text-xl font-bold text-blue-500">{estimatedYield?.toLocaleString()} kg</p>
-                            <p className="text-xs mt-2 text-muted-foreground">This is how much {crop.name} you're expected to harvest</p>
+                            <p className="text-xs mt-2 text-muted-foreground">This is your est. expected harvest</p>
                         </div>
                         <div className={`p-4 rounded-lg border ${netProfit >= 0 ? 'bg-success/10 border-success' : 'bg-destructive/10 border-destructive'}`}>
                             <div className={`font-bold text-xl mb-2 ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>4</div>
-                            <p className="text-sm text-muted-foreground mb-1">Your Profit</p>
+                            <p className="text-sm text-muted-foreground mb-1">Your Est. Profit</p>
                             <p className={`text-xl font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                                 ₱{netProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                             </p>
                             <p className="text-xs mt-2 text-muted-foreground">
                                 {netProfit >= 0 
-                                    ? "This is your expected profit after all expenses" 
+                                    ? "This is your est. expected profit after all expenses" 
                                     : "You might lose money. Consider adjusting your approach."}
                             </p>
                         </div>
@@ -190,7 +190,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                 <span className="font-medium">₱{insights?.market?.averagePrice?.toFixed(2)}/kg</span>
                             </div>
                             <div className="flex justify-between items-center pb-2 border-b">
-                                <span className="text-sm">Price Direction</span>
+                                <span className="text-sm">Est. Price Direction</span>
                                 <span className="font-medium capitalize">{insights?.market?.trend || 'Stable'}</span>
                             </div>
                             <div className="text-xs text-muted-foreground mt-3">
@@ -202,18 +202,18 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                     <div className="p-4 bg-green-500/5 rounded-lg border">
                         <div className="flex items-center gap-2 mb-3">
                             <Sprout className="h-5 w-5 text-green-500" />
-                            <p className="font-bold">Understanding Your Profit</p>
+                            <p className="font-bold">Understanding Your Est. Profit</p>
                         </div>
                         <div className="space-y-3">
                             <div className="flex justify-between items-center pb-2 border-b">
-                                <span className="text-sm">Profit Percentage</span>
+                                <span className="text-sm">Est. Profit Percentage</span>
                                 <span className="font-medium">
                                     {crop.puhunan > 0 ? ((netProfit / crop.puhunan) * 100).toFixed(1) : '0'}%
                                 </span>
                             </div>
                             <div className="flex justify-between items-center pb-2 border-b">
                                 <span className="text-sm">
-                                    {netProfit >= 0 ? "Profit Status" : "Loss Status"}
+                                    {netProfit >= 0 ? "Est. Profit Status" : "Est. Loss Status"}
                                 </span>
                                 <span className={`font-medium ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                                     {netProfit >= 0 ? "Profitable" : "Not Profitable"}

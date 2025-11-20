@@ -117,12 +117,12 @@ const MarketDemandCard = () => {
                   <div className="font-medium">{crop.vegetable}</div>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm text-muted-foreground">
-                      ₱{crop.current_avg_price.toFixed(2)} → ₱{crop.predicted_price.toFixed(2)}
+                      ₱{crop.current_avg_price.toFixed(2)} → Est. ₱{crop.predicted_price.toFixed(2)}
                     </span>
                     <div className="flex items-center gap-1">
                       {getPriceChangeIcon(crop.price_change)}
                       <span className={`text-xs ${crop.price_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {crop.price_change_percent.toFixed(2)}%
+                        Est. {crop.price_change_percent.toFixed(2)}%
                       </span>
                     </div>
                   </div>

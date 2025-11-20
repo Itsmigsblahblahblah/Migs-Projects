@@ -34,15 +34,15 @@ interface SalesForecastCardProps {
 // Chart configuration for ShadCN chart
 const salesChartConfig = {
     puhunan: {
-        label: "Puhunan",
+        label: "Investment",
         color: "hsl(var(--chart-1))",
     },
     grossSales: {
-        label: "Estimated Gross Sales",
+        label: "Est. Gross Sales",
         color: "hsl(var(--chart-2))",
     },
     netProfit: {
-        label: "Projected Net Profit",
+        label: "Est. Projected Net Profit",
         color: "hsl(var(--chart-3))",
     },
 } satisfies ChartConfig;
@@ -64,15 +64,15 @@ const SalesForecastCard = ({
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div className="p-4 bg-primary/5 rounded-lg border">
-                        <p className="text-sm text-muted-foreground mb-1">Puhunan</p>
+                        <p className="text-sm text-muted-foreground mb-1">Your Investment</p>
                         <p className="text-2xl font-bold text-primary">₱{puhunan.toLocaleString()}</p>
                     </div>
                     <div className="p-4 bg-success/5 rounded-lg border">
-                        <p className="text-sm text-muted-foreground mb-1">Estimated Gross Sales</p>
+                        <p className="text-sm text-muted-foreground mb-1">Est. Gross Sales</p>
                         <p className="text-2xl font-bold text-success">₱{estimatedSales.toLocaleString()}</p>
                     </div>
                     <div className={`p-4 rounded-lg border ${netProfit >= 0 ? 'bg-success/5' : 'bg-destructive/5'}`}>
-                        <p className="text-sm text-muted-foreground mb-1">Projected Net Profit</p>
+                        <p className="text-sm text-muted-foreground mb-1">Est. Projected Net Profit</p>
                         <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                             ₱{netProfit.toLocaleString()}
                         </p>
