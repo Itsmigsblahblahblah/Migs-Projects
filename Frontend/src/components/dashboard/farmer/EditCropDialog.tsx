@@ -110,6 +110,7 @@ const EditCropDialog = ({
                             type="date"
                             value={editCrop.plantedDate}
                             onChange={handleEditCropInputChange}
+                            min={new Date().toLocaleDateString('en-CA')} // Prevent past dates (using local date)
                         />
                     </div>
                     

@@ -110,6 +110,7 @@ const AddCropDialog = ({
                             type="date"
                             value={newCrop.plantedDate}
                             onChange={handleCropInputChange}
+                            min={new Date().toLocaleDateString('en-CA')} // Prevent past dates (using local date)
                         />
                     </div>
                     

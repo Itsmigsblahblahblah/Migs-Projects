@@ -70,6 +70,19 @@ export const useCropManagement = () => {
             return;
         }
 
+        // Validate planting date is not in the past
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to start of day for comparison
+        const plantedDate = new Date(newCrop.plantedDate);
+        if (plantedDate < today) {
+            toast({
+                title: "Invalid Planting Date",
+                description: "Planting date cannot be in the past. Please select today or a future date.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         try {
             // Prepare crop data (userId is added automatically in CropContext)
             const cropData = {
@@ -122,6 +135,19 @@ export const useCropManagement = () => {
             return;
         }
 
+        // Validate planting date is not in the past
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Set to start of day for comparison
+        const plantedDate = new Date(editCrop.plantedDate);
+        if (plantedDate < today) {
+            toast({
+                title: "Invalid Planting Date",
+                description: "Planting date cannot be in the past. Please select today or a future date.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         try {
             if (!selectedCropId) {
                 toast({
@@ -158,15 +184,6 @@ export const useCropManagement = () => {
             toast({
                 title: "Crop Updated Successfully",
                 description: `${editCrop.name} has been updated in the database.`,
-            });
-
-            // Reset form
-            setEditCrop({
-                name: "",
-                soilType: "",
-                landArea: "",
-                plantedDate: "",
-                puhunan: ""
             });
 
             return true;
