@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, CheckCircle, Eye, Download, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
+
 import ReportDetailView from "./ReportDetailView";
 import {
   AlertDialog,
@@ -54,6 +55,7 @@ interface ReportsListProps {
 }
 
 const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsListProps) => {
+    const [localReports, setLocalReports] = useState<Report[]>(reports);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
     const [sortOption, setSortOption] = useState<'newest' | 'oldest' | 'barangay'>('newest');
     const [currentPage, setCurrentPage] = useState(1);
@@ -78,16 +80,21 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     // Get unique barangays for dropdown
     const uniqueBarangays = useMemo(() => {
         const barangays = new Set<string>();
-        reports.forEach(report => {
+        localReports.forEach(report => {
             const barangay = farmerAddressMap[report.userId] || 'Unknown Barangay';
             barangays.add(barangay);
         });
         return Array.from(barangays).sort();
-    }, [reports, farmerAddressMap]);
+    }, [localReports, farmerAddressMap]);
+
+    // Update local reports when props change
+    useEffect(() => {
+        setLocalReports(reports);
+    }, [reports]);
 
     // Sort and filter reports based on selected option
     const sortedReports = useMemo(() => {
-        let sorted = [...reports];
+        let sorted = [...localReports];
         
         if (sortOption === 'newest') {
             sorted.sort((a, b) => {
@@ -118,7 +125,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         }
         
         return sorted;
-    }, [reports, sortOption, farmerAddressMap, selectedBarangay]);
+    }, [localReports, sortOption, farmerAddressMap, selectedBarangay]);
 
     // Get unique barangays for grouping display
     const groupedByBarangay = useMemo(() => {
@@ -192,9 +199,9 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     }, [currentPage, sortOption, selectedBarangay]);
 
     // Reset to first page when filters change
-    useMemo(() => {
+    useEffect(() => {
         setCurrentPage(1);
-    }, [sortOption, selectedBarangay, reports]);
+    }, [sortOption, selectedBarangay, localReports]);
 
     // Handle page change with scroll to top
     const handlePageChange = (newPage: number) => {
@@ -216,6 +223,12 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         if (!reportToDelete) return;
         
         try {
+            // Remove from local state immediately for instant UI update
+            setLocalReports(prevReports => 
+                prevReports.filter(report => report.id !== reportToDelete.id)
+            );
+            
+            // Delete from Firestore
             await deleteDoc(doc(db, "farmReports", reportToDelete.id));
             
             // Show success toast
@@ -229,6 +242,13 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
             setReportToDelete(null);
         } catch (error) {
             console.error("Error deleting report:", error);
+            // Restore the report in case of error
+            setLocalReports(prevReports => {
+                if (!prevReports.some(report => report.id === reportToDelete.id)) {
+                    return [...prevReports, reportToDelete];
+                }
+                return prevReports;
+            });
             toast({
                 title: "Error",
                 description: "Failed to delete the report. Please try again.",
@@ -244,12 +264,12 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Farmer Reports</CardTitle>
-                            <CardDescription>Latest submissions from farmers ({reports.length} total)</CardDescription>
+                            <CardDescription>Latest submissions from farmers ({localReports.length} total)</CardDescription>
                         </div>
                         <Button
                             variant="outline"
                             onClick={onExport}
-                            disabled={reports.length === 0}
+                            disabled={localReports.length === 0}
                         >
                             <Download className="h-4 w-4 mr-2" />
                             Export All
@@ -322,7 +342,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     )}
                 </CardHeader>
                 <CardContent>
-                    {reports.length > 0 ? (
+                    {localReports.length > 0 ? (
                         <div ref={contentRef} className="space-y-4 max-h-96 overflow-y-auto pr-2">
                             {sortOption === 'barangay' && selectedBarangay === 'all' ? (
                                 // Grouped by barangay view with pagination
