@@ -164,6 +164,7 @@ const AdminDashboard = () => {
           {activeSection === "reports" && (
             <ReportsList
               reports={reports}
+              farmers={farmers} // Pass farmers data to get barangay information
               onExport={() => exportData('reports')}
               onUpdateStatus={updateReportStatus}
             />

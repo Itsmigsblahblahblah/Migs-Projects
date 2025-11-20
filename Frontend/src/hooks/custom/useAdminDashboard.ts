@@ -472,7 +472,8 @@ export const useAdminDashboard = () => {
                 'Affected Crop': r.affectedCrop,
                 'Date': r.createdAt?.toDate().toLocaleDateString(),
                 'Status': r.status,
-                'Recommendations': r.recommendedCrops?.join(', ')
+                'Recommendations': r.recommendedCrops?.join(', '),
+                'Barangay': getFarmerBarangay(r.userId) // Add barangay information
             }));
             filename = 'farm_reports.csv';
         } else if (type === 'crops') {
@@ -504,6 +505,12 @@ export const useAdminDashboard = () => {
                 description: `${filename} has been downloaded.`,
             });
         }
+    };
+
+    // Helper function to get farmer's barangay
+    const getFarmerBarangay = (userId: string) => {
+        const farmer = farmers.find(f => f.uid === userId);
+        return farmer?.homeAddress || 'Unknown';
     };
 
     return {
