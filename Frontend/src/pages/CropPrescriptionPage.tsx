@@ -783,11 +783,11 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                           <p className="font-medium">₱{selectedCrop.marketDemand.current_avg_price.toFixed(2)}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Predicted Price</p>
+                          <p className="text-sm text-muted-foreground">Est. Predicted Price</p>
                           <p className="font-medium">₱{selectedCrop.marketDemand.predicted_price.toFixed(2)}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Price Change</p>
+                          <p className="text-sm text-muted-foreground">Est. Price Change</p>
                           <p className={`font-medium ${selectedCrop.marketDemand.price_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {selectedCrop.marketDemand.price_change >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change.toFixed(2)} 
                             ({selectedCrop.marketDemand.price_change_percent >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change_percent.toFixed(2)}%)

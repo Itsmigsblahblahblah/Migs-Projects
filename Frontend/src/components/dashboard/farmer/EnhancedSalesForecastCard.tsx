@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, TrendingUp, Calendar, Sprout } from "lucide-react";
+import { BarChart3, TrendingUp, Calendar, Sprout, Wallet } from "lucide-react";
 import {
     LineChart,
     Line,
@@ -152,13 +152,13 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                         </div>
                         <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500">
                             <div className="text-yellow-500 font-bold text-xl mb-2">2</div>
-                            <p className="text-sm text-muted-foreground mb-1">Suggested Capital</p>
+                            <p className="text-sm text-muted-foreground mb-1">Est. Suggested Capital</p>
                             <p className="text-xl font-bold text-yellow-500">₱{insights?.profit?.suggestedCapital?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}</p>
                             <p className="text-xs mt-2 text-muted-foreground">This is the minimum money needed to successfully grow your {crop.name}</p>
                         </div>
                         <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500">
                             <div className="text-blue-500 font-bold text-xl mb-2">3</div>
-                            <p className="text-sm text-muted-foreground mb-1">Expected Harvest</p>
+                            <p className="text-sm text-muted-foreground mb-1">Est. Expected Harvest</p>
                             <p className="text-xl font-bold text-blue-500">{estimatedYield?.toLocaleString()} kg</p>
                             <p className="text-xs mt-2 text-muted-foreground">This is your est. expected harvest</p>
                         </div>

@@ -565,17 +565,17 @@ const MarketDemand = () => {
                           </div>
                           <div className="text-right">
                             <div className="text-lg font-bold">₱{crop.predicted_price.toFixed(2)}</div>
-                            <div className="text-sm text-muted-foreground">predicted price</div>
+                            <div className="text-sm text-muted-foreground">Est. Predicted Price</div>
                           </div>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4 mt-4">
                           <div>
-                            <div className="text-sm text-muted-foreground">Seasonal Avg. Price</div>
+                            <div className="text-sm text-muted-foreground">Est. Seasonal Avg. Price</div>
                             <div className="font-medium">₱{crop.current_avg_price.toFixed(2)}</div>
                           </div>
                           <div>
-                            <div className="text-sm text-muted-foreground">Price Change</div>
+                            <div className="text-sm text-muted-foreground">Est. Price Change</div>
                             <div className="font-medium flex items-center gap-1">
                               {getPriceChangeIcon(crop.price_change)}
                               {Math.abs(crop.price_change_percent).toFixed(2)}%
@@ -668,7 +668,7 @@ const MarketDemand = () => {
                     <div className="text-2xl font-bold">{filteredData.length}</div>
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">Avg. Price Change</div>
+                    <div className="text-sm text-muted-foreground">Est. Avg. Price Change</div>
                     <div className="text-2xl font-bold">
                       {filteredData.length > 0 
                         ? `${(filteredData.reduce((sum, crop) => sum + crop.price_change_percent, 0) / filteredData.length).toFixed(2)}%` 
