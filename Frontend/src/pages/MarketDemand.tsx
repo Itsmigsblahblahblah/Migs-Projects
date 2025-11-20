@@ -571,7 +571,7 @@ const MarketDemand = () => {
                         
                         <div className="grid grid-cols-2 gap-4 mt-4">
                           <div>
-                            <div className="text-sm text-muted-foreground">Current Avg. Price</div>
+                            <div className="text-sm text-muted-foreground">Seasonal Avg. Price</div>
                             <div className="font-medium">₱{crop.current_avg_price.toFixed(2)}</div>
                           </div>
                           <div>
