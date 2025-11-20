@@ -17,10 +17,21 @@ import {
   Users,
   ArrowLeft,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from "lucide-react";
-import { collection, query, getDocs, where } from "firebase/firestore";
+import { collection, query, getDocs, where, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Report {
   id: string;
@@ -49,6 +60,8 @@ const History = () => {
   const { toast } = useToast();
   const userRole = localStorage.getItem('userRole');
   const currentUserId = localStorage.getItem('userId') || 'default-user';
+  const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!userRole) {
@@ -248,6 +261,70 @@ const History = () => {
       title: "Export Successful",
       description: "Report history has been exported to CSV.",
     });
+  };
+
+  // Handle delete report
+  const handleDeleteReport = async (reportId: string) => {
+    try {
+      await deleteDoc(doc(db, "farmReports", reportId));
+      
+      // Remove the deleted report from the local state
+      setReportHistory(prevReports => 
+        prevReports.filter(report => report.id !== reportId)
+      );
+      
+      toast({
+        title: "Report Deleted",
+        description: "The report has been successfully deleted.",
+      });
+    } catch (error: any) {
+      console.error("Error deleting report:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete the report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle delete request (opens confirmation dialog)
+  const handleDeleteRequest = (report: Report) => {
+    setReportToDelete(report);
+    setDeleteDialogOpen(true);
+  };
+
+  // Confirm delete (called from dialog)
+  const confirmDelete = async () => {
+    if (!reportToDelete) return;
+    
+    try {
+      await deleteDoc(doc(db, "farmReports", reportToDelete.id));
+      
+      // Remove the deleted report from the local state
+      setReportHistory(prevReports => 
+        prevReports.filter(report => report.id !== reportToDelete.id)
+      );
+      
+      toast({
+        title: "Report Deleted",
+        description: "The report has been successfully deleted.",
+      });
+      
+      // Close dialog and reset state
+      setDeleteDialogOpen(false);
+      setReportToDelete(null);
+    } catch (error: any) {
+      console.error("Error deleting report:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete the report. Please try again.",
+        variant: "destructive",
+      });
+      
+      // Close dialog even on error
+      setDeleteDialogOpen(false);
+      setReportToDelete(null);
+    }
   };
 
   if (loading) {
@@ -483,6 +560,21 @@ const History = () => {
                         </div>
                       )}
                     </CardContent>
+                    
+                    {/* Delete Button for Farmers */}
+                    {userRole === 'farmer' && (
+                      <div className="px-6 pb-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteRequest(report)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete Report
+                        </Button>
+                      </div>
+                    )}
                   </Card>
                 );
               })}
@@ -562,6 +654,33 @@ const History = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this report? This action cannot be undone.
+              {reportToDelete && (
+                <div className="mt-2 p-2 bg-muted rounded">
+                  <p className="font-medium">{reportToDelete.username}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{reportToDelete.reportText}</p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };
