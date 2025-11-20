@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle, Eye, Download, FileText, ChevronDown, ChevronUp } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Calendar, CheckCircle, Eye, Download, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import ReportDetailView from "./ReportDetailView";
 
 interface Report {
@@ -43,8 +43,10 @@ interface ReportsListProps {
 const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsListProps) => {
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
     const [sortOption, setSortOption] = useState<'newest' | 'oldest' | 'barangay'>('newest');
-    const [showAll, setShowAll] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
     const [selectedBarangay, setSelectedBarangay] = useState<string>('all'); // For barangay filtering
+    const reportsPerPage = 3; // Show 3 reports per page
+    const contentRef = useRef<HTMLDivElement>(null); // Ref for scrollable content area
 
     // Create a map of userId to homeAddress for quick lookup
     const farmerAddressMap = useMemo(() => {
@@ -135,6 +137,29 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         };
     }, [sortedReports, sortOption, selectedBarangay]);
 
+    // Pagination calculations
+    const totalPages = Math.ceil(sortedReports.length / reportsPerPage);
+    const startIndex = (currentPage - 1) * reportsPerPage;
+    const visibleReports = sortedReports.slice(startIndex, startIndex + reportsPerPage);
+
+    // Pagination calculations for grouped view
+    const groupedReports = Object.entries(groupedByBarangay).flatMap(([barangay, reports]) => 
+        reports.map(report => ({ ...report, barangay }))
+    );
+    
+    const totalGroupedPages = Math.ceil(groupedReports.length / reportsPerPage);
+    const startGroupedIndex = (currentPage - 1) * reportsPerPage;
+    const visibleGroupedReports = groupedReports.slice(startGroupedIndex, startGroupedIndex + reportsPerPage);
+
+    // Group the visible reports by barangay for display
+    const visibleGroupedByBarangay = visibleGroupedReports.reduce((acc, report) => {
+        if (!acc[report.barangay]) {
+            acc[report.barangay] = [];
+        }
+        acc[report.barangay].push(report);
+        return acc;
+    }, {} as Record<string, (Report & { barangay: string })[]>);
+
     const openReportDetail = (report: Report) => {
         setSelectedReport(report);
     };
@@ -143,8 +168,26 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         setSelectedReport(null);
     };
 
-    // Show only first 3 reports by default, or all if showAll is true
-    const visibleReports = showAll ? sortedReports : sortedReports.slice(0, 3);
+    // Scroll to top when page changes
+    useEffect(() => {
+        if (contentRef.current) {
+            contentRef.current.scrollTop = 0;
+        }
+    }, [currentPage, sortOption, selectedBarangay]);
+
+    // Reset to first page when filters change
+    useMemo(() => {
+        setCurrentPage(1);
+    }, [sortOption, selectedBarangay, reports]);
+
+    // Handle page change with scroll to top
+    const handlePageChange = (newPage: number) => {
+        setCurrentPage(newPage);
+        // Scroll to top of content area
+        if (contentRef.current) {
+            contentRef.current.scrollTop = 0;
+        }
+    };
 
     return (
         <>
@@ -185,7 +228,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             variant={sortOption === 'barangay' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setSortOption('barangay')}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
                         >
                             Group by Barangay
                             <ChevronDown className="h-4 w-4" />
@@ -232,171 +275,296 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                 </CardHeader>
                 <CardContent>
                     {reports.length > 0 ? (
-                        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                        <div ref={contentRef} className="space-y-4 max-h-96 overflow-y-auto pr-2">
                             {sortOption === 'barangay' && selectedBarangay === 'all' ? (
-                                // Grouped by barangay view
-                                Object.entries(groupedByBarangay).map(([barangay, reports]) => (
-                                    <div key={barangay} className="border-b pb-4 last:border-b-0">
-                                        <h3 className="font-semibold text-lg mb-2">{barangay}</h3>
-                                        <div className="space-y-3">
-                                            {reports.map((report) => (
-                                                <div
-                                                    key={report.id}
-                                                    className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                                                >
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="font-medium">{report.username}</div>
-                                                            <Badge
-                                                                variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                                                                className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
-                                                            >
-                                                                {report.status}
-                                                            </Badge>
+                                // Grouped by barangay view with pagination
+                                <>
+                                    {Object.entries(visibleGroupedByBarangay).map(([barangay, reports]) => (
+                                        <div key={barangay} className="border-b pb-4 last:border-b-0">
+                                            <h3 className="font-semibold text-lg mb-2">{barangay}</h3>
+                                            <div className="space-y-3">
+                                                {reports.map((report) => (
+                                                    <div
+                                                        key={report.id}
+                                                        className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                                                    >
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="font-medium">{report.username}</div>
+                                                                <Badge
+                                                                    variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                                                                    className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
+                                                                >
+                                                                    {report.status}
+                                                                </Badge>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                                <Calendar className="h-4 w-4" />
+                                                                {report.createdAt?.toDate().toLocaleDateString()}
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                            <Calendar className="h-4 w-4" />
-                                                            {report.createdAt?.toDate().toLocaleDateString()}
+
+                                                        <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
+                                                            <div>
+                                                                <span className="text-muted-foreground">Problem: </span>
+                                                                <span className="capitalize">{report.problem}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-muted-foreground">Affected Crop: </span>
+                                                                <span className="capitalize">{report.affectedCrop}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-muted-foreground">Recommended: </span>
+                                                                {report.recommendedCrops?.slice(0, 2).join(', ')}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex justify-between items-center">
+                                                            <p className="text-sm text-muted-foreground line-clamp-1">
+                                                                {report.reportText}
+                                                            </p>
+                                                            <div className="flex gap-2">
+                                                                {report.status !== 'resolved' && (
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                                    >
+                                                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                                                        Mark Resolved
+                                                                    </Button>
+                                                                )}
+                                                                <Button 
+                                                                    variant="outline" 
+                                                                    size="sm"
+                                                                    onClick={() => openReportDetail(report)}
+                                                                >
+                                                                    <Eye className="h-4 w-4 mr-1" />
+                                                                    View Details
+                                                                </Button>
+                                                            </div>
                                                         </div>
                                                     </div>
-
-                                                    <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
-                                                        <div>
-                                                            <span className="text-muted-foreground">Problem: </span>
-                                                            <span className="capitalize">{report.problem}</span>
-                                                        </div>
-                                                        <div>
-                                                            <span className="text-muted-foreground">Affected Crop: </span>
-                                                            <span className="capitalize">{report.affectedCrop}</span>
-                                                        </div>
-                                                        <div>
-                                                            <span className="text-muted-foreground">Recommended: </span>
-                                                            {report.recommendedCrops?.slice(0, 2).join(', ')}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex justify-between items-center">
-                                                        <p className="text-sm text-muted-foreground line-clamp-1">
-                                                            {report.reportText}
-                                                        </p>
-                                                        <div className="flex gap-2">
-                                                            {report.status !== 'resolved' && (
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    
+                                    {/* Pagination Controls for Grouped View */}
+                                    {totalGroupedPages > 1 && (
+                                        <div className="flex justify-center items-center gap-2 pt-4">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                                                disabled={currentPage === 1}
+                                                className="bg-green-600 hover:bg-green-700 text-white border-green-700"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            
+                                            <div className="flex items-center gap-1">
+                                                {Array.from({ length: Math.min(5, totalGroupedPages) }, (_, i) => {
+                                                    // Calculate start index for pagination window
+                                                    let start = 1;
+                                                    if (totalGroupedPages > 5) {
+                                                        if (currentPage <= 3) {
+                                                            start = 1;
+                                                        } else if (currentPage >= totalGroupedPages - 2) {
+                                                            start = totalGroupedPages - 4;
+                                                        } else {
+                                                            start = currentPage - 2;
+                                                        }
+                                                    }
+                                                    
+                                                    const pageNum = start + i;
+                                                    return (
+                                                        <Button
+                                                            key={pageNum}
+                                                            variant={currentPage === pageNum ? "default" : "outline"}
+                                                            size="sm"
+                                                            onClick={() => handlePageChange(pageNum)}
+                                                            className={`w-8 h-8 p-0 ${currentPage === pageNum ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                                                        >
+                                                            {pageNum}
+                                                        </Button>
+                                                    );
+                                                })}
+                                                
+                                                {totalGroupedPages > 5 && (
+                                                    <>
+                                                        {currentPage < totalGroupedPages - 2 && (
+                                                            <>
+                                                                <span className="px-1">...</span>
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
-                                                                    onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                                    onClick={() => handlePageChange(totalGroupedPages)}
+                                                                    className="w-8 h-8 p-0"
                                                                 >
-                                                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                                                    Mark Resolved
+                                                                    {totalGroupedPages}
                                                                 </Button>
-                                                            )}
-                                                            <Button 
-                                                                variant="outline" 
-                                                                size="sm"
-                                                                onClick={() => openReportDetail(report)}
-                                                            >
-                                                                <Eye className="h-4 w-4 mr-1" />
-                                                                View Details
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                            
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handlePageChange(Math.min(currentPage + 1, totalGroupedPages))}
+                                                disabled={currentPage === totalGroupedPages}
+                                                className="bg-green-600 hover:bg-green-700 text-white border-green-700"
+                                            >
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
                                         </div>
-                                    </div>
-                                ))
+                                    )}
+                                </>
                             ) : (
                                 // Regular list view or filtered barangay view
-                                visibleReports.map((report) => (
-                                    <div
-                                        key={report.id}
-                                        className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-3">
-                                                <div className="font-medium">{report.username}</div>
-                                                <Badge
-                                                    variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                                                    className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
-                                                >
-                                                    {report.status}
-                                                </Badge>
-                                                {/* Display home address next to user info */}
-                                                <span className="text-sm text-muted-foreground">
-                                                    {farmerAddressMap[report.userId] || 'Unknown Barangay'}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <Calendar className="h-4 w-4" />
-                                                {report.createdAt?.toDate().toLocaleDateString()}
-                                            </div>
-                                        </div>
-
-                                        <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
-                                            <div>
-                                                <span className="text-muted-foreground">Problem: </span>
-                                                <span className="capitalize">{report.problem}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-muted-foreground">Affected Crop: </span>
-                                                <span className="capitalize">{report.affectedCrop}</span>
-                                            </div>
-                                            <div>
-                                                <span className="text-muted-foreground">Recommended: </span>
-                                                {report.recommendedCrops?.slice(0, 2).join(', ')}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex justify-between items-center">
-                                            <p className="text-sm text-muted-foreground line-clamp-1">
-                                                {report.reportText}
-                                            </p>
-                                            <div className="flex gap-2">
-                                                {report.status !== 'resolved' && (
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                <>
+                                    {visibleReports.map((report) => (
+                                        <div
+                                            key={report.id}
+                                            className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="font-medium">{report.username}</div>
+                                                    <Badge
+                                                        variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                                                        className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
                                                     >
-                                                        <CheckCircle className="h-4 w-4 mr-1" />
-                                                        Mark Resolved
+                                                        {report.status}
+                                                    </Badge>
+                                                    {/* Display home address next to user info */}
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {farmerAddressMap[report.userId] || 'Unknown Barangay'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                    <Calendar className="h-4 w-4" />
+                                                    {report.createdAt?.toDate().toLocaleDateString()}
+                                                </div>
+                                            </div>
+
+                                            <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
+                                                <div>
+                                                    <span className="text-muted-foreground">Problem: </span>
+                                                    <span className="capitalize">{report.problem}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-muted-foreground">Affected Crop: </span>
+                                                    <span className="capitalize">{report.affectedCrop}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-muted-foreground">Recommended: </span>
+                                                    {report.recommendedCrops?.slice(0, 2).join(', ')}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-between items-center">
+                                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                                    {report.reportText}
+                                                </p>
+                                                <div className="flex gap-2">
+                                                    {report.status !== 'resolved' && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                        >
+                                                            <CheckCircle className="h-4 w-4 mr-1" />
+                                                            Mark Resolved
+                                                        </Button>
+                                                    )}
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm"
+                                                        onClick={() => openReportDetail(report)}
+                                                    >
+                                                        <Eye className="h-4 w-4 mr-1" />
+                                                        View Details
                                                     </Button>
-                                                )}
-                                                <Button 
-                                                    variant="outline" 
-                                                    size="sm"
-                                                    onClick={() => openReportDetail(report)}
-                                                >
-                                                    <Eye className="h-4 w-4 mr-1" />
-                                                    View Details
-                                                </Button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))
-                            )}
-                            
-                            {/* Show more/less button when not grouping by barangay or when viewing a specific barangay */}
-                            {(sortOption !== 'barangay' || selectedBarangay !== 'all') && reports.length > 3 && (
-                                <div className="flex justify-center pt-4">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setShowAll(!showAll)}
-                                    >
-                                        {showAll ? (
-                                            <>
-                                                <ChevronUp className="h-4 w-4 mr-2" />
-                                                Show Less
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ChevronDown className="h-4 w-4 mr-2" />
-                                                Show All ({reports.length} total)
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
+                                    ))}
+
+                                    {/* Pagination Controls */}
+                                    {(sortOption !== 'barangay' || selectedBarangay !== 'all') && totalPages > 1 && (
+                                        <div className="flex justify-center items-center gap-2 pt-4">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                                                disabled={currentPage === 1}
+                                                className="bg-green-600 hover:bg-green-700 text-white border-green-700"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </Button>
+                                            
+                                            <div className="flex items-center gap-1">
+                                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                                    // Calculate start index for pagination window
+                                                    let start = 1;
+                                                    if (totalPages > 5) {
+                                                        if (currentPage <= 3) {
+                                                            start = 1;
+                                                        } else if (currentPage >= totalPages - 2) {
+                                                            start = totalPages - 4;
+                                                        } else {
+                                                            start = currentPage - 2;
+                                                        }
+                                                    }
+                                                    
+                                                    const pageNum = start + i;
+                                                    return (
+                                                        <Button
+                                                            key={pageNum}
+                                                            variant={currentPage === pageNum ? "default" : "outline"}
+                                                            size="sm"
+                                                            onClick={() => handlePageChange(pageNum)}
+                                                            className={`w-8 h-8 p-0 ${currentPage === pageNum ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
+                                                        >
+                                                            {pageNum}
+                                                        </Button>
+                                                    );
+                                                })}
+                                                
+                                                {totalPages > 5 && (
+                                                    <>
+                                                        {currentPage < totalPages - 2 && (
+                                                            <>
+                                                                <span className="px-1">...</span>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handlePageChange(totalPages)}
+                                                                    className="w-8 h-8 p-0"
+                                                                >
+                                                                    {totalPages}
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                            
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                                                disabled={currentPage === totalPages}
+                                                className="bg-green-600 hover:bg-green-700 text-white border-green-700"
+                                            >
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     ) : (
