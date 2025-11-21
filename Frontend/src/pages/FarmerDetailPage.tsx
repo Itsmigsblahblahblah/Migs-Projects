@@ -27,6 +27,7 @@ interface Farmer {
   email: string;
   fullName: string;
   farmName: string;
+  contactNumber: string;
   role: string;
   createdAt: string;
   photoURL?: string | null;
@@ -70,7 +71,19 @@ const FarmerDetailPage = () => {
         return;
       }
 
-      const farmerData = farmerDoc.data() as Farmer;
+      const data = farmerDoc.data();
+      const farmerData: Farmer = {
+        uid: farmerDoc.id,
+        email: data.email || '',
+        fullName: data.fullName || '',
+        farmName: data.farmName || '',
+        contactNumber: data.contactNumber || '',
+        role: data.role || 'farmer',
+        createdAt: data.createdAt || '',
+        photoURL: data.photoURL || null,
+        homeAddress: data.homeAddress || '',
+        farmAddress: data.farmAddress || ''
+      };
       setFarmer(farmerData);
 
       // Load farmer's crops
@@ -277,7 +290,7 @@ const FarmerDetailPage = () => {
             <div className="flex-1">
               <h1 className="text-3xl font-bold mb-2">{farmer.fullName}</h1>
               <p className="text-primary-foreground/90 mb-4">
-                {farmer.farmName || "No farm name provided"}
+                {farmer.contactNumber || "No contact number provided"}
               </p>
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-2">
@@ -358,8 +371,8 @@ const FarmerDetailPage = () => {
             </div>
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Farm Name</h3>
-                <p className="font-medium">{farmer.farmName || "Not provided"}</p>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Contact Number</h3>
+                <p className="font-medium">{farmer.contactNumber || "Not provided"}</p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Home Address</h3>

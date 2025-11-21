@@ -41,6 +41,7 @@ interface Farmer {
     email: string;
     fullName: string;
     farmName: string;
+    contactNumber: string;
     role: string;
     createdAt: string;
     photoURL?: string | null;
@@ -268,6 +269,7 @@ export const useAdminDashboard = () => {
                     email: data.email || '',
                     fullName: data.fullName || 'Unknown',
                     farmName: data.farmName || 'Unknown Farm',
+                    contactNumber: data.contactNumber || '',
                     role: data.role || 'farmer',
                     createdAt: data.createdAt || '',
                     photoURL: data.photoURL || null,

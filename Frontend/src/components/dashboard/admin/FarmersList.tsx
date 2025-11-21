@@ -9,6 +9,7 @@ interface Farmer {
     email: string;
     fullName: string;
     farmName: string;
+    contactNumber: string;
     role: string;
     createdAt: string;
     photoURL?: string | null;
@@ -77,7 +78,7 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                                         <div className="flex items-center justify-between mb-2">
                                             <div>
                                                 <h3 className="font-semibold text-lg">{farmer.fullName}</h3>
-                                                <p className="text-sm text-muted-foreground">{farmer.farmName}</p>
+                                                <p className="text-sm text-muted-foreground">{farmer.contactNumber || "No contact number"}</p>
                                             </div>
                                             <Badge variant="secondary">Farmer</Badge>
                                         </div>
