@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, ArrowLeft } from "lucide-react";
+import { db } from "@/firebaseConfig";
+import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 import AdminMessages from "@/components/dashboard/farmer/AdminMessages";
 import { useAnnouncements } from "@/components/dashboard/farmer/UserAnnouncements";
 import { useWeatherAlerts } from "@/hooks/custom/useWeatherAlerts";
@@ -24,7 +27,7 @@ const getUserId = () => {
 };
 
 // Define alert types
-type AlertCategory = 'all' | 'critical' | 'warning' | 'informational';
+type AlertCategory = 'all' | 'critical' | 'warning' | 'informational' | 'messages';
 
 interface AlertItem {
   id: string;
@@ -35,14 +38,65 @@ interface AlertItem {
   type: string;
 }
 
+interface AdminMessage {
+  id: string;
+  reportId: string;
+  senderId: string;
+  receiverId: string;
+  message: string;
+  timestamp: any;
+  read: boolean;
+}
+
 const Alerts = () => {
   const navigate = useNavigate();
   const userId = getUserId();
+  const { toast } = useToast();
   const { weatherAlerts, loading: weatherLoading, error: weatherError } = useWeatherAlerts();
   const { announcements, loading: announcementsLoading } = useAnnouncements();
+  const [adminMessages, setAdminMessages] = useState<AdminMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<AlertCategory>('all');
   const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Fetch admin messages
+  useEffect(() => {
+    if (!userId || userId === 'default-user') {
+      setMessagesLoading(false);
+      return;
+    }
+
+    setMessagesLoading(true);
+    
+    const messagesQuery = query(
+      collection(db, "adminMessages"),
+      where("receiverId", "==", userId),
+      orderBy("timestamp", "desc")
+    );
+
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      const messagesData: AdminMessage[] = [];
+      snapshot.forEach((doc) => {
+        messagesData.push({
+          id: doc.id,
+          ...doc.data()
+        } as AdminMessage);
+      });
+      setAdminMessages(messagesData);
+      setMessagesLoading(false);
+    }, (error) => {
+      console.error("Error fetching admin messages:", error);
+      setMessagesLoading(false);
+      toast({
+        title: "Error",
+        description: "Failed to load messages.",
+        variant: "destructive",
+      });
+    });
+
+    return () => unsubscribe();
+  }, [userId, toast]);
 
   // Function to transform weather alerts to our alert format
   const transformWeatherAlerts = (): AlertItem[] => {
@@ -72,11 +126,26 @@ const Alerts = () => {
     }));
   };
 
+  // Function to transform admin messages to our alert format
+  const transformAdminMessages = (): AlertItem[] => {
+    if (messagesLoading || !adminMessages) return [];
+    
+    return adminMessages.map(message => ({
+      id: `message-${message.id}`,
+      title: "Message from Admin",
+      content: message.message,
+      category: 'messages',
+      date: message.timestamp?.toDate?.().toLocaleDateString() || new Date().toLocaleDateString(),
+      type: 'message'
+    }));
+  };
+
   // Combine all alerts
   const getAllAlerts = (): AlertItem[] => {
     const weatherAlertsFormatted = transformWeatherAlerts();
     const announcementsFormatted = transformAnnouncements();
-    return [...weatherAlertsFormatted, ...announcementsFormatted];
+    const messagesFormatted = transformAdminMessages();
+    return [...weatherAlertsFormatted, ...announcementsFormatted, ...messagesFormatted];
   };
 
   // Filter alerts based on category
@@ -92,7 +161,8 @@ const Alerts = () => {
       all: allAlerts.length,
       critical: allAlerts.filter(a => a.category === 'critical').length,
       warning: allAlerts.filter(a => a.category === 'warning').length,
-      informational: allAlerts.filter(a => a.category === 'informational').length
+      informational: allAlerts.filter(a => a.category === 'informational').length,
+      messages: allAlerts.filter(a => a.category === 'messages').length
     };
   };
 
@@ -104,6 +174,7 @@ const Alerts = () => {
 
   const alertCounts = countAlertsByCategory();
   const filteredAlerts = filterAlerts(getAllAlerts());
+  const loading = weatherLoading || announcementsLoading || messagesLoading;
 
   return (
     <Layout>
@@ -178,6 +249,19 @@ const Alerts = () => {
                   {alertCounts.informational}
                 </Badge>
               </Button>
+              <Button
+                variant={activeCategory === 'messages' ? 'default' : 'outline'}
+                onClick={() => setActiveCategory('messages')}
+                className="flex items-center gap-2"
+              >
+                Messages
+                <Badge 
+                  variant="secondary" 
+                  className="ml-2 bg-green-500 text-white hover:bg-green-600"
+                >
+                  {alertCounts.messages}
+                </Badge>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -185,10 +269,16 @@ const Alerts = () => {
         {/* Unified Alerts List */}
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle>Categorized Alerts</CardTitle>
+            <CardTitle>
+              {activeCategory === 'all' && 'All Alerts'}
+              {activeCategory === 'critical' && 'Critical Alerts'}
+              {activeCategory === 'warning' && 'Warning Alerts'}
+              {activeCategory === 'informational' && 'Informational Alerts'}
+              {activeCategory === 'messages' && 'Messages'}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {(weatherLoading || announcementsLoading) ? (
+            {loading ? (
               <div className="text-center py-4 text-muted-foreground">
                 Loading alerts...
               </div>
@@ -204,12 +294,13 @@ const Alerts = () => {
                     className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 ${
                       alert.category === 'critical' ? 'bg-red-50 border-red-200' :
                       alert.category === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                      alert.category === 'messages' ? 'bg-green-50 border-green-200' :
                       'bg-blue-50 border-blue-200'
                     }`}
                     onClick={() => handleAlertClick(alert)}
                   >
                     <span className="text-2xl">
-                      {alert.type === 'weather' ? '🌤️' : '📢'}
+                      {alert.type === 'weather' ? '🌤️' : alert.type === 'message' ? '✉️' : '📢'}
                     </span>
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
@@ -221,6 +312,7 @@ const Alerts = () => {
                             ${alert.category === 'critical' ? 'bg-red-500 hover:bg-red-600' : ''}
                             ${alert.category === 'warning' ? 'bg-yellow-500 hover:bg-yellow-600' : ''}
                             ${alert.category === 'informational' ? 'bg-blue-500 hover:bg-blue-600' : ''}
+                            ${alert.category === 'messages' ? 'bg-green-500 hover:bg-green-600' : ''}
                             text-white
                           `}
                         >
@@ -229,13 +321,13 @@ const Alerts = () => {
                       </div>
                       <div className="flex justify-between items-center mt-1">
                         <p className="text-xs text-muted-foreground capitalize">
-                          {alert.type === 'weather' ? 'Weather Alert' : 'Announcement'}
+                          {alert.type === 'weather' ? 'Weather Alert' : alert.type === 'message' ? 'Message' : 'Announcement'}
                         </p>
                         <span className="text-xs bg-secondary px-2 py-1 rounded">
                           {alert.date}
                         </span>
                       </div>
-                      {alert.content && alert.type === 'announcement' && (
+                      {alert.content && alert.type !== 'message' && (
                         <p className="text-sm mt-2 text-muted-foreground line-clamp-2">
                           {alert.content}
                         </p>
@@ -247,11 +339,6 @@ const Alerts = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Admin Messages */}
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-          <AdminMessages userId={userId} />
-        </div>
       </div>
 
       {/* Alert Detail Dialog */}
@@ -266,7 +353,8 @@ const Alerts = () => {
                 <DialogDescription className="mt-2 text-green-100">
                   <div className="flex items-center gap-2">
                     <span className="capitalize">
-                      {selectedAlert?.type === 'weather' ? 'Weather Alert' : 'Announcement'}
+                      {selectedAlert?.type === 'weather' ? 'Weather Alert' : 
+                       selectedAlert?.type === 'message' ? 'Message' : 'Announcement'}
                     </span>
                     <span>•</span>
                     <span>{selectedAlert?.date}</span>
