@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import Layout from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
 import { collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp } from "firebase/firestore";
@@ -20,7 +22,8 @@ import {
   TrendingUp,
   Package,
   Sprout,
-  Send
+  Send,
+  MessageSquare
 } from "lucide-react";
 
 interface Farmer {
@@ -44,6 +47,8 @@ const FarmerDetailPage = () => {
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [crops, setCrops] = useState<any[]>([]);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [customMessage, setCustomMessage] = useState("");
+  const [showMessageForm, setShowMessageForm] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -270,7 +275,7 @@ const FarmerDetailPage = () => {
   const totalCrops = crops.length;
 
   const handleSendMessage = async () => {
-    if (!farmer) return;
+    if (!farmer || !customMessage.trim()) return;
     
     setIsSendingMessage(true);
     try {
@@ -279,7 +284,7 @@ const FarmerDetailPage = () => {
         reportId: null, // No specific report associated with this message
         senderId: "admin", // In a real app, this would be the actual admin ID
         receiverId: farmer.uid, // Send to the farmer
-        message: "Please provide your contact number for better communication.",
+        message: customMessage.trim(),
         timestamp: Timestamp.now(),
         read: false
       });
@@ -289,6 +294,11 @@ const FarmerDetailPage = () => {
         title: "Message Sent",
         description: `Your message has been sent to farmer ${farmer.fullName}.`,
       });
+      
+      // Clear the message input
+      setCustomMessage("");
+      // Hide the form after sending
+      setShowMessageForm(false);
     } catch (error) {
       console.error("Error sending message:", error);
       toast({
@@ -419,18 +429,54 @@ const FarmerDetailPage = () => {
             </div>
           </CardContent>
           
-          {/* Message Button - Only show if contact number is missing */}
-          {!farmer.contactNumber && (
-            <div className="absolute bottom-4 right-4">
+          {/* Request Contact Button - Only show if contact number is missing */}
+          {!farmer.contactNumber && !showMessageForm && (
+            <div className="p-6 border-t">
               <Button 
-                onClick={handleSendMessage}
-                disabled={isSendingMessage}
+                onClick={() => setShowMessageForm(true)}
                 className="flex items-center gap-2"
                 variant="outline"
               >
-                <Send className="h-4 w-4" />
-                {isSendingMessage ? "Sending..." : "Request Contact"}
+                <MessageSquare className="h-4 w-4" />
+                Request Information from Farmer
               </Button>
+            </div>
+          )}
+          
+          {/* Message Form - Only show when showMessageForm is true */}
+          {!farmer.contactNumber && showMessageForm && (
+            <div className="p-6 border-t">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="custom-message" className="text-sm font-medium">
+                    Request Information from Farmer
+                  </Label>
+                </div>
+                <Textarea
+                  id="custom-message"
+                  placeholder="e.g., Please provide your contact number for better communication..."
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  rows={3}
+                  className="resize-none"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowMessageForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={isSendingMessage || !customMessage.trim()}
+                    className="flex items-center gap-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    {isSendingMessage ? "Sending..." : "Send Message"}
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </Card>
