@@ -513,10 +513,32 @@ export const useFarmerDashboard = () => {
     const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            // Check if file is an image
+            if (!file.type.match('image.*')) {
+                toast({
+                    title: "Invalid File Type",
+                    description: "Please select an image file (JPEG, PNG, GIF, etc.).",
+                    variant: "destructive",
+                });
+                return;
+            }
+            
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                toast({
+                    title: "File Too Large",
+                    description: "Please select an image smaller than 5MB.",
+                    variant: "destructive",
+                });
+                return;
+            }
+            
             setProfileImageFile(file);
-            // Create preview URL
+            
+            // Create preview URL and convert to data URL for Firestore storage
             const reader = new FileReader();
             reader.onloadend = () => {
+                // Convert to data URL and store in editProfileData
                 setEditProfileData(prev => ({
                     ...prev,
                     photoURL: reader.result as string
@@ -536,8 +558,7 @@ export const useFarmerDashboard = () => {
                 farmArea: editProfileData.farmArea
             };
 
-            // If there's a new profile image, save it (for now just save the data URL)
-            // In production, you'd upload to Firebase Storage
+            // If there's a new profile image, save it as a data URL in Firestore
             if (profileImageFile) {
                 updates.photoURL = editProfileData.photoURL;
             }
