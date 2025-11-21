@@ -41,6 +41,8 @@ const Alerts = () => {
   const { weatherAlerts, loading: weatherLoading, error: weatherError } = useWeatherAlerts();
   const { announcements, loading: announcementsLoading } = useAnnouncements();
   const [activeCategory, setActiveCategory] = useState<AlertCategory>('all');
+  const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Function to transform weather alerts to our alert format
   const transformWeatherAlerts = (): AlertItem[] => {
@@ -92,6 +94,12 @@ const Alerts = () => {
       warning: allAlerts.filter(a => a.category === 'warning').length,
       informational: allAlerts.filter(a => a.category === 'informational').length
     };
+  };
+
+  // Handle alert click to open dialog
+  const handleAlertClick = (alert: AlertItem) => {
+    setSelectedAlert(alert);
+    setIsDialogOpen(true);
   };
 
   const alertCounts = countAlertsByCategory();
@@ -193,11 +201,12 @@ const Alerts = () => {
                 {filteredAlerts.map((alert) => (
                   <div 
                     key={alert.id} 
-                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 ${
                       alert.category === 'critical' ? 'bg-red-50 border-red-200' :
                       alert.category === 'warning' ? 'bg-yellow-50 border-yellow-200' :
                       'bg-blue-50 border-blue-200'
                     }`}
+                    onClick={() => handleAlertClick(alert)}
                   >
                     <span className="text-2xl">
                       {alert.type === 'weather' ? '🌤️' : '📢'}
@@ -227,7 +236,7 @@ const Alerts = () => {
                         </span>
                       </div>
                       {alert.content && alert.type === 'announcement' && (
-                        <p className="text-sm mt-2 text-muted-foreground">
+                        <p className="text-sm mt-2 text-muted-foreground line-clamp-2">
                           {alert.content}
                         </p>
                       )}
@@ -246,24 +255,33 @@ const Alerts = () => {
       </div>
 
       {/* Alert Detail Dialog */}
-      <Dialog open={false} onOpenChange={() => {}}>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="flex-shrink-0 p-6 pb-4 border-b">
+          <DialogHeader className="flex-shrink-0 p-6 pb-4 border-b bg-green-500 text-white">
             <div className="flex items-start justify-between">
               <div>
-                <DialogTitle className="text-xl">
-                  {/* Empty */}
+                <DialogTitle className="text-xl text-white">
+                  {selectedAlert?.title}
                 </DialogTitle>
+                <DialogDescription className="mt-2 text-green-100">
+                  <div className="flex items-center gap-2">
+                    <span className="capitalize">
+                      {selectedAlert?.type === 'weather' ? 'Weather Alert' : 'Announcement'}
+                    </span>
+                    <span>•</span>
+                    <span>{selectedAlert?.date}</span>
+                  </div>
+                </DialogDescription>
               </div>
               <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 text-white" />
                 <span className="sr-only">Close</span>
               </DialogClose>
             </div>
           </DialogHeader>
           <ScrollArea className="flex-grow p-6">
             <div className="whitespace-pre-wrap">
-              {/* Empty */}
+              {selectedAlert?.content || "No content available."}
             </div>
           </ScrollArea>
         </DialogContent>

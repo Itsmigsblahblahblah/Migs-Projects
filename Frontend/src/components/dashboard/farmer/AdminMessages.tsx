@@ -3,10 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { db } from "@/firebaseConfig";
 import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, Timestamp, deleteDoc, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { Send, CheckCircle, Trash2 } from "lucide-react";
+import { Send, CheckCircle, Trash2, X } from "lucide-react";
 
 interface AdminMessage {
   id: string;
@@ -25,6 +33,8 @@ interface AdminMessagesProps {
 const AdminMessages = ({ userId }: AdminMessagesProps) => {
   const [messages, setMessages] = useState<AdminMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMessage, setSelectedMessage] = useState<AdminMessage | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -215,11 +225,16 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
     }
   };
 
-  // Navigate to report detail page and mark message as read
-  const goToReport = async (messageId: string, reportId: string) => {
-    // Mark the message as read when navigating to the report
-    await markAsRead(messageId);
-    navigate(`/farmer/reports/${reportId}`);
+  // Handle message click - show dialog instead of navigating
+  const handleMessageClick = async (message: AdminMessage) => {
+    // Mark the message as read when opening the dialog
+    if (!message.read) {
+      await markAsRead(message.id);
+    }
+    
+    // Set the selected message and open dialog
+    setSelectedMessage(message);
+    setIsDialogOpen(true);
   };
 
   // Calculate dynamic height based on number of messages
@@ -239,95 +254,123 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
   };
 
   return (
-    <Card className="shadow-card">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <Send className="h-5 w-5 text-blue-500" />
-            Messages from Admin
-          </CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-3"></div>
-            <p>Loading messages...</p>
+    <>
+      <Card className="shadow-card">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5 text-blue-500" />
+              Messages from Admin
+            </CardTitle>
           </div>
-        ) : messages.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Send className="h-12 w-12 mx-auto text-muted-foreground/20 mb-3" />
-            <p>No messages from admin yet.</p>
-            <p className="text-sm mt-1">When admins send you messages, they will appear here.</p>
-          </div>
-        ) : (
-          <div 
-            className="pr-4"
-            style={{ 
-              maxHeight: `${calculateDynamicHeight()}px`,
-              overflowY: messages.length > 3 ? 'auto' : 'visible'
-            }}
-          >
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div 
-                  key={message.id} 
-                  className={`border rounded-lg p-4 transition-colors cursor-pointer hover:bg-muted/50 ${
-                    message.read 
-                      ? "bg-muted/30 border-muted-foreground/20" 
-                      : "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900"
-                  }`}
-                  onClick={() => goToReport(message.id, message.reportId)}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Admin</span>
-                      {!message.read && (
-                        <span className="inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {message.timestamp?.toDate().toLocaleDateString()}
-                      </span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteMessage(message.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      {!message.read && (
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-3"></div>
+              <p>Loading messages...</p>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Send className="h-12 w-12 mx-auto text-muted-foreground/20 mb-3" />
+              <p>No messages from admin yet.</p>
+              <p className="text-sm mt-1">When admins send you messages, they will appear here.</p>
+            </div>
+          ) : (
+            <div 
+              className="pr-4"
+              style={{ 
+                maxHeight: `${calculateDynamicHeight()}px`,
+                overflowY: messages.length > 3 ? 'auto' : 'visible'
+              }}
+            >
+              <div className="space-y-4">
+                {messages.map((message) => (
+                  <div 
+                    key={message.id} 
+                    className={`border rounded-lg p-4 transition-colors cursor-pointer hover:bg-muted/50 ${
+                      message.read 
+                        ? "bg-muted/30 border-muted-foreground/20" 
+                        : "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900"
+                    }`}
+                    onClick={() => handleMessageClick(message)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Admin</span>
+                        {!message.read && (
+                          <span className="inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {message.timestamp?.toDate().toLocaleDateString()}
+                        </span>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                           onClick={(e) => {
                             e.stopPropagation();
-                            markAsRead(message.id);
+                            deleteMessage(message.id);
                           }}
                         >
-                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
+                        {!message.read && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(message.id);
+                            }}
+                          >
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="whitespace-pre-wrap line-clamp-2">{message.message}</p>
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                      <span>Click to view message</span>
                     </div>
                   </div>
-                  <p className="whitespace-pre-wrap">{message.message}</p>
-                  <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                    <span>Click this to open...</span>
-                    <span className="font-mono">{message.senderId.substring(0, 8)}...</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Message Detail Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="flex-shrink-0 p-6 pb-4 border-b bg-green-500 text-white">
+            <div className="flex items-start justify-between">
+              <div>
+                <DialogTitle className="text-xl text-white">
+                  Message from Admin
+                </DialogTitle>
+                <DialogDescription className="mt-2 text-green-100">
+                  {selectedMessage?.timestamp?.toDate().toLocaleString()}
+                </DialogDescription>
+              </div>
+              <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                <X className="h-4 w-4 text-white" />
+                <span className="sr-only">Close</span>
+              </DialogClose>
+            </div>
+          </DialogHeader>
+          <ScrollArea className="flex-grow p-6">
+            <div className="whitespace-pre-wrap">
+              {selectedMessage?.message || "No message content available."}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

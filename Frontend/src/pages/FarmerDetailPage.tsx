@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Layout from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import {
   ArrowLeft,
@@ -19,7 +19,8 @@ import {
   Leaf,
   TrendingUp,
   Package,
-  Sprout
+  Sprout,
+  Send
 } from "lucide-react";
 
 interface Farmer {
@@ -42,6 +43,7 @@ const FarmerDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [farmer, setFarmer] = useState<Farmer | null>(null);
   const [crops, setCrops] = useState<any[]>([]);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -267,6 +269,38 @@ const FarmerDetailPage = () => {
   const totalInvestment = crops.reduce((sum, crop) => sum + (crop.puhunan || 0), 0);
   const totalCrops = crops.length;
 
+  const handleSendMessage = async () => {
+    if (!farmer) return;
+    
+    setIsSendingMessage(true);
+    try {
+      // Save message to Firestore
+      await addDoc(collection(db, "adminMessages"), {
+        reportId: null, // No specific report associated with this message
+        senderId: "admin", // In a real app, this would be the actual admin ID
+        receiverId: farmer.uid, // Send to the farmer
+        message: "Please provide your contact number for better communication.",
+        timestamp: Timestamp.now(),
+        read: false
+      });
+      
+      // Show success feedback using toast notification
+      toast({
+        title: "Message Sent",
+        description: `Your message has been sent to farmer ${farmer.fullName}.`,
+      });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -346,7 +380,7 @@ const FarmerDetailPage = () => {
         </div>
 
         {/* Farmer Information */}
-        <Card className="shadow-card">
+        <Card className="shadow-card relative">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
@@ -384,6 +418,21 @@ const FarmerDetailPage = () => {
               </div>
             </div>
           </CardContent>
+          
+          {/* Message Button - Only show if contact number is missing */}
+          {!farmer.contactNumber && (
+            <div className="absolute bottom-4 right-4">
+              <Button 
+                onClick={handleSendMessage}
+                disabled={isSendingMessage}
+                className="flex items-center gap-2"
+                variant="outline"
+              >
+                <Send className="h-4 w-4" />
+                {isSendingMessage ? "Sending..." : "Request Contact"}
+              </Button>
+            </div>
+          )}
         </Card>
 
         {/* Crops Section */}
