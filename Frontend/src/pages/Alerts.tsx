@@ -287,11 +287,11 @@ const Alerts = () => {
                 No alerts found
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="max-h-[320px] overflow-y-auto pr-2">
                 {filteredAlerts.map((alert) => (
                   <div 
                     key={alert.id} 
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 ${
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 mb-3 last:mb-0 ${
                       alert.category === 'critical' ? 'bg-red-50 border-red-200' :
                       alert.category === 'warning' ? 'bg-yellow-50 border-yellow-200' :
                       alert.category === 'messages' ? 'bg-green-50 border-green-200' :
