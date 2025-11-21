@@ -17,6 +17,7 @@ const MarketDemandCard = () => {
   const [marketData, setMarketData] = useState<MarketDemandData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentDate] = useState(new Date());
 
   useEffect(() => {
     fetchMarketData();
@@ -57,13 +58,21 @@ const MarketDemandCard = () => {
     return <Minus className="h-4 w-4 text-gray-500" />;
   };
 
+  const getMonthName = (month: number) => {
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    return monthNames[month - 1];
+  };
+
   if (loading) {
     return (
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Market Demand Forecast
+            Market Demand Forecast for {getMonthName(currentDate.getMonth() + 1)} {currentDate.getFullYear()}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -81,7 +90,7 @@ const MarketDemandCard = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Market Demand Forecast
+            Market Demand Forecast for {getMonthName(currentDate.getMonth() + 1)} {currentDate.getFullYear()}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -102,10 +111,10 @@ const MarketDemandCard = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
-          Market Demand Forecast
+          Market Demand Forecast for {getMonthName(currentDate.getMonth() + 1)} {currentDate.getFullYear()}
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Top recommended crops based on predicted market demand
+          Top recommended crops based on Est. predicted market demand
         </p>
       </CardHeader>
       <CardContent>
