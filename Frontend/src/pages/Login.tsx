@@ -137,7 +137,13 @@ const Login = () => {
         localStorage.setItem('username', farmerData.fullName);
         navigate('/farmer');
       } else {
-        // New farmer - create profile
+        // New farmer - create profile only if email is verified (which it should be for Google)
+        if (!user.emailVerified) {
+          setError("Please verify your Google account before signing in.");
+          await auth.signOut();
+          return;
+        }
+        
         const displayName = user.displayName || user.email?.split('@')[0] || 'Farmer';
         
         await setDoc(doc(db, "farmers", user.uid), {
@@ -147,7 +153,8 @@ const Login = () => {
           role: "farmer",
           createdAt: new Date().toISOString(),
           uid: user.uid,
-          photoURL: user.photoURL || null
+          photoURL: user.photoURL || null,
+          emailVerified: true
         });
 
         localStorage.setItem('userRole', 'farmer');
@@ -197,17 +204,6 @@ const Login = () => {
       // Send email verification
       await sendEmailVerification(userCredential.user);
 
-      // Store farmer data in Firestore with emailVerified flag
-      await setDoc(doc(db, "farmers", userCredential.user.uid), {
-        email: credentials.email,
-        fullName: credentials.fullName,
-        farmName: credentials.farmName,
-        role: "farmer",
-        createdAt: new Date().toISOString(),
-        uid: userCredential.user.uid,
-        emailVerified: false
-      });
-
       // Sign out user to prevent auto-login
       await auth.signOut();
 
@@ -231,6 +227,8 @@ const Login = () => {
         setError("Email already registered. Please login instead.");
       } else if (err.code === 'auth/weak-password') {
         setError("Password is too weak. Use at least 6 characters.");
+      } else if (err.code === 'auth/invalid-email') {
+        setError("Invalid email address. Please enter a valid email.");
       } else {
         setError(err.message || "Signup failed");
       }
@@ -281,14 +279,29 @@ const Login = () => {
       // Get farmer data from Firestore
       const farmerDoc = await getDoc(doc(db, "farmers", userCredential.user.uid));
       
+      // If farmer document doesn't exist, create it now (first time login after verification)
       if (!farmerDoc.exists()) {
-        setError("Farmer account not found");
-        await auth.signOut();
-        setLoading(false);
-        return;
+        // Create farmer data in Firestore for the first time
+        await setDoc(doc(db, "farmers", userCredential.user.uid), {
+          email: credentials.email,
+          fullName: credentials.fullName || userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer',
+          farmName: credentials.farmName || `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
+          role: "farmer",
+          createdAt: new Date().toISOString(),
+          uid: userCredential.user.uid,
+          emailVerified: true
+        });
       }
 
-      const farmerData = farmerDoc.data();
+      const farmerData = farmerDoc.data() || {
+        email: credentials.email,
+        fullName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer',
+        farmName: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
+        role: "farmer",
+        createdAt: new Date().toISOString(),
+        uid: userCredential.user.uid,
+        emailVerified: true
+      };
       
       // Store user info
       localStorage.setItem('userRole', 'farmer');
@@ -299,6 +312,8 @@ const Login = () => {
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError("Invalid email or password");
+      } else if (err.code === 'auth/invalid-email') {
+        setError("Invalid email address. Please enter a valid email.");
       } else {
         setError(err.message || "Login failed");
       }
