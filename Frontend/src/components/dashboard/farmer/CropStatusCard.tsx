@@ -13,11 +13,12 @@ interface CropData {
 
 interface CropStatusCardProps {
     cropData: CropData;
+    onClick?: () => void; // Add onClick handler
 }
 
-const CropStatusCard = ({ cropData }: CropStatusCardProps) => {
+const CropStatusCard = ({ cropData, onClick }: CropStatusCardProps) => {
     return (
-        <Card className="shadow-card">
+        <Card className="shadow-card cursor-pointer hover:shadow-md transition-shadow" onClick={onClick}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Wheat className="h-5 w-5" />

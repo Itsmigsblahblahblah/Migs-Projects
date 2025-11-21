@@ -26,10 +26,61 @@ import { useCrops } from "@/contexts/CropContext"; // Added import
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import MaintenanceChecklistCard from "@/components/dashboard/farmer/MaintenanceChecklistCard";
 
 // Removed mock data
 
+// Mock checklist data - copied from CropDetails.tsx
+const generateChecklist = (cropName: string) => {
+  const baseItems = [
+    { id: "1", title: "Prepare soil and remove weeds", completed: false, category: "Preparation" },
+    { id: "2", title: "Apply organic fertilizer", completed: false, category: "Planting" },
+    { id: "3", title: "Plant seeds at proper depth", completed: false, category: "Planting" },
+    { id: "4", title: "Water regularly (2-3 times per week)", completed: false, category: "Maintenance" },
+    { id: "5", title: "Monitor for pests and diseases", completed: false, category: "Maintenance" },
+    { id: "6", title: "Apply additional fertilizer as needed", completed: false, category: "Maintenance" },
+    { id: "7", title: "Harvest when crop is mature", completed: false, category: "Harvesting" },
+    { id: "8", title: "Sort and store harvested crops properly", completed: false, category: "Post-Harvest" },
+  ];
+
+  return baseItems;
+};
+
+// Function to ensure all checklist items are present - copied from CropDetails.tsx
+const ensureCompleteChecklist = (existingChecklist: any[], cropName: string): any[] => {
+  const baseChecklist = generateChecklist(cropName);
+  
+  // If there's no existing checklist, return the base checklist
+  if (!existingChecklist || existingChecklist.length === 0) {
+    return baseChecklist;
+  }
+  
+  // Check if the new item exists in the existing checklist by title
+  const hasPostHarvestItem = existingChecklist.some(item => 
+    item.title === "Sort and store harvested crops properly"
+  );
+  
+  // If the new item doesn't exist, add it
+  if (!hasPostHarvestItem) {
+    const postHarvestItem = baseChecklist.find(item => 
+      item.title === "Sort and store harvested crops properly"
+    );
+    if (postHarvestItem) {
+      return [...existingChecklist, {...postHarvestItem, completed: false, completedAt: undefined}];
+    }
+  }
+  
+  return existingChecklist;
+};
+
 const FarmerDashboard = () => {
+  const navigate = useNavigate(); // Add navigate hook
   const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false);
   const [isUpdateCropDialogOpen, setIsUpdateCropDialogOpen] = useState(false);
   const [isEditCropDialogOpen, setIsEditCropDialogOpen] = useState(false);
@@ -39,6 +90,8 @@ const FarmerDashboard = () => {
   const [isRequestingDeletion, setIsRequestingDeletion] = useState(false);
   const [showDeletionNotification, setShowDeletionNotification] = useState(true);
   const [currentCropIndex, setCurrentCropIndex] = useState(0); // Added state for crop navigation
+  const [isChecklistDialogOpen, setIsChecklistDialogOpen] = useState(false); // State for checklist dialog
+  const [selectedCropId, setSelectedCropId] = useState<string | null>(null); // State for selected crop ID
 
   const {
     username,
@@ -69,15 +122,15 @@ const FarmerDashboard = () => {
   } = useFarmerDashboard();
 
   // Added useCrops hook
-  const { crops: cropHistory } = useCrops();
+  const { crops: cropHistory, updateCrop } = useCrops();
 
   const {
     newCrop,
     editCrop,
-    selectedCropId,
+    selectedCropId: cropManagementSelectedCropId,
     setNewCrop,
     setEditCrop,
-    setSelectedCropId,
+    setSelectedCropId: setCropManagementSelectedCropId,
     handleCropInputChange,
     handleSoilTypeChange,
     handleEditCropInputChange,
@@ -285,6 +338,52 @@ const FarmerDashboard = () => {
     }
   };
 
+  // Function to handle crop card click - opens checklist dialog
+  const handleCropCardClick = () => {
+    if (cropHistory.length > 0) {
+      const currentCrop = cropHistory[currentCropIndex];
+      
+      // Set selected crop ID
+      if (currentCrop.id) {
+        setSelectedCropId(currentCrop.id);
+        // Open dialog
+        setIsChecklistDialogOpen(true);
+      }
+    }
+  };
+
+  // Function to handle checklist item toggle
+  const handleToggleChecklistItem = async (itemId: string) => {
+    if (!selectedCropId) return;
+    
+    // Get the current crop
+    const currentCrop = cropHistory.find(crop => crop.id === selectedCropId);
+    if (!currentCrop) return;
+    
+    // Ensure we have a complete checklist
+    const completeChecklist = ensureCompleteChecklist(currentCrop.checklist || [], currentCrop.name);
+    
+    // Update the checklist item
+    const updatedChecklist = completeChecklist.map(item => {
+      if (item.id === itemId) {
+        const newCompletedStatus = !item.completed;
+        return {
+          ...item,
+          completed: newCompletedStatus,
+          completedAt: newCompletedStatus ? new Date().toISOString() : undefined
+        };
+      }
+      return item;
+    });
+    
+    // Update in Firestore and local state
+    try {
+      await updateCrop(selectedCropId, { checklist: updatedChecklist });
+    } catch (error) {
+      console.error("Error updating checklist item:", error);
+    }
+  };
+
   // Get the crop data for display
   const cropData = getCropData();
   
@@ -292,6 +391,22 @@ const FarmerDashboard = () => {
   useEffect(() => {
     setCurrentCropIndex(0);
   }, [cropHistory]);
+
+  // Get the selected crop for the checklist dialog
+  const selectedCrop = selectedCropId ? cropHistory.find(crop => crop.id === selectedCropId) : null;
+  
+  // Ensure we have a complete checklist for the selected crop
+  let selectedCropChecklist: any[] = [];
+  if (selectedCrop) {
+    selectedCropChecklist = ensureCompleteChecklist(selectedCrop.checklist || [], selectedCrop.name);
+  }
+  
+  // Calculate productivity for the selected crop
+  let checklistProductivity = 0;
+  if (selectedCropChecklist.length > 0) {
+    const completed = selectedCropChecklist.filter((item: any) => item.completed).length;
+    checklistProductivity = Math.round((completed / selectedCropChecklist.length) * 100);
+  }
 
   return (
     <Layout>
@@ -409,7 +524,7 @@ const FarmerDashboard = () => {
                 </Button>
               </>
             )}
-            <CropStatusCard cropData={cropData} />
+            <CropStatusCard cropData={cropData} onClick={handleCropCardClick} />
           </div>
         </div>
 
@@ -511,6 +626,23 @@ const FarmerDashboard = () => {
           onOpenChange={setIsDeleteAccountDialogOpen}
           handleDeleteAccount={handleDeleteAccount}
         />
+
+        {/* Maintenance Checklist Dialog */}
+        <Dialog open={isChecklistDialogOpen} onOpenChange={setIsChecklistDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Maintenance Checklist</DialogTitle>
+            </DialogHeader>
+            {selectedCrop && (
+              <MaintenanceChecklistCard
+                checklist={selectedCropChecklist}
+                productivityData={[]} // This would need to be calculated properly in a full implementation
+                checklistProductivity={checklistProductivity}
+                onToggleItem={handleToggleChecklistItem}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
