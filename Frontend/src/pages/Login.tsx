@@ -14,7 +14,8 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   UserCredential,
-  sendEmailVerification
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 
@@ -230,7 +231,7 @@ const Login = () => {
       } else if (err.code === 'auth/invalid-email') {
         setError("Invalid email address. Please enter a valid email.");
       } else {
-        setError(err.message || "Signup failed");
+        setError("Signup failed. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -311,11 +312,11 @@ const Login = () => {
 
     } catch (err: any) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError("Invalid email or password");
+        setError("Invalid email or password. Please check your credentials and try again.");
       } else if (err.code === 'auth/invalid-email') {
         setError("Invalid email address. Please enter a valid email.");
       } else {
-        setError(err.message || "Login failed");
+        setError("Login failed. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -361,7 +362,7 @@ const Login = () => {
       if (err.code === 'auth/too-many-requests') {
         setError("Too many requests. Please wait a few minutes before trying again.");
       } else {
-        setError("Failed to resend verification email. Please check your credentials.");
+        setError("Failed to resend verification email. Please check your credentials and try again.");
       }
     } finally {
       setLoading(false);
@@ -531,6 +532,16 @@ const Login = () => {
                 >
                   {loading ? "Logging in..." : "Login"}
                 </Button>
+
+                <div className="text-center mt-2">
+                  <button 
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
 
                 {error && error.includes("verify your email") && (
                   <Button 

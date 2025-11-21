@@ -9,6 +9,7 @@ import PublicOnlyRoute from "@/components/PublicOnlyRoute";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/NotFound";
 import Login from "@/pages/Login";
+import ForgotPassword from "@/pages/ForgotPassword";
 import FarmerDashboard from "@/pages/FarmerDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 import History from "@/pages/History";
@@ -37,6 +38,14 @@ const App = () => (
               element={
                 <PublicOnlyRoute>
                   <Login />
+                </PublicOnlyRoute>
+              } 
+            />
+            <Route 
+              path="/forgot-password" 
+              element={
+                <PublicOnlyRoute>
+                  <ForgotPassword />
                 </PublicOnlyRoute>
               } 
             />
