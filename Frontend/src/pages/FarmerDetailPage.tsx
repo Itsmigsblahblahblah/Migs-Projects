@@ -37,6 +37,7 @@ interface Farmer {
   photoURL?: string | null;
   homeAddress?: string;
   farmAddress?: string;
+  farmArea?: string; // Added farmArea field
 }
 
 const FarmerDetailPage = () => {
@@ -89,7 +90,8 @@ const FarmerDetailPage = () => {
         createdAt: data.createdAt || '',
         photoURL: data.photoURL || null,
         homeAddress: data.homeAddress || '',
-        farmAddress: data.farmAddress || ''
+        farmAddress: data.farmAddress || '',
+        farmArea: data.farmArea || '' // Added farmArea field
       };
       setFarmer(farmerData);
 
@@ -412,12 +414,12 @@ const FarmerDetailPage = () => {
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Member Since</h3>
                 <p className="font-medium">{formatDate(farmer.createdAt)}</p>
               </div>
-            </div>
-            <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Contact Number</h3>
                 <p className="font-medium">{farmer.contactNumber || "Not provided"}</p>
               </div>
+            </div>
+            <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Home Address</h3>
                 <p className="font-medium">{farmer.homeAddress || "Not provided"}</p>
@@ -425,6 +427,10 @@ const FarmerDetailPage = () => {
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Farm Address</h3>
                 <p className="font-medium">{farmer.farmAddress || "Not provided"}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Farm Area</h3>
+                <p className="font-medium">{farmer.farmArea || "Not provided"}</p>
               </div>
             </div>
           </CardContent>
