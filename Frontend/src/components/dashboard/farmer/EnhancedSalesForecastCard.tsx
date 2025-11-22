@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/chart";
 import { useEffect, useState } from "react";
 import { getCropInsights } from "@/services/cropDataService";
+import InfoTooltip from "@/components/ui/info-tooltip";
 
 interface SalesData {
     stage: string;
@@ -53,6 +54,13 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
     const [insights, setInsights] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [salesForecastData, setSalesForecastData] = useState<SalesData[]>([]);
+
+    // Calculate checklist completion percentage
+    const checklistCompletionPercentage = () => {
+        if (!crop || !crop.checklist || crop.checklist.length === 0) return 0;
+        const completed = crop.checklist.filter((item: any) => item.completed).length;
+        return Math.round((completed / crop.checklist.length) * 100);
+    };
 
     useEffect(() => {
         const fetchInsights = async () => {
@@ -149,18 +157,41 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                             <p className="text-sm text-muted-foreground mb-1">Your Investment</p>
                             <p className="text-xl font-bold text-primary">₱{Number(crop.puhunan).toLocaleString()}</p>
                             <p className="text-xs mt-2 text-muted-foreground">This is the money you spend to plant and grow your {crop.name}</p>
+                            <InfoTooltip content={`The total amount you've invested in seeds, fertilizers, labor, and other expenses for this crop. This includes:
+                            • Seeds/Cost of planting material: ₱${(Number(crop.puhunan) * 0.3).toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
+                            • Fertilizers and soil amendments: ₱${(Number(crop.puhunan) * 0.25).toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
+                            • Labor costs: ₱${(Number(crop.puhunan) * 0.25).toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
+                            • Pest control and other chemicals: ₱${(Number(crop.puhunan) * 0.1).toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
+                            • Miscellaneous expenses: ₱${(Number(crop.puhunan) * 0.1).toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
+                            Total Investment: ₱${Number(crop.puhunan).toLocaleString()}`} className="mt-2" />
                         </div>
                         <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500">
                             <div className="text-yellow-500 font-bold text-xl mb-2">2</div>
                             <p className="text-sm text-muted-foreground mb-1">Est. Suggested Capital</p>
                             <p className="text-xl font-bold text-yellow-500">₱{insights?.profit?.suggestedCapital?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}</p>
                             <p className="text-xs mt-2 text-muted-foreground">This is the minimum money needed to successfully grow your {crop.name}</p>
+                            <InfoTooltip content={`The recommended minimum investment needed for optimal growth of your crop based on current market conditions. This includes:
+                            • Seeds/Cost of planting material: ₱${(insights?.profit?.suggestedCapital ? (insights.profit.suggestedCapital * 0.3).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0')}
+                            • Fertilizers and soil amendments: ₱${(insights?.profit?.suggestedCapital ? (insights.profit.suggestedCapital * 0.25).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0')}
+                            • Labor costs: ₱${(insights?.profit?.suggestedCapital ? (insights.profit.suggestedCapital * 0.25).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0')}
+                            • Pest control and other chemicals: ₱${(insights?.profit?.suggestedCapital ? (insights.profit.suggestedCapital * 0.1).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0')}
+                            • Miscellaneous expenses: ₱${(insights?.profit?.suggestedCapital ? (insights.profit.suggestedCapital * 0.1).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0')}
+                            Total Suggested Capital: ₱${insights?.profit?.suggestedCapital?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || 'N/A'}`} className="mt-2" />
                         </div>
                         <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500">
                             <div className="text-blue-500 font-bold text-xl mb-2">3</div>
                             <p className="text-sm text-muted-foreground mb-1">Est. Expected Harvest</p>
                             <p className="text-xl font-bold text-blue-500">{estimatedYield?.toLocaleString()} kg</p>
                             <p className="text-xs mt-2 text-muted-foreground">This is your est. expected harvest</p>
+                            <InfoTooltip content={`The estimated yield you can expect from your crop based on land area, soil quality, and farming practices.
+                            
+                            Factors affecting yield:
+                            • Land area: ${crop.landArea} ha
+                            • Soil type: ${crop.soilType}
+                            • Investment level: ${crop.puhunan >= (insights?.profit?.suggestedCapital || 0) ? 'Optimal' : 'Below suggested'}
+                            • Farming practices: ${checklistCompletionPercentage()}% of recommended practices followed
+                            
+                            Estimated yield: ${estimatedYield?.toLocaleString()} kg`} className="mt-2" />
                         </div>
                         <div className={`p-4 rounded-lg border ${netProfit >= 0 ? 'bg-success/10 border-success' : 'bg-destructive/10 border-destructive'}`}>
                             <div className={`font-bold text-xl mb-2 ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>4</div>
@@ -173,6 +204,12 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                     ? "This is your est. expected profit after all expenses" 
                                     : "You might lose money. Consider adjusting your approach."}
                             </p>
+                            <InfoTooltip content={`Estimated Profit Calculation:
+Gross Sales: ${estimatedYield?.toLocaleString() || '0'} kg × ₱${insights?.market?.averagePrice?.toFixed(2) || '0.00'}/kg = ₱${(estimatedYield * (insights?.market?.averagePrice || 0)).toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
+
+Total Expenses: ₱${Number(crop.puhunan).toLocaleString() || '0'}
+
+Net Profit: ₱${(estimatedYield * (insights?.market?.averagePrice || 0)).toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'} - ₱${Number(crop.puhunan).toLocaleString() || '0'} = ₱${netProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} className="mt-2" />
                         </div>
                     </div>
                 </div>
@@ -188,10 +225,12 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                             <div className="flex justify-between items-center pb-2 border-b">
                                 <span className="text-sm">Current Market Price</span>
                                 <span className="font-medium">₱{insights?.market?.averagePrice?.toFixed(2)}/kg</span>
+                                <InfoTooltip content="The current average price farmers are receiving for this crop type in the market" />
                             </div>
                             <div className="flex justify-between items-center pb-2 border-b">
                                 <span className="text-sm">Est. Price Direction</span>
                                 <span className="font-medium capitalize">{insights?.market?.trend || 'Stable'}</span>
+                                <InfoTooltip content="The predicted direction of market prices for your crop in the near future" />
                             </div>
                             <div className="text-xs text-muted-foreground mt-3">
                                 <p>Higher prices mean more earnings. Watch for seasonal changes in prices.</p>
@@ -210,6 +249,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                 <span className="font-medium">
                                     {crop.puhunan > 0 ? ((netProfit / crop.puhunan) * 100).toFixed(1) : '0'}%
                                 </span>
+                                <InfoTooltip content="Your estimated return on investment (ROI) percentage for this crop" />
                             </div>
                             <div className="flex justify-between items-center pb-2 border-b">
                                 <span className="text-sm">
@@ -218,6 +258,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                 <span className={`font-medium ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                                     {netProfit >= 0 ? "Profitable" : "Not Profitable"}
                                 </span>
+                                <InfoTooltip content="Whether your crop investment is expected to be profitable or result in a loss" />
                             </div>
                             <div className="text-xs text-muted-foreground mt-3">
                                 <p>

@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, MapPin, Wheat, Droplets, TrendingUpIcon, Calendar, Sprout, Banknote, Scale, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCropInsights } from "@/services/cropDataService";
+import InfoTooltip from "@/components/ui/info-tooltip";
 
 interface EnhancedCropInfoCardProps {
     crop: any;
@@ -88,6 +89,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                         <div className="flex items-center gap-2 mb-2">
                             <Wheat className="h-4 w-4 text-primary" />
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Crop Name</p>
+                            <InfoTooltip content="The name of the crop you are growing" />
                         </div>
                         <p className="font-bold text-lg">{crop.name}</p>
                     </div>
@@ -96,6 +98,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                         <div className="flex items-center gap-2 mb-2">
                             <MapPin className="h-4 w-4 text-primary" />
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Land Area</p>
+                            <InfoTooltip content="The total area of land dedicated to this crop in hectares" />
                         </div>
                         <p className="font-bold text-lg">{crop.landArea} ha</p>
                     </div>
@@ -104,6 +107,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                         <div className="flex items-center gap-2 mb-2">
                             <Droplets className="h-4 w-4 text-primary" />
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Soil Type</p>
+                            <InfoTooltip content="The type of soil where your crop is planted, affecting nutrient availability and water retention" />
                         </div>
                         <p className="font-bold text-lg">{crop.soilType}</p>
                     </div>
@@ -112,6 +116,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                         <div className="flex items-center gap-2 mb-2">
                             <TrendingUpIcon className="h-4 w-4 text-primary" />
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Capital</p>
+                            <InfoTooltip content="The initial investment made for planting and growing this crop" />
                         </div>
                         <p className="font-bold text-lg">₱{Number(crop.puhunan).toLocaleString()}</p>
                     </div>
@@ -120,6 +125,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                         <div className="flex items-center gap-2 mb-2">
                             <Calendar className="h-4 w-4 text-primary" />
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Planting Date</p>
+                            <InfoTooltip content="The date when the crop was planted, used to calculate growth stages and harvest timing" />
                         </div>
                         <p className="font-bold text-lg">
                             {(() => {
@@ -166,6 +172,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                         <div className="flex items-center gap-2 mb-2">
                             <Leaf className="h-4 w-4 text-primary" />
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Days Growing</p>
+                            <InfoTooltip content="The number of days since the crop was planted, indicating its current growth stage" />
                         </div>
                         <p className="font-bold text-lg">
                             {(() => {
@@ -210,6 +217,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                             <div className="flex items-center gap-2 mb-2">
                                 <Sprout className="h-4 w-4 text-primary" />
                                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Soil pH</p>
+                                <InfoTooltip content="The acidity or alkalinity level of your soil, affecting nutrient availability for the crop" />
                             </div>
                             <p className="font-bold text-lg">{insights.fertilizer.pH}</p>
                         </div>
@@ -220,6 +228,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                             <div className="flex items-center gap-2 mb-2">
                                 <Banknote className="h-4 w-4 text-primary" />
                                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Est. Market Price</p>
+                                <InfoTooltip content="The current estimated market price per kilogram for your crop type" />
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-lg">

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sun, Bug, Droplets, Leaf, Calendar, TrendingUp } from "lucide-react";
+import InfoTooltip from "@/components/ui/info-tooltip";
 
 interface PrescribedCrop {
     id: string;
@@ -35,6 +36,7 @@ const GrowthInsightsCard = ({
                         <div className="flex items-center gap-2 mb-2">
                             <Leaf className="h-4 w-4 text-primary" />
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Growth Stage</p>
+                            <InfoTooltip content="The current development phase of your crop, indicating what care it needs now" />
                         </div>
                         <p className="font-bold text-lg">{growthStage}</p>
                     </div>
@@ -42,6 +44,7 @@ const GrowthInsightsCard = ({
                         <div className="flex items-center gap-2 mb-2">
                             <Calendar className="h-4 w-4 text-primary" />
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Harvest Date</p>
+                            <InfoTooltip content="The estimated date when your crop will be ready for harvesting" />
                         </div>
                         <p className="font-bold text-lg">{harvestDate}</p>
                     </div>
@@ -49,6 +52,7 @@ const GrowthInsightsCard = ({
                         <div className="flex items-center gap-2 mb-2">
                             <TrendingUp className="h-4 w-4 text-primary" />
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Productivity</p>
+                            <InfoTooltip content="Your completion percentage of recommended farming practices for this crop" />
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-full bg-secondary rounded-full h-2">

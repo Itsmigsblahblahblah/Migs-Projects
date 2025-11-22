@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import InfoTooltip from "@/components/ui/info-tooltip";
 
 interface ChecklistItem {
     id: string;
@@ -94,6 +95,7 @@ const MaintenanceChecklistCard = ({
                     <CardTitle className="flex items-center gap-2">
                         <CheckCircle className="h-5 w-5" />
                         Maintenance Checklist
+                        <InfoTooltip content="A list of recommended tasks to ensure healthy crop growth and maximum yield" />
                     </CardTitle>
                     <CardDescription>
                         Track your progress through the growing season
@@ -125,6 +127,7 @@ const MaintenanceChecklistCard = ({
                                         </div>
                                     )}
                                 </div>
+                                <InfoTooltip content="Mark this task as completed when finished. This helps track your farming progress." />
                                 {item.completed && (
                                     <button 
                                         onClick={() => handleToggleWithConfirmation(item.id, item.completed)}
