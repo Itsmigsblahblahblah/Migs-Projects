@@ -254,20 +254,8 @@ const Alerts = () => {
           description: "Message deleted successfully.",
         });
       } else if (alertToDelete.type === 'announcement') {
-        // Check if user is admin before deleting announcement
-        const currentUser = auth.currentUser;
-        const isAdmin = currentUser && currentUser.email === 'admin@majayjay.farm';
-        
-        if (!isAdmin) {
-          throw new Error("Only administrators can delete announcements.");
-        }
-        
-        // Optimistically update UI for announcements
-        const announcementId = alertToDelete.id.replace('announcement-', '');
-        // Note: We don't have a direct state for announcements, but the onSnapshot listener 
-        // in useAnnouncements hook will automatically update the UI when the document is deleted
-        
         // Delete announcement
+        const announcementId = alertToDelete.id.replace('announcement-', '');
         await deleteDoc(doc(db, "announcements", announcementId));
         toast({
           title: "Success",
@@ -448,8 +436,8 @@ const Alerts = () => {
                           >
                             {alert.category.charAt(0).toUpperCase() + alert.category.slice(1)}
                           </Badge>
-                          {/* Show delete button only for messages and announcements */}
-                          {(alert.type === 'message' || (alert.type === 'announcement' && isAdmin)) && (
+                          {/* Show delete button for messages and announcements */}
+                          {(alert.type === 'message' || alert.type === 'announcement') && (
                             <Button 
                               variant="ghost" 
                               size="sm"

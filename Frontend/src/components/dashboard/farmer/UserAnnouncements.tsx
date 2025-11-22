@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { db } from "@/firebaseConfig";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { Bell } from "lucide-react";
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from "firebase/firestore";
+import { Bell, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Announcement {
   id: string;
@@ -39,6 +41,24 @@ export const useAnnouncements = () => {
 
 const UserAnnouncements = () => {
   const { announcements, loading } = useAnnouncements();
+  const { toast } = useToast();
+
+  const deleteAnnouncement = async (announcementId: string) => {
+    try {
+      await deleteDoc(doc(db, "announcements", announcementId));
+      toast({
+        title: "Success",
+        description: "Announcement deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Error deleting announcement:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete announcement.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -69,9 +89,22 @@ const UserAnnouncements = () => {
           >
             <div className="flex justify-between items-start">
               <h4 className="font-medium">{announcement.title}</h4>
-              <span className="text-xs text-muted-foreground">
-                {announcement.createdAt?.toDate().toLocaleDateString()}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {announcement.createdAt?.toDate().toLocaleDateString()}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteAnnouncement(announcement.id);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <p className="text-sm mt-1 text-muted-foreground">{announcement.content}</p>
           </div>
