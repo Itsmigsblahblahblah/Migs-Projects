@@ -565,6 +565,9 @@ const MarketDemand = () => {
                           </div>
                           <div className="text-right">
                             <div className="text-lg font-bold">₱{crop.predicted_price.toFixed(2)}</div>
+                            <div className="text-xs text-muted-foreground mt-1 font-bold">
+                              ₱{(crop.predicted_price * 0.9).toFixed(2)} - ₱{(crop.predicted_price * 1.1).toFixed(2)}
+                            </div>
                             <div className="text-sm text-muted-foreground">Est. Predicted Price</div>
                           </div>
                         </div>
