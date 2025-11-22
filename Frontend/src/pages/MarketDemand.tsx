@@ -61,10 +61,10 @@ const MarketDemand = () => {
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
-  
+
   // Set the minimum forecastable year to 2025 (the first year after our data ends in 2024)
   const minForecastYear = 2025;
-  
+
   // For the current year, only show months from current month onwards
   // For future years, show all months
   const getAvailableMonths = () => {
@@ -79,13 +79,13 @@ const MarketDemand = () => {
       return [];
     }
   };
-  
+
   const months = getAvailableMonths();
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
-  
+
   // Generate year options based on range - start from 2025 (first forecastable year)
   const years = Array.from({ length: 6 }, (_, i) => Math.max(minForecastYear, yearRangeStart) + i);
 
@@ -95,23 +95,23 @@ const MarketDemand = () => {
 
   useEffect(() => {
     let result = [...marketData];
-    
+
     // Apply search filter
     if (searchTerm) {
-      result = result.filter(crop => 
+      result = result.filter(crop =>
         crop.vegetable.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     // Apply demand level filter
     if (selectedDemandLevel) {
       result = result.filter(crop => crop.demand_level.toLowerCase() === selectedDemandLevel.toLowerCase());
     }
-    
+
     // Apply sorting
     result.sort((a, b) => {
       let aValue, bValue;
-      
+
       switch (sortBy) {
         case "predicted_price":
           aValue = a.predicted_price;
@@ -133,7 +133,7 @@ const MarketDemand = () => {
           aValue = a.predicted_price;
           bValue = b.predicted_price;
       }
-      
+
       if (typeof aValue === "string" && typeof bValue === "string") {
         // String comparison
         if (sortOrder === "asc") {
@@ -150,7 +150,7 @@ const MarketDemand = () => {
         }
       }
     });
-    
+
     setFilteredData(result);
   }, [searchTerm, marketData, sortOrder, sortBy, selectedDemandLevel]);
 
@@ -163,13 +163,13 @@ const MarketDemand = () => {
       if (selectedDemandLevel) {
         url += `&demand_level=${selectedDemandLevel}`;
       }
-      
+
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch market demand data");
       }
-      
+
       const data = await response.json();
       setMarketData(data.recommended_crops || []);
     } catch (err) {
@@ -201,7 +201,7 @@ const MarketDemand = () => {
   };
 
   const navigateYearRange = (direction: 'prev' | 'next') => {
-    const newStart = direction === 'prev' 
+    const newStart = direction === 'prev'
       ? Math.max(2025, yearRangeStart - 6) // Minimum year is 2025
       : yearRangeStart + 6;
     setYearRangeStart(newStart);
@@ -262,7 +262,7 @@ const MarketDemand = () => {
               </div>
             </div>
           </div>
-          
+
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -302,7 +302,7 @@ const MarketDemand = () => {
               </div>
             </div>
           </div>
-          
+
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -345,12 +345,12 @@ const MarketDemand = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
           </div>
-          
+
           <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -374,7 +374,7 @@ const MarketDemand = () => {
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -385,9 +385,9 @@ const MarketDemand = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                 <div className="flex items-center justify-between p-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => navigateYearRange('prev')}
                     disabled={yearRangeStart <= minForecastYear}
                   >
@@ -396,9 +396,9 @@ const MarketDemand = () => {
                   <span className="text-sm font-medium">
                     {yearRangeStart} - {yearRangeStart + 5}
                   </span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => navigateYearRange('next')}
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -419,7 +419,7 @@ const MarketDemand = () => {
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -428,10 +428,10 @@ const MarketDemand = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
-                <Accordion 
-                  type="single" 
-                  collapsible 
-                  value={openAccordion} 
+                <Accordion
+                  type="single"
+                  collapsible
+                  value={openAccordion}
                   onValueChange={handleAccordionChange}
                   className="w-full"
                 >
@@ -453,9 +453,9 @@ const MarketDemand = () => {
                       </DropdownMenuItem>
                     </AccordionContent>
                   </AccordionItem>
-                  
+
                   <DropdownMenuSeparator />
-                  
+
                   <AccordionItem value="current-price" className="border-b-0">
                     <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
                       <span className="flex items-center">
@@ -474,9 +474,9 @@ const MarketDemand = () => {
                       </DropdownMenuItem>
                     </AccordionContent>
                   </AccordionItem>
-                  
+
                   <DropdownMenuSeparator />
-                  
+
                   <AccordionItem value="price-change" className="border-b-0">
                     <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
                       <span className="flex items-center">
@@ -495,9 +495,9 @@ const MarketDemand = () => {
                       </DropdownMenuItem>
                     </AccordionContent>
                   </AccordionItem>
-                  
+
                   <DropdownMenuSeparator />
-                  
+
                   <AccordionItem value="crop-name" className="border-b-0">
                     <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
                       <span className="flex items-center">
@@ -519,7 +519,7 @@ const MarketDemand = () => {
                 </Accordion>
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -531,7 +531,7 @@ const MarketDemand = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Card className="shadow-card h-full flex flex-col">
@@ -568,7 +568,7 @@ const MarketDemand = () => {
                             <div className="text-sm text-muted-foreground">Est. Predicted Price</div>
                           </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4 mt-4">
                           <div>
                             <div className="text-sm text-muted-foreground">Est. Seasonal Avg. Price</div>
@@ -589,7 +589,7 @@ const MarketDemand = () => {
               </CardContent>
             </Card>
           </div>
-          
+
           <div className="space-y-6">
             <Card className="shadow-card">
               <CardHeader>
@@ -607,7 +607,7 @@ const MarketDemand = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -656,7 +656,7 @@ const MarketDemand = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle>Market Insights</CardTitle>
@@ -670,15 +670,15 @@ const MarketDemand = () => {
                   <div>
                     <div className="text-sm text-muted-foreground">Est. Avg. Price Change</div>
                     <div className="text-2xl font-bold">
-                      {filteredData.length > 0 
-                        ? `${(filteredData.reduce((sum, crop) => sum + crop.price_change_percent, 0) / filteredData.length).toFixed(2)}%` 
+                      {filteredData.length > 0
+                        ? `${(filteredData.reduce((sum, crop) => sum + crop.price_change_percent, 0) / filteredData.length).toFixed(2)}%`
                         : '0.00%'}
                     </div>
                   </div>
                   <div>
                     <div className="text-sm text-muted-foreground">Best Opportunity</div>
                     <div className="font-medium">
-                      {filteredData.length > 0 
+                      {filteredData.length > 0
                         ? filteredData.reduce((max, crop) => crop.price_change_percent > max.price_change_percent ? crop : max, filteredData[0]).vegetable
                         : 'N/A'}
                     </div>
@@ -687,6 +687,13 @@ const MarketDemand = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Disclaimer */}
+        <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
+          <p className="text-sm">
+            <strong>Note:</strong> These forecasts are based on crops planted in Majayjay, Laguna, and historical data from previous years, processed by our AI model to generate market demand predictions.
+          </p>
         </div>
       </div>
     </Layout>
