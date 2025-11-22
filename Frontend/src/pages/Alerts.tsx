@@ -243,8 +243,11 @@ const Alerts = () => {
     try {
       // Determine the collection based on alert type
       if (alertToDelete.type === 'message') {
-        // Delete admin message
+        // Optimistically update UI
         const messageId = alertToDelete.id.replace('message-', '');
+        setAdminMessages(prev => prev.filter(msg => msg.id !== messageId));
+        
+        // Delete admin message
         await deleteDoc(doc(db, "adminMessages", messageId));
         toast({
           title: "Success",
@@ -259,8 +262,12 @@ const Alerts = () => {
           throw new Error("Only administrators can delete announcements.");
         }
         
-        // Delete announcement
+        // Optimistically update UI for announcements
         const announcementId = alertToDelete.id.replace('announcement-', '');
+        // Note: We don't have a direct state for announcements, but the onSnapshot listener 
+        // in useAnnouncements hook will automatically update the UI when the document is deleted
+        
+        // Delete announcement
         await deleteDoc(doc(db, "announcements", announcementId));
         toast({
           title: "Success",
