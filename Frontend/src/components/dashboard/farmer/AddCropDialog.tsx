@@ -53,7 +53,7 @@ const AddCropDialog = ({
     const cropDropdownRef = useRef<HTMLDivElement>(null);
 
     // Filter crops based on search term
-    const filteredCrops = cropOptions.filter(crop => 
+    const filteredCrops = cropOptions.filter(crop =>
         crop.toLowerCase().includes(cropSearchTerm.toLowerCase())
     );
 
@@ -113,8 +113,8 @@ const AddCropDialog = ({
     };
 
     const soilTypes = [
-        "Clay", "Loam", "Sandy", "Silty", "Peaty", "Chalky", 
-        "Sandy Loam", "Clay Loam", "Silty Loam", "Sandy Clay", 
+        "Clay", "Loam", "Sandy", "Silty", "Peaty", "Chalky",
+        "Sandy Loam", "Clay Loam", "Silty Loam", "Sandy Clay",
         "Silty Clay", "Organic Soil"
     ];
 
@@ -151,7 +151,7 @@ const AddCropDialog = ({
                                     >
                                         <ChevronDown className="h-4 w-4" />
                                     </button>
-                                    
+
                                     {showCropDropdown && (
                                         <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-auto">
                                             {filteredCrops.length > 0 ? (
@@ -172,7 +172,7 @@ const AddCropDialog = ({
                                         </div>
                                     )}
                                 </div>
-                                
+
                                 {showAddCropInput ? (
                                     <div className="flex gap-2">
                                         <Input
@@ -184,9 +184,9 @@ const AddCropDialog = ({
                                         <Button onClick={() => setShowAddCropInput(false)} variant="outline" size="sm">Cancel</Button>
                                     </div>
                                 ) : (
-                                    <Button 
-                                        onClick={() => setShowAddCropInput(true)} 
-                                        variant="outline" 
+                                    <Button
+                                        onClick={() => setShowAddCropInput(true)}
+                                        variant="outline"
                                         size="sm"
                                         className="w-full"
                                     >
@@ -215,7 +215,7 @@ const AddCropDialog = ({
                                     >
                                         <ChevronDown className="h-4 w-4" />
                                     </button>
-                                    
+
                                     {showCropDropdown && (
                                         <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-auto">
                                             {filteredCrops.length > 0 ? (
@@ -239,7 +239,7 @@ const AddCropDialog = ({
                             </div>
                         )}
                     </div>
-                    
+
                     <div className="space-y-2">
                         <Label htmlFor="soilType">Soil Type *</Label>
                         <Select onValueChange={handleSoilTypeChange} value={newCrop.soilType}>
@@ -255,7 +255,7 @@ const AddCropDialog = ({
                             </SelectContent>
                         </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                         <Label htmlFor="landArea">Land Area (hectares) *</Label>
                         <Input
@@ -267,7 +267,7 @@ const AddCropDialog = ({
                             placeholder="e.g., 2.5"
                         />
                     </div>
-                    
+
                     <div className="space-y-2">
                         <Label htmlFor="plantedDate">Date of Planting *</Label>
                         <Input
@@ -279,7 +279,7 @@ const AddCropDialog = ({
                             min={new Date().toLocaleDateString('en-CA')} // Prevent past dates (using local date)
                         />
                     </div>
-                    
+
                     <div className="space-y-2">
                         <Label htmlFor="puhunan">Capital (PHP) *</Label>
                         <Input
