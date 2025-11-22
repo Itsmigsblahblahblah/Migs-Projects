@@ -118,7 +118,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Capital</p>
                             <InfoTooltip content="The initial investment made for planting and growing this crop" />
                         </div>
-                        <p className="font-bold text-lg">₱{Number(crop.puhunan).toFixed(2)}</p>
+                        <p className="font-bold text-lg">₱{Number(crop.puhunan).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
 
                     <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
@@ -232,7 +232,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-lg">
-                                    ₱{Number(insights.market.averagePrice || 0).toFixed(2)}
+                                    ₱{Number(insights.market.averagePrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                                 {getTrendIcon(insights.market.trend)}
                             </div>

@@ -425,7 +425,7 @@ const CropDetails = () => {
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Capital</p>
-                                <p className="font-medium">₱{Number(crop.puhunan).toFixed(2)}</p>
+                                <p className="font-medium">₱{Number(crop.puhunan).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             </div>
                         </div>
                     </div>
