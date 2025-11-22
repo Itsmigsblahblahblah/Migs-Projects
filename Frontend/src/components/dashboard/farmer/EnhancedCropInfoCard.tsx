@@ -118,7 +118,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Capital</p>
                             <InfoTooltip content="The initial investment made for planting and growing this crop" />
                         </div>
-                        <p className="font-bold text-lg">₱{Number(crop.puhunan).toLocaleString()}</p>
+                        <p className="font-bold text-lg">₱{Number(crop.puhunan).toFixed(2)}</p>
                     </div>
 
                     <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
@@ -141,7 +141,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                             });
                                         }
                                     }
-                                    
+
                                     // Handle Firestore Timestamp
                                     if (crop.plantedDate?.toDate) {
                                         return crop.plantedDate.toDate().toLocaleDateString('en-US', {
@@ -150,7 +150,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                             day: 'numeric'
                                         });
                                     }
-                                    
+
                                     // Handle JavaScript Date objects
                                     if (crop.plantedDate instanceof Date) {
                                         return crop.plantedDate.toLocaleDateString('en-US', {
@@ -159,7 +159,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                             day: 'numeric'
                                         });
                                     }
-                                    
+
                                     return 'Unknown date';
                                 } catch (e) {
                                     return 'Unknown date';
@@ -178,7 +178,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                             {(() => {
                                 try {
                                     let plantedDate;
-                                    
+
                                     // Handle string dates (YYYY-MM-DD format)
                                     if (typeof crop.plantedDate === 'string') {
                                         // Parse date in local timezone to avoid UTC conversion issues
@@ -193,17 +193,17 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                     else if (crop.plantedDate instanceof Date) {
                                         plantedDate = crop.plantedDate;
                                     }
-                                    
+
                                     if (plantedDate && !isNaN(plantedDate.getTime())) {
                                         const now = new Date();
                                         const diffTime = now.getTime() - plantedDate.getTime();
                                         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                                        
+
                                         // Ensure we never show negative days
                                         // On planting date = 0 days, day after = 1 day, etc.
                                         return Math.max(0, diffDays);
                                     }
-                                    
+
                                     return 'N/A';
                                 } catch (e) {
                                     return 'N/A';
@@ -232,7 +232,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-lg">
-                                    ₱{insights.market.averagePrice?.toFixed(2) || 'N/A'}
+                                    ₱{Number(insights.market.averagePrice || 0).toFixed(2)}
                                 </span>
                                 {getTrendIcon(insights.market.trend)}
                             </div>
