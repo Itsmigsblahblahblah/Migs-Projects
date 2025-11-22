@@ -135,18 +135,7 @@ export const useCropManagement = () => {
             return;
         }
 
-        // Validate planting date is not in the past
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Set to start of day for comparison
-        const plantedDate = new Date(editCrop.plantedDate);
-        if (plantedDate < today) {
-            toast({
-                title: "Invalid Planting Date",
-                description: "Planting date cannot be in the past. Please select today or a future date.",
-                variant: "destructive",
-            });
-            return;
-        }
+        // Note: Planting date validation is removed for editing since the field is now read-only
 
         try {
             if (!selectedCropId) {

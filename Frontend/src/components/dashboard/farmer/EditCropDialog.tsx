@@ -109,9 +109,12 @@ const EditCropDialog = ({
                             name="plantedDate"
                             type="date"
                             value={editCrop.plantedDate}
-                            onChange={handleEditCropInputChange}
-                            min={new Date().toLocaleDateString('en-CA')} // Prevent past dates (using local date)
+                            readOnly
+                            className="cursor-not-allowed bg-muted"
                         />
+                        <p className="text-xs text-muted-foreground">
+                            Planting date cannot be modified once set.
+                        </p>
                     </div>
                     
                     <div className="space-y-2">
