@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { User, Upload, Trash2, Clock, CheckCircle, XCircle, ChevronDown } from "lucide-react";
+import LoadingSpinner from "@/components/shared/LoadingSpinner";
 
 interface EditProfileDialogProps {
     open: boolean;
@@ -50,6 +51,7 @@ const EditProfileDialog = ({
     getDeletionButtonText
 }: EditProfileDialogProps) => {
     const [isUploading, setIsUploading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     
     // Dropdown states for home address
     const [showHomeDropdown, setShowHomeDropdown] = useState(false);
@@ -157,6 +159,16 @@ const EditProfileDialog = ({
         setIsUploading(false);
     };
 
+    const handleSaveChanges = async () => {
+        setIsSaving(true);
+        try {
+            await handleUpdateProfile();
+            onOpenChange(false);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -193,7 +205,7 @@ const EditProfileDialog = ({
                                 variant="outline"
                                 onClick={() => document.getElementById('profile-image')?.click()}
                                 className="flex items-center gap-2"
-                                disabled={isUploading}
+                                disabled={isUploading || isSaving}
                             >
                                 <Upload className="h-4 w-4" />
                                 {isUploading ? 'Uploading...' : farmerProfile.photoURL || profileImageFile ? 'Change Photo' : 'Upload Photo'}
@@ -211,6 +223,7 @@ const EditProfileDialog = ({
                                 value={farmerProfile.fullName}
                                 onChange={handleProfileInputChange}
                                 placeholder="Enter your full name"
+                                disabled={isSaving}
                             />
                         </div>
 
@@ -222,6 +235,7 @@ const EditProfileDialog = ({
                                 value={farmerProfile.contactNumber}
                                 onChange={handleProfileInputChange}
                                 placeholder="e.g., 09123456789"
+                                disabled={isSaving}
                             />
                         </div>
                     </div>
@@ -253,11 +267,13 @@ const EditProfileDialog = ({
                                     placeholder="Select or type your barangay"
                                     className="pr-10"
                                     autoComplete="off"
+                                    disabled={isSaving}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowHomeDropdown(!showHomeDropdown)}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                    disabled={isSaving}
                                 >
                                     <ChevronDown className="h-4 w-4" />
                                 </button>
@@ -297,11 +313,13 @@ const EditProfileDialog = ({
                                     placeholder="Select or type your barangay"
                                     className="pr-10"
                                     autoComplete="off"
+                                    disabled={isSaving}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowFarmDropdown(!showFarmDropdown)}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                    disabled={isSaving}
                                 >
                                     <ChevronDown className="h-4 w-4" />
                                 </button>
@@ -338,6 +356,7 @@ const EditProfileDialog = ({
                             value={farmerProfile.farmArea}
                             onChange={handleProfileInputChange}
                             placeholder="e.g., 2.5 hectares"
+                            disabled={isSaving}
                         />
                     </div>
                 </div>
@@ -346,23 +365,33 @@ const EditProfileDialog = ({
                         variant="destructive"
                         className="w-full sm:w-auto"
                         onClick={onRequestAccountDeletion}
-                        disabled={isDeletionButtonDisabled}
+                        disabled={isDeletionButtonDisabled || isSaving}
                     >
                         <Trash2 className="h-4 w-4 mr-2" />
                         {getDeletionButtonText()}
                     </Button>
                     <div className="flex gap-2 w-full sm:w-auto">
-                        <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => onOpenChange(false)} 
+                            className="flex-1"
+                            disabled={isSaving}
+                        >
                             Cancel
                         </Button>
                         <Button
-                            className="flex-1"
-                            onClick={async () => {
-                                await handleUpdateProfile();
-                                onOpenChange(false);
-                            }}
+                            className="flex-1 flex items-center gap-2"
+                            onClick={handleSaveChanges}
+                            disabled={isSaving}
                         >
-                            Save Changes
+                            {isSaving ? (
+                                <>
+                                    <LoadingSpinner size="sm" className="text-white" />
+                                    Saving...
+                                </>
+                            ) : (
+                                "Save Changes"
+                            )}
                         </Button>
                     </div>
                 </DialogFooter>
