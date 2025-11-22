@@ -127,5 +127,14 @@ service cloud.firestore {
                        request.auth.token.email != 'admin@majayjay.farm';
     }
     
+    // User Read Status Collection - New collection to track which announcements/alerts users have read
+    match /userReadStatus/{userId}/{alertType}/{alertId} {
+      // Users can create/read/update their own read status
+      allow create, read, update: if request.auth != null && request.auth.uid == userId;
+      
+      // Admins can read all read status records
+      allow read: if request.auth != null && 
+                     request.auth.token.email == 'admin@majayjay.farm';
+    }
   }
 }

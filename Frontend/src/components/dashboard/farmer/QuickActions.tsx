@@ -48,7 +48,7 @@ interface QuickActionsProps {
 const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, userId }: QuickActionsProps) => {
     const navigate = useNavigate();
     const [unreadMessages, setUnreadMessages] = useState(0);
-    const { announcements, loading: announcementsLoading } = useAnnouncements();
+    const { announcements, loading: announcementsLoading, unreadCount: unreadAnnouncements } = useAnnouncements();
     const { weatherAlerts, loading: weatherLoading } = useWeatherAlerts();
 
     // Fetch unread admin messages count
@@ -72,12 +72,12 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, use
     const totalUnreadAlerts = () => {
         let count = unreadMessages; // Admin messages
         
-        // Add unread announcements (in a real app, you'd track which ones are actually unread)
+        // Add unread announcements
         if (!announcementsLoading) {
-            count += announcements.length;
+            count += unreadAnnouncements;
         }
         
-        // Add weather alerts
+        // Add weather alerts (these are always considered unread since they're dynamic)
         if (!weatherLoading) {
             count += weatherAlerts.length;
         }

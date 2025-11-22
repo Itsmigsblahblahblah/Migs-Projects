@@ -13,9 +13,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, ArrowLeft, Trash2 } from "lucide-react";
+import { X, ArrowLeft, Trash2, Check } from "lucide-react";
 import { db, auth } from "@/firebaseConfig";
-import { collection, query, where, orderBy, onSnapshot, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import AdminMessages from "@/components/dashboard/farmer/AdminMessages";
 import { useAnnouncements } from "@/components/dashboard/farmer/UserAnnouncements";
@@ -36,6 +36,7 @@ interface AlertItem {
   category: AlertCategory;
   date: string;
   type: string;
+  read?: boolean; // Add read status
 }
 
 interface AdminMessage {
@@ -61,10 +62,30 @@ const Alerts = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [alertToDelete, setAlertToDelete] = useState<AlertItem | null>(null);
+  const [userReadStatus, setUserReadStatus] = useState<Record<string, boolean>>({}); // Track user read status
   
   // Check if current user is admin
   const currentUser = auth.currentUser;
   const isAdmin = currentUser && currentUser.email === 'admin@majayjay.farm';
+
+  // Fetch user read status
+  useEffect(() => {
+    if (!userId || userId === 'default-user') return;
+
+    const readStatusQuery = query(
+      collection(db, "userReadStatus", userId, "announcements")
+    );
+
+    const unsubscribe = onSnapshot(readStatusQuery, (snapshot) => {
+      const readStatus: Record<string, boolean> = {};
+      snapshot.forEach((doc) => {
+        readStatus[doc.id] = true;
+      });
+      setUserReadStatus(readStatus);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
 
   // Fetch admin messages
   useEffect(() => {
@@ -155,6 +176,38 @@ const Alerts = () => {
     });
   }, [userId, toast]);
 
+  // Function to mark an alert as read
+  const markAsRead = async (alert: AlertItem) => {
+    try {
+      if (alert.type === 'message') {
+        // For admin messages, update the message document
+        const messageId = alert.id.replace('message-', '');
+        await setDoc(doc(db, "adminMessages", messageId), {
+          read: true
+        }, { merge: true });
+      } else if (alert.type === 'announcement') {
+        // For announcements, create a read status record
+        const announcementId = alert.id.replace('announcement-', '');
+        await setDoc(doc(db, "userReadStatus", userId, "announcements", announcementId), {
+          read: true,
+          timestamp: new Date()
+        });
+      }
+      
+      toast({
+        title: "Success",
+        description: "Alert marked as read.",
+      });
+    } catch (error) {
+      console.error("Error marking alert as read:", error);
+      toast({
+        title: "Error",
+        description: "Failed to mark alert as read.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Function to transform weather alerts to our alert format
   const transformWeatherAlerts = (): AlertItem[] => {
     if (weatherLoading || weatherError || !weatherAlerts) return [];
@@ -165,7 +218,8 @@ const Alerts = () => {
       content: alert.description,
       category: 'critical', // Weather alerts are always critical
       date: alert.date || new Date().toLocaleDateString(),
-      type: 'weather'
+      type: 'weather',
+      read: true // Weather alerts are considered read by default
     }));
   };
 
@@ -173,14 +227,20 @@ const Alerts = () => {
   const transformAnnouncements = (): AlertItem[] => {
     if (announcementsLoading || !announcements) return [];
     
-    return announcements.map(announcement => ({
-      id: `announcement-${announcement.id}`,
-      title: announcement.title,
-      content: announcement.content,
-      category: 'informational', // Announcements are typically informational
-      date: announcement.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
-      type: 'announcement'
-    }));
+    return announcements.map(announcement => {
+      const announcementId = announcement.id;
+      const isRead = userReadStatus[announcementId] || false;
+      
+      return {
+        id: `announcement-${announcementId}`,
+        title: announcement.title,
+        content: announcement.content,
+        category: 'informational', // Announcements are typically informational
+        date: announcement.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
+        type: 'announcement',
+        read: isRead
+      };
+    });
   };
 
   // Function to transform admin messages to our alert format
@@ -193,7 +253,8 @@ const Alerts = () => {
       content: message.message,
       category: 'messages',
       date: message.timestamp?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
-      type: 'message'
+      type: 'message',
+      read: message.read || false
     }));
   };
 
@@ -215,11 +276,11 @@ const Alerts = () => {
   const countAlertsByCategory = () => {
     const allAlerts = getAllAlerts();
     return {
-      all: allAlerts.length,
-      critical: allAlerts.filter(a => a.category === 'critical').length,
-      warning: allAlerts.filter(a => a.category === 'warning').length,
-      informational: allAlerts.filter(a => a.category === 'informational').length,
-      messages: allAlerts.filter(a => a.category === 'messages').length
+      all: allAlerts.filter(a => !a.read).length,
+      critical: allAlerts.filter(a => a.category === 'critical' && !a.read).length,
+      warning: allAlerts.filter(a => a.category === 'warning' && !a.read).length,
+      informational: allAlerts.filter(a => a.category === 'informational' && !a.read).length,
+      messages: allAlerts.filter(a => a.category === 'messages' && !a.read).length
     };
   };
 
@@ -227,6 +288,11 @@ const Alerts = () => {
   const handleAlertClick = (alert: AlertItem) => {
     setSelectedAlert(alert);
     setIsDialogOpen(true);
+    
+    // Mark as read when opening the alert
+    if (!alert.read) {
+      markAsRead(alert);
+    }
   };
 
   // Function to handle delete button click
@@ -234,6 +300,12 @@ const Alerts = () => {
     e.stopPropagation(); // Prevent the alert click handler from firing
     setAlertToDelete(alert);
     setIsDeleteDialogOpen(true);
+  };
+
+  // Function to handle mark as read button click
+  const handleMarkAsReadClick = (e: React.MouseEvent, alert: AlertItem) => {
+    e.stopPropagation(); // Prevent the alert click handler from firing
+    markAsRead(alert);
   };
 
   // Function to confirm deletion
@@ -413,7 +485,7 @@ const Alerts = () => {
                       alert.category === 'warning' ? 'bg-yellow-50 border-yellow-200' :
                       alert.category === 'messages' ? 'bg-green-50 border-green-200' :
                       'bg-blue-50 border-blue-200'
-                    }`}
+                    } ${alert.read ? 'opacity-75' : ''}`}
                     onClick={() => handleAlertClick(alert)}
                   >
                     <span className="text-2xl">
@@ -436,17 +508,30 @@ const Alerts = () => {
                           >
                             {alert.category.charAt(0).toUpperCase() + alert.category.slice(1)}
                           </Badge>
-                          {/* Show delete button for messages and announcements */}
+                          {/* Show action buttons for messages and announcements */}
                           {(alert.type === 'message' || alert.type === 'announcement') && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={(e) => handleDeleteClick(e, alert)}
-                              className="h-6 w-6 p-0"
-                              title={alert.type === 'message' ? 'Delete message' : 'Delete announcement'}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-1">
+                              {!alert.read && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={(e) => handleMarkAsReadClick(e, alert)}
+                                  className="h-6 w-6 p-0"
+                                  title="Mark as read"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={(e) => handleDeleteClick(e, alert)}
+                                className="h-6 w-6 p-0"
+                                title={alert.type === 'message' ? 'Delete message' : 'Delete announcement'}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </div>

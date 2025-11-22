@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { db } from "@/firebaseConfig";
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc } from "firebase/firestore";
-import { Bell, Trash2 } from "lucide-react";
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc, setDoc } from "firebase/firestore";
+import { Bell, Trash2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Announcement {
@@ -19,6 +19,27 @@ export const useAnnouncements = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userReadStatus, setUserReadStatus] = useState<Record<string, boolean>>({});
+  const userId = localStorage.getItem('userId') || 'default-user';
+
+  // Fetch user read status
+  useEffect(() => {
+    if (!userId || userId === 'default-user') return;
+
+    const readStatusQuery = query(
+      collection(db, "userReadStatus", userId, "announcements")
+    );
+
+    const unsubscribe = onSnapshot(readStatusQuery, (snapshot) => {
+      const readStatus: Record<string, boolean> = {};
+      snapshot.forEach((doc) => {
+        readStatus[doc.id] = true;
+      });
+      setUserReadStatus(readStatus);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
 
   // Fetch announcements
   useEffect(() => {
@@ -29,19 +50,28 @@ export const useAnnouncements = () => {
         announcementsData.push({ id: doc.id, ...doc.data() } as Announcement);
       });
       setAnnouncements(announcementsData);
-      setUnreadCount(announcementsData.length); // In a real app, you'd track which ones are actually unread
+      
+      // Calculate unread count based on read status
+      if (userId && userId !== 'default-user') {
+        const unread = announcementsData.filter(announcement => !userReadStatus[announcement.id]).length;
+        setUnreadCount(unread);
+      } else {
+        setUnreadCount(announcementsData.length);
+      }
+      
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [userReadStatus, userId]);
 
-  return { announcements, loading, unreadCount };
+  return { announcements, loading, unreadCount, userReadStatus };
 };
 
 const UserAnnouncements = () => {
-  const { announcements, loading } = useAnnouncements();
+  const { announcements, loading, userReadStatus } = useAnnouncements();
   const { toast } = useToast();
+  const userId = localStorage.getItem('userId') || 'default-user';
 
   const deleteAnnouncement = async (announcementId: string) => {
     try {
@@ -55,6 +85,26 @@ const UserAnnouncements = () => {
       toast({
         title: "Error",
         description: "Failed to delete announcement.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const markAsRead = async (announcementId: string) => {
+    try {
+      await setDoc(doc(db, "userReadStatus", userId, "announcements", announcementId), {
+        read: true,
+        timestamp: new Date()
+      });
+      toast({
+        title: "Success",
+        description: "Announcement marked as read.",
+      });
+    } catch (error) {
+      console.error("Error marking announcement as read:", error);
+      toast({
+        title: "Error",
+        description: "Failed to mark announcement as read.",
         variant: "destructive",
       });
     }
@@ -82,33 +132,53 @@ const UserAnnouncements = () => {
       </div>
       
       <div className="space-y-3">
-        {announcements.slice(0, 3).map((announcement) => (
-          <div 
-            key={announcement.id} 
-            className="border rounded-lg p-3 bg-blue-50 border-blue-200"
-          >
-            <div className="flex justify-between items-start">
-              <h4 className="font-medium">{announcement.title}</h4>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
-                  {announcement.createdAt?.toDate().toLocaleDateString()}
-                </span>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteAnnouncement(announcement.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+        {announcements.slice(0, 3).map((announcement) => {
+          const isRead = userReadStatus[announcement.id] || false;
+          
+          return (
+            <div 
+              key={announcement.id} 
+              className={`border rounded-lg p-3 ${isRead ? 'bg-blue-50 border-blue-200' : 'bg-blue-100 border-blue-300'}`}
+            >
+              <div className="flex justify-between items-start">
+                <h4 className="font-medium">{announcement.title}</h4>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {announcement.createdAt?.toDate().toLocaleDateString()}
+                  </span>
+                  <div className="flex gap-1">
+                    {!isRead && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAsRead(announcement.id);
+                        }}
+                        title="Mark as read"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteAnnouncement(announcement.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
+              <p className="text-sm mt-1 text-muted-foreground">{announcement.content}</p>
             </div>
-            <p className="text-sm mt-1 text-muted-foreground">{announcement.content}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
