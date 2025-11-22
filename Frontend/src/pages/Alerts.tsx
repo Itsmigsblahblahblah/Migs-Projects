@@ -15,7 +15,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, ArrowLeft, Trash2, Check } from "lucide-react";
 import { db, auth } from "@/firebaseConfig";
-import { collection, query, where, orderBy, onSnapshot, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot, getDocs, deleteDoc, doc, setDoc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import AdminMessages from "@/components/dashboard/farmer/AdminMessages";
 import { useAnnouncements } from "@/components/dashboard/farmer/UserAnnouncements";
@@ -182,9 +182,14 @@ const Alerts = () => {
       if (alert.type === 'message') {
         // For admin messages, update the message document
         const messageId = alert.id.replace('message-', '');
-        await setDoc(doc(db, "adminMessages", messageId), {
+        await updateDoc(doc(db, "adminMessages", messageId), {
           read: true
-        }, { merge: true });
+        });
+        
+        // Update local state immediately
+        setAdminMessages(prev => prev.map(msg => 
+          msg.id === messageId ? {...msg, read: true} : msg
+        ));
       } else if (alert.type === 'announcement') {
         // For announcements, create a read status record
         const announcementId = alert.id.replace('announcement-', '');
@@ -192,6 +197,17 @@ const Alerts = () => {
           read: true,
           timestamp: new Date()
         });
+        
+        // Update local read status immediately
+        setUserReadStatus(prev => ({
+          ...prev,
+          [announcementId]: true
+        }));
+      }
+      
+      // Also mark as read in the selected alert if it's the same one
+      if (selectedAlert && selectedAlert.id === alert.id) {
+        setSelectedAlert(prev => prev ? {...prev, read: true} : null);
       }
       
       toast({
@@ -329,6 +345,14 @@ const Alerts = () => {
         // Delete announcement
         const announcementId = alertToDelete.id.replace('announcement-', '');
         await deleteDoc(doc(db, "announcements", announcementId));
+        
+        // Also remove from read status if it exists
+        try {
+          await deleteDoc(doc(db, "userReadStatus", userId, "announcements", announcementId));
+        } catch (e) {
+          // Ignore if read status doesn't exist
+        }
+        
         toast({
           title: "Success",
           description: "Announcement deleted successfully.",

@@ -65,11 +65,11 @@ export const useAnnouncements = () => {
     return () => unsubscribe();
   }, [userReadStatus, userId]);
 
-  return { announcements, loading, unreadCount, userReadStatus };
+  return { announcements, loading, unreadCount, userReadStatus, setUserReadStatus };
 };
 
 const UserAnnouncements = () => {
-  const { announcements, loading, userReadStatus } = useAnnouncements();
+  const { announcements, loading, userReadStatus, setUserReadStatus } = useAnnouncements();
   const { toast } = useToast();
   const userId = localStorage.getItem('userId') || 'default-user';
 
@@ -96,6 +96,13 @@ const UserAnnouncements = () => {
         read: true,
         timestamp: new Date()
       });
+      
+      // Update local read status immediately
+      setUserReadStatus(prev => ({
+        ...prev,
+        [announcementId]: true
+      }));
+      
       toast({
         title: "Success",
         description: "Announcement marked as read.",
