@@ -2,9 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import { Calendar, Mail, Home, MapPin, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Farmer {
     uid: string;
@@ -26,6 +28,7 @@ interface FarmersListProps {
 const FarmersList = ({ farmers }: FarmersListProps) => {
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState("");
     const farmersPerPage = 10;
 
     const getInitials = (name: string) => {
@@ -50,11 +53,25 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
         }
     };
 
+    // Filter farmers based on search term
+    const filteredFarmers = farmers.filter(farmer =>
+        farmer.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        farmer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (farmer.contactNumber && farmer.contactNumber.includes(searchTerm)) ||
+        (farmer.homeAddress && farmer.homeAddress.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (farmer.farmAddress && farmer.farmAddress.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    // Reset to first page when search term changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
     // Pagination logic
-    const totalPages = Math.ceil(farmers.length / farmersPerPage);
+    const totalPages = Math.ceil(filteredFarmers.length / farmersPerPage);
     const startIndex = (currentPage - 1) * farmersPerPage;
     const endIndex = startIndex + farmersPerPage;
-    const currentFarmers = farmers.slice(startIndex, endIndex);
+    const currentFarmers = filteredFarmers.slice(startIndex, endIndex);
 
     return (
         <Card className="shadow-card h-full flex flex-col">
@@ -62,7 +79,16 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                 <div className="flex items-center justify-between">
                     <div>
                         <CardTitle>Registered Farmers</CardTitle>
-                        <CardDescription>List of all farmers registered in the system ({farmers.length} total)</CardDescription>
+                        <CardDescription>List of all farmers registered in the system ({filteredFarmers.length} total)</CardDescription>
+                    </div>
+                    <div className="relative w-64">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search farmers..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10"
+                        />
                     </div>
                 </div>
             </CardHeader>
@@ -130,7 +156,7 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                             <div className="border-t pt-1 px-4 mt-auto" style={{ paddingBottom: '0px' }}>
                                 <div className="flex items-center justify-between">
                                     <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
-                                        Showing {startIndex + 1} to {Math.min(endIndex, farmers.length)} of {farmers.length} farmers
+                                        Showing {startIndex + 1} to {Math.min(endIndex, filteredFarmers.length)} of {filteredFarmers.length} farmers
                                     </div>
                                     <div className="flex space-x-1">
                                         <Button
