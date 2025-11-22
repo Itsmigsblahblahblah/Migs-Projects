@@ -56,6 +56,8 @@ const MarketDemand = () => {
   const [selectedYear, setSelectedYear] = useState<number>(2025); // Default to 2025 instead of current year
   const [yearRangeStart, setYearRangeStart] = useState<number>(2025); // Start from 2025 instead of current year
   const [selectedDemandLevel, setSelectedDemandLevel] = useState<string | null>(null); // New state for demand level filtering
+  const [currentPage, setCurrentPage] = useState(1); // Pagination state
+  const cropsPerPage = 10; // Number of crops per page
 
   // Generate month options based on selected year
   const currentDate = new Date();
@@ -152,6 +154,7 @@ const MarketDemand = () => {
     });
 
     setFilteredData(result);
+    setCurrentPage(1); // Reset to first page when filters change
   }, [searchTerm, marketData, sortOrder, sortBy, selectedDemandLevel]);
 
   const fetchMarketData = async () => {
@@ -541,55 +544,162 @@ const MarketDemand = () => {
                   Recommended Crops for {getMonthName(selectedMonth)} {selectedYear}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-grow overflow-y-auto" style={{ maxHeight: 'calc(100vh - 100px)' }}>
-                {filteredData.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground">
-                    <TrendingUp className="h-12 w-12 mb-4" />
-                    <p className="text-lg font-medium mb-2">No market data available</p>
-                    <p className="text-sm">
-                      Try adjusting your filters or check back later for updated market forecasts.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {filteredData.map((crop, index) => (
-                      <div key={index} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold text-lg">{crop.vegetable}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge className={getDemandLevelColor(crop.demand_level)}>
-                                {crop.demand_level} demand
-                              </Badge>
+              <div className="flex-grow flex flex-col">
+                <CardContent className="flex-grow overflow-y-auto" style={{ maxHeight: 'calc(100vh - 150px)' }}>
+                  {filteredData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground">
+                      <TrendingUp className="h-12 w-12 mb-4" />
+                      <p className="text-lg font-medium mb-2">No market data available</p>
+                      <p className="text-sm">
+                        Try adjusting your filters or check back later for updated market forecasts.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 pb-0">
+                      {filteredData.slice((currentPage - 1) * cropsPerPage, currentPage * cropsPerPage).map((crop, index) => (
+                        <div key={index} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold text-lg">{crop.vegetable}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge className={getDemandLevelColor(crop.demand_level)}>
+                                  {crop.demand_level} demand
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold">₱{crop.predicted_price.toFixed(2)}</div>
+                              <div className="text-xs text-muted-foreground mt-1 font-bold">
+                                ₱{(crop.predicted_price * 0.9).toFixed(2)} - ₱{(crop.predicted_price * 1.1).toFixed(2)}
+                              </div>
+                              <div className="text-sm text-muted-foreground">Est. Predicted Price</div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold">₱{crop.predicted_price.toFixed(2)}</div>
-                            <div className="text-xs text-muted-foreground mt-1 font-bold">
-                              ₱{(crop.predicted_price * 0.9).toFixed(2)} - ₱{(crop.predicted_price * 1.1).toFixed(2)}
-                            </div>
-                            <div className="text-sm text-muted-foreground">Est. Predicted Price</div>
-                          </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                          <div>
-                            <div className="text-sm text-muted-foreground">Est. Seasonal Avg. Price</div>
-                            <div className="font-medium">₱{crop.current_avg_price.toFixed(2)}</div>
-                          </div>
-                          <div>
-                            <div className="text-sm text-muted-foreground">Est. Price Change</div>
-                            <div className="font-medium flex items-center gap-1">
-                              {getPriceChangeIcon(crop.price_change)}
-                              {Math.abs(crop.price_change_percent).toFixed(2)}%
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div>
+                              <div className="text-sm text-muted-foreground">Est. Seasonal Avg. Price</div>
+                              <div className="font-medium">₱{crop.current_avg_price.toFixed(2)}</div>
+                            </div>
+                            <div>
+                              <div className="text-sm text-muted-foreground">Est. Price Change</div>
+                              <div className="font-medium flex items-center gap-1">
+                                {getPriceChangeIcon(crop.price_change)}
+                                {Math.abs(crop.price_change_percent).toFixed(2)}%
+                              </div>
                             </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+
+                {/* Pagination Controls */}
+                {filteredData.length > cropsPerPage && (
+                  <div className="border-t pt-1 px-4" style={{ paddingBottom: '15px', marginTop: 'auto' }}>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
+                        Showing {(currentPage - 1) * cropsPerPage + 1} to {Math.min(currentPage * cropsPerPage, filteredData.length)} of {filteredData.length} crops
                       </div>
-                    ))}
+                      <div className="flex space-x-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="h-8 px-3 text-sm"
+                        >
+                          Previous
+                        </Button>
+
+                        {/* Page Number Buttons */}
+                        {(() => {
+                          const totalPages = Math.ceil(filteredData.length / cropsPerPage);
+                          const pageButtons = [];
+                          // Show more pages (7 instead of 5) to reduce ellipsis
+                          let startPage = Math.max(1, currentPage - 3);
+                          let endPage = Math.min(totalPages, startPage + 6);
+
+                          // Adjust startPage if we're near the end
+                          if (endPage - startPage < 6) {
+                            startPage = Math.max(1, endPage - 6);
+                          }
+
+                          // First page button
+                          if (startPage > 1) {
+                            pageButtons.push(
+                              <Button
+                                key={1}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(1)}
+                                className="h-8 w-8 p-0 text-sm"
+                              >
+                                1
+                              </Button>
+                            );
+                            // Only show ellipsis if there's a significant gap
+                            if (startPage > 2) {
+                              pageButtons.push(
+                                <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                              );
+                            }
+                          }
+
+                          // Page number buttons
+                          for (let i = startPage; i <= endPage; i++) {
+                            pageButtons.push(
+                              <Button
+                                key={i}
+                                variant={currentPage === i ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(i)}
+                                className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                              >
+                                {i}
+                              </Button>
+                            );
+                          }
+
+                          // Last page button
+                          if (endPage < totalPages) {
+                            // Only show ellipsis if there's a significant gap
+                            if (endPage < totalPages - 1) {
+                              pageButtons.push(
+                                <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                              );
+                            }
+                            pageButtons.push(
+                              <Button
+                                key={totalPages}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(totalPages)}
+                                className="h-8 w-8 p-0 text-sm"
+                              >
+                                {totalPages}
+                              </Button>
+                            );
+                          }
+
+                          return pageButtons;
+                        })()}
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredData.length / cropsPerPage)))}
+                          disabled={currentPage === Math.ceil(filteredData.length / cropsPerPage)}
+                          className="h-8 px-3 text-sm"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 )}
-              </CardContent>
+              </div>
             </Card>
           </div>
 
