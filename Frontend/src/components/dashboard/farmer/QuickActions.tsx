@@ -23,6 +23,8 @@ import {
 import { useEffect, useState } from "react";
 import { db } from "@/firebaseConfig";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { useAnnouncements } from "./UserAnnouncements";
+import { useWeatherAlerts } from "@/hooks/custom/useWeatherAlerts";
 
 interface FarmerProfile {
     fullName: string;
@@ -46,6 +48,8 @@ interface QuickActionsProps {
 const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, userId }: QuickActionsProps) => {
     const navigate = useNavigate();
     const [unreadMessages, setUnreadMessages] = useState(0);
+    const { announcements, loading: announcementsLoading } = useAnnouncements();
+    const { weatherAlerts, loading: weatherLoading } = useWeatherAlerts();
 
     // Fetch unread admin messages count
     useEffect(() => {
@@ -63,6 +67,23 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, use
 
         return () => unsubscribe();
     }, [userId]);
+
+    // Calculate total unread alerts
+    const totalUnreadAlerts = () => {
+        let count = unreadMessages; // Admin messages
+        
+        // Add unread announcements (in a real app, you'd track which ones are actually unread)
+        if (!announcementsLoading) {
+            count += announcements.length;
+        }
+        
+        // Add weather alerts
+        if (!weatherLoading) {
+            count += weatherAlerts.length;
+        }
+        
+        return count;
+    };
 
     const handlePrescribeCrop = () => {
         // Pass the weatherData and farmerProfile as state when navigating
@@ -106,9 +127,9 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, use
                     <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/alerts')}>
                         <div className="relative">
                             <Bell className="h-5 w-5" />
-                            {unreadMessages > 0 && (
+                            {totalUnreadAlerts() > 0 && (
                                 <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                                    {unreadMessages}
+                                    {totalUnreadAlerts()}
                                 </Badge>
                             )}
                         </div>
