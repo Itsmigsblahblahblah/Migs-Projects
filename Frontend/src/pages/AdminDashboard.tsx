@@ -4,13 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
-import { Settings, Users, FileText, BarChart3, Bell } from "lucide-react";
+import { Settings, Users, FileText, BarChart3, Bell, Leaf } from "lucide-react";
 import AdminStatsOverview from "@/components/dashboard/admin/AdminStatsOverview";
 import FarmersList from "@/components/dashboard/admin/FarmersList";
 import DeletionRequests from "@/components/dashboard/admin/DeletionRequests";
 import AnalyticsCharts from "@/components/dashboard/admin/AnalyticsCharts";
 import ReportsList from "@/components/dashboard/admin/ReportsList";
 import AdminAnnouncements from "@/components/dashboard/admin/AdminAnnouncements";
+import CropManagement from "@/components/dashboard/admin/CropManagement";
 import { useAdminDashboard } from "@/hooks/custom/useAdminDashboard";
 
 const AdminDashboard = () => {
@@ -83,7 +84,7 @@ const AdminDashboard = () => {
         {/* Quick Actions Style Navigation */}
         <Card className="shadow-card">
           <CardContent className="pt-6">
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
               <Button
                 variant={activeSection === "farmers" ? "default" : "outline"}
                 className="h-20 flex flex-col gap-2"
@@ -123,6 +124,14 @@ const AdminDashboard = () => {
               >
                 <Bell className="h-5 w-5" />
                 <span>Announcements</span>
+              </Button>
+              <Button
+                variant={activeSection === "crop-management" ? "default" : "outline"}
+                className="h-20 flex flex-col gap-2"
+                onClick={() => setActiveSection("crop-management")}
+              >
+                <Leaf className="h-5 w-5" />
+                <span>Crop Management</span>
               </Button>
             </div>
           </CardContent>
@@ -173,6 +182,11 @@ const AdminDashboard = () => {
           {/* Announcements Section */}
           {activeSection === "announcements" && (
             <AdminAnnouncements />
+          )}
+
+          {/* Crop Management Section */}
+          {activeSection === "crop-management" && (
+            <CropManagement />
           )}
 
         </div>

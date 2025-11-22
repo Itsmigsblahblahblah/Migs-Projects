@@ -55,27 +55,27 @@ const generateChecklist = (cropName: string) => {
 // Function to ensure all checklist items are present - copied from CropDetails.tsx
 const ensureCompleteChecklist = (existingChecklist: any[], cropName: string): any[] => {
   const baseChecklist = generateChecklist(cropName);
-  
+
   // If there's no existing checklist, return the base checklist
   if (!existingChecklist || existingChecklist.length === 0) {
     return baseChecklist;
   }
-  
+
   // Check if the new item exists in the existing checklist by title
-  const hasPostHarvestItem = existingChecklist.some(item => 
+  const hasPostHarvestItem = existingChecklist.some(item =>
     item.title === "Sort and store harvested crops properly"
   );
-  
+
   // If the new item doesn't exist, add it
   if (!hasPostHarvestItem) {
-    const postHarvestItem = baseChecklist.find(item => 
+    const postHarvestItem = baseChecklist.find(item =>
       item.title === "Sort and store harvested crops properly"
     );
     if (postHarvestItem) {
-      return [...existingChecklist, {...postHarvestItem, completed: false, completedAt: undefined}];
+      return [...existingChecklist, { ...postHarvestItem, completed: false, completedAt: undefined }];
     }
   }
-  
+
   return existingChecklist;
 };
 
@@ -159,7 +159,7 @@ const FarmerDashboard = () => {
       const timer = setTimeout(() => {
         setShowDeletionNotification(false);
       }, 180000); // 3 minutes in milliseconds
-      
+
       return () => clearTimeout(timer);
     }
   }, [deletionRequest]);
@@ -195,14 +195,14 @@ const FarmerDashboard = () => {
     if (!deletionRequest) {
       return "Request Account Deletion";
     }
-    
+
     switch (deletionRequest.status) {
       case 'pending':
-        return "Deletion Pending Approval";
+        return "Deletion Request Pending";
       case 'approved':
-        return "Delete Account Now (Approved)";
+        return "Account Deletion Scheduled";
       case 'denied':
-        return "Request Again (Previous Denied)";
+        return "Deletion Request Denied - Request Again";
       default:
         return "Request Account Deletion";
     }
@@ -211,30 +211,19 @@ const FarmerDashboard = () => {
   // Determine if the deletion button should be disabled
   const isDeletionButtonDisabled = () => {
     if (!deletionRequest) return false;
-    return deletionRequest.status === 'pending';
+    return deletionRequest.status === 'pending' || deletionRequest.status === 'approved';
   };
 
   // Handle deletion button click
   const handleDeletionButtonClick = () => {
-    if (!deletionRequest) {
+    if (deletionRequest && deletionRequest.status === 'denied') {
+      // If the request was denied, allow the user to request again
       setIsRequestDeleteDialogOpen(true);
-      return;
+    } else if (!deletionRequest || deletionRequest.status !== 'pending') {
+      // If there's no request or the request is not pending, allow a new request
+      setIsRequestDeleteDialogOpen(true);
     }
-    
-    switch (deletionRequest.status) {
-      case 'pending':
-        // Do nothing, button is disabled
-        break;
-      case 'approved':
-        setIsDeleteAccountDialogOpen(true);
-        break;
-      case 'denied':
-        setIsRequestDeleteDialogOpen(true);
-        break;
-      default:
-        setIsRequestDeleteDialogOpen(true);
-        break;
-    }
+    // If the request is pending or approved, the button will be disabled anyway
   };
 
   // Function to manually close the deletion notification
@@ -259,7 +248,7 @@ const FarmerDashboard = () => {
     }
 
     const currentCrop = cropHistory[currentCropIndex];
-    
+
     // Calculate harvest date (similar to CropDetails page)
     let harvestDate = "Unknown date";
     // Use Gemini API data if available, otherwise fall back to original logic
@@ -270,13 +259,13 @@ const FarmerDashboard = () => {
         const planted = currentCrop.plantedDate.toDate ? currentCrop.plantedDate.toDate() : new Date(currentCrop.plantedDate);
         const baseDate = new Date(planted);
         let daysToHarvest = 90; // Default
-        
+
         if (currentCrop.name.toLowerCase().includes("rice")) {
           daysToHarvest = 120;
         } else if (currentCrop.name.toLowerCase().includes("corn")) {
           daysToHarvest = 100;
         }
-        
+
         baseDate.setDate(baseDate.getDate() + daysToHarvest);
         harvestDate = baseDate.toLocaleDateString('en-US', {
           year: 'numeric',
@@ -287,7 +276,7 @@ const FarmerDashboard = () => {
         harvestDate = "Unknown date";
       }
     }
-    
+
     // Calculate growth stage (similar to CropDetails page)
     let growthStage = "Unknown";
     // Use Gemini API data if available, otherwise fall back to original logic
@@ -299,7 +288,7 @@ const FarmerDashboard = () => {
         const now = new Date();
         const diffTime = Math.abs(now.getTime() - planted.getTime());
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        
+
         if (diffDays < 30) growthStage = 'Germination';
         else if (diffDays < 60) growthStage = 'Vegetative';
         else if (diffDays < 90) growthStage = 'Flowering';
@@ -308,7 +297,7 @@ const FarmerDashboard = () => {
         growthStage = "Unknown";
       }
     }
-    
+
     // Calculate productivity based on checklist completion (similar to CropDetails)
     let productivityIndex = 0;
     if (currentCrop.checklist && currentCrop.checklist.length > 0) {
@@ -342,7 +331,7 @@ const FarmerDashboard = () => {
   const handleCropCardClick = () => {
     if (cropHistory.length > 0) {
       const currentCrop = cropHistory[currentCropIndex];
-      
+
       // Set selected crop ID
       if (currentCrop.id) {
         setSelectedCropId(currentCrop.id);
@@ -355,14 +344,14 @@ const FarmerDashboard = () => {
   // Function to handle checklist item toggle
   const handleToggleChecklistItem = async (itemId: string) => {
     if (!selectedCropId) return;
-    
+
     // Get the current crop
     const currentCrop = cropHistory.find(crop => crop.id === selectedCropId);
     if (!currentCrop) return;
-    
+
     // Ensure we have a complete checklist
     const completeChecklist = ensureCompleteChecklist(currentCrop.checklist || [], currentCrop.name);
-    
+
     // Update the checklist item
     const updatedChecklist = completeChecklist.map(item => {
       if (item.id === itemId) {
@@ -375,7 +364,7 @@ const FarmerDashboard = () => {
       }
       return item;
     });
-    
+
     // Update in Firestore and local state
     try {
       await updateCrop(selectedCropId, { checklist: updatedChecklist });
@@ -386,7 +375,7 @@ const FarmerDashboard = () => {
 
   // Get the crop data for display
   const cropData = getCropData();
-  
+
   // Reset current crop index when crop history changes
   useEffect(() => {
     setCurrentCropIndex(0);
@@ -394,13 +383,13 @@ const FarmerDashboard = () => {
 
   // Get the selected crop for the checklist dialog
   const selectedCrop = selectedCropId ? cropHistory.find(crop => crop.id === selectedCropId) : null;
-  
+
   // Ensure we have a complete checklist for the selected crop
   let selectedCropChecklist: any[] = [];
   if (selectedCrop) {
     selectedCropChecklist = ensureCompleteChecklist(selectedCrop.checklist || [], selectedCrop.name);
   }
-  
+
   // Calculate productivity for the selected crop
   let checklistProductivity = 0;
   if (selectedCropChecklist.length > 0) {
@@ -425,7 +414,7 @@ const FarmerDashboard = () => {
         {/* Deletion Request Status Banner */}
         {deletionRequest && showDeletionNotification && (
           <Card className="border-l-4 p-4 rounded-r-lg relative">
-            <button 
+            <button
               onClick={closeDeletionNotification}
               className="absolute top-2 right-2 text-muted-foreground hover:text-foreground"
             >
@@ -468,8 +457,8 @@ const FarmerDashboard = () => {
                 )}
               </div>
               {deletionRequest.status === 'approved' && (
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   size="sm"
                   onClick={() => setIsDeleteAccountDialogOpen(true)}
                 >
@@ -487,7 +476,7 @@ const FarmerDashboard = () => {
             farmerProfile={farmerProfile}
             onEditProfile={() => setIsEditProfileDialogOpen(true)}
           />
-          <WeatherCard 
+          <WeatherCard
             weatherData={weatherData || {
               temperature: 0,
               condition: "Loading...",
@@ -495,7 +484,7 @@ const FarmerDashboard = () => {
               rainfall: 0,
               forecast: [],
               extendedForecast: []
-            }} 
+            }}
             forecastView={forecastView}
             onForecastViewChange={setForecastView}
             selectedDate={selectedDate}
@@ -562,7 +551,7 @@ const FarmerDashboard = () => {
             )}
           </div>
         </div>
-        
+
         {/* Market Demand Card */}
         <MarketDemandCard />
 
@@ -595,6 +584,7 @@ const FarmerDashboard = () => {
           handleCropInputChange={handleCropInputChange}
           handleSoilTypeChange={handleSoilTypeChange}
           handleAddCrop={handleAddCrop}
+          userRole="farmer" // Pass user role to AddCropDialog
         />
 
         <UpdateCropDialog

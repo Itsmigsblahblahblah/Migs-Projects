@@ -16,6 +16,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { useState, useEffect } from "react";
+import { HARDCODED_CROPS, formatCropName } from "@/utils/cropUtils";
 
 interface AddCropDialogProps {
     open: boolean;
@@ -30,6 +32,7 @@ interface AddCropDialogProps {
     handleCropInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleSoilTypeChange: (value: string) => void;
     handleAddCrop: () => Promise<boolean>;
+    userRole?: string; // Added user role to determine if user is admin
 }
 
 const AddCropDialog = ({
@@ -38,8 +41,13 @@ const AddCropDialog = ({
     newCrop,
     handleCropInputChange,
     handleSoilTypeChange,
-    handleAddCrop
+    handleAddCrop,
+    userRole = "farmer" // Default to farmer role
 }: AddCropDialogProps) => {
+    const [cropOptions, setCropOptions] = useState<string[]>(HARDCODED_CROPS);
+    const [newCropName, setNewCropName] = useState(""); // For admin to add new crops
+    const [showAddCropInput, setShowAddCropInput] = useState(false); // Toggle for admin to add new crops
+
     const handleAddCropSubmit = async () => {
         const success = await handleAddCrop();
         if (success) {
@@ -47,9 +55,19 @@ const AddCropDialog = ({
         }
     };
 
+    // Handle when admin adds a new crop to the dropdown
+    const handleAddNewCrop = () => {
+        if (newCropName.trim() && !cropOptions.includes(newCropName.trim())) {
+            const formattedName = formatCropName(newCropName.trim());
+            setCropOptions(prev => [...prev, formattedName]);
+            setNewCropName("");
+            setShowAddCropInput(false);
+        }
+    };
+
     const soilTypes = [
-        "Clay", "Loam", "Sandy", "Silty", "Peaty", "Chalky", 
-        "Sandy Loam", "Clay Loam", "Silty Loam", "Sandy Clay", 
+        "Clay", "Loam", "Sandy", "Silty", "Peaty", "Chalky",
+        "Sandy Loam", "Clay Loam", "Silty Loam", "Sandy Clay",
         "Silty Clay", "Organic Soil"
     ];
 
@@ -65,15 +83,66 @@ const AddCropDialog = ({
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="cropName">Crop Name *</Label>
-                        <Input
-                            id="cropName"
-                            name="name"
-                            value={newCrop.name}
-                            onChange={handleCropInputChange}
-                            placeholder="e.g., Rice, Corn"
-                        />
+                        {userRole === "admin" ? (
+                            // Admin view - dropdown with option to add new crops
+                            <div className="space-y-2">
+                                <Select
+                                    value={newCrop.name}
+                                    onValueChange={(value) => handleCropInputChange({ target: { name: "name", value } } as React.ChangeEvent<HTMLInputElement>)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a crop" />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-48">
+                                        {cropOptions.map((crop) => (
+                                            <SelectItem key={crop} value={crop}>
+                                                {crop}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                {showAddCropInput ? (
+                                    <div className="flex gap-2">
+                                        <Input
+                                            value={newCropName}
+                                            onChange={(e) => setNewCropName(e.target.value)}
+                                            placeholder="Enter new crop name"
+                                        />
+                                        <Button onClick={handleAddNewCrop} size="sm">Add</Button>
+                                        <Button onClick={() => setShowAddCropInput(false)} variant="outline" size="sm">Cancel</Button>
+                                    </div>
+                                ) : (
+                                    <Button
+                                        onClick={() => setShowAddCropInput(true)}
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full"
+                                    >
+                                        Add New Crop to List
+                                    </Button>
+                                )}
+                            </div>
+                        ) : (
+                            // Farmer view - regular dropdown
+                            <Select
+                                value={newCrop.name}
+                                onValueChange={(value) => handleCropInputChange({ target: { name: "name", value } } as React.ChangeEvent<HTMLInputElement>)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a crop" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-48">
+                                    {cropOptions.map((crop) => (
+                                        <SelectItem key={crop} value={crop}>
+                                            {crop}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
                     </div>
-                    
+
                     <div className="space-y-2">
                         <Label htmlFor="soilType">Soil Type *</Label>
                         <Select onValueChange={handleSoilTypeChange} value={newCrop.soilType}>
@@ -89,7 +158,7 @@ const AddCropDialog = ({
                             </SelectContent>
                         </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                         <Label htmlFor="landArea">Land Area (hectares) *</Label>
                         <Input
@@ -101,7 +170,7 @@ const AddCropDialog = ({
                             placeholder="e.g., 2.5"
                         />
                     </div>
-                    
+
                     <div className="space-y-2">
                         <Label htmlFor="plantedDate">Date of Planting *</Label>
                         <Input
@@ -113,7 +182,7 @@ const AddCropDialog = ({
                             min={new Date().toLocaleDateString('en-CA')} // Prevent past dates (using local date)
                         />
                     </div>
-                    
+
                     <div className="space-y-2">
                         <Label htmlFor="puhunan">Capital (PHP) *</Label>
                         <Input
