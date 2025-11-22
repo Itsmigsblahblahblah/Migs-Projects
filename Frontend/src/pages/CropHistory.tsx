@@ -16,7 +16,7 @@ const CropHistory = () => {
     const [loading, setLoading] = useState(true);
     const [cropsLoaded, setCropsLoaded] = useState(false); // Add state to track if crops are loaded
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-    const [cropToDelete, setCropToDelete] = useState<{id: string, name: string} | null>(null);
+    const [cropToDelete, setCropToDelete] = useState<{ id: string, name: string } | null>(null);
     const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false); // Add state for add crop dialog
     const [isUpdateCropDialogOpen, setIsUpdateCropDialogOpen] = useState(false); // Add state for update crop dialog
     const [isEditCropDialogOpen, setIsEditCropDialogOpen] = useState(false); // Add state for edit crop dialog
@@ -70,7 +70,7 @@ const CropHistory = () => {
 
     const formatDate = (timestamp: any) => {
         if (!timestamp) return 'Unknown date';
-        
+
         try {
             // Handle string dates (YYYY-MM-DD format)
             if (typeof timestamp === 'string') {
@@ -83,7 +83,7 @@ const CropHistory = () => {
                     });
                 }
             }
-            
+
             // Handle Firestore Timestamp
             if (timestamp.toDate) {
                 return timestamp.toDate().toLocaleDateString('en-US', {
@@ -92,7 +92,7 @@ const CropHistory = () => {
                     day: 'numeric'
                 });
             }
-            
+
             // Handle JavaScript Date objects
             if (timestamp instanceof Date) {
                 return timestamp.toLocaleDateString('en-US', {
@@ -101,7 +101,7 @@ const CropHistory = () => {
                     day: 'numeric'
                 });
             }
-            
+
             return 'Unknown date';
         } catch (e) {
             return 'Unknown date';
@@ -185,7 +185,7 @@ const CropHistory = () => {
                         </div>
                         {/* Add Crop Button - Moved to the right side with improved contrast */}
                         <div className="flex gap-2">
-                            <Button 
+                            <Button
                                 onClick={() => setIsAddCropDialogOpen(true)}
                                 className="bg-white text-primary hover:bg-white/90"
                             >
@@ -193,8 +193,8 @@ const CropHistory = () => {
                                 Add Crop
                             </Button>
                             {crops.length > 0 && (
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     onClick={() => setIsUpdateCropDialogOpen(true)}
                                     className="bg-white/10 text-white border-white/20 hover:bg-white/20"
                                 >
@@ -222,7 +222,7 @@ const CropHistory = () => {
                                 </div>
                             </CardContent>
                         </Card>
-                        
+
                         <Card className="shadow-card">
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
@@ -232,13 +232,13 @@ const CropHistory = () => {
                                     <div>
                                         <p className="text-sm text-muted-foreground">Total Investment</p>
                                         <p className="text-2xl font-bold">
-                                            ₱{(crops.reduce((sum, crop) => sum + (Number(crop.puhunan) || 0), 0)).toLocaleString()}
+                                            ₱{(crops.reduce((sum, crop) => sum + (Number(crop.puhunan) || 0), 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
-                        
+
                         <Card className="shadow-card">
                             <CardContent className="p-4">
                                 <div className="flex items-center gap-3">
@@ -278,7 +278,7 @@ const CropHistory = () => {
                             <h2 className="text-xl font-bold">Your Crops</h2>
                             <p className="text-muted-foreground">{crops.length} crops</p>
                         </div>
-                        
+
                         {crops.map((crop) => (
                             <Card
                                 key={crop.id}
@@ -297,8 +297,8 @@ const CropHistory = () => {
                                             </CardDescription>
                                         </div>
                                         {/* Removed View Details button and kept only Delete button */}
-                                        <Button 
-                                            variant="destructive" 
+                                        <Button
+                                            variant="destructive"
                                             size="sm"
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -322,7 +322,7 @@ const CropHistory = () => {
                                             <TrendingUp className="h-4 w-4 text-muted-foreground" />
                                             <div>
                                                 <p className="text-xs text-muted-foreground">Capital</p>
-                                                <p className="font-medium">₱{Number(crop.puhunan).toLocaleString()}</p>
+                                                <p className="font-medium">₱{Number(crop.puhunan).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
