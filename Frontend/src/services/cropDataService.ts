@@ -227,32 +227,33 @@ export const calculateProfitProjection = async (
     const estimatedYieldPerHectare = 10000; // kg per hectare
     const totalEstimatedYield = landArea * estimatedYieldPerHectare;
     
-    // Calculate potential revenue using predicted price
-    const potentialRevenue = totalEstimatedYield * predictedPrice; // Revenue = yield (kg) * price (PHP/kg)
-
-    // Calculate seed cost (assuming 5kg of seeds needed per hectare)
-    const seedCostPerHectare = seedInfo.seedPricePerKilo * 5;
-    const totalSeedCost = landArea * seedCostPerHectare;
-    
-    // Estimate other costs (fertilizer, labor, etc.) as 30% of capital
-    const otherCosts = puhunan * 0.3;
-    
-    // Calculate total costs
-    const totalCosts = totalSeedCost + otherCosts;
-    
-    // Calculate profit
-    const netProfit = potentialRevenue - totalCosts;
-    const profitMargin = (netProfit / potentialRevenue) * 100;
-    
     // Calculate suggested capital to avoid shortage
     // This ensures at least 20% buffer over the minimum required capital
+    const seedCostPerHectare = seedInfo.seedPricePerKilo * 5;
+    const totalSeedCost = landArea * seedCostPerHectare;
     const minimumRequiredCapital = totalSeedCost / 0.3; // If 30% goes to seed costs, then 70% is other costs
     const suggestedCapital = minimumRequiredCapital * 1.2; // Add 20% buffer
     
+    // Calculate values based on user's investment
+    // If investment is 0, yield and profit should also be 0
+    const userInvestment = Number(puhunan) || 0;
+    const estimatedYield = userInvestment === 0 ? 0 : 
+        totalEstimatedYield * 
+        (userInvestment >= suggestedCapital ? 1 : (userInvestment / suggestedCapital));
+    
+    // Calculate potential revenue using predicted price
+    const potentialRevenue = estimatedYield * predictedPrice; // Revenue = yield (kg) * price (PHP/kg)
+    
+    // Calculate net profit based on user's investment
+    // If investment is 0, profit should also be 0
+    const netProfit = userInvestment === 0 ? 0 : potentialRevenue - userInvestment;
+    
+    const profitMargin = potentialRevenue > 0 ? (netProfit / potentialRevenue) * 100 : 0;
+    
     return {
-      estimatedYield: totalEstimatedYield,
+      estimatedYield: estimatedYield,
       potentialRevenue,
-      totalCosts,
+      totalCosts: userInvestment, // Total costs equal user's investment
       netProfit,
       profitMargin,
       marketTrend: marketInfo.trend,
