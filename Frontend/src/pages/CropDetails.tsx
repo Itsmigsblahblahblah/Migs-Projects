@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { ArrowLeft, Sprout, Leaf, Calendar, Droplets, Sun, Activity, AlertTriangle, CheckCircle, XCircle, Wheat, TrendingUp, Package, MapPin } from "lucide-react";
@@ -30,6 +30,7 @@ const CropDetails = () => {
     const [harvestData, setHarvestData] = useState<any>(null);
     const [marketData, setMarketData] = useState<any>(null);
     const [cropsLoaded, setCropsLoaded] = useState(false);
+    const maintenanceRef = useRef<HTMLDivElement>(null);
 
     // Mock checklist data
     const generateChecklist = (cropName: string) => {
@@ -46,26 +47,26 @@ const CropDetails = () => {
 
         return baseItems;
     };
-    
+
     // Function to ensure all checklist items are present
     const ensureCompleteChecklist = (existingChecklist: ChecklistItem[], cropName: string): ChecklistItem[] => {
         const baseChecklist = generateChecklist(cropName);
-        
+
         // Check if the new item exists in the existing checklist by title
-        const hasPostHarvestItem = existingChecklist.some(item => 
+        const hasPostHarvestItem = existingChecklist.some(item =>
             item.title === "Sort and store harvested crops properly"
         );
-        
+
         // If the new item doesn't exist, add it
         if (!hasPostHarvestItem) {
-            const postHarvestItem = baseChecklist.find(item => 
+            const postHarvestItem = baseChecklist.find(item =>
                 item.title === "Sort and store harvested crops properly"
             );
             if (postHarvestItem) {
-                return [...existingChecklist, {...postHarvestItem, completed: false, completedAt: undefined}];
+                return [...existingChecklist, { ...postHarvestItem, completed: false, completedAt: undefined }];
             }
         }
-        
+
         return existingChecklist;
     };
 
@@ -92,7 +93,7 @@ const CropDetails = () => {
                     if (cropData.checklist && cropData.checklist.length > 0) {
                         // Use existing checklist from database but ensure it has all items
                         loadedChecklist = ensureCompleteChecklist(cropData.checklist, cropData.name);
-                        
+
                         // If we added new items, save the updated checklist to the database
                         const originalLength = cropData.checklist.length;
                         const newLength = loadedChecklist.length;
@@ -115,35 +116,35 @@ const CropDetails = () => {
                         task: item.title,
                         productivity: item.completed ? 100 : 0
                     }));
-                    
+
                     // Add overall productivity at the end
                     const completed = loadedChecklist.filter(item => item.completed).length;
                     const total = loadedChecklist.length;
                     const overallProductivity = total > 0 ? Math.round((completed / total) * 100) : 0;
-                    
+
                     initialData.push({
                         task: "Overall Progress",
                         productivity: overallProductivity
                     });
-                    
+
                     setProductivityData(initialData);
 
                     // Fetch harvest estimate from Gemini API only if not already saved or if it was reset
                     if (cropData.plantedDate && (!cropData.harvestData || Object.keys(cropData.harvestData).length === 0)) {
                         try {
-                            const plantedDate = typeof cropData.plantedDate === 'string' 
-                                ? new Date(cropData.plantedDate) 
-                                : cropData.plantedDate.toDate 
-                                    ? cropData.plantedDate.toDate() 
+                            const plantedDate = typeof cropData.plantedDate === 'string'
+                                ? new Date(cropData.plantedDate)
+                                : cropData.plantedDate.toDate
+                                    ? cropData.plantedDate.toDate()
                                     : new Date(cropData.plantedDate);
-                                    
+
                             const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
-                            
+
                             // Save harvest data to crop record
                             if (cropData.id) {
                                 await updateCrop(cropData.id, { harvestData: harvestInfo });
                             }
-                            
+
                             setHarvestData(harvestInfo);
                         } catch (error) {
                             console.error("Error fetching harvest estimate:", error);
@@ -170,12 +171,12 @@ const CropDetails = () => {
                                 cropData.landArea,
                                 cropData.puhunan
                             );
-                            
+
                             // Save market data to crop record
                             if (cropData.id) {
                                 await updateCrop(cropData.id, { marketData: insights });
                             }
-                            
+
                             setMarketData(insights);
                         } catch (error) {
                             console.error("Error fetching market data:", error);
@@ -276,13 +277,13 @@ const CropDetails = () => {
         }
 
         if (!plantedDate || !plantedDate.toDate) return 'Unknown';
-        
+
         try {
             const planted = plantedDate.toDate();
             const now = new Date();
             const diffTime = Math.abs(now.getTime() - planted.getTime());
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            
+
             if (diffDays < 30) return 'Germination';
             if (diffDays < 60) return 'Vegetative';
             if (diffDays < 90) return 'Flowering';
@@ -345,11 +346,11 @@ const CropDetails = () => {
                 <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Button 
-                                variant="outline" 
-                                onClick={() => navigate(-1)} 
+                            <Button
+                                variant="outline"
+                                onClick={() => navigate(-1)}
                                 className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20"
->
+                            >
                                 <ArrowLeft className="h-4 w-4" />
                             </Button>
                             <div>
@@ -388,7 +389,7 @@ const CropDetails = () => {
                                                     });
                                                 }
                                             }
-                                            
+
                                             // Handle Firestore Timestamp
                                             if (crop.plantedDate?.toDate) {
                                                 return crop.plantedDate.toDate().toLocaleDateString('en-US', {
@@ -397,7 +398,7 @@ const CropDetails = () => {
                                                     day: 'numeric'
                                                 });
                                             }
-                                            
+
                                             // Handle JavaScript Date objects
                                             if (crop.plantedDate instanceof Date) {
                                                 return crop.plantedDate.toLocaleDateString('en-US', {
@@ -406,7 +407,7 @@ const CropDetails = () => {
                                                     day: 'numeric'
                                                 });
                                             }
-                                            
+
                                             return 'Unknown date';
                                         } catch (e) {
                                             return 'Unknown date';
@@ -416,7 +417,7 @@ const CropDetails = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="bg-card border rounded-lg p-4 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-success/10 rounded-lg">
@@ -428,7 +429,7 @@ const CropDetails = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="bg-card border rounded-lg p-4 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-blue-500/10 rounded-lg">
@@ -440,7 +441,7 @@ const CropDetails = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="bg-card border rounded-lg p-4 shadow-sm">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-green-500/10 rounded-lg">
@@ -457,12 +458,17 @@ const CropDetails = () => {
                 <div className="grid lg:grid-cols-1 gap-6">
                     <EnhancedCropInfoCard crop={crop} />
                 </div>
-                
+
                 <div className="grid lg:grid-cols-1 gap-6">
-                    <GrowthInsightsCard 
+                    <GrowthInsightsCard
                         growthStage={growthStage}
                         harvestDate={harvestDate}
                         productivity={productivity}
+                        scrollToMaintenance={() => {
+                            if (maintenanceRef.current) {
+                                maintenanceRef.current.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        }}
                     />
                 </div>
 
@@ -470,12 +476,14 @@ const CropDetails = () => {
                     <EnhancedSalesForecastCard crop={crop} marketData={marketData} />
                 </div>
 
-                <MaintenanceChecklistCard 
-                    checklist={checklist} 
-                    productivityData={productivityData}
-                    checklistProductivity={checklistProductivity}
-                    onToggleItem={toggleChecklistItem} 
-                />
+                <div ref={maintenanceRef}>
+                    <MaintenanceChecklistCard
+                        checklist={checklist}
+                        productivityData={productivityData}
+                        checklistProductivity={checklistProductivity}
+                        onToggleItem={toggleChecklistItem}
+                    />
+                </div>
             </div>
         </Layout>
     );

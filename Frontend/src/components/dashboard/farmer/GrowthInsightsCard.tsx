@@ -15,12 +15,14 @@ interface GrowthInsightsCardProps {
     growthStage: string;
     harvestDate: string;
     productivity: number;
+    scrollToMaintenance?: () => void;
 }
 
 const GrowthInsightsCard = ({
     growthStage,
     harvestDate,
-    productivity
+    productivity,
+    scrollToMaintenance
 }: GrowthInsightsCardProps) => {
     return (
         <Card className="shadow-card">
@@ -48,11 +50,14 @@ const GrowthInsightsCard = ({
                         </div>
                         <p className="font-bold text-lg">{harvestDate}</p>
                     </div>
-                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
+                    <div
+                        className="p-4 bg-primary/5 rounded-lg border border-primary/10 cursor-pointer hover:bg-primary/10 transition-colors"
+                        onClick={scrollToMaintenance}
+                    >
                         <div className="flex items-center gap-2 mb-2">
                             <TrendingUp className="h-4 w-4 text-primary" />
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Productivity</p>
-                            <InfoTooltip content="Your completion percentage of recommended farming practices for this crop" />
+                            <InfoTooltip content="Your completion percentage of recommended farming practices for this crop. Click to view maintenance checklist." />
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-full bg-secondary rounded-full h-2">
