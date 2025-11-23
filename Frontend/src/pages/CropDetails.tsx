@@ -269,6 +269,98 @@ const CropDetails = () => {
         }
     };
 
+    // Calculate harvest date range (earlier date - harvest date)
+    const calculateHarvestDateRange = (plantedDate: any, cropName: string) => {
+        // Use Gemini API data if available, otherwise fall back to original logic
+        if (harvestData && harvestData.formattedHarvestDate) {
+            // If we have a specific harvest date from API, calculate range based on crop type
+            const harvestDateStr = harvestData.formattedHarvestDate;
+            const harvestDate = new Date(harvestDateStr);
+
+            // Calculate earlier date based on crop type (minimum 30 days before harvest)
+            let daysBeforeHarvest = 30; // Minimum 30 days
+
+            // For crops with longer growing periods, use a larger range
+            if (cropName.toLowerCase().includes("rice")) {
+                daysBeforeHarvest = 45; // 1.5 months for rice
+            } else if (cropName.toLowerCase().includes("corn")) {
+                daysBeforeHarvest = 40; // ~1.3 months for corn
+            } else if (cropName.toLowerCase().includes("tomato")) {
+                daysBeforeHarvest = 35; // ~1.2 months for tomato
+            } else if (cropName.toLowerCase().includes("pechay") || cropName.toLowerCase().includes("lettuce")) {
+                daysBeforeHarvest = 30; // Exactly 1 month for leafy vegetables
+            }
+
+            const earlierDate = new Date(harvestDate);
+            earlierDate.setDate(earlierDate.getDate() - daysBeforeHarvest);
+
+            // Format both dates
+            const earlierDateStr = earlierDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            return `${earlierDateStr} – ${harvestDateStr}`;
+        }
+
+        if (!plantedDate || !plantedDate.toDate) return 'Unknown date';
+
+        try {
+            const baseDate = plantedDate.toDate();
+            let daysToHarvest = 90; // Default
+
+            // Determine crop-specific harvest time
+            if (cropName.toLowerCase().includes("rice")) {
+                daysToHarvest = 120;
+            } else if (cropName.toLowerCase().includes("corn")) {
+                daysToHarvest = 100;
+            } else if (cropName.toLowerCase().includes("tomato")) {
+                daysToHarvest = 85;
+            } else if (cropName.toLowerCase().includes("pechay") || cropName.toLowerCase().includes("lettuce")) {
+                daysToHarvest = 45;
+            }
+
+            // Calculate harvest date
+            const harvestDate = new Date(baseDate);
+            harvestDate.setDate(harvestDate.getDate() + daysToHarvest);
+
+            // Calculate earlier date (minimum 30 days before harvest)
+            let daysBeforeHarvest = 30; // Minimum 30 days
+
+            // For crops with longer growing periods, use a larger range
+            if (cropName.toLowerCase().includes("rice")) {
+                daysBeforeHarvest = 45; // 1.5 months for rice
+            } else if (cropName.toLowerCase().includes("corn")) {
+                daysBeforeHarvest = 40; // ~1.3 months for corn
+            } else if (cropName.toLowerCase().includes("tomato")) {
+                daysBeforeHarvest = 35; // ~1.2 months for tomato
+            } else if (cropName.toLowerCase().includes("pechay") || cropName.toLowerCase().includes("lettuce")) {
+                daysBeforeHarvest = 30; // Exactly 1 month for leafy vegetables
+            }
+
+            const earlierDate = new Date(harvestDate);
+            earlierDate.setDate(earlierDate.getDate() - daysBeforeHarvest);
+
+            // Format both dates
+            const earlierDateStr = earlierDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            const harvestDateStr = harvestDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            return `${earlierDateStr} – ${harvestDateStr}`;
+        } catch (e) {
+            return 'Unknown date';
+        }
+    };
+
     // Calculate growth stage based on planting date
     const calculateGrowthStage = (plantedDate: any) => {
         // Use Gemini API data if available, otherwise fall back to original logic
@@ -335,6 +427,7 @@ const CropDetails = () => {
 
     const growthStage = calculateGrowthStage(crop.plantedDate);
     const harvestDate = calculateHarvestDate(crop.plantedDate, crop.name);
+    const harvestDateRange = calculateHarvestDateRange(crop.plantedDate, crop.name);
     const productivity = calculateProductivity();
     const checklistProductivity = productivity;
 
@@ -449,7 +542,7 @@ const CropDetails = () => {
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Est. Harvest</p>
-                                <p className="font-medium">{harvestDate}</p>
+                                <p className="font-medium">{harvestDateRange}</p>
                             </div>
                         </div>
                     </div>
@@ -462,7 +555,7 @@ const CropDetails = () => {
                 <div className="grid lg:grid-cols-1 gap-6">
                     <GrowthInsightsCard
                         growthStage={growthStage}
-                        harvestDate={harvestDate}
+                        harvestDate={harvestDateRange}
                         productivity={productivity}
                         scrollToMaintenance={() => {
                             if (maintenanceRef.current) {
