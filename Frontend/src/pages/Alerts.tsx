@@ -69,7 +69,9 @@ const Alerts = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [alertToDelete, setAlertToDelete] = useState<AlertItem | null>(null);
   const [userReadStatus, setUserReadStatus] = useState<Record<string, ReadStatus>>({}); // Track user read status
-  
+  const [currentPage, setCurrentPage] = useState(1); // Pagination state
+  const alertsPerPage = 10; // Number of alerts per page
+
   // Check if current user is admin
   const currentUser = auth.currentUser;
   const isAdmin = currentUser && currentUser.email === 'admin@majayjay.farm';
@@ -116,7 +118,7 @@ const Alerts = () => {
           readStatus[doc.id] = data as ReadStatus;
         }
       });
-      
+
       // Merge with existing read status
       setUserReadStatus(prev => ({
         ...prev,
@@ -138,7 +140,7 @@ const Alerts = () => {
     }
 
     setMessagesLoading(true);
-    
+
     // First try the query without orderBy to avoid index issues
     const simpleQuery = query(
       collection(db, "adminMessages"),
@@ -166,7 +168,7 @@ const Alerts = () => {
           setMessagesLoading(false);
         }, (error) => {
           console.error("Error fetching admin messages:", error);
-          
+
           // If it's an index error, fall back to simple query without orderBy
           if (error.code === 'failed-precondition' || (error.message && error.message.includes('index'))) {
             const fallbackMessages: AdminMessage[] = [];
@@ -193,7 +195,7 @@ const Alerts = () => {
             setMessagesLoading(false);
             return;
           }
-          
+
           setMessagesLoading(false);
           toast({
             title: "Error",
@@ -228,10 +230,10 @@ const Alerts = () => {
         await updateDoc(doc(db, "adminMessages", messageId), {
           read: true
         });
-        
+
         // Update local state immediately
-        setAdminMessages(prev => prev.map(msg => 
-          msg.id === messageId ? {...msg, read: true} : msg
+        setAdminMessages(prev => prev.map(msg =>
+          msg.id === messageId ? { ...msg, read: true } : msg
         ));
       } else if (alert.type === 'announcement') {
         // For announcements, create a read status record
@@ -241,7 +243,7 @@ const Alerts = () => {
           // Don't set deleted flag for mark as read
           timestamp: new Date()
         });
-        
+
         // Update local read status immediately
         setUserReadStatus(prev => ({
           ...prev,
@@ -255,26 +257,26 @@ const Alerts = () => {
           read: true,
           timestamp: new Date()
         });
-        
+
         // Update local read status immediately
         setUserReadStatus(prev => ({
           ...prev,
           [weatherAlertId]: { read: true, timestamp: new Date() }
         }));
       }
-      
+
       // Also mark as read in the selected alert if it's the same one
       if (selectedAlert && selectedAlert.type === 'weather') {
         // For weather alerts, we need to generate the ID the same way to compare
         const selectedAlertWeatherId = createWeatherAlertId(selectedAlert.title, selectedAlert.date);
         const currentAlertWeatherId = createWeatherAlertId(alert.title, alert.date);
         if (selectedAlertWeatherId === currentAlertWeatherId) {
-          setSelectedAlert(prev => prev ? {...prev, read: true} : null);
+          setSelectedAlert(prev => prev ? { ...prev, read: true } : null);
         }
       } else if (selectedAlert && selectedAlert.id === alert.id) {
-        setSelectedAlert(prev => prev ? {...prev, read: true} : null);
+        setSelectedAlert(prev => prev ? { ...prev, read: true } : null);
       }
-      
+
       toast({
         title: "Success",
         description: "Alert marked as read.",
@@ -305,13 +307,13 @@ const Alerts = () => {
   // Function to transform weather alerts to our alert format
   const transformWeatherAlerts = (): AlertItem[] => {
     if (weatherLoading || weatherError || !weatherAlerts) return [];
-    
+
     return weatherAlerts.map((alert) => {
       // Create a stable ID based on the alert description and date
       const weatherAlertId = createWeatherAlertId(alert.description, alert.date || '');
       const status = userReadStatus[weatherAlertId];
       const isRead = status ? (typeof status === 'boolean' ? status : status.read) : false;
-      
+
       return {
         id: weatherAlertId,
         title: alert.description,
@@ -327,12 +329,12 @@ const Alerts = () => {
   // Function to transform announcements to our alert format
   const transformAnnouncements = (): AlertItem[] => {
     if (announcementsLoading || !announcements) return [];
-    
+
     return announcements.map(announcement => {
       const announcementId = announcement.id;
       const status = userReadStatus[announcementId];
       const isRead = status ? (typeof status === 'boolean' ? status : status.read) : false;
-      
+
       return {
         id: `announcement-${announcementId}`,
         title: announcement.title,
@@ -348,7 +350,7 @@ const Alerts = () => {
   // Function to transform admin messages to our alert format
   const transformAdminMessages = (): AlertItem[] => {
     if (messagesLoading || !adminMessages) return [];
-    
+
     return adminMessages.map(message => ({
       id: `message-${message.id}`,
       title: "Message from Admin",
@@ -374,24 +376,24 @@ const Alerts = () => {
     const filteredAlerts = alerts.filter(alert => {
       // Keep all non-announcement alerts
       if (alert.type !== 'announcement') return true;
-      
+
       // For announcements, check if they're marked as deleted
       const announcementId = alert.id.replace('announcement-', '');
       const status = userReadStatus[announcementId];
-      
+
       // If there's no read status, show the announcement
       if (!status) return true;
-      
+
       // If there's a read status, check if it's marked as deleted
       if (typeof status === 'boolean') {
         // Old format - boolean means read but not deleted
         return true;
       }
-      
+
       // New format - check deleted flag
       return !status.deleted;
     });
-    
+
     if (activeCategory === 'all') return filteredAlerts;
     return filteredAlerts.filter(alert => alert.category === activeCategory);
   };
@@ -402,24 +404,24 @@ const Alerts = () => {
     const filteredAlerts = getAllAlerts().filter(alert => {
       // Keep all non-announcement alerts
       if (alert.type !== 'announcement') return true;
-      
+
       // For announcements, check if they're marked as deleted
       const announcementId = alert.id.replace('announcement-', '');
       const status = userReadStatus[announcementId];
-      
+
       // If there's no read status, show the announcement
       if (!status) return true;
-      
+
       // If there's a read status, check if it's marked as deleted
       if (typeof status === 'boolean') {
         // Old format - boolean means read but not deleted
         return true;
       }
-      
+
       // New format - check deleted flag
       return !status.deleted;
     });
-    
+
     return {
       all: filteredAlerts.filter(a => !a.read).length,
       critical: filteredAlerts.filter(a => a.category === 'critical' && !a.read).length,
@@ -432,7 +434,7 @@ const Alerts = () => {
   const handleAlertClick = (alert: AlertItem) => {
     setSelectedAlert(alert);
     setIsDialogOpen(true);
-    
+
     // Mark as read when opening the alert
     if (!alert.read) {
       markAsRead(alert);
@@ -462,7 +464,7 @@ const Alerts = () => {
         // Optimistically update UI
         const messageId = alertToDelete.id.replace('message-', '');
         setAdminMessages(prev => prev.filter(msg => msg.id !== messageId));
-        
+
         // Delete admin message
         await deleteDoc(doc(db, "adminMessages", messageId));
         toast({
@@ -473,20 +475,20 @@ const Alerts = () => {
         // Check if user is admin
         const currentUser = auth.currentUser;
         const isAdmin = currentUser && currentUser.email === 'admin@majayjay.farm';
-        
+
         const announcementId = alertToDelete.id.replace('announcement-', '');
-        
+
         if (isAdmin) {
           // Admin can actually delete the announcement
           await deleteDoc(doc(db, "announcements", announcementId));
-          
+
           // Also remove from read status if it exists
           try {
             await deleteDoc(doc(db, "userReadStatus", userId, "announcements", announcementId));
           } catch (e) {
             // Ignore if read status doesn't exist
           }
-          
+
           toast({
             title: "Success",
             description: "Announcement deleted successfully.",
@@ -498,7 +500,7 @@ const Alerts = () => {
             deleted: true, // Add deleted flag
             timestamp: new Date()
           });
-          
+
           toast({
             title: "Success",
             description: "Announcement removed from your view.",
@@ -513,7 +515,7 @@ const Alerts = () => {
         } catch (e) {
           // Ignore if read status doesn't exist
         }
-        
+
         toast({
           title: "Success",
           description: "Weather alert read status removed.",
@@ -522,7 +524,7 @@ const Alerts = () => {
         // For any other type, show an error
         throw new Error(`Cannot delete alert of type: ${alertToDelete.type}`);
       }
-      
+
       // Close the delete confirmation dialog
       setIsDeleteDialogOpen(false);
       setAlertToDelete(null);
@@ -533,7 +535,7 @@ const Alerts = () => {
         description: `Failed to delete alert: ${error.message || 'Unknown error'}`,
         variant: "destructive",
       });
-      
+
       // Close the delete confirmation dialog
       setIsDeleteDialogOpen(false);
       setAlertToDelete(null);
@@ -547,7 +549,20 @@ const Alerts = () => {
   };
 
   const alertCounts = countAlertsByCategory();
-  const filteredAlerts = filterAlerts(getAllAlerts());
+  const allAlerts = getAllAlerts();
+  const filteredAlerts = filterAlerts(allAlerts);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredAlerts.length / alertsPerPage);
+  const startIndex = (currentPage - 1) * alertsPerPage;
+  const endIndex = startIndex + alertsPerPage;
+  const currentAlerts = filteredAlerts.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory]);
+
   const loading = weatherLoading || announcementsLoading || messagesLoading;
 
   return (
@@ -603,8 +618,8 @@ const Alerts = () => {
                 className="flex items-center gap-2"
               >
                 Announcements
-                <Badge 
-                  variant="secondary" 
+                <Badge
+                  variant="secondary"
                   className="ml-2 bg-blue-500 text-white hover:bg-blue-600"
                 >
                   {alertCounts.informational}
@@ -616,8 +631,8 @@ const Alerts = () => {
                 className="flex items-center gap-2"
               >
                 Messages
-                <Badge 
-                  variant="secondary" 
+                <Badge
+                  variant="secondary"
                   className="ml-2 bg-green-500 text-white hover:bg-green-600"
                 >
                   {alertCounts.messages}
@@ -637,92 +652,195 @@ const Alerts = () => {
               {activeCategory === 'messages' && 'Messages'}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-4 text-muted-foreground">
-                Loading alerts...
-              </div>
-            ) : filteredAlerts.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                No alerts found
-              </div>
-            ) : (
-              <div className="max-h-[320px] overflow-y-auto pr-2">
-                {filteredAlerts.map((alert) => (
-                  <div 
-                    key={alert.id} 
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 mb-3 last:mb-0 ${
-                      alert.category === 'critical' ? 'bg-red-50 border-red-200' :
-                      alert.category === 'messages' ? 'bg-green-50 border-green-200' :
-                      'bg-blue-50 border-blue-200'
-                    } ${alert.read ? 'opacity-75' : ''}`}
-                    onClick={() => handleAlertClick(alert)}
-                  >
-                    <span className="text-2xl">
-                      {alert.type === 'weather' ? '🌤️' : alert.type === 'message' ? '✉️' : '📢'}
-                    </span>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start">
-                        <p className="font-medium">{alert.title}</p>
-                        <div className="flex items-center gap-2">
-                          <Badge 
-                            variant="secondary"
-                            className={`
-                              ml-2
-                              ${alert.category === 'critical' ? 'bg-red-500 hover:bg-red-600' : ''}
-                              ${alert.category === 'informational' ? 'bg-blue-500 hover:bg-blue-600' : ''}
-                              ${alert.category === 'messages' ? 'bg-green-500 hover:bg-green-600' : ''}
-                              text-white
-                            `}
-                          >
-                            {alert.category.charAt(0).toUpperCase() + alert.category.slice(1)}
-                          </Badge>
-                          {/* Show action buttons for messages, announcements, and weather alerts */}
-                          {(alert.type === 'message' || alert.type === 'announcement' || alert.type === 'weather') && (
-                            <div className="flex gap-1">
-                              {!alert.read && (
-                                <Button 
-                                  variant="ghost" 
+          <div className="flex-grow flex flex-col">
+            <CardContent className="flex-grow">
+              {loading ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  Loading alerts...
+                </div>
+              ) : filteredAlerts.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  No alerts found
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {currentAlerts.map((alert) => (
+                    <div
+                      key={alert.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 mb-3 last:mb-0 ${alert.category === 'critical' ? 'bg-red-50 border-red-200' :
+                          alert.category === 'messages' ? 'bg-green-50 border-green-200' :
+                            'bg-blue-50 border-blue-200'
+                        } ${alert.read ? 'opacity-75' : ''}`}
+                      onClick={() => handleAlertClick(alert)}
+                    >
+                      <span className="text-2xl">
+                        {alert.type === 'weather' ? '🌤️' : alert.type === 'message' ? '✉️' : '📢'}
+                      </span>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start">
+                          <p className="font-medium">{alert.title}</p>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="secondary"
+                              className={`
+                                ml-2
+                                ${alert.category === 'critical' ? 'bg-red-500 hover:bg-red-600' : ''}
+                                ${alert.category === 'informational' ? 'bg-blue-500 hover:bg-blue-600' : ''}
+                                ${alert.category === 'messages' ? 'bg-green-500 hover:bg-green-600' : ''}
+                                text-white
+                              `}
+                            >
+                              {alert.category.charAt(0).toUpperCase() + alert.category.slice(1)}
+                            </Badge>
+                            {/* Show action buttons for messages, announcements, and weather alerts */}
+                            {(alert.type === 'message' || alert.type === 'announcement' || alert.type === 'weather') && (
+                              <div className="flex gap-1">
+                                {!alert.read && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => handleMarkAsReadClick(e, alert)}
+                                    className="h-6 w-6 p-0"
+                                    title="Mark as read"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
                                   size="sm"
-                                  onClick={(e) => handleMarkAsReadClick(e, alert)}
+                                  onClick={(e) => handleDeleteClick(e, alert)}
                                   className="h-6 w-6 p-0"
-                                  title="Mark as read"
+                                  title={alert.type === 'message' ? 'Delete message' : alert.type === 'weather' ? 'Clear weather alert' : 'Delete announcement'}
                                 >
-                                  <Check className="h-4 w-4" />
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
-                              )}
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={(e) => handleDeleteClick(e, alert)}
-                                className="h-6 w-6 p-0"
-                                title={alert.type === 'message' ? 'Delete message' : alert.type === 'weather' ? 'Clear weather alert' : 'Delete announcement'}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
+                              </div>
+                            )}
+                          </div>
                         </div>
+                        <div className="flex justify-between items-center mt-1">
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {alert.type === 'weather' ? 'Weather Alert' : alert.type === 'message' ? 'Message' : 'Announcement'}
+                          </p>
+                          <span className="text-xs bg-secondary px-2 py-1 rounded">
+                            {alert.date}
+                          </span>
+                        </div>
+                        {alert.content && (
+                          <p className="text-sm mt-2 text-muted-foreground line-clamp-2">
+                            {alert.content}
+                          </p>
+                        )}
                       </div>
-                      <div className="flex justify-between items-center mt-1">
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {alert.type === 'weather' ? 'Weather Alert' : alert.type === 'message' ? 'Message' : 'Announcement'}
-                        </p>
-                        <span className="text-xs bg-secondary px-2 py-1 rounded">
-                          {alert.date}
-                        </span>
-                      </div>
-                      {alert.content && (
-                        <p className="text-sm mt-2 text-muted-foreground line-clamp-2">
-                          {alert.content}
-                        </p>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              )}
+            </CardContent>
+
+            {/* Pagination Controls - Always visible */}
+            <div className="border-t pt-1 px-4" style={{ paddingBottom: '15px', marginTop: 'auto' }}>
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredAlerts.length)} of {filteredAlerts.length} alerts
+                </div>
+                <div className="flex space-x-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="h-8 px-3 text-sm"
+                  >
+                    Previous
+                  </Button>
+
+                  {/* Page Number Buttons */}
+                  {(() => {
+                    const pageButtons = [];
+                    // Show more pages (7 instead of 5) to reduce ellipsis
+                    let startPage = Math.max(1, currentPage - 3);
+                    let endPage = Math.min(totalPages, startPage + 6);
+
+                    // Adjust startPage if we're near the end
+                    if (endPage - startPage < 6) {
+                      startPage = Math.max(1, endPage - 6);
+                    }
+
+                    // First page button
+                    if (startPage > 1) {
+                      pageButtons.push(
+                        <Button
+                          key={1}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                          className="h-8 w-8 p-0 text-sm"
+                        >
+                          1
+                        </Button>
+                      );
+                      // Only show ellipsis if there's a significant gap
+                      if (startPage > 2) {
+                        pageButtons.push(
+                          <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                        );
+                      }
+                    }
+
+                    // Page number buttons
+                    for (let i = startPage; i <= endPage; i++) {
+                      pageButtons.push(
+                        <Button
+                          key={i}
+                          variant={currentPage === i ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(i)}
+                          className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                        >
+                          {i}
+                        </Button>
+                      );
+                    }
+
+                    // Last page button
+                    if (endPage < totalPages) {
+                      // Only show ellipsis if there's a significant gap
+                      if (endPage < totalPages - 1) {
+                        pageButtons.push(
+                          <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                        );
+                      }
+                      pageButtons.push(
+                        <Button
+                          key={totalPages}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(totalPages)}
+                          className="h-8 w-8 p-0 text-sm"
+                        >
+                          {totalPages}
+                        </Button>
+                      );
+                    }
+
+                    return pageButtons;
+                  })()}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="h-8 px-3 text-sm"
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
-            )}
-          </CardContent>
+            </div>
+          </div>
         </Card>
       </div>
 
@@ -738,8 +856,8 @@ const Alerts = () => {
                 <DialogDescription className={`mt-2 ${selectedAlert?.category === 'critical' ? 'text-red-100' : selectedAlert?.category === 'messages' ? 'text-green-100' : 'text-blue-100'}`}>
                   <div className="flex items-center gap-2">
                     <span className="capitalize">
-                      {selectedAlert?.type === 'weather' ? 'Weather Alert' : 
-                       selectedAlert?.type === 'message' ? 'Message' : 'Announcement'}
+                      {selectedAlert?.type === 'weather' ? 'Weather Alert' :
+                        selectedAlert?.type === 'message' ? 'Message' : 'Announcement'}
                     </span>
                     <span>•</span>
                     <span>{selectedAlert?.date}</span>
@@ -775,11 +893,11 @@ const Alerts = () => {
                   Confirm Deletion
                 </DialogTitle>
                 <DialogDescription className="mt-2 text-red-100">
-                  {alertToDelete?.type === 'message' 
-                    ? 'Are you sure you want to delete this message?' 
+                  {alertToDelete?.type === 'message'
+                    ? 'Are you sure you want to delete this message?'
                     : alertToDelete?.type === 'announcement'
-                    ? 'Are you sure you want to delete this announcement?'
-                    : 'This alert cannot be deleted.'}
+                      ? 'Are you sure you want to delete this announcement?'
+                      : 'This alert cannot be deleted.'}
                 </DialogDescription>
               </div>
             </div>
