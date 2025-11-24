@@ -70,6 +70,27 @@ const CropDetails = () => {
         return existingChecklist;
     };
 
+    // Function to update checklist item instructions
+    const updateChecklistInstructions = async (itemId: string, instructions: string[]) => {
+        const updatedChecklist = checklist.map(item => {
+            if (item.id === itemId) {
+                return { ...item, detailedInstructions: instructions };
+            }
+            return item;
+        });
+
+        setChecklist(updatedChecklist);
+
+        // Save to database
+        if (crop && crop.id) {
+            try {
+                await updateCrop(crop.id, { checklist: updatedChecklist });
+            } catch (error) {
+                console.error("Error saving checklist instructions to database:", error);
+            }
+        }
+    };
+
     useEffect(() => {
         const fetchCrop = async () => {
             if (!id) {
@@ -575,6 +596,8 @@ const CropDetails = () => {
                         productivityData={productivityData}
                         checklistProductivity={checklistProductivity}
                         onToggleItem={toggleChecklistItem}
+                        onUpdateInstructions={updateChecklistInstructions}
+                        cropName={crop.name}
                     />
                 </div>
             </div>

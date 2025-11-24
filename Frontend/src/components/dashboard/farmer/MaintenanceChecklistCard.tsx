@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { CheckCircle, Edit3, Clock } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { 
     RadialBarChart, 
     RadialBar, 
@@ -19,13 +18,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import InfoTooltip from "@/components/ui/info-tooltip";
+import AccordionChecklistItem from "./AccordionChecklistItem";
 
 interface ChecklistItem {
     id: string;
     title: string;
     completed: boolean;
     category: string;
-    completedAt?: string; // Add timestamp for completion
+    completedAt?: string;
+    detailedInstructions?: string[]; // Add detailed instructions property
 }
 
 interface ProductivityData {
@@ -38,6 +39,8 @@ interface MaintenanceChecklistCardProps {
     productivityData: ProductivityData[];
     checklistProductivity: number;
     onToggleItem: (itemId: string) => void;
+    onUpdateInstructions?: (itemId: string, instructions: string[]) => void; // Make optional
+    cropName?: string; // Make optional
     selectedPrescribedCrop?: any;
 }
 
@@ -45,7 +48,9 @@ const MaintenanceChecklistCard = ({
     checklist,
     productivityData,
     checklistProductivity,
-    onToggleItem
+    onToggleItem,
+    onUpdateInstructions = () => {}, // Default noop function
+    cropName = "" // Default empty string
 }: MaintenanceChecklistCardProps) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [pendingItemId, setPendingItemId] = useState<string | null>(null);
@@ -98,51 +103,25 @@ const MaintenanceChecklistCard = ({
                         <InfoTooltip content="A list of recommended tasks to ensure healthy crop growth and maximum yield" />
                     </CardTitle>
                     <CardDescription>
-                        Track your progress through the growing season
+                        Track your progress through the growing season. Click on any task to see detailed instructions.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-3">
                         {checklist.map((item) => (
-                            <div key={item.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50">
-                                <Checkbox
-                                    id={item.id}
-                                    checked={item.completed}
-                                    onCheckedChange={() => handleToggleWithConfirmation(item.id, item.completed)}
-                                />
-                                <div className="flex-1">
-                                    <label
-                                        htmlFor={item.id}
-                                        className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${item.completed ? 'line-through text-muted-foreground' : ''}`}
-                                    >
-                                        {item.title}
-                                    </label>
-                                    <p className="text-xs text-muted-foreground mt-1">{item.category}</p>
-                                    {item.completed && item.completedAt && (
-                                        <div className="flex items-center gap-1 mt-1">
-                                            <Clock className="h-3 w-3 text-muted-foreground" />
-                                            <span className="text-xs text-muted-foreground">
-                                                Completed: {formatTimestamp(item.completedAt)}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                                <InfoTooltip content="Mark this task as completed when finished. This helps track your farming progress." />
-                                {item.completed && (
-                                    <button 
-                                        onClick={() => handleToggleWithConfirmation(item.id, item.completed)}
-                                        className="text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted"
-                                        aria-label="Edit completion status"
-                                    >
-                                        <Edit3 className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
+                            <AccordionChecklistItem
+                                key={item.id}
+                                item={item}
+                                onToggleItem={onToggleItem}
+                                handleToggleWithConfirmation={handleToggleWithConfirmation}
+                                onUpdateInstructions={onUpdateInstructions}
+                                cropName={cropName}
+                            />
                         ))}
                     </div>
 
                     {/* Productivity Visualization based on checklist completion */}
-                    <div className="mt-4">
+                    <div className="mt-6">
                         <h3 className="font-medium mb-4">Maintenance Progress</h3>
                         <div className="flex flex-col items-center">
                             <div className="w-48 h-48 relative">

@@ -253,3 +253,80 @@ const getDefaultDaysToHarvest = (cropName: string): number => {
   // Default fallback
   return 90;
 };
+
+/**
+ * Get step-by-step instructions for a specific farming task using Gemini AI
+ * @param taskTitle Title of the task
+ * @returns Array of step-by-step instructions
+ */
+export const getStepByStepInstructions = async (
+  taskTitle: string
+): Promise<string[]> => {
+  const prompt = `
+    You are an expert agricultural advisor specializing in Philippine farming conditions, particularly in Majayjay, Laguna.
+    
+    Provide simple, easy-to-understand step-by-step instructions for the following farming task:
+    
+    Task: ${taskTitle}
+    
+    Consider these factors in your instructions:
+    - Typical conditions and practices in the Philippines
+    - Simple language that regular farmers can understand
+    - Practical steps that can be implemented easily
+    - Local agricultural practices in Majayjay
+    - Respond in Tagalog language for better understanding of Filipino farmers
+    
+    Please respond in the following JSON format:
+    {
+      "steps": ["Step 1 description", "Step 2 description", "Step 3 description", ...]
+    }
+    
+    Provide 5-7 clear steps. Ensure your response is valid JSON and nothing else. Make the instructions practical and easy to follow for Filipino farmers.
+  `;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }]
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    // Extract JSON from the response
+    const textResponse = data.candidates[0].content.parts[0].text;
+    // Clean up the response to extract valid JSON
+    const jsonStart = textResponse.indexOf('{');
+    const jsonEnd = textResponse.lastIndexOf('}') + 1;
+    const jsonString = textResponse.substring(jsonStart, jsonEnd);
+    
+    const result = JSON.parse(jsonString);
+    
+    return result.steps || [];
+  } catch (error) {
+    console.error("Error with Gemini API for step-by-step instructions:", error);
+    // Fallback to default steps if API fails
+    return [
+      "Maghanda ng mga kailangang gamit at materyales para sa gawaing ito",
+      "Sundin ang mga lokal na pamamaraan sa pagpapatupad ng gawaing ito",
+      "Regular na bantayan ang progreso at gumawa ng mga pag-aayos kung kinakailangan",
+      "Tapusin ang gawain ayon sa mga karaniwang pamamaraan sa pagsasaka",
+      "I-record ang mga detalye ng pagkumpleto para sa hinaharap na sanggunian"
+    ];
+  }
+};
