@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, Legend, FunnelChart, Funnel, LabelList } from "recharts";
 import { Download } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import ReportDetailView from "./ReportDetailView";
 
@@ -78,6 +78,8 @@ const AnalyticsCharts = ({
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null); // Add state for selected report
+    const [currentPage, setCurrentPage] = useState(1);
+    const reportsPerPage = 10;
 
     // Filter reports by selected category
     const filteredReports = useMemo(() => {
@@ -86,6 +88,17 @@ const AnalyticsCharts = ({
             report.problem.toLowerCase() === selectedCategory.toLowerCase()
         );
     }, [selectedCategory, reports]);
+
+    // Pagination logic for filtered reports
+    const totalPages = Math.ceil(filteredReports.length / reportsPerPage);
+    const startIndex = (currentPage - 1) * reportsPerPage;
+    const endIndex = startIndex + reportsPerPage;
+    const currentReports = filteredReports.slice(startIndex, endIndex);
+
+    // Reset to first page when category changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCategory]);
 
     // Handle bar click
     const handleBarClick = (data: any, index: number) => {
@@ -381,7 +394,7 @@ const AnalyticsCharts = ({
                                         Reports for "{selectedCategory}" Category
                                     </CardTitle>
                                     <p className="text-sm text-muted-foreground mt-1">
-                                        Showing {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''} categorized as "{selectedCategory}"
+                                        Showing {currentReports.length} of {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''} categorized as "{selectedCategory}"
                                     </p>
                                 </div>
                                 <Button variant="ghost" onClick={closeCategoryModal} className="h-8 w-8 p-0">
@@ -393,7 +406,7 @@ const AnalyticsCharts = ({
                         <CardContent className="p-6 space-y-6">
                             {filteredReports.length > 0 ? (
                                 <div className="space-y-4">
-                                    {filteredReports.map((report) => (
+                                    {currentReports.map((report) => (
                                         <div
                                             key={report.id}
                                             className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -441,6 +454,110 @@ const AnalyticsCharts = ({
                                             </div>
                                         </div>
                                     ))}
+
+                                    {/* Pagination Controls - Match FarmersList design */}
+                                    {totalPages > 0 && (
+                                        <div className="border-t pt-1 px-4 mt-auto" style={{ paddingBottom: '0px' }}>
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
+                                                    Showing {startIndex + 1} to {Math.min(endIndex, filteredReports.length)} of {filteredReports.length} reports
+                                                </div>
+                                                <div className="flex space-x-1">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                        disabled={currentPage === 1}
+                                                        className="h-8 px-3 text-sm"
+                                                    >
+                                                        Previous
+                                                    </Button>
+
+                                                    {/* Page Number Buttons */}
+                                                    {(() => {
+                                                        const pageButtons = [];
+                                                        // Show more pages (7 instead of 5) to reduce ellipsis
+                                                        let startPage = Math.max(1, currentPage - 3);
+                                                        let endPage = Math.min(totalPages, startPage + 6);
+
+                                                        // Adjust startPage if we're near the end
+                                                        if (endPage - startPage < 6) {
+                                                            startPage = Math.max(1, endPage - 6);
+                                                        }
+
+                                                        // First page button
+                                                        if (startPage > 1) {
+                                                            pageButtons.push(
+                                                                <Button
+                                                                    key={1}
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => setCurrentPage(1)}
+                                                                    className="h-8 w-8 p-0 text-sm"
+                                                                >
+                                                                    1
+                                                                </Button>
+                                                            );
+                                                            // Only show ellipsis if there's a significant gap
+                                                            if (startPage > 2) {
+                                                                pageButtons.push(
+                                                                    <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                                                );
+                                                            }
+                                                        }
+
+                                                        // Page number buttons
+                                                        for (let i = startPage; i <= endPage; i++) {
+                                                            pageButtons.push(
+                                                                <Button
+                                                                    key={i}
+                                                                    variant={currentPage === i ? "default" : "outline"}
+                                                                    size="sm"
+                                                                    onClick={() => setCurrentPage(i)}
+                                                                    className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                                                >
+                                                                    {i}
+                                                                </Button>
+                                                            );
+                                                        }
+
+                                                        // Last page button
+                                                        if (endPage < totalPages) {
+                                                            // Only show ellipsis if there's a significant gap
+                                                            if (endPage < totalPages - 1) {
+                                                                pageButtons.push(
+                                                                    <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                                                );
+                                                            }
+                                                            pageButtons.push(
+                                                                <Button
+                                                                    key={totalPages}
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => setCurrentPage(totalPages)}
+                                                                    className="h-8 w-8 p-0 text-sm"
+                                                                >
+                                                                    {totalPages}
+                                                                </Button>
+                                                            );
+                                                        }
+
+                                                        return pageButtons;
+                                                    })()}
+
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                        disabled={currentPage === totalPages}
+                                                        className="h-8 px-3 text-sm"
+                                                    >
+                                                        Next
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="text-center py-8 text-muted-foreground">
