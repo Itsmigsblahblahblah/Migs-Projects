@@ -3,7 +3,7 @@
  */
 
 // API base URL - adjust this to match your backend URL
-const API_BASE_URL = 'http://localhost:8001';
+const API_BASE_URL = 'http://localhost:8000';
 
 /**
  * Get vegetable demand prediction for a specific crop
