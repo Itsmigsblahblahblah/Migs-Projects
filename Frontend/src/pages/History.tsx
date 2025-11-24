@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
-import { 
-  Calendar, 
-  Search, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Calendar,
+  Search,
+  AlertTriangle,
+  CheckCircle,
   Filter,
   Download,
   Eye,
@@ -18,7 +18,9 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { collection, query, getDocs, where, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -55,6 +57,7 @@ const History = () => {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterProblem, setFilterProblem] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedReportId, setExpandedReportId] = useState<string | null>(null); // Track expanded report
   const reportsPerPage = 5;
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -76,11 +79,11 @@ const History = () => {
     setLoading(true);
     try {
       console.log("Loading report history for role:", userRole, "userId:", currentUserId);
-      
+
       const reportsRef = collection(db, "farmReports");
-      
+
       let reports: Report[] = [];
-      
+
       // If farmer, show only their reports. If admin, show all reports
       if (userRole === 'farmer') {
         // For farmer: Query without orderBy to get ALL data including old records
@@ -89,9 +92,9 @@ const History = () => {
           where("userId", "==", currentUserId)
         );
         const querySnapshot = await getDocs(farmerQuery);
-        
+
         console.log("Farmer reports found:", querySnapshot.size);
-        
+
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           console.log("Report data:", doc.id, data);
@@ -111,21 +114,21 @@ const History = () => {
             status: data.status || 'pending'
           });
         });
-        
+
         // Sort by date in memory (newest first), put items without createdAt at the end
         reports.sort((a, b) => {
           const dateA = a.createdAt?.toDate?.() || new Date(0);
           const dateB = b.createdAt?.toDate?.() || new Date(0);
           return dateB.getTime() - dateA.getTime();
         });
-        
+
       } else {
         // Admin sees all reports - Query without orderBy to get ALL data
         const adminQuery = query(reportsRef);
         const querySnapshot = await getDocs(adminQuery);
-        
+
         console.log("Admin reports found:", querySnapshot.size);
-        
+
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           console.log("Report data:", doc.id, data);
@@ -145,7 +148,7 @@ const History = () => {
             status: data.status || 'pending'
           });
         });
-        
+
         // Sort by date in memory (newest first), put items without createdAt at the end
         reports.sort((a, b) => {
           const dateA = a.createdAt?.toDate?.() || new Date(0);
@@ -176,12 +179,12 @@ const History = () => {
   };
 
   const filteredHistory = reportHistory.filter(report => {
-    const matchesStatusFilter = 
-      filterStatus === "all" || 
+    const matchesStatusFilter =
+      filterStatus === "all" ||
       report.status === filterStatus;
-    
-    const matchesProblemFilter = 
-      filterProblem === "all" || 
+
+    const matchesProblemFilter =
+      filterProblem === "all" ||
       report.problem === filterProblem;
 
     return matchesStatusFilter && matchesProblemFilter;
@@ -244,7 +247,7 @@ const History = () => {
     const headers = Object.keys(csvData[0]);
     const csv = [
       headers.join(','),
-      ...csvData.map(row => 
+      ...csvData.map(row =>
         headers.map(header => JSON.stringify(row[header as keyof typeof row] || '')).join(',')
       )
     ].join('\n');
@@ -267,12 +270,12 @@ const History = () => {
   const handleDeleteReport = async (reportId: string) => {
     try {
       await deleteDoc(doc(db, "farmReports", reportId));
-      
+
       // Remove the deleted report from the local state
-      setReportHistory(prevReports => 
+      setReportHistory(prevReports =>
         prevReports.filter(report => report.id !== reportId)
       );
-      
+
       toast({
         title: "Report Deleted",
         description: "The report has been successfully deleted.",
@@ -296,20 +299,20 @@ const History = () => {
   // Confirm delete (called from dialog)
   const confirmDelete = async () => {
     if (!reportToDelete) return;
-    
+
     try {
       await deleteDoc(doc(db, "farmReports", reportToDelete.id));
-      
+
       // Remove the deleted report from the local state
-      setReportHistory(prevReports => 
+      setReportHistory(prevReports =>
         prevReports.filter(report => report.id !== reportToDelete.id)
       );
-      
+
       toast({
         title: "Report Deleted",
         description: "The report has been successfully deleted.",
       });
-      
+
       // Close dialog and reset state
       setDeleteDialogOpen(false);
       setReportToDelete(null);
@@ -320,7 +323,7 @@ const History = () => {
         description: error.message || "Failed to delete the report. Please try again.",
         variant: "destructive",
       });
-      
+
       // Close dialog even on error
       setDeleteDialogOpen(false);
       setReportToDelete(null);
@@ -356,8 +359,8 @@ const History = () => {
                   {userRole === 'farmer' ? 'My Report History' : 'All Community Reports'}
                 </h1>
                 <p className="text-primary-foreground/90">
-                  {userRole === 'farmer' 
-                    ? "View your farm problem reports and recommendations" 
+                  {userRole === 'farmer'
+                    ? "View your farm problem reports and recommendations"
                     : "Complete history of all farmer reports and system responses"
                   }
                 </p>
@@ -396,7 +399,7 @@ const History = () => {
                   <option value="resolved">Resolved</option>
                 </select>
               </div>
-              
+
               {/* Problem Type Filter Dropdown - Narrower */}
               <div>
                 <label className="text-sm font-medium mb-1 block">Problem Type</label>
@@ -413,7 +416,7 @@ const History = () => {
                   ))}
                 </select>
               </div>
-              
+
               {/* Clear Filters Button */}
               <div className="flex items-end">
                 {(filterStatus !== "all" || filterProblem !== "all") && (
@@ -429,7 +432,7 @@ const History = () => {
                   </Button>
                 )}
               </div>
-              
+
               {userRole !== 'farmer' && (
                 <div className="flex items-end">
                   <Button variant="outline" onClick={exportToCSV} className="h-8 text-sm">
@@ -450,10 +453,10 @@ const History = () => {
                 <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                 <p className="text-lg font-medium mb-2">No reports found</p>
                 <p className="text-sm">
-                  {(filterStatus !== "all" || filterProblem !== "all") 
-                    ? "Try adjusting your filter criteria." 
-                    : userRole === 'farmer' 
-                      ? "You haven't submitted any reports yet. Go to dashboard to report a problem." 
+                  {(filterStatus !== "all" || filterProblem !== "all")
+                    ? "Try adjusting your filter criteria."
+                    : userRole === 'farmer'
+                      ? "You haven't submitted any reports yet. Go to dashboard to report a problem."
                       : "No reports have been submitted yet."}
                 </p>
               </CardContent>
@@ -461,6 +464,7 @@ const History = () => {
           ) : (
             <>
               {currentReports.map((report) => {
+                const isExpanded = expandedReportId === report.id;
                 return (
                   <Card key={report.id} className="shadow-soft hover:shadow-card transition-shadow">
                     <CardHeader className="pb-3">
@@ -471,7 +475,7 @@ const History = () => {
                               {report.username}
                             </Badge>
                           )}
-                          <Badge 
+                          <Badge
                             className={`${getProblemColor(report.problem)} border capitalize`}
                           >
                             {report.problem.replace('_', ' ')}
@@ -481,7 +485,7 @@ const History = () => {
                               {report.affectedCrop}
                             </Badge>
                           )}
-                          <Badge 
+                          <Badge
                             variant={report.status === 'resolved' ? 'default' : 'secondary'}
                             className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
                           >
@@ -501,7 +505,7 @@ const History = () => {
                         </div>
                       </div>
                     </CardHeader>
-                    
+
                     <CardContent className="space-y-4">
                       {/* Original Problem */}
                       <div>
@@ -517,53 +521,94 @@ const History = () => {
                         )}
                       </div>
 
-                      {/* Recommendations Grid */}
-                      <div className="grid md:grid-cols-2 gap-4">
-                        {report.recommendedCrops && report.recommendedCrops.length > 0 && (
-                          <div className="p-3 bg-success/10 rounded-lg border border-success/20">
-                            <h4 className="text-sm font-medium text-success mb-2 flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4" />
-                              Recommended Crops
-                            </h4>
-                            <div className="flex flex-wrap gap-1">
-                              {report.recommendedCrops.map((crop: string, index: number) => (
-                                <Badge key={index} className="bg-success text-success-foreground text-xs">
-                                  {crop}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                      {/* Show full content only when expanded */}
+                      {isExpanded && (
+                        <>
+                          {/* Recommendations Grid */}
+                          <div className="grid md:grid-cols-2 gap-4">
+                            {report.recommendedCrops && report.recommendedCrops.length > 0 && (
+                              <div className="p-3 bg-success/10 rounded-lg border border-success/20">
+                                <h4 className="text-sm font-medium text-success mb-2 flex items-center gap-2">
+                                  <CheckCircle className="h-4 w-4" />
+                                  Recommended Crops
+                                </h4>
+                                <div className="flex flex-wrap gap-1">
+                                  {report.recommendedCrops.map((crop: string, index: number) => (
+                                    <Badge key={index} className="bg-success text-success-foreground text-xs">
+                                      {crop}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
 
-                        {report.cropsToAvoid && report.cropsToAvoid.length > 0 && (
-                          <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                            <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
-                              <AlertTriangle className="h-4 w-4" />
-                              Crops to Avoid
-                            </h4>
-                            <div className="flex flex-wrap gap-1">
-                              {report.cropsToAvoid.map((crop: string, index: number) => (
-                                <Badge key={index} variant="destructive" className="text-xs">
-                                  {crop}
-                                </Badge>
-                              ))}
-                            </div>
+                            {report.cropsToAvoid && report.cropsToAvoid.length > 0 && (
+                              <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                                <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
+                                  <AlertTriangle className="h-4 w-4" />
+                                  Crops to Avoid
+                                </h4>
+                                <div className="flex flex-wrap gap-1">
+                                  {report.cropsToAvoid.map((crop: string, index: number) => (
+                                    <Badge key={index} variant="destructive" className="text-xs">
+                                      {crop}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
 
-                      {/* AI Advice */}
-                      {report.advice && (
-                        <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
-                          <h4 className="text-sm font-medium text-primary mb-2">AI Recommendations:</h4>
-                          <p className="text-sm">{report.advice}</p>
-                        </div>
+                          {/* AI Advice */}
+                          {report.advice && (
+                            <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+                              <h4 className="text-sm font-medium text-primary mb-2">AI Recommendations:</h4>
+                              <p className="text-sm">{report.advice}</p>
+                            </div>
+                          )}
+                        </>
                       )}
                     </CardContent>
-                    
-                    {/* Delete Button for Farmers */}
-                    {userRole === 'farmer' && (
+
+                    {/* See More / See Less Button */}
+                    <div className="px-6 pb-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpandedReportId(isExpanded ? null : report.id)}
+                        className="w-full"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="h-4 w-4 mr-2" />
+                            See Less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4 mr-2" />
+                            See More
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Delete Button for Farmers (only shown when not expanded or at the bottom when expanded) */}
+                    {userRole === 'farmer' && !isExpanded && (
                       <div className="px-6 pb-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteRequest(report)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete Report
+                        </Button>
+                      </div>
+                    )}
+
+                    {userRole === 'farmer' && isExpanded && (
+                      <div className="px-6 pb-4 flex justify-between">
                         <Button
                           variant="outline"
                           size="sm"
@@ -578,7 +623,7 @@ const History = () => {
                   </Card>
                 );
               })}
-              
+
               {/* Pagination Controls - Updated to match admin design */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 pt-4">
@@ -591,7 +636,7 @@ const History = () => {
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  
+
                   <div className="flex items-center gap-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                       // Calculate start index for pagination window
@@ -605,7 +650,7 @@ const History = () => {
                           start = currentPage - 2;
                         }
                       }
-                      
+
                       const pageNum = start + i;
                       return (
                         <Button
@@ -619,7 +664,7 @@ const History = () => {
                         </Button>
                       );
                     })}
-                    
+
                     {totalPages > 5 && (
                       <>
                         {currentPage < totalPages - 2 && (
@@ -638,7 +683,7 @@ const History = () => {
                       </>
                     )}
                   </div>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -672,7 +717,7 @@ const History = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700"
             >
