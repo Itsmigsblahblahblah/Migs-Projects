@@ -276,7 +276,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             Export All
                         </Button>
                     </div>
-                    
+
                     {/* Sorting Options */}
                     <div className="flex flex-wrap gap-2 pt-4">
                         <Button
@@ -297,21 +297,18 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             variant={sortOption === 'barangay' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setSortOption('barangay')}
-                            className="bg-green-600 hover:bg-green-700 text-white"
                         >
                             Group by Barangay
                         </Button>
-                    </div>
-                    
-                    {/* Barangay dropdown and stats when grouping is active */}
-                    {sortOption === 'barangay' && (
-                        <div className="pt-4 space-y-4">
-                            <div className="flex flex-wrap gap-2 items-center">
-                                <span className="text-sm font-medium">Filter by Barangay:</span>
+
+                        {/* Filter by Barangay dropdown - shown to the right when grouping is active */}
+                        {sortOption === 'barangay' && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium whitespace-nowrap">Filter by Barangay:</span>
                                 <select
                                     value={selectedBarangay}
                                     onChange={(e) => setSelectedBarangay(e.target.value)}
-                                    className="border rounded-md px-3 py-1 text-sm"
+                                    className="border rounded-md px-3 py-1 text-sm min-w-[150px]"
                                 >
                                     <option value="all">All Barangays</option>
                                     {uniqueBarangays.map(barangay => (
@@ -321,25 +318,28 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                     ))}
                                 </select>
                             </div>
-                            
-                            {/* Stats display for selected barangay */}
-                            {selectedBarangay !== 'all' && barangayStats && (
-                                <div className="bg-muted p-3 rounded-md">
-                                    <h3 className="font-semibold">
-                                        {selectedBarangay} has {barangayStats.totalReports} report{barangayStats.totalReports !== 1 ? 's' : ''}
-                                    </h3>
-                                    <div className="flex flex-wrap gap-4 mt-2">
-                                        {Object.entries(barangayStats.problemCounts).map(([problem, count]) => (
-                                            <div key={problem} className="flex items-center gap-1">
-                                                <span className="text-sm capitalize">{problem}:</span>
-                                                <Badge variant="secondary">{count}</Badge>
-                                            </div>
-                                        ))}
-                                    </div>
+                        )}
+                    </div>
+
+                    {/* Stats display for selected barangay - shown below */}
+                    {sortOption === 'barangay' && selectedBarangay !== 'all' && barangayStats && (
+                        <div className="pt-4">
+                            <div className="bg-muted p-3 rounded-md">
+                                <h3 className="font-semibold">
+                                    {selectedBarangay} has {barangayStats.totalReports} report{barangayStats.totalReports !== 1 ? 's' : ''}
+                                </h3>
+                                <div className="flex flex-wrap gap-4 mt-2">
+                                    {Object.entries(barangayStats.problemCounts).map(([problem, count]) => (
+                                        <div key={problem} className="flex items-center gap-1">
+                                            <span className="text-sm capitalize">{problem}:</span>
+                                            <Badge variant="secondary">{count}</Badge>
+                                        </div>
+                                    ))}
                                 </div>
-                            )}
+                            </div>
                         </div>
                     )}
+
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col">
                     {localReports.length > 0 ? (
@@ -429,7 +429,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                 </div>
                                             </div>
                                         ))}
-                                        
+
                                         {/* Pagination Controls - Match FarmersList design */}
                                         {totalGroupedPages > 0 && (
                                             <div className="border-t pt-1 px-4 mt-auto" style={{ paddingBottom: '0px' }}>
