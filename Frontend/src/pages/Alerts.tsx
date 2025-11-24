@@ -68,23 +68,48 @@ const Alerts = () => {
   const currentUser = auth.currentUser;
   const isAdmin = currentUser && currentUser.email === 'admin@majayjay.farm';
 
-  // Fetch user read status
+  // Fetch user read status for both announcements and weather alerts
   useEffect(() => {
     if (!userId || userId === 'default-user') return;
 
-    const readStatusQuery = query(
+    // Fetch announcement read status
+    const announcementReadStatusQuery = query(
       collection(db, "userReadStatus", userId, "announcements")
     );
 
-    const unsubscribe = onSnapshot(readStatusQuery, (snapshot) => {
+    const unsubscribeAnnouncements = onSnapshot(announcementReadStatusQuery, (snapshot) => {
       const readStatus: Record<string, boolean> = {};
       snapshot.forEach((doc) => {
         readStatus[doc.id] = true;
       });
-      setUserReadStatus(readStatus);
+      setUserReadStatus(prev => ({
+        ...prev,
+        ...readStatus
+      }));
     });
 
-    return () => unsubscribe();
+    // Fetch weather alert read status
+    const weatherReadStatusQuery = query(
+      collection(db, "userReadStatus", userId, "weather")
+    );
+
+    const unsubscribeWeather = onSnapshot(weatherReadStatusQuery, (snapshot) => {
+      const readStatus: Record<string, boolean> = {};
+      snapshot.forEach((doc) => {
+        readStatus[doc.id] = true;
+      });
+      
+      // Merge with existing read status
+      setUserReadStatus(prev => ({
+        ...prev,
+        ...readStatus
+      }));
+    });
+
+    return () => {
+      unsubscribeAnnouncements();
+      unsubscribeWeather();
+    };
   }, [userId]);
 
   // Fetch admin messages
@@ -203,10 +228,31 @@ const Alerts = () => {
           ...prev,
           [announcementId]: true
         }));
+      } else if (alert.type === 'weather') {
+        // For weather alerts, create a read status record
+        // Create the same stable ID based on the alert description and date
+        const weatherAlertId = createWeatherAlertId(alert.title, alert.date);
+        await setDoc(doc(db, "userReadStatus", userId, "weather", weatherAlertId), {
+          read: true,
+          timestamp: new Date()
+        });
+        
+        // Update local read status immediately
+        setUserReadStatus(prev => ({
+          ...prev,
+          [weatherAlertId]: true
+        }));
       }
       
       // Also mark as read in the selected alert if it's the same one
-      if (selectedAlert && selectedAlert.id === alert.id) {
+      if (selectedAlert && selectedAlert.type === 'weather') {
+        // For weather alerts, we need to generate the ID the same way to compare
+        const selectedAlertWeatherId = createWeatherAlertId(selectedAlert.title, selectedAlert.date);
+        const currentAlertWeatherId = createWeatherAlertId(alert.title, alert.date);
+        if (selectedAlertWeatherId === currentAlertWeatherId) {
+          setSelectedAlert(prev => prev ? {...prev, read: true} : null);
+        }
+      } else if (selectedAlert && selectedAlert.id === alert.id) {
         setSelectedAlert(prev => prev ? {...prev, read: true} : null);
       }
       
@@ -224,19 +270,38 @@ const Alerts = () => {
     }
   };
 
+  // Function to create a stable ID for weather alerts
+  const createWeatherAlertId = (description: string, date: string) => {
+    // Create a simple hash-based ID to avoid issues with special characters in btoa
+    let hash = 0;
+    const str = description + date;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return `weather-${Math.abs(hash)}`;
+  };
+
   // Function to transform weather alerts to our alert format
   const transformWeatherAlerts = (): AlertItem[] => {
     if (weatherLoading || weatherError || !weatherAlerts) return [];
     
-    return weatherAlerts.map((alert, index) => ({
-      id: `weather-${index}`,
-      title: alert.description,
-      content: alert.description,
-      category: 'critical', // Weather alerts are always critical
-      date: alert.date || new Date().toLocaleDateString(),
-      type: 'weather',
-      read: true // Weather alerts are considered read by default
-    }));
+    return weatherAlerts.map((alert) => {
+      // Create a stable ID based on the alert description and date
+      const weatherAlertId = createWeatherAlertId(alert.description, alert.date || '');
+      const isRead = userReadStatus[weatherAlertId] || false;
+      
+      return {
+        id: weatherAlertId,
+        title: alert.description,
+        content: alert.description,
+        category: 'critical', // Weather alerts are always critical
+        date: alert.date || new Date().toLocaleDateString(),
+        type: 'weather',
+        read: isRead
+      };
+    });
   };
 
   // Function to transform announcements to our alert format
@@ -294,7 +359,6 @@ const Alerts = () => {
     return {
       all: allAlerts.filter(a => !a.read).length,
       critical: allAlerts.filter(a => a.category === 'critical' && !a.read).length,
-      warning: allAlerts.filter(a => a.category === 'warning' && !a.read).length,
       informational: allAlerts.filter(a => a.category === 'informational' && !a.read).length,
       messages: allAlerts.filter(a => a.category === 'messages' && !a.read).length
     };
@@ -356,6 +420,20 @@ const Alerts = () => {
         toast({
           title: "Success",
           description: "Announcement deleted successfully.",
+        });
+      } else if (alertToDelete.type === 'weather') {
+        // For weather alerts, remove from read status if it exists
+        // Create the same stable ID based on the alert description and date
+        const weatherAlertId = createWeatherAlertId(alertToDelete.title, alertToDelete.date);
+        try {
+          await deleteDoc(doc(db, "userReadStatus", userId, "weather", weatherAlertId));
+        } catch (e) {
+          // Ignore if read status doesn't exist
+        }
+        
+        toast({
+          title: "Success",
+          description: "Weather alert read status removed.",
         });
       } else {
         // For any other type, show an error
@@ -431,22 +509,9 @@ const Alerts = () => {
                 onClick={() => setActiveCategory('critical')}
                 className="flex items-center gap-2"
               >
-                Critical
+                Weather
                 <Badge variant="destructive" className="ml-2">
                   {alertCounts.critical}
-                </Badge>
-              </Button>
-              <Button
-                variant={activeCategory === 'warning' ? 'default' : 'outline'}
-                onClick={() => setActiveCategory('warning')}
-                className="flex items-center gap-2"
-              >
-                Warning
-                <Badge 
-                  variant="secondary" 
-                  className="ml-2 bg-yellow-500 text-white hover:bg-yellow-600"
-                >
-                  {alertCounts.warning}
                 </Badge>
               </Button>
               <Button
@@ -454,7 +519,7 @@ const Alerts = () => {
                 onClick={() => setActiveCategory('informational')}
                 className="flex items-center gap-2"
               >
-                Informational
+                Announcements
                 <Badge 
                   variant="secondary" 
                   className="ml-2 bg-blue-500 text-white hover:bg-blue-600"
@@ -484,9 +549,8 @@ const Alerts = () => {
           <CardHeader>
             <CardTitle>
               {activeCategory === 'all' && 'All Alerts'}
-              {activeCategory === 'critical' && 'Critical Alerts'}
-              {activeCategory === 'warning' && 'Warning Alerts'}
-              {activeCategory === 'informational' && 'Informational Alerts'}
+              {activeCategory === 'critical' && 'Weather Alerts'}
+              {activeCategory === 'informational' && 'Announcements'}
               {activeCategory === 'messages' && 'Messages'}
             </CardTitle>
           </CardHeader>
@@ -506,7 +570,6 @@ const Alerts = () => {
                     key={alert.id} 
                     className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 mb-3 last:mb-0 ${
                       alert.category === 'critical' ? 'bg-red-50 border-red-200' :
-                      alert.category === 'warning' ? 'bg-yellow-50 border-yellow-200' :
                       alert.category === 'messages' ? 'bg-green-50 border-green-200' :
                       'bg-blue-50 border-blue-200'
                     } ${alert.read ? 'opacity-75' : ''}`}
@@ -524,7 +587,6 @@ const Alerts = () => {
                             className={`
                               ml-2
                               ${alert.category === 'critical' ? 'bg-red-500 hover:bg-red-600' : ''}
-                              ${alert.category === 'warning' ? 'bg-yellow-500 hover:bg-yellow-600' : ''}
                               ${alert.category === 'informational' ? 'bg-blue-500 hover:bg-blue-600' : ''}
                               ${alert.category === 'messages' ? 'bg-green-500 hover:bg-green-600' : ''}
                               text-white
@@ -532,8 +594,8 @@ const Alerts = () => {
                           >
                             {alert.category.charAt(0).toUpperCase() + alert.category.slice(1)}
                           </Badge>
-                          {/* Show action buttons for messages and announcements */}
-                          {(alert.type === 'message' || alert.type === 'announcement') && (
+                          {/* Show action buttons for messages, announcements, and weather alerts */}
+                          {(alert.type === 'message' || alert.type === 'announcement' || alert.type === 'weather') && (
                             <div className="flex gap-1">
                               {!alert.read && (
                                 <Button 
@@ -551,7 +613,7 @@ const Alerts = () => {
                                 size="sm"
                                 onClick={(e) => handleDeleteClick(e, alert)}
                                 className="h-6 w-6 p-0"
-                                title={alert.type === 'message' ? 'Delete message' : 'Delete announcement'}
+                                title={alert.type === 'message' ? 'Delete message' : alert.type === 'weather' ? 'Clear weather alert' : 'Delete announcement'}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -584,13 +646,13 @@ const Alerts = () => {
       {/* Alert Detail Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="flex-shrink-0 p-6 pb-4 border-b bg-green-500 text-white">
+          <DialogHeader className={`flex-shrink-0 p-6 pb-4 border-b text-white ${selectedAlert?.category === 'critical' ? 'bg-red-500' : selectedAlert?.category === 'messages' ? 'bg-green-500' : 'bg-blue-500'}`}>
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="text-xl text-white">
                   {selectedAlert?.title}
                 </DialogTitle>
-                <DialogDescription className="mt-2 text-green-100">
+                <DialogDescription className={`mt-2 ${selectedAlert?.category === 'critical' ? 'text-red-100' : selectedAlert?.category === 'messages' ? 'text-green-100' : 'text-blue-100'}`}>
                   <div className="flex items-center gap-2">
                     <span className="capitalize">
                       {selectedAlert?.type === 'weather' ? 'Weather Alert' : 

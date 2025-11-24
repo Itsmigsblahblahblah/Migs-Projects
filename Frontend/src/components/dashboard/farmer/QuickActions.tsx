@@ -43,9 +43,10 @@ interface QuickActionsProps {
     farmerProfile?: FarmerProfile;
     weatherData?: any;
     userId?: string; // Add userId prop
+    unreadWeatherAlerts?: number; // Add unread weather alerts prop
 }
 
-const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, userId }: QuickActionsProps) => {
+const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, userId, unreadWeatherAlerts = 0 }: QuickActionsProps) => {
     const navigate = useNavigate();
     const [unreadMessages, setUnreadMessages] = useState(0);
     const { announcements, loading: announcementsLoading, unreadCount: unreadAnnouncements } = useAnnouncements();
@@ -77,10 +78,8 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, use
             count += unreadAnnouncements;
         }
         
-        // Add weather alerts (these are always considered unread since they're dynamic)
-        if (!weatherLoading) {
-            count += weatherAlerts.length;
-        }
+        // Add unread weather alerts
+        count += unreadWeatherAlerts;
         
         return count;
     };

@@ -7,6 +7,19 @@ import ProfileCard from "@/components/dashboard/farmer/ProfileCard";
 import WeatherCard from "@/components/dashboard/farmer/WeatherCard";
 import CropStatusCard from "@/components/dashboard/farmer/CropStatusCard";
 import QuickActions from "@/components/dashboard/farmer/QuickActions";
+
+// Function to create a stable ID for weather alerts (copied from Alerts.tsx)
+const createWeatherAlertId = (description: string, date: string) => {
+  // Create a simple hash-based ID to avoid issues with special characters in btoa
+  let hash = 0;
+  const str = description + date;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return `weather-${Math.abs(hash)}`;
+};
 import ReportForm from "@/components/dashboard/farmer/ReportForm";
 import RecommendationResults from "@/components/dashboard/farmer/RecommendationResults";
 import QuickStats from "@/components/dashboard/farmer/QuickStats";
@@ -23,6 +36,8 @@ import { useFarmerDashboard } from "@/hooks/custom/useFarmerDashboard";
 import { useCropManagement } from "@/hooks/custom/useCropManagement";
 import { useReportManagement } from "@/hooks/custom/useReportManagement";
 import { useCrops } from "@/contexts/CropContext"; // Added import
+import { db } from '@/firebaseConfig';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -92,6 +107,8 @@ const FarmerDashboard = () => {
   const [currentCropIndex, setCurrentCropIndex] = useState(0); // Added state for crop navigation
   const [isChecklistDialogOpen, setIsChecklistDialogOpen] = useState(false); // State for checklist dialog
   const [selectedCropId, setSelectedCropId] = useState<string | null>(null); // State for selected crop ID
+  const [userReadStatus, setUserReadStatus] = useState<Record<string, boolean>>({}); // State for user read status
+  const [unreadWeatherAlerts, setUnreadWeatherAlerts] = useState(0); // State for unread weather alerts
 
   const {
     username,
@@ -163,6 +180,83 @@ const FarmerDashboard = () => {
       return () => clearTimeout(timer);
     }
   }, [deletionRequest]);
+
+  // Fetch user read status for weather alerts
+  useEffect(() => {
+    if (!userId) return;
+
+    const readStatusQuery = query(
+      collection(db, "userReadStatus", userId, "weather")
+    );
+
+    const unsubscribe = onSnapshot(readStatusQuery, (snapshot) => {
+      const readStatus: Record<string, boolean> = {};
+      snapshot.forEach((doc) => {
+        readStatus[doc.id] = true;
+      });
+      setUserReadStatus(readStatus);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  // Calculate unread weather alerts count
+  useEffect(() => {
+    if (!weatherData || !weatherData.currentAlerts) return;
+
+    // Extract current alerts
+    let currentAlerts = weatherData.currentAlerts || [];
+    
+    // Add today's date to current alerts
+    currentAlerts = currentAlerts.map((alert: any) => ({
+      ...alert,
+      date: new Date().toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        month: 'short', 
+        day: 'numeric' 
+      })
+    }));
+    
+    // Extract forecast alerts for the next few days
+    let forecastAlerts: any[] = [];
+    if (weatherData.extendedForecast && Array.isArray(weatherData.extendedForecast)) {
+      // Get alerts for the next 5 days
+      for (let i = 0; i < Math.min(5, weatherData.extendedForecast.length); i++) {
+        const day = weatherData.extendedForecast[i];
+        if (day.alerts && Array.isArray(day.alerts) && day.alerts.length > 0) {
+          // Add date information to forecast alerts
+          const alertsWIthDate = day.alerts.map((alert: any) => ({
+            ...alert,
+            date: new Date(day.date).toLocaleDateString('en-US', { 
+              weekday: 'short', 
+              month: 'short', 
+              day: 'numeric' 
+            })
+          }));
+          forecastAlerts.push(...alertsWIthDate);
+        }
+      }
+    }
+    
+    // Combine current and forecast alerts
+    const allAlerts = [...currentAlerts, ...forecastAlerts];
+    
+    // Remove duplicates based on description
+    const uniqueAlerts = allAlerts.filter((alert, index, self) => 
+      index === self.findIndex(a => a.description === alert.description)
+    );
+    
+    // Count unread alerts
+    let unreadCount = 0;
+    uniqueAlerts.forEach(alert => {
+      const alertId = createWeatherAlertId(alert.description, alert.date || '');
+      if (!userReadStatus[alertId]) {
+        unreadCount++;
+      }
+    });
+    
+    setUnreadWeatherAlerts(unreadCount);
+  }, [weatherData, userReadStatus]);
 
   const handleAddCropSubmit = async () => {
     const success = await handleAddCrop();
@@ -524,6 +618,7 @@ const FarmerDashboard = () => {
           farmerProfile={farmerProfile}
           weatherData={weatherData}
           userId={userId} // Pass userId to QuickActions
+          unreadWeatherAlerts={unreadWeatherAlerts} // Pass unread weather alerts count
         />
 
         <div className="grid lg:grid-cols-2 gap-6">
