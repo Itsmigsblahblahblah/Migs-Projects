@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/firebaseConfig";
 import { collection, addDoc, query, where, orderBy, onSnapshot, Timestamp } from "firebase/firestore";
+import { createPortal } from "react-dom";
 
 interface Report {
     id: string;
@@ -81,7 +82,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
 
     const handleSendMessage = async () => {
         if (!message.trim()) return;
-        
+
         setIsSending(true);
         try {
             // Save message to Firestore
@@ -93,7 +94,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                 timestamp: Timestamp.now(),
                 read: false
             });
-            
+
             // Show success feedback using toast notification
             toast({
                 title: "Message Sent",
@@ -112,8 +113,9 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
         }
     };
 
-    return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+    // Create portal to render modal outside of current DOM hierarchy
+    const modalContent = (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-0 z-50">
             <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
                 <CardHeader>
                     <div className="flex justify-between items-start">
@@ -131,7 +133,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                         </Button>
                     </div>
                 </CardHeader>
-                
+
                 <CardContent className="p-6 space-y-6">
                     {/* Report Summary */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -142,7 +144,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                 <span className="capitalize">{report.problem || 'General'}</span>
                             </div>
                         </div>
-                        
+
                         <div className="border p-4">
                             <h3 className="font-semibold text-sm text-muted-foreground">Affected Crop</h3>
                             <div className="flex items-center gap-2 mt-1">
@@ -150,7 +152,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                 <span className="capitalize">{report.affectedCrop || 'Not specified'}</span>
                             </div>
                         </div>
-                        
+
                         <div className="border p-4">
                             <h3 className="font-semibold text-sm text-muted-foreground">Status</h3>
                             <div className="mt-1 capitalize">
@@ -180,7 +182,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                             <Leaf className="h-5 w-5 text-green-500" />
                             AI Recommendations
                         </h3>
-                        
+
                         <div className="space-y-4">
                             <div>
                                 <h4 className="font-medium text-muted-foreground mb-1">Recommended Crops</h4>
@@ -196,7 +198,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                     <p className="text-muted-foreground text-sm">No specific crop recommendations provided.</p>
                                 )}
                             </div>
-                            
+
                             <div>
                                 <h4 className="font-medium text-muted-foreground mb-1">Crops to Avoid</h4>
                                 {report.cropsToAvoid && report.cropsToAvoid.length > 0 ? (
@@ -211,7 +213,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                     <p className="text-muted-foreground text-sm">No crops to avoid specified.</p>
                                 )}
                             </div>
-                            
+
                             <div>
                                 <h4 className="font-medium text-muted-foreground mb-1">Additional Advice</h4>
                                 <div className="border p-4">
@@ -265,8 +267,8 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                     />
                                 </div>
                                 <div className="flex justify-end">
-                                    <Button 
-                                        onClick={handleSendMessage} 
+                                    <Button
+                                        onClick={handleSendMessage}
                                         disabled={isSending || !message.trim()}
                                         className="flex items-center gap-2"
                                     >
@@ -294,7 +296,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                 <Calendar className="h-4 w-4" />
                                 <span>Report ID: {report.id}</span>
                             </div>
-                            
+
                             <div className="flex gap-2">
                                 {report.status !== 'resolved' && (
                                     <Button
@@ -305,7 +307,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                         Mark as Resolved
                                     </Button>
                                 )}
-                                
+
                                 {report.status === 'resolved' && (
                                     <Button
                                         variant="outline"
@@ -315,14 +317,14 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                         Reopen Report
                                     </Button>
                                 )}
-                                
+
                                 <Button variant="outline" onClick={onClose}>
                                     Close
                                 </Button>
                             </div>
                         </div>
                     )}
-                    
+
                     {/* For farmer view, just show a close button */}
                     {!isAdminView && (
                         <div className="flex justify-end pt-4">
@@ -335,6 +337,9 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
             </Card>
         </div>
     );
+
+    // Render modal using portal to ensure it covers the entire viewport
+    return createPortal(modalContent, document.body);
 };
 
 export default ReportDetailView;
