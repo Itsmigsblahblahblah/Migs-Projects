@@ -412,6 +412,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                         <DropdownMenuItem
                                             onClick={() => setSelectedBarangay('all')}
                                             className={`cursor-pointer ${selectedBarangay === 'all' ? "bg-accent" : ""}`}
+                                            style={{ cursor: 'pointer' }}
                                         >
                                             All Barangays
                                         </DropdownMenuItem>
@@ -421,6 +422,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                 key={barangay}
                                                 onClick={() => setSelectedBarangay(barangay)}
                                                 className={`cursor-pointer ${selectedBarangay === barangay ? "bg-accent" : ""}`}
+                                                style={{ cursor: 'pointer' }}
                                             >
                                                 {barangay}
                                             </DropdownMenuItem>
@@ -440,7 +442,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                 </h3>
                                 <div className="flex flex-wrap gap-4 mt-2">
                                     {Object.entries(barangayStats.problemCounts).map(([problem, count]) => (
-                                        <div key={problem} className="flex items-center gap-1">
+                                        <div key={problem} className="flex items-center gap-1 cursor-pointer hover:bg-muted rounded px-2 py-1 transition-colors" style={{ cursor: 'pointer' }}>
                                             <span className="text-sm capitalize">{problem}:</span>
                                             <Badge variant="secondary">{count}</Badge>
                                         </div>

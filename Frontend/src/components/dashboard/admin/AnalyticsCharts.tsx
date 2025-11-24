@@ -37,7 +37,7 @@ const AnalyticsCharts = ({
 }: AnalyticsChartsProps) => {
     // Calculate total reports for percentage calculation
     const totalReports = problemsData.reduce((sum, item) => sum + item.count, 0);
-    
+
     // Prepare data for pie chart
     const pieData = problemsData.map(item => ({
         name: item.name,
@@ -90,8 +90,8 @@ const AnalyticsCharts = ({
                                     <ul className="space-y-2">
                                         {problemsData.map((item, index) => (
                                             <li key={item.name} className="flex items-center">
-                                                <div 
-                                                    className="w-3 h-3 rounded-full mr-2" 
+                                                <div
+                                                    className="w-3 h-3 rounded-full mr-2"
                                                     style={{ backgroundColor: COLORS[index % COLORS.length] }}
                                                 ></div>
                                                 <span className="capitalize">{item.name}</span>
@@ -169,7 +169,12 @@ const AnalyticsCharts = ({
                                     <XAxis dataKey="name" />
                                     <YAxis />
                                     <Tooltip />
-                                    <Bar dataKey="count" fill="hsl(var(--primary))" name="Reports">
+                                    <Bar
+                                        dataKey="count"
+                                        fill="hsl(var(--primary))"
+                                        name="Reports"
+                                        cursor="pointer"
+                                    >
                                         {problemsData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
@@ -223,8 +228,8 @@ const AnalyticsCharts = ({
                                         <h4 className="font-semibold text-lg">Crop Legend</h4>
                                         {funnelData.map((entry, index) => (
                                             <div key={entry.crop} className="flex items-start">
-                                                <div 
-                                                    className="w-4 h-4 rounded-sm mr-2 mt-1 flex-shrink-0" 
+                                                <div
+                                                    className="w-4 h-4 rounded-sm mr-2 mt-1 flex-shrink-0"
                                                     style={{ backgroundColor: entry.fill }}
                                                 ></div>
                                                 <span className="text-sm">{entry.crop}</span>
@@ -269,13 +274,13 @@ const AnalyticsCharts = ({
                             </p>
                         </div>
                     </div>
-                    
+
                     {problemsData.length > 0 && (
                         <div className="mt-4 pt-4 border-t">
                             <h4 className="font-medium mb-2">Dominant Issue Category</h4>
                             <div className="flex items-center">
-                                <div 
-                                    className="w-4 h-4 rounded-full mr-2" 
+                                <div
+                                    className="w-4 h-4 rounded-full mr-2"
                                     style={{ backgroundColor: COLORS[0] }}
                                 ></div>
                                 <span className="font-semibold">
