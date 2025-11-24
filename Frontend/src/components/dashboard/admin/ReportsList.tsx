@@ -1,8 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle, Eye, Download, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Calendar, CheckCircle, Eye, Download, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 
 import ReportDetailView from "./ReportDetailView";
 import {
@@ -58,6 +71,9 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const [localReports, setLocalReports] = useState<Report[]>(reports);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
     const [sortOption, setSortOption] = useState<'newest' | 'oldest' | 'barangay'>('newest');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // For dropdown sorting
+    const [sortBy, setSortBy] = useState<'date' | 'status'>('date'); // For dropdown sorting
+    const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined); // For dropdown accordion
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedBarangay, setSelectedBarangay] = useState<string>('all'); // For barangay filtering
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -96,17 +112,26 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const sortedReports = useMemo(() => {
         let sorted = [...localReports];
 
-        if (sortOption === 'newest') {
+        // Apply sorting based on dropdown selection
+        if (sortBy === 'date') {
             sorted.sort((a, b) => {
                 const dateA = a.createdAt?.toDate?.() || new Date(0);
                 const dateB = b.createdAt?.toDate?.() || new Date(0);
-                return dateB.getTime() - dateA.getTime();
+                if (sortOrder === 'desc') {
+                    return dateB.getTime() - dateA.getTime();
+                } else {
+                    return dateA.getTime() - dateB.getTime();
+                }
             });
-        } else if (sortOption === 'oldest') {
+        } else if (sortBy === 'status') {
             sorted.sort((a, b) => {
-                const dateA = a.createdAt?.toDate?.() || new Date(0);
-                const dateB = b.createdAt?.toDate?.() || new Date(0);
-                return dateA.getTime() - dateB.getTime();
+                const statusA = a.status || '';
+                const statusB = b.status || '';
+                if (sortOrder === 'desc') {
+                    return statusB.localeCompare(statusA);
+                } else {
+                    return statusA.localeCompare(statusB);
+                }
             });
         } else if (sortOption === 'barangay') {
             sorted.sort((a, b) => {
@@ -125,7 +150,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         }
 
         return sorted;
-    }, [localReports, sortOption, farmerAddressMap, selectedBarangay]);
+    }, [localReports, sortOption, sortBy, sortOrder, farmerAddressMap, selectedBarangay]);
 
     // Get unique barangays for grouping display
     const groupedByBarangay = useMemo(() => {
@@ -190,6 +215,33 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
 
     const closeReportDetail = () => {
         setSelectedReport(null);
+    };
+
+    // Handle sort change from dropdown
+    const handleSortChange = (criteria: 'date' | 'status', order: 'asc' | 'desc') => {
+        setSortBy(criteria);
+        setSortOrder(order);
+        // Reset to first page when sorting changes
+        setCurrentPage(1);
+    };
+
+    // Handle accordion change in dropdown
+    const handleAccordionChange = (value: string | undefined) => {
+        setOpenAccordion(value);
+    };
+
+    // Get label for current sort criteria
+    const getSortByLabel = () => {
+        switch (sortBy) {
+            case 'date': return 'Date';
+            case 'status': return 'Status';
+            default: return 'Date';
+        }
+    };
+
+    // Get label for current sort order
+    const getOrderLabel = () => {
+        return sortOrder === 'asc' ? 'Ascending' : 'Descending';
     };
 
     // Scroll to top when page changes
@@ -277,22 +329,66 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                         </Button>
                     </div>
 
-                    {/* Sorting Options */}
+                    {/* Sorting Options - Replace buttons with dropdown */}
                     <div className="flex flex-wrap gap-2 pt-4">
-                        <Button
-                            variant={sortOption === 'newest' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setSortOption('newest')}
-                        >
-                            Newest First
-                        </Button>
-                        <Button
-                            variant={sortOption === 'oldest' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setSortOption('oldest')}
-                        >
-                            Oldest First
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                                    Sort: {getSortByLabel()} - {getOrderLabel()}
+                                    <ChevronDown className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                <Accordion
+                                    type="single"
+                                    collapsible
+                                    value={openAccordion}
+                                    onValueChange={handleAccordionChange}
+                                    className="w-full"
+                                >
+                                    <AccordionItem value="date" className="border-b-0">
+                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                                            <span className="flex items-center">
+                                                <ChevronRight className="h-4 w-4 mr-2" />
+                                                Date
+                                            </span>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pb-0">
+                                            <DropdownMenuItem onClick={() => handleSortChange("date", "desc")}>
+                                                <ArrowDown className="h-4 w-4 mr-2" />
+                                                Newest
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleSortChange("date", "asc")}>
+                                                <ArrowUp className="h-4 w-4 mr-2" />
+                                                Oldest
+                                            </DropdownMenuItem>
+                                        </AccordionContent>
+                                    </AccordionItem>
+
+                                    <DropdownMenuSeparator />
+
+                                    <AccordionItem value="status" className="border-b-0">
+                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                                            <span className="flex items-center">
+                                                <ChevronRight className="h-4 w-4 mr-2" />
+                                                Group by
+                                            </span>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pb-0">
+                                            <DropdownMenuItem onClick={() => handleSortChange("status", "desc")}>
+                                                <ArrowDown className="h-4 w-4 mr-2" />
+                                                Resolved
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleSortChange("status", "asc")}>
+                                                <ArrowUp className="h-4 w-4 mr-2" />
+                                                Processed
+                                            </DropdownMenuItem>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
                         <Button
                             variant={sortOption === 'barangay' ? 'default' : 'outline'}
                             size="sm"
@@ -339,7 +435,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             </div>
                         </div>
                     )}
-
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col">
                     {localReports.length > 0 ? (
