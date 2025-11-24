@@ -3,7 +3,7 @@
  */
 
 // API base URL - adjust this to match your backend URL
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8001';
 
 /**
  * Get vegetable demand prediction for a specific crop
@@ -106,7 +106,26 @@ export const getVegetableHistoricalData = async (vegetableName: string) => {
     const data = await response.json();
     return data.vegetable_data;
   } catch (error) {
-    console.error('Error getting vegetable historical data:', error);
+    console.error('Error getting vegetable historical data for:', vegetableName, error);
+    // Try with a simplified name
+    try {
+      const simplifiedName = vegetableName.replace(/\s*\(.*?\)/g, '').trim();
+      console.log('Trying with simplified name:', simplifiedName);
+      const response = await fetch(`${API_BASE_URL}/vegetables/vegetable-data/${encodeURIComponent(simplifiedName)}`);
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      if (data.vegetable_data && data.vegetable_data.length > 0) {
+        console.log('Found data with simplified name:', simplifiedName);
+        return data.vegetable_data;
+      }
+    } catch (simplifiedError) {
+      console.error('Error with simplified name:', simplifiedError);
+    }
+    
     throw error;
   }
 };

@@ -121,6 +121,109 @@ export const getHarvestEstimate = async (
 };
 
 /**
+ * Get real-time price estimation for a specific crop using Gemini AI
+ * @param cropName Name of the crop
+ * @param currentPrice Current market price of the crop
+ * @param location Farm location (optional)
+ * @returns Estimated price trend and insights
+ */
+export const getCropPriceEstimate = async (
+  cropName: string,
+  currentPrice: number,
+  location?: string
+) => {
+  const prompt = `
+    You are an expert agricultural market analyst specializing in Philippine vegetable markets, particularly in Majayjay, Laguna.
+    
+    Based on the crop name and current market price provided, estimate the price trend for the next month and provide market insights:
+    
+    Crop: ${cropName}
+    Current Price: ₱${currentPrice.toFixed(2)} per kg
+    Location: ${location || 'Majayjay, Laguna'}
+    Current Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+    
+    Consider these factors in your analysis:
+    - Seasonal demand patterns in the Philippines
+    - Supply and demand dynamics
+    - Weather conditions affecting crop production
+    - Local market trends in Majayjay and nearby areas
+    - Historical price patterns for this crop
+    - Upcoming holidays or events that might affect demand
+    
+    Please respond in the following JSON format:
+    {
+      "estimatedPriceNextMonth": number,
+      "priceChangePercentage": number,
+      "trend": "Increasing/Decreasing/Stable",
+      "confidenceLevel": "High/Medium/Low",
+      "factors": ["Array of 3-5 key factors affecting the price"],
+      "recommendations": ["Array of 2-3 recommendations for farmers"],
+      "marketOutlook": "Brief market outlook for the next month"
+    }
+    
+    Ensure your response is valid JSON and nothing else. Be specific and practical for Filipino farmers.
+  `;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }]
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Gemini API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    // Extract JSON from the response
+    const textResponse = data.candidates[0].content.parts[0].text;
+    // Clean up the response to extract valid JSON
+    const jsonStart = textResponse.indexOf('{');
+    const jsonEnd = textResponse.lastIndexOf('}') + 1;
+    const jsonString = textResponse.substring(jsonStart, jsonEnd);
+    
+    const result = JSON.parse(jsonString);
+    
+    return result;
+  } catch (error) {
+    console.error("Error with Gemini API for price estimation:", error);
+    // Fallback to default response if API fails
+    const priceChangePercentage = (Math.random() * 10) - 5; // Random change between -5% and +5%
+    const estimatedPriceNextMonth = currentPrice * (1 + priceChangePercentage / 100);
+    
+    return {
+      estimatedPriceNextMonth: parseFloat(estimatedPriceNextMonth.toFixed(2)),
+      priceChangePercentage: parseFloat(priceChangePercentage.toFixed(2)),
+      trend: priceChangePercentage > 0 ? "Increasing" : priceChangePercentage < 0 ? "Decreasing" : "Stable",
+      confidenceLevel: "Low",
+      factors: [
+        "Market fluctuations",
+        "Seasonal demand",
+        "Supply variations"
+      ],
+      recommendations: [
+        "Monitor market prices regularly",
+        "Consider storage options if prices are favorable"
+      ],
+      marketOutlook: "Market prices may fluctuate based on supply and demand. Monitor local market trends for better selling opportunities."
+    };
+  }
+};
+
+/**
  * Get default days to harvest based on crop type
  * @param cropName Name of the crop
  * @returns Estimated days to harvest

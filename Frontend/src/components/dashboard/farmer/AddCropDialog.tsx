@@ -19,6 +19,7 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { HARDCODED_CROPS, formatCropName } from "@/utils/cropUtils";
 import { ChevronDown } from "lucide-react";
+import { getAllLatestCropPrices } from "@/services/cropPriceService"; // Import the new service
 
 interface AddCropDialogProps {
     open: boolean;
@@ -52,12 +53,31 @@ const AddCropDialog = ({
     const [showAddCropInput, setShowAddCropInput] = useState(false); // Toggle for admin to add new crops
     const [showCropDropdown, setShowCropDropdown] = useState(false); // For showing crop dropdown
     const [cropSearchTerm, setCropSearchTerm] = useState(newCrop.name || ""); // For filtering crops in dropdown
+    const [cropPrices, setCropPrices] = useState<{[key: string]: any}>({}); // For storing crop prices
+    const [loadingPrices, setLoadingPrices] = useState(true); // For tracking if prices are loading
     const cropDropdownRef = useRef<HTMLDivElement>(null);
 
     // Filter crops based on search term
     const filteredCrops = cropOptions.filter(crop =>
         crop.toLowerCase().includes(cropSearchTerm.toLowerCase())
     );
+
+    // Fetch crop prices when component mounts
+    useEffect(() => {
+        const fetchCropPrices = async () => {
+            try {
+                setLoadingPrices(true);
+                const prices = await getAllLatestCropPrices();
+                setCropPrices(prices);
+            } catch (error) {
+                console.error("Error fetching crop prices:", error);
+            } finally {
+                setLoadingPrices(false);
+            }
+        };
+
+        fetchCropPrices();
+    }, []);
 
     // Sync crop search term with newCrop.name when it changes
     useEffect(() => {
@@ -129,6 +149,16 @@ const AddCropDialog = ({
         }
     }, [lockedCropName]);
 
+    // Format price for display
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(price);
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -165,16 +195,35 @@ const AddCropDialog = ({
 
                                     {showCropDropdown && (
                                         <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-auto">
-                                            {filteredCrops.length > 0 ? (
-                                                filteredCrops.map((crop) => (
-                                                    <div
-                                                        key={crop}
-                                                        className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                                                        onClick={() => handleCropSelect(crop)}
-                                                    >
-                                                        {crop}
-                                                    </div>
-                                                ))
+                                            {loadingPrices ? (
+                                                <div className="px-3 py-2 text-sm text-muted-foreground">
+                                                    Loading prices...
+                                                </div>
+                                            ) : filteredCrops.length > 0 ? (
+                                                filteredCrops.map((crop) => {
+                                                    // Find the price for this crop by doing a more accurate match
+                                                    const cropKey = Object.keys(cropPrices).find(key => 
+                                                        key.toLowerCase().includes(crop.toLowerCase()) ||
+                                                        crop.toLowerCase().includes(key.toLowerCase())
+                                                    );
+                                                    
+                                                    const cropPriceInfo = cropKey ? cropPrices[cropKey] : null;
+                                                    
+                                                    return (
+                                                        <div
+                                                            key={crop}
+                                                            className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground flex justify-between items-center"
+                                                            onClick={() => handleCropSelect(crop)}
+                                                        >
+                                                            <span>{crop}</span>
+                                                            {cropPriceInfo && (
+                                                                <span className="text-muted-foreground text-xs">
+                                                                    {formatPrice(cropPriceInfo.price)}/kg
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })
                                             ) : (
                                                 <div className="px-3 py-2 text-sm text-muted-foreground">
                                                     No matching crops found
@@ -240,16 +289,35 @@ const AddCropDialog = ({
 
                                         {showCropDropdown && (
                                             <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-auto">
-                                                {filteredCrops.length > 0 ? (
-                                                    filteredCrops.map((crop) => (
-                                                        <div
-                                                            key={crop}
-                                                            className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                                                            onClick={() => handleCropSelect(crop)}
-                                                        >
-                                                            {crop}
-                                                        </div>
-                                                    ))
+                                                {loadingPrices ? (
+                                                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                                                        Loading prices...
+                                                    </div>
+                                                ) : filteredCrops.length > 0 ? (
+                                                    filteredCrops.map((crop) => {
+                                                        // Find the price for this crop by doing a more accurate match
+                                                        const cropKey = Object.keys(cropPrices).find(key => 
+                                                            key.toLowerCase().includes(crop.toLowerCase()) ||
+                                                            crop.toLowerCase().includes(key.toLowerCase())
+                                                        );
+                                                        
+                                                        const cropPriceInfo = cropKey ? cropPrices[cropKey] : null;
+                                                        
+                                                        return (
+                                                            <div
+                                                                key={crop}
+                                                                className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground flex justify-between items-center"
+                                                                onClick={() => handleCropSelect(crop)}
+                                                            >
+                                                                <span>{crop}</span>
+                                                                {cropPriceInfo && (
+                                                                    <span className="text-muted-foreground text-xs">
+                                                                        {formatPrice(cropPriceInfo.price)}/kg
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })
                                                 ) : (
                                                     <div className="px-3 py-2 text-sm text-muted-foreground">
                                                         No matching crops found

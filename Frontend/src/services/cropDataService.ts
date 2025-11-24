@@ -121,7 +121,38 @@ export const getMarketPriceInfo = async (cropName: string) => {
       };
     }
     
+    // If no data found, try with a more flexible crop name matching
+    // Remove common suffixes and try again
+    const simplifiedCropName = cropName.replace(/\s*\(.*?\)/g, '').trim();
+    const historicalData2 = await getVegetableHistoricalData(simplifiedCropName);
+    
+    if (historicalData2 && historicalData2.length > 0) {
+      // Extract price information
+      const prices = historicalData2.map((record: any) => parseFloat(record.Price));
+      const averagePrice = prices.reduce((sum: number, price: number) => sum + price, 0) / prices.length;
+      
+      // Simple trend calculation
+      const firstHalf = prices.slice(0, Math.floor(prices.length / 2));
+      const secondHalf = prices.slice(Math.floor(prices.length / 2));
+      const firstAvg = firstHalf.reduce((sum: number, price: number) => sum + price, 0) / firstHalf.length;
+      const secondAvg = secondHalf.reduce((sum: number, price: number) => sum + price, 0) / secondHalf.length;
+      
+      const trend = secondAvg > firstAvg ? 'increasing' : secondAvg < firstAvg ? 'decreasing' : 'stable';
+      
+      return {
+        averagePrice,
+        trend,
+        priceHistory: historicalData2.map((record: any) => ({
+          date: record.Date,
+          price: parseFloat(record.Price),
+          month: record.Month,
+          year: record.Year
+        }))
+      };
+    }
+    
     // Default values if no data found
+    console.warn(`No market data found for crop: ${cropName}. Using default values.`);
     return {
       averagePrice: 50,
       trend: 'stable',

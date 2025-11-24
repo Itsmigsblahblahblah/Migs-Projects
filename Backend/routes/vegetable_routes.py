@@ -150,8 +150,21 @@ async def get_vegetable_data(vegetable_name: str, vegetable_file: str = 'Data/ve
         # Clean the data
         veg_df = veg_df.dropna()
         
-        # Find matching vegetable (case insensitive partial match)
+        # Try exact match first
         matching_rows = veg_df[veg_df['Vegetable'].str.contains(vegetable_name, case=False, na=False)]
+        
+        # If no exact match, try with simplified name (remove content in parentheses)
+        if matching_rows.empty:
+            import re
+            simplified_name = re.sub(r'\s*\(.*?\)', '', vegetable_name).strip()
+            logger.info(f"No exact match found for '{vegetable_name}', trying simplified name: '{simplified_name}'")
+            matching_rows = veg_df[veg_df['Vegetable'].str.contains(simplified_name, case=False, na=False)]
+            
+        # If still no match, try partial matching on the first word
+        if matching_rows.empty:
+            first_word = vegetable_name.split()[0] if vegetable_name.split() else vegetable_name
+            logger.info(f"No match found for '{simplified_name}', trying first word: '{first_word}'")
+            matching_rows = veg_df[veg_df['Vegetable'].str.contains(first_word, case=False, na=False)]
         
         if not matching_rows.empty:
             # Sort by date
@@ -167,9 +180,11 @@ async def get_vegetable_data(vegetable_name: str, vegetable_file: str = 'Data/ve
                 record['MonthNum'] = int(record['MonthNum'])
                 record['Year'] = int(record['Year'])
             
+            logger.info(f"Found {len(vegetable_data)} records for '{vegetable_name}'")
             return {"vegetable_data": vegetable_data}
         else:
             # Return empty data if not found
+            logger.warning(f"No data found for vegetable: '{vegetable_name}'")
             return {"vegetable_data": []}
             
     except Exception as e:
