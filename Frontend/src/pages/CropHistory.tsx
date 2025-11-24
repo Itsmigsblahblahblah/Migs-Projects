@@ -20,6 +20,8 @@ const CropHistory = () => {
     const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false); // Add state for add crop dialog
     const [isUpdateCropDialogOpen, setIsUpdateCropDialogOpen] = useState(false); // Add state for update crop dialog
     const [isEditCropDialogOpen, setIsEditCropDialogOpen] = useState(false); // Add state for edit crop dialog
+    const [currentPage, setCurrentPage] = useState(1); // Pagination state
+    const cropsPerPage = 10; // Number of crops per page
     const navigate = useNavigate();
 
     // Use the crop management hook
@@ -67,6 +69,11 @@ const CropHistory = () => {
 
         loadCropsData();
     }, [navigate, loadCrops, cropsLoaded]);
+
+    // Reset to first page when crops change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [crops]);
 
     const formatDate = (timestamp: any) => {
         if (!timestamp) return 'Unknown date';
@@ -273,76 +280,183 @@ const CropHistory = () => {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="grid gap-4">
-                        <div className="flex items-center justify-between">
+                    <div className="flex flex-col h-full">
+                        <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold">Your Crops</h2>
                             <p className="text-muted-foreground">{crops.length} crops</p>
                         </div>
 
-                        {crops.map((crop) => (
-                            <Card
-                                key={crop.id}
-                                className="shadow-card hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-primary"
-                                onClick={() => navigate(`/crop/${crop.id}`)}
-                            >
-                                <CardHeader>
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <CardTitle className="flex items-center gap-2">
-                                                <Wheat className="h-5 w-5 text-primary" />
-                                                {crop.name}
-                                            </CardTitle>
-                                            <CardDescription>
-                                                Planted on {formatDate(crop.plantedDate)}
-                                            </CardDescription>
+                        <div className="flex-grow">
+                            {crops.slice((currentPage - 1) * cropsPerPage, currentPage * cropsPerPage).map((crop) => (
+                                <Card
+                                    key={crop.id}
+                                    className="shadow-card hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-primary mb-4"
+                                    onClick={() => navigate(`/crop/${crop.id}`)}
+                                >
+                                    <CardHeader>
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <Wheat className="h-5 w-5 text-primary" />
+                                                    {crop.name}
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    Planted on {formatDate(crop.plantedDate)}
+                                                </CardDescription>
+                                            </div>
+                                            {/* Removed View Details button and kept only Delete button */}
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteCrop(crop.id, crop.name);
+                                                }}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
                                         </div>
-                                        {/* Removed View Details button and kept only Delete button */}
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            <div className="flex items-center gap-2">
+                                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">Land Area</p>
+                                                    <p className="font-medium">{Number(crop.landArea)} hectares</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">Capital</p>
+                                                    <p className="font-medium">₱{Number(crop.puhunan).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Leaf className="h-4 w-4 text-muted-foreground" />
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">Soil Type</p>
+                                                    <p className="font-medium">{crop.soilType}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">Planting Date</p>
+                                                    <p className="font-medium">{formatDate(crop.plantedDate)}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {crops.length > 0 && (
+                            <div className="border-t pt-4 mt-auto">
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm text-muted-foreground">
+                                        Showing {(currentPage - 1) * cropsPerPage + 1} to {Math.min(currentPage * cropsPerPage, crops.length)} of {crops.length} crops
+                                    </div>
+                                    <div className="flex space-x-1">
                                         <Button
-                                            variant="destructive"
+                                            variant="outline"
                                             size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteCrop(crop.id, crop.name);
-                                            }}
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                            className="h-8 px-3 text-sm"
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            Previous
+                                        </Button>
+
+                                        {/* Page Number Buttons */}
+                                        {(() => {
+                                            const totalPages = Math.ceil(crops.length / cropsPerPage);
+                                            const pageButtons = [];
+                                            // Show more pages (7 instead of 5) to reduce ellipsis
+                                            let startPage = Math.max(1, currentPage - 3);
+                                            let endPage = Math.min(totalPages, startPage + 6);
+
+                                            // Adjust startPage if we're near the end
+                                            if (endPage - startPage < 6) {
+                                                startPage = Math.max(1, endPage - 6);
+                                            }
+
+                                            // First page button
+                                            if (startPage > 1) {
+                                                pageButtons.push(
+                                                    <Button
+                                                        key={1}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setCurrentPage(1)}
+                                                        className="h-8 w-8 p-0 text-sm"
+                                                    >
+                                                        1
+                                                    </Button>
+                                                );
+                                                // Only show ellipsis if there's a significant gap
+                                                if (startPage > 2) {
+                                                    pageButtons.push(
+                                                        <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                                    );
+                                                }
+                                            }
+
+                                            // Page number buttons
+                                            for (let i = startPage; i <= endPage; i++) {
+                                                pageButtons.push(
+                                                    <Button
+                                                        key={i}
+                                                        variant={currentPage === i ? "default" : "outline"}
+                                                        size="sm"
+                                                        onClick={() => setCurrentPage(i)}
+                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                                    >
+                                                        {i}
+                                                    </Button>
+                                                );
+                                            }
+
+                                            // Last page button
+                                            if (endPage < totalPages) {
+                                                // Only show ellipsis if there's a significant gap
+                                                if (endPage < totalPages - 1) {
+                                                    pageButtons.push(
+                                                        <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                                    );
+                                                }
+                                                pageButtons.push(
+                                                    <Button
+                                                        key={totalPages}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setCurrentPage(totalPages)}
+                                                        className="h-8 w-8 p-0 text-sm"
+                                                    >
+                                                        {totalPages}
+                                                    </Button>
+                                                );
+                                            }
+
+                                            return pageButtons;
+                                        })()}
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(crops.length / cropsPerPage)))}
+                                            disabled={currentPage === Math.ceil(crops.length / cropsPerPage)}
+                                            className="h-8 px-3 text-sm"
+                                        >
+                                            Next
                                         </Button>
                                     </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-xs text-muted-foreground">Land Area</p>
-                                                <p className="font-medium">{Number(crop.landArea)} hectares</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-xs text-muted-foreground">Capital</p>
-                                                <p className="font-medium">₱{Number(crop.puhunan).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Leaf className="h-4 w-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-xs text-muted-foreground">Soil Type</p>
-                                                <p className="font-medium">{crop.soilType}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                                            <div>
-                                                <p className="text-xs text-muted-foreground">Planting Date</p>
-                                                <p className="font-medium">{formatDate(crop.plantedDate)}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
