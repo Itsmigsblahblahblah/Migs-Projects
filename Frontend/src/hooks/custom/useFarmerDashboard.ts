@@ -146,14 +146,23 @@ export const useFarmerDashboard = () => {
             const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
             const reportsRef = collection(db, "farmReports");
+            // Query only by userId first, then filter by date in memory
+            // This avoids the need for a composite index
             const q = query(
                 reportsRef,
-                where("userId", "==", uid),
-                where("createdAt", ">=", Timestamp.fromDate(firstDayOfMonth))
+                where("userId", "==", uid)
             );
 
             const querySnapshot = await getDocs(q);
-            setMonthlyReports(querySnapshot.size);
+            
+            // Filter by date in memory
+            const monthlyReportsCount = querySnapshot.docs.filter(doc => {
+                const data = doc.data();
+                const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+                return createdAt >= firstDayOfMonth;
+            }).length;
+            
+            setMonthlyReports(monthlyReportsCount);
         } catch (error) {
             console.error("Error loading monthly report count:", error);
         }

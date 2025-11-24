@@ -46,6 +46,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import MaintenanceChecklistCard from "@/components/dashboard/farmer/MaintenanceChecklistCard";
 
@@ -741,6 +742,9 @@ const FarmerDashboard = () => {
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Maintenance Checklist</DialogTitle>
+              <DialogDescription>
+                Track and manage your crop maintenance tasks
+              </DialogDescription>
             </DialogHeader>
             {selectedCrop && (
               <MaintenanceChecklistCard
