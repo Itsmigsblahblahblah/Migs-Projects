@@ -256,7 +256,12 @@ const Landing = () => {
                 variant="outline"
                 size="lg"
                 className="text-lg px-8 py-6 border-2"
-                onClick={() => navigate('/login')}
+                onClick={() => {
+                  const element = document.getElementById('how-it-works');
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
               >
                 Learn More
               </Button>
@@ -298,7 +303,7 @@ const Landing = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16">
+      <section id="how-it-works" className="py-16">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
