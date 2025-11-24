@@ -17,6 +17,7 @@ interface ChecklistItem {
     completed: boolean;
     category: string;
     completedAt?: string; // Add timestamp for completion
+    detailedInstructions?: string[]; // Add detailed instructions property
 }
 
 const CropDetails = () => {
@@ -33,8 +34,8 @@ const CropDetails = () => {
     const maintenanceRef = useRef<HTMLDivElement>(null);
 
     // Mock checklist data
-    const generateChecklist = (cropName: string) => {
-        const baseItems = [
+    const generateChecklist = (cropName: string): ChecklistItem[] => {
+        const baseItems: ChecklistItem[] = [
             { id: "1", title: "Prepare soil and remove weeds", completed: false, category: "Preparation" },
             { id: "2", title: "Apply organic fertilizer", completed: false, category: "Planting" },
             { id: "3", title: "Plant seeds at proper depth", completed: false, category: "Planting" },
@@ -63,7 +64,15 @@ const CropDetails = () => {
                 item.title === "Sort and store harvested crops properly"
             );
             if (postHarvestItem) {
-                return [...existingChecklist, { ...postHarvestItem, completed: false, completedAt: undefined }];
+                // Create a clean item without undefined properties
+                const newItem: ChecklistItem = {
+                    id: postHarvestItem.id,
+                    title: postHarvestItem.title,
+                    completed: false,
+                    category: postHarvestItem.category
+                    // completedAt is optional and not included initially
+                };
+                return [...existingChecklist, newItem];
             }
         }
 
@@ -74,7 +83,18 @@ const CropDetails = () => {
     const updateChecklistInstructions = async (itemId: string, instructions: string[]) => {
         const updatedChecklist = checklist.map(item => {
             if (item.id === itemId) {
-                return { ...item, detailedInstructions: instructions };
+                // Create a clean object without undefined properties
+                const updatedItem: ChecklistItem = { ...item };
+                
+                // Only add detailedInstructions if it's not empty
+                if (instructions && instructions.length > 0) {
+                    updatedItem.detailedInstructions = instructions;
+                } else {
+                    // Remove the property if it's empty
+                    delete updatedItem.detailedInstructions;
+                }
+                
+                return updatedItem;
             }
             return item;
         });
@@ -220,11 +240,17 @@ const CropDetails = () => {
                 // If completing the item, add timestamp
                 // If unchecking, remove timestamp
                 const newCompletedStatus = !item.completed;
-                return {
+                const updatedItem = {
                     ...item,
                     completed: newCompletedStatus,
-                    completedAt: newCompletedStatus ? new Date().toISOString() : undefined
                 };
+                
+                // Only add completedAt if completing the item, don't add undefined values
+                if (newCompletedStatus) {
+                    updatedItem.completedAt = new Date().toISOString();
+                }
+                
+                return updatedItem;
             }
             return item;
         });

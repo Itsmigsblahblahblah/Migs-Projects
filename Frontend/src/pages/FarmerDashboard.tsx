@@ -52,8 +52,17 @@ import MaintenanceChecklistCard from "@/components/dashboard/farmer/MaintenanceC
 // Removed mock data
 
 // Mock checklist data - copied from CropDetails.tsx
-const generateChecklist = (cropName: string) => {
-  const baseItems = [
+interface ChecklistItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  category: string;
+  completedAt?: string;
+  detailedInstructions?: string[];
+}
+
+const generateChecklist = (cropName: string): ChecklistItem[] => {
+  const baseItems: ChecklistItem[] = [
     { id: "1", title: "Prepare soil and remove weeds", completed: false, category: "Preparation" },
     { id: "2", title: "Apply organic fertilizer", completed: false, category: "Planting" },
     { id: "3", title: "Plant seeds at proper depth", completed: false, category: "Planting" },
@@ -68,7 +77,7 @@ const generateChecklist = (cropName: string) => {
 };
 
 // Function to ensure all checklist items are present - copied from CropDetails.tsx
-const ensureCompleteChecklist = (existingChecklist: any[], cropName: string): any[] => {
+const ensureCompleteChecklist = (existingChecklist: ChecklistItem[], cropName: string): ChecklistItem[] => {
   const baseChecklist = generateChecklist(cropName);
 
   // If there's no existing checklist, return the base checklist
@@ -87,7 +96,15 @@ const ensureCompleteChecklist = (existingChecklist: any[], cropName: string): an
       item.title === "Sort and store harvested crops properly"
     );
     if (postHarvestItem) {
-      return [...existingChecklist, { ...postHarvestItem, completed: false, completedAt: undefined }];
+      // Create a clean item without undefined properties
+      const newItem: ChecklistItem = {
+        id: postHarvestItem.id,
+        title: postHarvestItem.title,
+        completed: false,
+        category: postHarvestItem.category
+        // completedAt is optional and not included initially
+      };
+      return [...existingChecklist, newItem];
     }
   }
 
@@ -395,7 +412,7 @@ const FarmerDashboard = () => {
     // Calculate productivity based on checklist completion (similar to CropDetails)
     let productivityIndex = 0;
     if (currentCrop.checklist && currentCrop.checklist.length > 0) {
-      const completed = currentCrop.checklist.filter((item: any) => item.completed).length;
+      const completed = currentCrop.checklist.filter((item: ChecklistItem) => item.completed).length;
       productivityIndex = Math.round((completed / currentCrop.checklist.length) * 100);
     }
 
@@ -450,11 +467,18 @@ const FarmerDashboard = () => {
     const updatedChecklist = completeChecklist.map(item => {
       if (item.id === itemId) {
         const newCompletedStatus = !item.completed;
-        return {
+        // Create a clean object without undefined properties
+        const updatedItem = {
           ...item,
           completed: newCompletedStatus,
-          completedAt: newCompletedStatus ? new Date().toISOString() : undefined
         };
+        
+        // Only add completedAt if completing the item
+        if (newCompletedStatus) {
+          updatedItem.completedAt = new Date().toISOString();
+        }
+        
+        return updatedItem;
       }
       return item;
     });
@@ -479,7 +503,7 @@ const FarmerDashboard = () => {
   const selectedCrop = selectedCropId ? cropHistory.find(crop => crop.id === selectedCropId) : null;
 
   // Ensure we have a complete checklist for the selected crop
-  let selectedCropChecklist: any[] = [];
+  let selectedCropChecklist: ChecklistItem[] = [];
   if (selectedCrop) {
     selectedCropChecklist = ensureCompleteChecklist(selectedCrop.checklist || [], selectedCrop.name);
   }
@@ -487,7 +511,7 @@ const FarmerDashboard = () => {
   // Calculate productivity for the selected crop
   let checklistProductivity = 0;
   if (selectedCropChecklist.length > 0) {
-    const completed = selectedCropChecklist.filter((item: any) => item.completed).length;
+    const completed = selectedCropChecklist.filter((item) => item.completed).length;
     checklistProductivity = Math.round((completed / selectedCropChecklist.length) * 100);
   }
 

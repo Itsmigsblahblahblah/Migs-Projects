@@ -161,15 +161,20 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
 
     const updateCrop = async (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>>) => {
         try {
+            // Remove undefined properties to prevent Firebase errors
+            const cleanCropData = Object.fromEntries(
+                Object.entries(cropData).filter(([_, value]) => value !== undefined)
+            );
+
             // Update in Firestore
             const cropRef = doc(db, "farmerCrops", id);
-            await updateDoc(cropRef, cropData);
+            await updateDoc(cropRef, cleanCropData);
 
             // Update in local state
             setCrops(prev =>
                 prev.map(crop =>
                     crop.id === id
-                        ? { ...crop, ...cropData }
+                        ? { ...crop, ...cleanCropData }
                         : crop
                 )
             );
