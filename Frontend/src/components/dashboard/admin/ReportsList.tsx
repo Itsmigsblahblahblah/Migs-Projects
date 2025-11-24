@@ -342,7 +342,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                 </CardHeader>
                 <CardContent>
                     {localReports.length > 0 ? (
-                        <div ref={contentRef} className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                        <div ref={contentRef} className="space-y-4 max-h-[800px] overflow-y-auto pr-2">
                             {sortOption === 'barangay' && selectedBarangay === 'all' ? (
                                 // Grouped by barangay view with pagination
                                 <>
