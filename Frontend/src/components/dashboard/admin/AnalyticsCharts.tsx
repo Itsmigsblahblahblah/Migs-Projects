@@ -78,15 +78,15 @@ const AnalyticsCharts = ({
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedReport, setSelectedReport] = useState<Report | null>(null); // Add state for selected report
-    
+
     // Filter reports by selected category
     const filteredReports = useMemo(() => {
         if (!selectedCategory || !reports) return [];
-        return reports.filter(report => 
+        return reports.filter(report =>
             report.problem.toLowerCase() === selectedCategory.toLowerCase()
         );
     }, [selectedCategory, reports]);
-    
+
     // Handle bar click
     const handleBarClick = (data: any, index: number) => {
         const category = problemsData[index]?.name;
@@ -95,23 +95,23 @@ const AnalyticsCharts = ({
             setIsModalOpen(true);
         }
     };
-    
+
     // Open report detail view
     const openReportDetail = (report: Report) => {
         setSelectedReport(report);
     };
-    
+
     // Close report detail view
     const closeReportDetail = () => {
         setSelectedReport(null);
     };
-    
+
     // Close category modal
     const closeCategoryModal = () => {
         setIsModalOpen(false);
         setSelectedCategory(null);
     };
-    
+
     // Format date for display
     const formatDate = (date: any) => {
         if (!date) return "Unknown date";
@@ -121,7 +121,7 @@ const AnalyticsCharts = ({
             return "Invalid date";
         }
     };
-    
+
     return (
         <>
             <div className="grid lg:grid-cols-2 gap-6">
@@ -247,9 +247,9 @@ const AnalyticsCharts = ({
                                         cursor="pointer"
                                     >
                                         {problemsData.map((entry, index) => (
-                                            <Cell 
-                                                key={`cell-${index}`} 
-                                                fill={COLORS[index % COLORS.length]} 
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                fill={COLORS[index % COLORS.length]}
                                                 onClick={() => handleBarClick(entry, index)}
                                             />
                                         ))}
@@ -369,7 +369,7 @@ const AnalyticsCharts = ({
                     )}
                 </CardContent>
             </Card>
-            
+
             {/* Modal for displaying reports by category */}
             {isModalOpen && selectedCategory && createPortal(
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-0 z-50">
@@ -389,7 +389,7 @@ const AnalyticsCharts = ({
                                 </Button>
                             </div>
                         </CardHeader>
-                        
+
                         <CardContent className="p-6 space-y-6">
                             {filteredReports.length > 0 ? (
                                 <div className="space-y-4">
@@ -409,7 +409,7 @@ const AnalyticsCharts = ({
                                                     {report.status}
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
                                                 <div>
                                                     <span className="text-muted-foreground">Problem: </span>
@@ -426,7 +426,7 @@ const AnalyticsCharts = ({
                                                     </span>
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="flex justify-between items-center">
                                                 <p className="text-sm text-muted-foreground line-clamp-1">
                                                     {report.reportText}
@@ -452,13 +452,13 @@ const AnalyticsCharts = ({
                 </div>,
                 document.body
             )}
-            
+
             {/* Modal for displaying report details */}
             {selectedReport && createPortal(
-                <ReportDetailView 
-                    report={selectedReport} 
-                    onClose={closeReportDetail} 
-                    onUpdateStatus={onUpdateStatus || ((reportId: string, status: string) => {})} // Provide a default empty function if not provided
+                <ReportDetailView
+                    report={selectedReport}
+                    onClose={closeReportDetail}
+                    onUpdateStatus={onUpdateStatus || ((reportId: string, status: string) => { })} // Provide a default empty function if not provided
                     isAdminView={true}
                 />,
                 document.body
