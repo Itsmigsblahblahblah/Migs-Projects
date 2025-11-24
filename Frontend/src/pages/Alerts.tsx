@@ -49,6 +49,12 @@ interface AdminMessage {
   read: boolean;
 }
 
+interface ReadStatus {
+  read: boolean;
+  deleted?: boolean;
+  timestamp: any;
+}
+
 const Alerts = () => {
   const navigate = useNavigate();
   const userId = getUserId();
@@ -62,7 +68,7 @@ const Alerts = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [alertToDelete, setAlertToDelete] = useState<AlertItem | null>(null);
-  const [userReadStatus, setUserReadStatus] = useState<Record<string, boolean>>({}); // Track user read status
+  const [userReadStatus, setUserReadStatus] = useState<Record<string, ReadStatus>>({}); // Track user read status
   
   // Check if current user is admin
   const currentUser = auth.currentUser;
@@ -78,9 +84,15 @@ const Alerts = () => {
     );
 
     const unsubscribeAnnouncements = onSnapshot(announcementReadStatusQuery, (snapshot) => {
-      const readStatus: Record<string, boolean> = {};
+      const readStatus: Record<string, ReadStatus> = {};
       snapshot.forEach((doc) => {
-        readStatus[doc.id] = true;
+        const data = doc.data();
+        // Handle backward compatibility with old boolean format
+        if (typeof data === 'boolean') {
+          readStatus[doc.id] = { read: data, timestamp: null };
+        } else {
+          readStatus[doc.id] = data as ReadStatus;
+        }
       });
       setUserReadStatus(prev => ({
         ...prev,
@@ -94,9 +106,15 @@ const Alerts = () => {
     );
 
     const unsubscribeWeather = onSnapshot(weatherReadStatusQuery, (snapshot) => {
-      const readStatus: Record<string, boolean> = {};
+      const readStatus: Record<string, ReadStatus> = {};
       snapshot.forEach((doc) => {
-        readStatus[doc.id] = true;
+        const data = doc.data();
+        // Handle backward compatibility with old boolean format
+        if (typeof data === 'boolean') {
+          readStatus[doc.id] = { read: data, timestamp: null };
+        } else {
+          readStatus[doc.id] = data as ReadStatus;
+        }
       });
       
       // Merge with existing read status
@@ -220,13 +238,14 @@ const Alerts = () => {
         const announcementId = alert.id.replace('announcement-', '');
         await setDoc(doc(db, "userReadStatus", userId, "announcements", announcementId), {
           read: true,
+          // Don't set deleted flag for mark as read
           timestamp: new Date()
         });
         
         // Update local read status immediately
         setUserReadStatus(prev => ({
           ...prev,
-          [announcementId]: true
+          [announcementId]: { read: true, timestamp: new Date() }
         }));
       } else if (alert.type === 'weather') {
         // For weather alerts, create a read status record
@@ -240,7 +259,7 @@ const Alerts = () => {
         // Update local read status immediately
         setUserReadStatus(prev => ({
           ...prev,
-          [weatherAlertId]: true
+          [weatherAlertId]: { read: true, timestamp: new Date() }
         }));
       }
       
@@ -290,7 +309,8 @@ const Alerts = () => {
     return weatherAlerts.map((alert) => {
       // Create a stable ID based on the alert description and date
       const weatherAlertId = createWeatherAlertId(alert.description, alert.date || '');
-      const isRead = userReadStatus[weatherAlertId] || false;
+      const status = userReadStatus[weatherAlertId];
+      const isRead = status ? (typeof status === 'boolean' ? status : status.read) : false;
       
       return {
         id: weatherAlertId,
@@ -310,7 +330,8 @@ const Alerts = () => {
     
     return announcements.map(announcement => {
       const announcementId = announcement.id;
-      const isRead = userReadStatus[announcementId] || false;
+      const status = userReadStatus[announcementId];
+      const isRead = status ? (typeof status === 'boolean' ? status : status.read) : false;
       
       return {
         id: `announcement-${announcementId}`,
@@ -349,18 +370,61 @@ const Alerts = () => {
 
   // Filter alerts based on category
   const filterAlerts = (alerts: AlertItem[]) => {
-    if (activeCategory === 'all') return alerts;
-    return alerts.filter(alert => alert.category === activeCategory);
+    // Filter out announcements that the user has marked as deleted
+    const filteredAlerts = alerts.filter(alert => {
+      // Keep all non-announcement alerts
+      if (alert.type !== 'announcement') return true;
+      
+      // For announcements, check if they're marked as deleted
+      const announcementId = alert.id.replace('announcement-', '');
+      const status = userReadStatus[announcementId];
+      
+      // If there's no read status, show the announcement
+      if (!status) return true;
+      
+      // If there's a read status, check if it's marked as deleted
+      if (typeof status === 'boolean') {
+        // Old format - boolean means read but not deleted
+        return true;
+      }
+      
+      // New format - check deleted flag
+      return !status.deleted;
+    });
+    
+    if (activeCategory === 'all') return filteredAlerts;
+    return filteredAlerts.filter(alert => alert.category === activeCategory);
   };
 
   // Count alerts by category
   const countAlertsByCategory = () => {
-    const allAlerts = getAllAlerts();
+    // Filter out announcements that the user has marked as deleted
+    const filteredAlerts = getAllAlerts().filter(alert => {
+      // Keep all non-announcement alerts
+      if (alert.type !== 'announcement') return true;
+      
+      // For announcements, check if they're marked as deleted
+      const announcementId = alert.id.replace('announcement-', '');
+      const status = userReadStatus[announcementId];
+      
+      // If there's no read status, show the announcement
+      if (!status) return true;
+      
+      // If there's a read status, check if it's marked as deleted
+      if (typeof status === 'boolean') {
+        // Old format - boolean means read but not deleted
+        return true;
+      }
+      
+      // New format - check deleted flag
+      return !status.deleted;
+    });
+    
     return {
-      all: allAlerts.filter(a => !a.read).length,
-      critical: allAlerts.filter(a => a.category === 'critical' && !a.read).length,
-      informational: allAlerts.filter(a => a.category === 'informational' && !a.read).length,
-      messages: allAlerts.filter(a => a.category === 'messages' && !a.read).length
+      all: filteredAlerts.filter(a => !a.read).length,
+      critical: filteredAlerts.filter(a => a.category === 'critical' && !a.read).length,
+      informational: filteredAlerts.filter(a => a.category === 'informational' && !a.read).length,
+      messages: filteredAlerts.filter(a => a.category === 'messages' && !a.read).length
     };
   };
 
@@ -406,21 +470,40 @@ const Alerts = () => {
           description: "Message deleted successfully.",
         });
       } else if (alertToDelete.type === 'announcement') {
-        // Delete announcement
+        // Check if user is admin
+        const currentUser = auth.currentUser;
+        const isAdmin = currentUser && currentUser.email === 'admin@majayjay.farm';
+        
         const announcementId = alertToDelete.id.replace('announcement-', '');
-        await deleteDoc(doc(db, "announcements", announcementId));
         
-        // Also remove from read status if it exists
-        try {
-          await deleteDoc(doc(db, "userReadStatus", userId, "announcements", announcementId));
-        } catch (e) {
-          // Ignore if read status doesn't exist
+        if (isAdmin) {
+          // Admin can actually delete the announcement
+          await deleteDoc(doc(db, "announcements", announcementId));
+          
+          // Also remove from read status if it exists
+          try {
+            await deleteDoc(doc(db, "userReadStatus", userId, "announcements", announcementId));
+          } catch (e) {
+            // Ignore if read status doesn't exist
+          }
+          
+          toast({
+            title: "Success",
+            description: "Announcement deleted successfully.",
+          });
+        } else {
+          // Farmer can only mark as read and hide it from their view
+          await setDoc(doc(db, "userReadStatus", userId, "announcements", announcementId), {
+            read: true,
+            deleted: true, // Add deleted flag
+            timestamp: new Date()
+          });
+          
+          toast({
+            title: "Success",
+            description: "Announcement removed from your view.",
+          });
         }
-        
-        toast({
-          title: "Success",
-          description: "Announcement deleted successfully.",
-        });
       } else if (alertToDelete.type === 'weather') {
         // For weather alerts, remove from read status if it exists
         // Create the same stable ID based on the alert description and date

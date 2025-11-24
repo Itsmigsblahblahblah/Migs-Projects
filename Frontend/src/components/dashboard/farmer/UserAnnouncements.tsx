@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { db } from "@/firebaseConfig";
+import { db, auth } from "@/firebaseConfig";
 import { collection, query, orderBy, onSnapshot, deleteDoc, doc, setDoc } from "firebase/firestore";
 import { Bell, Trash2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -14,12 +14,18 @@ export interface Announcement {
   createdBy: string;
 }
 
+interface ReadStatus {
+  read: boolean;
+  deleted?: boolean;
+  timestamp: any;
+}
+
 // Export the hook for fetching announcements
 export const useAnnouncements = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [userReadStatus, setUserReadStatus] = useState<Record<string, boolean>>({});
+  const [userReadStatus, setUserReadStatus] = useState<Record<string, ReadStatus>>({});
   const userId = localStorage.getItem('userId') || 'default-user';
 
   // Fetch user read status
@@ -31,9 +37,15 @@ export const useAnnouncements = () => {
     );
 
     const unsubscribe = onSnapshot(readStatusQuery, (snapshot) => {
-      const readStatus: Record<string, boolean> = {};
+      const readStatus: Record<string, ReadStatus> = {};
       snapshot.forEach((doc) => {
-        readStatus[doc.id] = true;
+        const data = doc.data();
+        // Handle backward compatibility with old boolean format
+        if (typeof data === 'boolean') {
+          readStatus[doc.id] = { read: data, timestamp: null };
+        } else {
+          readStatus[doc.id] = data as ReadStatus;
+        }
       });
       setUserReadStatus(readStatus);
     });
@@ -53,7 +65,15 @@ export const useAnnouncements = () => {
       
       // Calculate unread count based on read status
       if (userId && userId !== 'default-user') {
-        const unread = announcementsData.filter(announcement => !userReadStatus[announcement.id]).length;
+        const unread = announcementsData.filter(announcement => {
+          const status = userReadStatus[announcement.id];
+          // If there's no read status or it's not marked as read, it's unread
+          if (!status) return true;
+          // If status is a boolean (old format), check its value
+          if (typeof status === 'boolean') return !status;
+          // If status is an object, check its read property
+          return !status.read;
+        }).length;
         setUnreadCount(unread);
       } else {
         setUnreadCount(announcementsData.length);
@@ -75,16 +95,41 @@ const UserAnnouncements = () => {
 
   const deleteAnnouncement = async (announcementId: string) => {
     try {
-      await deleteDoc(doc(db, "announcements", announcementId));
-      toast({
-        title: "Success",
-        description: "Announcement deleted successfully.",
-      });
+      // Check if user is admin
+      const currentUser = auth.currentUser;
+      const isAdmin = currentUser && currentUser.email === 'admin@majayjay.farm';
+      
+      if (isAdmin) {
+        // Admin can actually delete the announcement
+        await deleteDoc(doc(db, "announcements", announcementId));
+        toast({
+          title: "Success",
+          description: "Announcement deleted successfully.",
+        });
+      } else {
+        // Farmer can mark as deleted to hide it from their view
+        await setDoc(doc(db, "userReadStatus", userId, "announcements", announcementId), {
+          read: true,
+          deleted: true, // Add deleted flag
+          timestamp: new Date()
+        });
+        
+        // Update local read status immediately
+        setUserReadStatus(prev => ({
+          ...prev,
+          [announcementId]: { read: true, deleted: true, timestamp: new Date() }
+        }));
+        
+        toast({
+          title: "Success",
+          description: "Announcement removed from your view.",
+        });
+      }
     } catch (error) {
-      console.error("Error deleting announcement:", error);
+      console.error("Error processing announcement:", error);
       toast({
         title: "Error",
-        description: "Failed to delete announcement.",
+        description: "Failed to process announcement.",
         variant: "destructive",
       });
     }
@@ -94,13 +139,14 @@ const UserAnnouncements = () => {
     try {
       await setDoc(doc(db, "userReadStatus", userId, "announcements", announcementId), {
         read: true,
+        // Don't set deleted flag for mark as read
         timestamp: new Date()
       });
       
       // Update local read status immediately
       setUserReadStatus(prev => ({
         ...prev,
-        [announcementId]: true
+        [announcementId]: { read: true, timestamp: new Date() }
       }));
       
       toast({
@@ -125,7 +171,22 @@ const UserAnnouncements = () => {
     );
   }
 
-  if (announcements.length === 0) {
+  // Filter out announcements that the user has marked as deleted
+  const visibleAnnouncements = announcements.filter(announcement => {
+    // If there's no read status, show the announcement
+    if (!userReadStatus[announcement.id]) return true;
+    
+    // If there's a read status, check if it's marked as deleted
+    const status = userReadStatus[announcement.id];
+    // If status is an object with a deleted property, check that
+    if (typeof status === 'object' && status !== null) {
+      return !status.deleted;
+    }
+    // If status is a boolean (old format), treat it as not deleted
+    return true;
+  });
+
+  if (visibleAnnouncements.length === 0) {
     return null; // Don't show anything if there are no announcements
   }
 
@@ -139,8 +200,11 @@ const UserAnnouncements = () => {
       </div>
       
       <div className="space-y-3">
-        {announcements.slice(0, 3).map((announcement) => {
-          const isRead = userReadStatus[announcement.id] || false;
+        {visibleAnnouncements.slice(0, 3).map((announcement) => {
+          const isRead = userReadStatus[announcement.id] && 
+            (typeof userReadStatus[announcement.id] === 'boolean' ? 
+              userReadStatus[announcement.id] : 
+              userReadStatus[announcement.id].read);
           
           return (
             <div 
