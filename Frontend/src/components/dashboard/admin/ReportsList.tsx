@@ -427,20 +427,19 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                         </div>
                                     ))}
                                     
-                                    {/* Pagination Controls for Grouped View */}
+                                    {/* Pagination Controls for Grouped View - Updated to match crop management design */}
                                     {totalGroupedPages > 1 && (
-                                        <div className="flex justify-center items-center gap-2 pt-4">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
-                                                disabled={currentPage === 1}
-                                                className="bg-green-600 hover:bg-green-700 text-white border-green-700"
-                                            >
-                                                <ChevronLeft className="h-4 w-4" />
-                                            </Button>
-                                            
-                                            <div className="flex items-center gap-1">
+                                        <div className="flex justify-center mt-6">
+                                            <div className="flex items-center space-x-1">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                                                    disabled={currentPage === 1}
+                                                >
+                                                    Previous
+                                                </Button>
+                                                
                                                 {Array.from({ length: Math.min(5, totalGroupedPages) }, (_, i) => {
                                                     // Calculate start index for pagination window
                                                     let start = 1;
@@ -461,7 +460,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             variant={currentPage === pageNum ? "default" : "outline"}
                                                             size="sm"
                                                             onClick={() => handlePageChange(pageNum)}
-                                                            className={`w-8 h-8 p-0 ${currentPage === pageNum ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
                                                         >
                                                             {pageNum}
                                                         </Button>
@@ -477,7 +475,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                     variant="outline"
                                                                     size="sm"
                                                                     onClick={() => handlePageChange(totalGroupedPages)}
-                                                                    className="w-8 h-8 p-0"
                                                                 >
                                                                     {totalGroupedPages}
                                                                 </Button>
@@ -485,17 +482,16 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         )}
                                                     </>
                                                 )}
+                                                
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalGroupedPages))}
+                                                    disabled={currentPage === totalGroupedPages}
+                                                >
+                                                    Next
+                                                </Button>
                                             </div>
-                                            
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handlePageChange(Math.min(currentPage + 1, totalGroupedPages))}
-                                                disabled={currentPage === totalGroupedPages}
-                                                className="bg-green-600 hover:bg-green-700 text-white border-green-700"
-                                            >
-                                                <ChevronRight className="h-4 w-4" />
-                                            </Button>
                                         </div>
                                     )}
                                 </>
@@ -579,20 +575,19 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                         </div>
                                     ))}
 
-                                    {/* Pagination Controls */}
+                                    {/* Pagination Controls - Updated to match crop management design */}
                                     {(sortOption !== 'barangay' || selectedBarangay !== 'all') && totalPages > 1 && (
-                                        <div className="flex justify-center items-center gap-2 pt-4">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
-                                                disabled={currentPage === 1}
-                                                className="bg-green-600 hover:bg-green-700 text-white border-green-700"
-                                            >
-                                                <ChevronLeft className="h-4 w-4" />
-                                            </Button>
-                                            
-                                            <div className="flex items-center gap-1">
+                                        <div className="flex justify-center mt-6">
+                                            <div className="flex items-center space-x-1">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                                                    disabled={currentPage === 1}
+                                                >
+                                                    Previous
+                                                </Button>
+                                                
                                                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                                     // Calculate start index for pagination window
                                                     let start = 1;
@@ -613,7 +608,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             variant={currentPage === pageNum ? "default" : "outline"}
                                                             size="sm"
                                                             onClick={() => handlePageChange(pageNum)}
-                                                            className={`w-8 h-8 p-0 ${currentPage === pageNum ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
                                                         >
                                                             {pageNum}
                                                         </Button>
@@ -629,7 +623,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                     variant="outline"
                                                                     size="sm"
                                                                     onClick={() => handlePageChange(totalPages)}
-                                                                    className="w-8 h-8 p-0"
                                                                 >
                                                                     {totalPages}
                                                                 </Button>
@@ -637,17 +630,16 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         )}
                                                     </>
                                                 )}
+                                                
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                                                    disabled={currentPage === totalPages}
+                                                >
+                                                    Next
+                                                </Button>
                                             </div>
-                                            
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
-                                                disabled={currentPage === totalPages}
-                                                className="bg-green-600 hover:bg-green-700 text-white border-green-700"
-                                            >
-                                                <ChevronRight className="h-4 w-4" />
-                                            </Button>
                                         </div>
                                     )}
                                 </>

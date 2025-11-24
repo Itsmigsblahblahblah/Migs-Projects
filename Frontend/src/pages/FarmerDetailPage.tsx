@@ -40,6 +40,19 @@ interface Farmer {
   farmArea?: string; // Added farmArea field
 }
 
+// Helper function to get paginated crops
+function getPaginatedCrops(cropsArray: any[], currentPage: number, cropsPerPage: number) {
+  const startIndex = (currentPage - 1) * cropsPerPage;
+  const endIndex = startIndex + cropsPerPage;
+  return cropsArray.slice(startIndex, endIndex);
+}
+
+// Helper function to generate page numbers for pagination
+function generatePageNumbers(totalItems: number, cropsPerPage: number) {
+  const totalPages = Math.ceil(totalItems / cropsPerPage);
+  return Array.from({ length: totalPages }, (_, i) => i + 1);
+}
+
 const FarmerDetailPage = () => {
   const { farmerId } = useParams<{ farmerId: string }>();
   const navigate = useNavigate();
@@ -50,6 +63,10 @@ const FarmerDetailPage = () => {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
   const [showMessageForm, setShowMessageForm] = useState(false);
+  // Add pagination state
+  const [inProgressCurrentPage, setInProgressCurrentPage] = useState(1);
+  const [harvestedCurrentPage, setHarvestedCurrentPage] = useState(1);
+  const cropsPerPage = 6; // Show 6 crops per page
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -275,6 +292,14 @@ const FarmerDetailPage = () => {
   const harvestedCrops = getCropsByStatus("Harvested");
   const totalInvestment = crops.reduce((sum, crop) => sum + (crop.puhunan || 0), 0);
   const totalCrops = crops.length;
+  
+  // Get paginated crops
+  const paginatedInProgressCrops = getPaginatedCrops(inProgressCrops, inProgressCurrentPage, cropsPerPage);
+  const paginatedHarvestedCrops = getPaginatedCrops(harvestedCrops, harvestedCurrentPage, cropsPerPage);
+  
+  // Generate page numbers
+  const inProgressPageNumbers = generatePageNumbers(inProgressCrops.length, cropsPerPage);
+  const harvestedPageNumbers = generatePageNumbers(harvestedCrops.length, cropsPerPage);
 
   const handleSendMessage = async () => {
     if (!farmer || !customMessage.trim()) return;
@@ -509,7 +534,7 @@ const FarmerDetailPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {inProgressCrops.map((crop) => (
+                  {paginatedInProgressCrops.map((crop) => (
                     <Card key={crop.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
@@ -538,6 +563,42 @@ const FarmerDetailPage = () => {
                     </Card>
                   ))}
                 </div>
+                
+                {/* Pagination for In Progress Crops */}
+                {inProgressPageNumbers.length > 1 && (
+                  <div className="flex justify-center mt-6">
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setInProgressCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={inProgressCurrentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      
+                      {inProgressPageNumbers.map(pageNumber => (
+                        <Button
+                          key={pageNumber}
+                          variant={inProgressCurrentPage === pageNumber ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setInProgressCurrentPage(pageNumber)}
+                        >
+                          {pageNumber}
+                        </Button>
+                      ))}
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setInProgressCurrentPage(prev => Math.min(prev + 1, inProgressPageNumbers.length))}
+                        disabled={inProgressCurrentPage === inProgressPageNumbers.length}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -554,7 +615,7 @@ const FarmerDetailPage = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {harvestedCrops.map((crop) => (
+                  {paginatedHarvestedCrops.map((crop) => (
                     <Card key={crop.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
@@ -583,6 +644,42 @@ const FarmerDetailPage = () => {
                     </Card>
                   ))}
                 </div>
+                
+                {/* Pagination for Harvested Crops */}
+                {harvestedPageNumbers.length > 1 && (
+                  <div className="flex justify-center mt-6">
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setHarvestedCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={harvestedCurrentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      
+                      {harvestedPageNumbers.map(pageNumber => (
+                        <Button
+                          key={pageNumber}
+                          variant={harvestedCurrentPage === pageNumber ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setHarvestedCurrentPage(pageNumber)}
+                        >
+                          {pageNumber}
+                        </Button>
+                      ))}
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setHarvestedCurrentPage(prev => Math.min(prev + 1, harvestedPageNumbers.length))}
+                        disabled={harvestedCurrentPage === harvestedPageNumbers.length}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
