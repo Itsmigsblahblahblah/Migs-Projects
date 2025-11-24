@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -20,14 +21,42 @@ import dondon from "@/assets/don2.jpg";
 
 const Landing = () => {
   const navigate = useNavigate();
+  const [activeSection, setActiveSection] = useState('');
 
   // Function to scroll to a section
   const scrollToSection = (sectionId: string) => {
+    setActiveSection(sectionId);
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  // Track scroll position to update active section
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['features', 'testimonials', 'team'];
+      const scrollPosition = window.scrollY + 100;
+
+      for (const sectionId of sections) {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          const offsetTop = element.offsetTop;
+          const offsetHeight = element.offsetHeight;
+
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSection(sectionId);
+            return;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check initial position
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const features = [
     {
@@ -122,7 +151,7 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-gradient-earth">
       {/* Header - Updated to match Farmer/Admin design */}
-      <header className="bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo and text on the left */}
@@ -138,62 +167,56 @@ const Landing = () => {
 
             {/* Navigation menu on the right */}
             <nav className="hidden md:flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => scrollToSection('features')}
-                className="text-foreground hover:bg-accent hover:text-accent-foreground"
+                className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'features' ? 'text-yellow-500' : ''}`}
               >
-                Overview
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
+                <span className="relative z-10">Overview</span>
+                <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'features' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+              </button>
+              <button
                 onClick={() => scrollToSection('testimonials')}
-                className="text-foreground hover:bg-accent hover:text-accent-foreground"
+                className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'testimonials' ? 'text-yellow-500' : ''}`}
               >
-                Reviews
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
+                <span className="relative z-10">Reviews</span>
+                <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'testimonials' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+              </button>
+              <button
                 onClick={() => scrollToSection('team')}
-                className="text-foreground hover:bg-accent hover:text-accent-foreground"
+                className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'team' ? 'text-yellow-500' : ''}`}
               >
-                About Us
-              </Button>
+                <span className="relative z-10">About Us</span>
+                <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'team' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+              </button>
             </nav>
           </div>
         </div>
       </header>
 
       {/* Mobile Navigation */}
-      <nav className="md:hidden bg-card border-b border-border p-4">
+      <nav className="md:hidden bg-card border-b border-border p-4 sticky top-16 z-40">
         <div className="flex gap-2 overflow-x-auto">
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={() => scrollToSection('features')}
-            className="flex-shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground"
+            className={`group flex-shrink-0 text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'features' ? 'text-yellow-500' : ''}`}
           >
-            Overview
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
+            <span className="relative z-10">Overview</span>
+            <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'features' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+          </button>
+          <button
             onClick={() => scrollToSection('testimonials')}
-            className="flex-shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground"
+            className={`group flex-shrink-0 text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'testimonials' ? 'text-yellow-500' : ''}`}
           >
-            Reviews
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
+            <span className="relative z-10">Reviews</span>
+            <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'testimonials' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+          </button>
+          <button
             onClick={() => scrollToSection('team')}
-            className="flex-shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground"
+            className={`group flex-shrink-0 text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'team' ? 'text-yellow-500' : ''}`}
           >
-            About Us
-          </Button>
+            <span className="relative z-10">About Us</span>
+            <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'team' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+          </button>
         </div>
       </nav>
 
