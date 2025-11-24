@@ -218,8 +218,8 @@ export const useAdminDashboard = () => {
         const now = new Date();
         const trends: MonthlyTrend[] = [];
 
-        // Get last 6 months
-        for (let i = 5; i >= 0; i--) {
+        // Get 2 past months, 1 present month, and 2 future months (total 5 months)
+        for (let i = 2; i >= -2; i--) {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
             const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);

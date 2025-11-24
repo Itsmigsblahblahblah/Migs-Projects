@@ -108,10 +108,10 @@ const AnalyticsCharts = ({
                     </CardContent>
                 </Card>
 
-                {/* Monthly Trends */}
+                {/* Resolution Trends */}
                 <Card className="shadow-card">
                     <CardHeader>
-                        <CardTitle>Monthly Trends</CardTitle>
+                        <CardTitle>Resolution Trends</CardTitle>
                         <CardDescription>Reports vs resolved issues over time</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -125,7 +125,7 @@ const AnalyticsCharts = ({
                                     <Line
                                         type="monotone"
                                         dataKey="reports"
-                                        stroke="hsl(var(--primary))"
+                                        stroke="#ef4444"
                                         strokeWidth={2}
                                         name="New Reports"
                                     />
