@@ -34,6 +34,7 @@ interface AddCropDialogProps {
     handleSoilTypeChange: (value: string) => void;
     handleAddCrop: () => Promise<boolean>;
     userRole?: string; // Added user role to determine if user is admin
+    lockedCropName?: string; // Added prop for locking crop name
 }
 
 const AddCropDialog = ({
@@ -43,7 +44,8 @@ const AddCropDialog = ({
     handleCropInputChange,
     handleSoilTypeChange,
     handleAddCrop,
-    userRole = "farmer" // Default to farmer role
+    userRole = "farmer", // Default to farmer role
+    lockedCropName // Add lockedCropName prop
 }: AddCropDialogProps) => {
     const [cropOptions, setCropOptions] = useState<string[]>(HARDCODED_CROPS);
     const [newCropName, setNewCropName] = useState(""); // For admin to add new crops
@@ -118,6 +120,15 @@ const AddCropDialog = ({
         "Silty Clay", "Organic Soil"
     ];
 
+    // Update crop name if lockedCropName is provided
+    useEffect(() => {
+        if (lockedCropName) {
+            handleCropInputChange({
+                target: { name: "name", value: lockedCropName }
+            } as React.ChangeEvent<HTMLInputElement>);
+        }
+    }, [lockedCropName]);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
@@ -130,8 +141,8 @@ const AddCropDialog = ({
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="cropName">Crop Name *</Label>
-                        {userRole === "admin" ? (
-                            // Admin view - dropdown with option to add new crops
+                        {userRole === "admin" && !lockedCropName ? (
+                            // Admin view - dropdown with option to add new crops (only when not locked)
                             <div className="space-y-2">
                                 <div className="relative" ref={cropDropdownRef}>
                                     <Input
@@ -195,47 +206,59 @@ const AddCropDialog = ({
                                 )}
                             </div>
                         ) : (
-                            // Farmer view - searchable dropdown
+                            // Farmer view or locked view - searchable dropdown or locked input
                             <div className="space-y-2">
-                                <div className="relative" ref={cropDropdownRef}>
+                                {lockedCropName ? (
+                                    // Locked crop name input
                                     <Input
                                         id="cropName"
                                         name="name"
-                                        value={cropSearchTerm}
-                                        onChange={handleCropInputChangeLocal}
-                                        onFocus={() => setShowCropDropdown(true)}
-                                        placeholder="Select or type a crop"
-                                        className="pr-10"
-                                        autoComplete="off"
+                                        value={lockedCropName}
+                                        disabled={true}
+                                        className="bg-muted"
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCropDropdown(!showCropDropdown)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                                    >
-                                        <ChevronDown className="h-4 w-4" />
-                                    </button>
+                                ) : (
+                                    // Farmer view - searchable dropdown
+                                    <div className="relative" ref={cropDropdownRef}>
+                                        <Input
+                                            id="cropName"
+                                            name="name"
+                                            value={cropSearchTerm}
+                                            onChange={handleCropInputChangeLocal}
+                                            onFocus={() => setShowCropDropdown(true)}
+                                            placeholder="Select or type a crop"
+                                            className="pr-10"
+                                            autoComplete="off"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowCropDropdown(!showCropDropdown)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                        >
+                                            <ChevronDown className="h-4 w-4" />
+                                        </button>
 
-                                    {showCropDropdown && (
-                                        <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-auto">
-                                            {filteredCrops.length > 0 ? (
-                                                filteredCrops.map((crop) => (
-                                                    <div
-                                                        key={crop}
-                                                        className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                                                        onClick={() => handleCropSelect(crop)}
-                                                    >
-                                                        {crop}
+                                        {showCropDropdown && (
+                                            <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-auto">
+                                                {filteredCrops.length > 0 ? (
+                                                    filteredCrops.map((crop) => (
+                                                        <div
+                                                            key={crop}
+                                                            className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                                            onClick={() => handleCropSelect(crop)}
+                                                        >
+                                                            {crop}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                                                        No matching crops found
                                                     </div>
-                                                ))
-                                            ) : (
-                                                <div className="px-3 py-2 text-sm text-muted-foreground">
-                                                    No matching crops found
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
