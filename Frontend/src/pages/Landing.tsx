@@ -18,9 +18,16 @@ import hyroin from "@/assets/hyroin.jpg";
 import joyce from "@/assets/joyce.jpg";
 import dondon from "@/assets/don2.jpg";
 
-
 const Landing = () => {
   const navigate = useNavigate();
+
+  // Function to scroll to a section
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const features = [
     {
@@ -90,30 +97,106 @@ const Landing = () => {
   ];
 
   const team = [
-  {
-    name: "Dean Martin Mabulay",
-    role: "Lead Developer",
-    avatar: <img src={dean} alt="Dean Martin Mabulay" className="h-24 w-24 rounded-full object-cover" />
-  },
-  {
-    name: "Hyroin Balili",
-    role: "Backend Developer",
-    avatar: <img src={hyroin} alt="Hyroin Balili" className="h-24 w-24 rounded-full object-cover" />
-  },
-  {
-    name: "Joyce Ann Cuala",
-    role: "UI/UX Designer | Research Lead",
-    avatar: <img src={joyce} alt="Joyce Ann Cuala" className="h-24 w-24 rounded-full object-cover" />
-  },
-  {
-    name: "Dondon Esquivel",
-    role: "Project Manager",
-    avatar: <img src={dondon} alt="Dondon Esquivel" className="h-24 w-24 rounded-full object-cover" />
-  }
-];
+    {
+      name: "Dean Martin Mabulay",
+      role: "Lead Developer",
+      avatar: <img src={dean} alt="Dean Martin Mabulay" className="h-24 w-24 rounded-full object-cover" />
+    },
+    {
+      name: "Hyroin Balili",
+      role: "Backend Developer",
+      avatar: <img src={hyroin} alt="Hyroin Balili" className="h-24 w-24 rounded-full object-cover" />
+    },
+    {
+      name: "Joyce Ann Cuala",
+      role: "UI/UX Designer | Research Lead",
+      avatar: <img src={joyce} alt="Joyce Ann Cuala" className="h-24 w-24 rounded-full object-cover" />
+    },
+    {
+      name: "Dondon Esquivel",
+      role: "Project Manager",
+      avatar: <img src={dondon} alt="Dondon Esquivel" className="h-24 w-24 rounded-full object-cover" />
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-earth">
+      {/* Header - Updated to match Farmer/Admin design */}
+      <header className="bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo and text on the left */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-primary">
+                <Sprout className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-primary">Majayjay Farm</h1>
+                <p className="text-xs text-muted-foreground">Resource Management</p>
+              </div>
+            </div>
+
+            {/* Navigation menu on the right */}
+            <nav className="hidden md:flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => scrollToSection('features')}
+                className="text-foreground hover:bg-accent hover:text-accent-foreground"
+              >
+                Overview
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => scrollToSection('testimonials')}
+                className="text-foreground hover:bg-accent hover:text-accent-foreground"
+              >
+                Reviews
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => scrollToSection('team')}
+                className="text-foreground hover:bg-accent hover:text-accent-foreground"
+              >
+                About Us
+              </Button>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Navigation */}
+      <nav className="md:hidden bg-card border-b border-border p-4">
+        <div className="flex gap-2 overflow-x-auto">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => scrollToSection('features')}
+            className="flex-shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground"
+          >
+            Overview
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => scrollToSection('testimonials')}
+            className="flex-shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground"
+          >
+            Reviews
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => scrollToSection('team')}
+            className="flex-shrink-0 text-foreground hover:bg-accent hover:text-accent-foreground"
+          >
+            About Us
+          </Button>
+        </div>
+      </nav>
+
       {/* Hero Section */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
@@ -160,7 +243,7 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-card/50">
+      <section id="features" className="py-16 bg-card/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -224,7 +307,7 @@ const Landing = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-16 bg-card/50">
+      <section id="testimonials" className="py-16 bg-card/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -262,7 +345,7 @@ const Landing = () => {
       </section>
 
       {/* Team Section */}
-      <section className="py-16">
+      <section id="team" className="py-16">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
