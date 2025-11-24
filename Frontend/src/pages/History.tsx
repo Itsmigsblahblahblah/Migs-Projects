@@ -58,7 +58,7 @@ const History = () => {
   const [filterProblem, setFilterProblem] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null); // Track expanded report
-  const reportsPerPage = 5;
+  const reportsPerPage = 10;
   const navigate = useNavigate();
   const { toast } = useToast();
   const userRole = localStorage.getItem('userRole');
@@ -446,7 +446,7 @@ const History = () => {
         </Card>
 
         {/* History List */}
-        <div className="space-y-4">
+        <div className="flex flex-col h-full">
           {filteredHistory.length === 0 ? (
             <Card className="shadow-soft">
               <CardContent className="p-8 text-center text-muted-foreground">
@@ -457,245 +457,281 @@ const History = () => {
                     ? "Try adjusting your filter criteria."
                     : userRole === 'farmer'
                       ? "You haven't submitted any reports yet. Go to dashboard to report a problem."
-                      : "No reports have been submitted yet."}
+                      : "No reports have been submitted yet."
+                  }
                 </p>
               </CardContent>
             </Card>
           ) : (
-            <>
-              {currentReports.map((report) => {
-                const isExpanded = expandedReportId === report.id;
-                return (
-                  <Card key={report.id} className="shadow-soft hover:shadow-card transition-shadow">
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {userRole === 'admin' && (
-                            <Badge variant="outline" className="font-medium">
-                              {report.username}
-                            </Badge>
-                          )}
-                          <Badge
-                            className={`${getProblemColor(report.problem)} border capitalize`}
-                          >
-                            {report.problem.replace('_', ' ')}
-                          </Badge>
-                          {report.affectedCrop !== 'unknown' && report.affectedCrop !== 'general' && (
-                            <Badge variant="outline" className="capitalize">
-                              {report.affectedCrop}
-                            </Badge>
-                          )}
-                          <Badge
-                            variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                            className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
-                          >
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            {report.status}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          {report.createdAt?.toDate().toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-4">
-                      {/* Original Problem */}
-                      <div>
-                        <h4 className="text-sm font-medium text-muted-foreground mb-1">Problem Reported:</h4>
-                        <p className="text-foreground bg-muted/50 p-3 rounded-lg">
-                          "{report.reportText}"
-                        </p>
-                        {report.hasImage && (
-                          <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            Image attached: {report.imageName}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Show full content only when expanded */}
-                      {isExpanded && (
-                        <>
-                          {/* Recommendations Grid */}
-                          <div className="grid md:grid-cols-2 gap-4">
-                            {report.recommendedCrops && report.recommendedCrops.length > 0 && (
-                              <div className="p-3 bg-success/10 rounded-lg border border-success/20">
-                                <h4 className="text-sm font-medium text-success mb-2 flex items-center gap-2">
-                                  <CheckCircle className="h-4 w-4" />
-                                  Recommended Crops
-                                </h4>
-                                <div className="flex flex-wrap gap-1">
-                                  {report.recommendedCrops.map((crop: string, index: number) => (
-                                    <Badge key={index} className="bg-success text-success-foreground text-xs">
-                                      {crop}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
+            <div className="flex-grow">
+              <div className="space-y-4 pb-4">
+                {currentReports.map((report) => {
+                  const isExpanded = expandedReportId === report.id;
+                  return (
+                    <Card key={report.id} className="shadow-soft hover:shadow-card transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {userRole === 'admin' && (
+                              <Badge variant="outline" className="font-medium">
+                                {report.username}
+                              </Badge>
                             )}
-
-                            {report.cropsToAvoid && report.cropsToAvoid.length > 0 && (
-                              <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                                <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
-                                  <AlertTriangle className="h-4 w-4" />
-                                  Crops to Avoid
-                                </h4>
-                                <div className="flex flex-wrap gap-1">
-                                  {report.cropsToAvoid.map((crop: string, index: number) => (
-                                    <Badge key={index} variant="destructive" className="text-xs">
-                                      {crop}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
+                            <Badge
+                              className={`${getProblemColor(report.problem)} border capitalize`}
+                            >
+                              {report.problem.replace('_', ' ')}
+                            </Badge>
+                            {report.affectedCrop !== 'unknown' && report.affectedCrop !== 'general' && (
+                              <Badge variant="outline" className="capitalize">
+                                {report.affectedCrop}
+                              </Badge>
                             )}
+                            <Badge
+                              variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                              className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
+                            >
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              {report.status}
+                            </Badge>
                           </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            {report.createdAt?.toDate().toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                        </div>
+                      </CardHeader>
 
-                          {/* AI Advice */}
-                          {report.advice && (
-                            <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
-                              <h4 className="text-sm font-medium text-primary mb-2">AI Recommendations:</h4>
-                              <p className="text-sm">{report.advice}</p>
+                      <CardContent className="space-y-4">
+                        {/* Original Problem */}
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground mb-1">Problem Reported:</h4>
+                          <p className="text-foreground bg-muted/50 p-3 rounded-lg">
+                            "{report.reportText}"
+                          </p>
+                          {report.hasImage && (
+                            <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                              <Eye className="h-3 w-3" />
+                              Image attached: {report.imageName}
                             </div>
                           )}
-                        </>
-                      )}
-                    </CardContent>
+                        </div>
 
-                    {/* See More / See Less Button */}
-                    <div className="px-6 pb-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setExpandedReportId(isExpanded ? null : report.id)}
-                        className="w-full"
-                      >
-                        {isExpanded ? (
+                        {/* Show full content only when expanded */}
+                        {isExpanded && (
                           <>
-                            <ChevronUp className="h-4 w-4 mr-2" />
-                            See Less
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="h-4 w-4 mr-2" />
-                            See More
+                            {/* Recommendations Grid */}
+                            <div className="grid md:grid-cols-2 gap-4">
+                              {report.recommendedCrops && report.recommendedCrops.length > 0 && (
+                                <div className="p-3 bg-success/10 rounded-lg border border-success/20">
+                                  <h4 className="text-sm font-medium text-success mb-2 flex items-center gap-2">
+                                    <CheckCircle className="h-4 w-4" />
+                                    Recommended Crops
+                                  </h4>
+                                  <div className="flex flex-wrap gap-1">
+                                    {report.recommendedCrops.map((crop: string, index: number) => (
+                                      <Badge key={index} className="bg-success text-success-foreground text-xs">
+                                        {crop}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {report.cropsToAvoid && report.cropsToAvoid.length > 0 && (
+                                <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                                  <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    Crops to Avoid
+                                  </h4>
+                                  <div className="flex flex-wrap gap-1">
+                                    {report.cropsToAvoid.map((crop: string, index: number) => (
+                                      <Badge key={index} variant="destructive" className="text-xs">
+                                        {crop}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* AI Advice */}
+                            {report.advice && (
+                              <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+                                <h4 className="text-sm font-medium text-primary mb-2">AI Recommendations:</h4>
+                                <p className="text-sm">{report.advice}</p>
+                              </div>
+                            )}
                           </>
                         )}
-                      </Button>
-                    </div>
+                      </CardContent>
 
-                    {/* Delete Button for Farmers (only shown when not expanded or at the bottom when expanded) */}
-                    {userRole === 'farmer' && !isExpanded && (
+                      {/* See More / See Less Button */}
                       <div className="px-6 pb-4">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteRequest(report)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => setExpandedReportId(isExpanded ? null : report.id)}
+                          className="w-full"
                         >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete Report
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp className="h-4 w-4 mr-2" />
+                              See Less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-4 w-4 mr-2" />
+                              See More
+                            </>
+                          )}
                         </Button>
                       </div>
-                    )}
 
-                    {userRole === 'farmer' && isExpanded && (
-                      <div className="px-6 pb-4 flex justify-between">
+                      {/* Delete Button for Farmers (only shown when not expanded or at the bottom when expanded) */}
+                      {userRole === 'farmer' && !isExpanded && (
+                        <div className="px-6 pb-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteRequest(report)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete Report
+                          </Button>
+                        </div>
+                      )}
+
+                      {userRole === 'farmer' && isExpanded && (
+                        <div className="px-6 pb-4 flex justify-between">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteRequest(report)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete Report
+                          </Button>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+
+                {/* Pagination Controls - Updated to match Market Demand design */}
+                {filteredHistory.length > 0 && (
+                  <div className="border-t pt-1 px-4" style={{ paddingBottom: '15px', marginTop: '15px' }}>
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
+                        Showing {(currentPage - 1) * reportsPerPage + 1} to {Math.min(currentPage * reportsPerPage, filteredHistory.length)} of {filteredHistory.length} reports
+                      </div>
+                      <div className="flex space-x-1">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteRequest(report)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="h-8 px-3 text-sm"
                         >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete Report
+                          Previous
+                        </Button>
+
+                        {/* Page Number Buttons */}
+                        {(() => {
+                          const totalPages = Math.ceil(filteredHistory.length / reportsPerPage);
+                          const pageButtons = [];
+                          // Show more pages (7 instead of 5) to reduce ellipsis
+                          let startPage = Math.max(1, currentPage - 3);
+                          let endPage = Math.min(totalPages, startPage + 6);
+
+                          // Adjust startPage if we're near the end
+                          if (endPage - startPage < 6) {
+                            startPage = Math.max(1, endPage - 6);
+                          }
+
+                          // First page button
+                          if (startPage > 1) {
+                            pageButtons.push(
+                              <Button
+                                key={1}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(1)}
+                                className="h-8 w-8 p-0 text-sm"
+                              >
+                                1
+                              </Button>
+                            );
+                            // Only show ellipsis if there's a significant gap
+                            if (startPage > 2) {
+                              pageButtons.push(
+                                <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                              );
+                            }
+                          }
+
+                          // Page number buttons
+                          for (let i = startPage; i <= endPage; i++) {
+                            pageButtons.push(
+                              <Button
+                                key={i}
+                                variant={currentPage === i ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(i)}
+                                className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                              >
+                                {i}
+                              </Button>
+                            );
+                          }
+
+                          // Last page button
+                          if (endPage < totalPages) {
+                            // Only show ellipsis if there's a significant gap
+                            if (endPage < totalPages - 1) {
+                              pageButtons.push(
+                                <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                              );
+                            }
+                            pageButtons.push(
+                              <Button
+                                key={totalPages}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(totalPages)}
+                                className="h-8 w-8 p-0 text-sm"
+                              >
+                                {totalPages}
+                              </Button>
+                            );
+                          }
+
+                          return pageButtons;
+                        })()}
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredHistory.length / reportsPerPage)))}
+                          disabled={currentPage === Math.ceil(filteredHistory.length / reportsPerPage)}
+                          className="h-8 px-3 text-sm"
+                        >
+                          Next
                         </Button>
                       </div>
-                    )}
-                  </Card>
-                );
-              })}
-
-              {/* Pagination Controls - Updated to match admin design */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 pt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="bg-green-600 hover:bg-green-700 text-white border-green-700"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      // Calculate start index for pagination window
-                      let start = 1;
-                      if (totalPages > 5) {
-                        if (currentPage <= 3) {
-                          start = 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          start = totalPages - 4;
-                        } else {
-                          start = currentPage - 2;
-                        }
-                      }
-
-                      const pageNum = start + i;
-                      return (
-                        <Button
-                          key={pageNum}
-                          variant={currentPage === pageNum ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`w-8 h-8 p-0 ${currentPage === pageNum ? 'bg-green-600 hover:bg-green-700 text-white' : ''}`}
-                        >
-                          {pageNum}
-                        </Button>
-                      );
-                    })}
-
-                    {totalPages > 5 && (
-                      <>
-                        {currentPage < totalPages - 2 && (
-                          <>
-                            <span className="px-1">...</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handlePageChange(totalPages)}
-                              className="w-8 h-8 p-0"
-                            >
-                              {totalPages}
-                            </Button>
-                          </>
-                        )}
-                      </>
-                    )}
+                    </div>
                   </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="bg-green-600 hover:bg-green-700 text-white border-green-700"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
