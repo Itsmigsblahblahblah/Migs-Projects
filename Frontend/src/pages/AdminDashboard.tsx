@@ -157,6 +157,8 @@ const AdminDashboard = () => {
               monthlyTrends={monthlyTrends}
               cropRecommendations={cropRecommendations}
               onExport={exportData}
+              reports={reports} // Pass reports data to AnalyticsCharts
+              onUpdateStatus={updateReportStatus} // Pass updateReportStatus function to AnalyticsCharts
             />
           )}
 

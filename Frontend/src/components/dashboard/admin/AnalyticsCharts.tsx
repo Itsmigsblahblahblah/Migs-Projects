@@ -2,6 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, Legend, FunnelChart, Funnel, LabelList } from "recharts";
 import { Download } from "lucide-react";
+import { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
+import ReportDetailView from "./ReportDetailView";
 
 interface ProblemData {
     name: string;
@@ -20,11 +23,29 @@ interface CropRecommendation {
     frequency: number;
 }
 
+interface Report {
+    id: string;
+    userId: string;
+    username: string;
+    reportText: string;
+    problem: string;
+    affectedCrop: string;
+    recommendedCrops: string[];
+    cropsToAvoid: string[];
+    advice: string;
+    hasImage: boolean;
+    imageName: string | null;
+    createdAt: any;
+    status: string;
+}
+
 interface AnalyticsChartsProps {
     problemsData: ProblemData[];
     monthlyTrends: MonthlyTrend[];
     cropRecommendations: CropRecommendation[];
     onExport: (type: string) => void;
+    reports?: Report[]; // Add optional reports prop
+    onUpdateStatus?: (reportId: string, status: string) => void; // Add optional onUpdateStatus prop
 }
 
 const COLORS = ['#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#10b981'];
@@ -33,7 +54,9 @@ const AnalyticsCharts = ({
     problemsData,
     monthlyTrends,
     cropRecommendations,
-    onExport
+    onExport,
+    reports = [], // Default to empty array if not provided
+    onUpdateStatus // Add onUpdateStatus prop
 }: AnalyticsChartsProps) => {
     // Calculate total reports for percentage calculation
     const totalReports = problemsData.reduce((sum, item) => sum + item.count, 0);
@@ -51,6 +74,54 @@ const AnalyticsCharts = ({
         fill: COLORS[index % COLORS.length]
     }));
 
+    // State for modal
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedReport, setSelectedReport] = useState<Report | null>(null); // Add state for selected report
+    
+    // Filter reports by selected category
+    const filteredReports = useMemo(() => {
+        if (!selectedCategory || !reports) return [];
+        return reports.filter(report => 
+            report.problem.toLowerCase() === selectedCategory.toLowerCase()
+        );
+    }, [selectedCategory, reports]);
+    
+    // Handle bar click
+    const handleBarClick = (data: any, index: number) => {
+        const category = problemsData[index]?.name;
+        if (category) {
+            setSelectedCategory(category);
+            setIsModalOpen(true);
+        }
+    };
+    
+    // Open report detail view
+    const openReportDetail = (report: Report) => {
+        setSelectedReport(report);
+    };
+    
+    // Close report detail view
+    const closeReportDetail = () => {
+        setSelectedReport(null);
+    };
+    
+    // Close category modal
+    const closeCategoryModal = () => {
+        setIsModalOpen(false);
+        setSelectedCategory(null);
+    };
+    
+    // Format date for display
+    const formatDate = (date: any) => {
+        if (!date) return "Unknown date";
+        try {
+            return date.toDate().toLocaleDateString();
+        } catch (e) {
+            return "Invalid date";
+        }
+    };
+    
     return (
         <>
             <div className="grid lg:grid-cols-2 gap-6">
@@ -176,7 +247,11 @@ const AnalyticsCharts = ({
                                         cursor="pointer"
                                     >
                                         {problemsData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            <Cell 
+                                                key={`cell-${index}`} 
+                                                fill={COLORS[index % COLORS.length]} 
+                                                onClick={() => handleBarClick(entry, index)}
+                                            />
                                         ))}
                                     </Bar>
                                 </BarChart>
@@ -294,6 +369,100 @@ const AnalyticsCharts = ({
                     )}
                 </CardContent>
             </Card>
+            
+            {/* Modal for displaying reports by category */}
+            {isModalOpen && selectedCategory && createPortal(
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-0 z-50">
+                    <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <CardHeader>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        Reports for "{selectedCategory}" Category
+                                    </CardTitle>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Showing {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''} categorized as "{selectedCategory}"
+                                    </p>
+                                </div>
+                                <Button variant="ghost" onClick={closeCategoryModal} className="h-8 w-8 p-0">
+                                    <span className="text-2xl">×</span>
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        
+                        <CardContent className="p-6 space-y-6">
+                            {filteredReports.length > 0 ? (
+                                <div className="space-y-4">
+                                    {filteredReports.map((report) => (
+                                        <div
+                                            key={report.id}
+                                            className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="font-medium">{report.username}</div>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {formatDate(report.createdAt)}
+                                                    </span>
+                                                </div>
+                                                <div className="capitalize text-sm">
+                                                    {report.status}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
+                                                <div>
+                                                    <span className="text-muted-foreground">Problem: </span>
+                                                    <span className="capitalize">{report.problem}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-muted-foreground">Affected Crop: </span>
+                                                    <span className="capitalize">{report.affectedCrop}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-muted-foreground">Recommended: </span>
+                                                    <span className="truncate max-w-[150px] inline-block align-top">
+                                                        {report.recommendedCrops?.slice(0, 2).join(', ') || 'None'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex justify-between items-center">
+                                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                                    {report.reportText}
+                                                </p>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => openReportDetail(report)}
+                                                >
+                                                    View Details
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    <p>No reports found for the "{selectedCategory}" category.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>,
+                document.body
+            )}
+            
+            {/* Modal for displaying report details */}
+            {selectedReport && createPortal(
+                <ReportDetailView 
+                    report={selectedReport} 
+                    onClose={closeReportDetail} 
+                    onUpdateStatus={onUpdateStatus || ((reportId: string, status: string) => {})} // Provide a default empty function if not provided
+                    isAdminView={true}
+                />,
+                document.body
+            )}
         </>
     );
 };
