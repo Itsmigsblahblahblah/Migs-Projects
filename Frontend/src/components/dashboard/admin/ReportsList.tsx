@@ -62,7 +62,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const [selectedBarangay, setSelectedBarangay] = useState<string>('all'); // For barangay filtering
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
-    const reportsPerPage = 3; // Show 3 reports per page
+    const reportsPerPage = 10; // Show 10 reports per page
     const contentRef = useRef<HTMLDivElement>(null); // Ref for scrollable content area
     const { toast } = useToast();
 
@@ -163,7 +163,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     // Pagination calculations
     const totalPages = Math.ceil(sortedReports.length / reportsPerPage);
     const startIndex = (currentPage - 1) * reportsPerPage;
-    const visibleReports = sortedReports.slice(startIndex, startIndex + reportsPerPage);
+    const endIndex = startIndex + reportsPerPage;
+    const visibleReports = sortedReports.slice(startIndex, endIndex);
 
     // Pagination calculations for grouped view
     const groupedReports = Object.entries(groupedByBarangay).flatMap(([barangay, reports]) =>
@@ -259,7 +260,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
 
     return (
         <>
-            <Card className="shadow-card">
+            <Card className="shadow-card h-full flex flex-col">
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div>
@@ -275,7 +276,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             Export All
                         </Button>
                     </div>
-
+                    
                     {/* Sorting Options */}
                     <div className="flex flex-wrap gap-2 pt-4">
                         <Button
@@ -301,7 +302,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             Group by Barangay
                         </Button>
                     </div>
-
+                    
                     {/* Barangay dropdown and stats when grouping is active */}
                     {sortOption === 'barangay' && (
                         <div className="pt-4 space-y-4">
@@ -320,7 +321,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                     ))}
                                 </select>
                             </div>
-
+                            
                             {/* Stats display for selected barangay */}
                             {selectedBarangay !== 'all' && barangayStats && (
                                 <div className="bg-muted p-3 rounded-md">
@@ -340,309 +341,387 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                         </div>
                     )}
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex-grow flex flex-col">
                     {localReports.length > 0 ? (
-                        <div ref={contentRef} className="space-y-4 max-h-[800px] overflow-y-auto pr-2">
-                            {sortOption === 'barangay' && selectedBarangay === 'all' ? (
-                                // Grouped by barangay view with pagination
-                                <>
-                                    {Object.entries(visibleGroupedByBarangay).map(([barangay, reports]) => (
-                                        <div key={barangay} className="border-b pb-4 last:border-b-0">
-                                            <h3 className="font-semibold text-lg mb-2">{barangay}</h3>
-                                            <div className="space-y-3">
-                                                {reports.map((report) => (
-                                                    <div
-                                                        key={report.id}
-                                                        className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                                                    >
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="font-medium">{report.username}</div>
-                                                                <Badge
-                                                                    variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                                                                    className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
-                                                                >
-                                                                    {report.status}
-                                                                </Badge>
+                        <div className="flex flex-col h-full">
+                            <div className="space-y-4 flex-grow">
+                                {sortOption === 'barangay' && selectedBarangay === 'all' ? (
+                                    // Grouped by barangay view with pagination
+                                    <>
+                                        {Object.entries(visibleGroupedByBarangay).map(([barangay, reports]) => (
+                                            <div key={barangay} className="border-b pb-4 last:border-b-0">
+                                                <h3 className="font-semibold text-lg mb-2">{barangay}</h3>
+                                                <div className="space-y-3">
+                                                    {reports.map((report) => (
+                                                        <div
+                                                            key={report.id}
+                                                            className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                                                        >
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="font-medium">{report.username}</div>
+                                                                    <Badge
+                                                                        variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                                                                        className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
+                                                                    >
+                                                                        {report.status}
+                                                                    </Badge>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                                    <Calendar className="h-4 w-4" />
+                                                                    {report.createdAt?.toDate().toLocaleDateString()}
+                                                                </div>
                                                             </div>
-                                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                                <Calendar className="h-4 w-4" />
-                                                                {report.createdAt?.toDate().toLocaleDateString()}
-                                                            </div>
-                                                        </div>
 
-                                                        <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
-                                                            <div>
-                                                                <span className="text-muted-foreground">Problem: </span>
-                                                                <span className="capitalize">{report.problem}</span>
+                                                            <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
+                                                                <div>
+                                                                    <span className="text-muted-foreground">Problem: </span>
+                                                                    <span className="capitalize">{report.problem}</span>
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-muted-foreground">Affected Crop: </span>
+                                                                    <span className="capitalize">{report.affectedCrop}</span>
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-muted-foreground">Recommended: </span>
+                                                                    <span className="truncate max-w-[150px] inline-block align-top" title={report.recommendedCrops?.slice(0, 2).join(', ')}>
+                                                                        {report.recommendedCrops?.slice(0, 2).join(', ') || 'None'}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <span className="text-muted-foreground">Affected Crop: </span>
-                                                                <span className="capitalize">{report.affectedCrop}</span>
-                                                            </div>
-                                                            <div>
-                                                                <span className="text-muted-foreground">Recommended: </span>
-                                                                {report.recommendedCrops?.slice(0, 2).join(', ')}
-                                                            </div>
-                                                        </div>
 
-                                                        <div className="flex justify-between items-center">
-                                                            <p className="text-sm text-muted-foreground line-clamp-1">
-                                                                {report.reportText}
-                                                            </p>
-                                                            <div className="flex gap-2">
-                                                                {report.status !== 'resolved' && (
+                                                            <div className="flex justify-between items-center">
+                                                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                                                    {report.reportText}
+                                                                </p>
+                                                                <div className="flex gap-2">
+                                                                    {report.status !== 'resolved' && (
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                                        >
+                                                                            <CheckCircle className="h-4 w-4 mr-1" />
+                                                                            Mark Resolved
+                                                                        </Button>
+                                                                    )}
                                                                     <Button
                                                                         variant="outline"
                                                                         size="sm"
-                                                                        onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                                        onClick={() => openReportDetail(report)}
                                                                     >
-                                                                        <CheckCircle className="h-4 w-4 mr-1" />
-                                                                        Mark Resolved
+                                                                        <Eye className="h-4 w-4 mr-1" />
+                                                                        View Details
                                                                     </Button>
-                                                                )}
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => openReportDetail(report)}
-                                                                >
-                                                                    <Eye className="h-4 w-4 mr-1" />
-                                                                    View Details
-                                                                </Button>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => handleDeleteRequest(report)}
-                                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4 mr-1" />
-                                                                    Delete
-                                                                </Button>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => handleDeleteRequest(report)}
+                                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                                        Delete
+                                                                    </Button>
+                                                                </div>
                                                             </div>
                                                         </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        
+                                        {/* Pagination Controls - Match FarmersList design */}
+                                        {totalGroupedPages > 0 && (
+                                            <div className="border-t pt-1 px-4 mt-auto" style={{ paddingBottom: '0px' }}>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
+                                                        Showing {startGroupedIndex + 1} to {Math.min(startGroupedIndex + reportsPerPage, groupedReports.length)} of {groupedReports.length} reports
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {/* Pagination Controls for Grouped View - Updated to match crop management design */}
-                                    {totalGroupedPages > 1 && (
-                                        <div className="flex justify-center mt-6">
-                                            <div className="flex items-center space-x-1">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
-                                                    disabled={currentPage === 1}
-                                                >
-                                                    Previous
-                                                </Button>
-
-                                                {Array.from({ length: Math.min(5, totalGroupedPages) }, (_, i) => {
-                                                    // Calculate start index for pagination window
-                                                    let start = 1;
-                                                    if (totalGroupedPages > 5) {
-                                                        if (currentPage <= 3) {
-                                                            start = 1;
-                                                        } else if (currentPage >= totalGroupedPages - 2) {
-                                                            start = totalGroupedPages - 4;
-                                                        } else {
-                                                            start = currentPage - 2;
-                                                        }
-                                                    }
-
-                                                    const pageNum = start + i;
-                                                    return (
-                                                        <Button
-                                                            key={pageNum}
-                                                            variant={currentPage === pageNum ? "default" : "outline"}
-                                                            size="sm"
-                                                            onClick={() => handlePageChange(pageNum)}
-                                                        >
-                                                            {pageNum}
-                                                        </Button>
-                                                    );
-                                                })}
-
-                                                {totalGroupedPages > 5 && (
-                                                    <>
-                                                        {currentPage < totalGroupedPages - 2 && (
-                                                            <>
-                                                                <span className="px-1">...</span>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => handlePageChange(totalGroupedPages)}
-                                                                >
-                                                                    {totalGroupedPages}
-                                                                </Button>
-                                                            </>
-                                                        )}
-                                                    </>
-                                                )}
-
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalGroupedPages))}
-                                                    disabled={currentPage === totalGroupedPages}
-                                                >
-                                                    Next
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                // Regular list view or filtered barangay view
-                                <>
-                                    {visibleReports.map((report) => (
-                                        <div
-                                            key={report.id}
-                                            className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                                        >
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="font-medium">{report.username}</div>
-                                                    <Badge
-                                                        variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                                                        className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
-                                                    >
-                                                        {report.status}
-                                                    </Badge>
-                                                    {/* Display home address next to user info */}
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {farmerAddressMap[report.userId] || 'Unknown Barangay'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                    <Calendar className="h-4 w-4" />
-                                                    {report.createdAt?.toDate().toLocaleDateString()}
-                                                </div>
-                                            </div>
-
-                                            <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
-                                                <div>
-                                                    <span className="text-muted-foreground">Problem: </span>
-                                                    <span className="capitalize">{report.problem}</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-muted-foreground">Affected Crop: </span>
-                                                    <span className="capitalize">{report.affectedCrop}</span>
-                                                </div>
-                                                <div>
-                                                    <span className="text-muted-foreground">Recommended: </span>
-                                                    {report.recommendedCrops?.slice(0, 2).join(', ')}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex justify-between items-center">
-                                                <p className="text-sm text-muted-foreground line-clamp-1">
-                                                    {report.reportText}
-                                                </p>
-                                                <div className="flex gap-2">
-                                                    {report.status !== 'resolved' && (
+                                                    <div className="flex space-x-1">
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                            onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                                                            disabled={currentPage === 1}
+                                                            className="h-8 px-3 text-sm"
                                                         >
-                                                            <CheckCircle className="h-4 w-4 mr-1" />
-                                                            Mark Resolved
+                                                            Previous
                                                         </Button>
-                                                    )}
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => openReportDetail(report)}
-                                                    >
-                                                        <Eye className="h-4 w-4 mr-1" />
-                                                        View Details
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleDeleteRequest(report)}
-                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                    >
-                                                        <Trash2 className="h-4 w-4 mr-1" />
-                                                        Delete
-                                                    </Button>
+
+                                                        {/* Page Number Buttons */}
+                                                        {(() => {
+                                                            const pageButtons = [];
+                                                            // Show more pages (7 instead of 5) to reduce ellipsis
+                                                            let startPage = Math.max(1, currentPage - 3);
+                                                            let endPage = Math.min(totalGroupedPages, startPage + 6);
+
+                                                            // Adjust startPage if we're near the end
+                                                            if (endPage - startPage < 6) {
+                                                                startPage = Math.max(1, endPage - 6);
+                                                            }
+
+                                                            // First page button
+                                                            if (startPage > 1) {
+                                                                pageButtons.push(
+                                                                    <Button
+                                                                        key={1}
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => handlePageChange(1)}
+                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                    >
+                                                                        1
+                                                                    </Button>
+                                                                );
+                                                                // Only show ellipsis if there's a significant gap
+                                                                if (startPage > 2) {
+                                                                    pageButtons.push(
+                                                                        <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                                                    );
+                                                                }
+                                                            }
+
+                                                            // Page number buttons
+                                                            for (let i = startPage; i <= endPage; i++) {
+                                                                pageButtons.push(
+                                                                    <Button
+                                                                        key={i}
+                                                                        variant={currentPage === i ? "default" : "outline"}
+                                                                        size="sm"
+                                                                        onClick={() => handlePageChange(i)}
+                                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                                                    >
+                                                                        {i}
+                                                                    </Button>
+                                                                );
+                                                            }
+
+                                                            // Last page button
+                                                            if (endPage < totalGroupedPages) {
+                                                                // Only show ellipsis if there's a significant gap
+                                                                if (endPage < totalGroupedPages - 1) {
+                                                                    pageButtons.push(
+                                                                        <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                                                    );
+                                                                }
+                                                                pageButtons.push(
+                                                                    <Button
+                                                                        key={totalGroupedPages}
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => handlePageChange(totalGroupedPages)}
+                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                    >
+                                                                        {totalGroupedPages}
+                                                                    </Button>
+                                                                );
+                                                            }
+
+                                                            return pageButtons;
+                                                        })()}
+
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handlePageChange(Math.min(currentPage + 1, totalGroupedPages))}
+                                                            disabled={currentPage === totalGroupedPages}
+                                                            className="h-8 px-3 text-sm"
+                                                        >
+                                                            Next
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
-
-                                    {/* Pagination Controls - Updated to match crop management design */}
-                                    {(sortOption !== 'barangay' || selectedBarangay !== 'all') && totalPages > 1 && (
-                                        <div className="flex justify-center mt-6">
-                                            <div className="flex items-center space-x-1">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
-                                                    disabled={currentPage === 1}
-                                                >
-                                                    Previous
-                                                </Button>
-
-                                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                                    // Calculate start index for pagination window
-                                                    let start = 1;
-                                                    if (totalPages > 5) {
-                                                        if (currentPage <= 3) {
-                                                            start = 1;
-                                                        } else if (currentPage >= totalPages - 2) {
-                                                            start = totalPages - 4;
-                                                        } else {
-                                                            start = currentPage - 2;
-                                                        }
-                                                    }
-
-                                                    const pageNum = start + i;
-                                                    return (
-                                                        <Button
-                                                            key={pageNum}
-                                                            variant={currentPage === pageNum ? "default" : "outline"}
-                                                            size="sm"
-                                                            onClick={() => handlePageChange(pageNum)}
+                                        )}
+                                    </>
+                                ) : (
+                                    // Regular list view or filtered barangay view
+                                    <>
+                                        {visibleReports.map((report) => (
+                                            <div
+                                                key={report.id}
+                                                className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="font-medium">{report.username}</div>
+                                                        <Badge
+                                                            variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                                                            className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
                                                         >
-                                                            {pageNum}
-                                                        </Button>
-                                                    );
-                                                })}
+                                                            {report.status}
+                                                        </Badge>
+                                                        {/* Display home address next to user info */}
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {farmerAddressMap[report.userId] || 'Unknown Barangay'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                        <Calendar className="h-4 w-4" />
+                                                        {report.createdAt?.toDate().toLocaleDateString()}
+                                                    </div>
+                                                </div>
 
-                                                {totalPages > 5 && (
-                                                    <>
-                                                        {currentPage < totalPages - 2 && (
-                                                            <>
-                                                                <span className="px-1">...</span>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => handlePageChange(totalPages)}
-                                                                >
-                                                                    {totalPages}
-                                                                </Button>
-                                                            </>
+                                                <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
+                                                    <div>
+                                                        <span className="text-muted-foreground">Problem: </span>
+                                                        <span className="capitalize">{report.problem}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-muted-foreground">Affected Crop: </span>
+                                                        <span className="capitalize">{report.affectedCrop}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-muted-foreground">Recommended: </span>
+                                                        <span className="truncate max-w-[150px] inline-block align-top" title={report.recommendedCrops?.slice(0, 2).join(', ')}>
+                                                            {report.recommendedCrops?.slice(0, 2).join(', ') || 'None'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex justify-between items-center">
+                                                    <p className="text-sm text-muted-foreground line-clamp-1">
+                                                        {report.reportText}
+                                                    </p>
+                                                    <div className="flex gap-2">
+                                                        {report.status !== 'resolved' && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                            >
+                                                                <CheckCircle className="h-4 w-4 mr-1" />
+                                                                Mark Resolved
+                                                            </Button>
                                                         )}
-                                                    </>
-                                                )}
-
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
-                                                    disabled={currentPage === totalPages}
-                                                >
-                                                    Next
-                                                </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => openReportDetail(report)}
+                                                        >
+                                                            <Eye className="h-4 w-4 mr-1" />
+                                                            View Details
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleDeleteRequest(report)}
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        >
+                                                            <Trash2 className="h-4 w-4 mr-1" />
+                                                            Delete
+                                                        </Button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </>
-                            )}
+                                        ))}
+
+                                        {/* Pagination Controls - Match FarmersList design */}
+                                        {(sortOption !== 'barangay' || selectedBarangay !== 'all') && (
+                                            <div className="border-t pt-1 px-4 mt-auto" style={{ paddingBottom: '0px' }}>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
+                                                        Showing {startIndex + 1} to {Math.min(endIndex, sortedReports.length)} of {sortedReports.length} reports
+                                                    </div>
+                                                    <div className="flex space-x-1">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                                                            disabled={currentPage === 1}
+                                                            className="h-8 px-3 text-sm"
+                                                        >
+                                                            Previous
+                                                        </Button>
+
+                                                        {/* Page Number Buttons */}
+                                                        {(() => {
+                                                            const pageButtons = [];
+                                                            // Show more pages (7 instead of 5) to reduce ellipsis
+                                                            let startPage = Math.max(1, currentPage - 3);
+                                                            let endPage = Math.min(totalPages, startPage + 6);
+
+                                                            // Adjust startPage if we're near the end
+                                                            if (endPage - startPage < 6) {
+                                                                startPage = Math.max(1, endPage - 6);
+                                                            }
+
+                                                            // First page button
+                                                            if (startPage > 1) {
+                                                                pageButtons.push(
+                                                                    <Button
+                                                                        key={1}
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => handlePageChange(1)}
+                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                    >
+                                                                        1
+                                                                    </Button>
+                                                                );
+                                                                // Only show ellipsis if there's a significant gap
+                                                                if (startPage > 2) {
+                                                                    pageButtons.push(
+                                                                        <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                                                    );
+                                                                }
+                                                            }
+
+                                                            // Page number buttons
+                                                            for (let i = startPage; i <= endPage; i++) {
+                                                                pageButtons.push(
+                                                                    <Button
+                                                                        key={i}
+                                                                        variant={currentPage === i ? "default" : "outline"}
+                                                                        size="sm"
+                                                                        onClick={() => handlePageChange(i)}
+                                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                                                    >
+                                                                        {i}
+                                                                    </Button>
+                                                                );
+                                                            }
+
+                                                            // Last page button
+                                                            if (endPage < totalPages) {
+                                                                // Only show ellipsis if there's a significant gap
+                                                                if (endPage < totalPages - 1) {
+                                                                    pageButtons.push(
+                                                                        <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                                                    );
+                                                                }
+                                                                pageButtons.push(
+                                                                    <Button
+                                                                        key={totalPages}
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => handlePageChange(totalPages)}
+                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                    >
+                                                                        {totalPages}
+                                                                    </Button>
+                                                                );
+                                                            }
+
+                                                            return pageButtons;
+                                                        })()}
+
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                                                            disabled={currentPage === totalPages}
+                                                            className="h-8 px-3 text-sm"
+                                                        >
+                                                            Next
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <div className="text-center py-12 text-muted-foreground">
