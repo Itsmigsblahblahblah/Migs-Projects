@@ -401,18 +401,32 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                         {sortOption === 'barangay' && (
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium whitespace-nowrap">Filter by Barangay:</span>
-                                <select
-                                    value={selectedBarangay}
-                                    onChange={(e) => setSelectedBarangay(e.target.value)}
-                                    className="border rounded-md px-3 py-1 text-sm min-w-[150px]"
-                                >
-                                    <option value="all">All Barangays</option>
-                                    {uniqueBarangays.map(barangay => (
-                                        <option key={barangay} value={barangay}>
-                                            {barangay}
-                                        </option>
-                                    ))}
-                                </select>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="flex items-center gap-2">
+                                            {selectedBarangay === 'all' ? 'All Barangays' : selectedBarangay}
+                                            <ChevronDown className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-64 max-h-60 overflow-y-auto">
+                                        <DropdownMenuItem
+                                            onClick={() => setSelectedBarangay('all')}
+                                            className={`cursor-pointer ${selectedBarangay === 'all' ? "bg-accent" : ""}`}
+                                        >
+                                            All Barangays
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        {uniqueBarangays.map(barangay => (
+                                            <DropdownMenuItem
+                                                key={barangay}
+                                                onClick={() => setSelectedBarangay(barangay)}
+                                                className={`cursor-pointer ${selectedBarangay === barangay ? "bg-accent" : ""}`}
+                                            >
+                                                {barangay}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         )}
                     </div>
