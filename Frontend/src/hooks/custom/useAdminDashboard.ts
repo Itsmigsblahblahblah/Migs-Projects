@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { collection, query, getDocs, orderBy, Timestamp, updateDoc, doc, deleteDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
+import { HARDCODED_CROPS } from "@/utils/cropUtils";
 
 interface Report {
     id: string;
@@ -134,7 +135,7 @@ export const useAdminDashboard = () => {
             calculateStatistics(reportsData);
             calculateProblemsDistribution(reportsData);
             calculateMonthlyTrends(reportsData);
-            calculateCropRecommendations(reportsData);
+            await calculateCropRecommendations(reportsData);
 
             // Load farmers
             await loadFarmers();
@@ -239,21 +240,79 @@ export const useAdminDashboard = () => {
         setMonthlyTrends(trends);
     };
 
-    const calculateCropRecommendations = (reportsData: Report[]) => {
-        const cropCounts: { [key: string]: number } = {};
-
-        reportsData.forEach(report => {
-            report.recommendedCrops?.forEach(crop => {
-                cropCounts[crop] = (cropCounts[crop] || 0) + 1;
+    const calculateCropRecommendations = async (reportsData: Report[]) => {
+        try {
+            // Load farmer crops data to count actual crops planted
+            const cropsRef = collection(db, "farmerCrops");
+            const cropsSnapshot = await getDocs(cropsRef);
+            
+            // Create a frequency map for the hardcoded crops
+            const cropCounts: { [key: string]: number } = {};
+            
+            // Initialize all hardcoded crops with 0 frequency
+            HARDCODED_CROPS.forEach(crop => {
+                cropCounts[crop] = 0;
             });
-        });
-
-        const recommendations: CropRecommendation[] = Object.entries(cropCounts)
-            .map(([crop, frequency]) => ({ crop, frequency }))
-            .sort((a, b) => b.frequency - a.frequency)
-            .slice(0, 5);
-
-        setCropRecommendations(recommendations);
+            
+            // Count how many times each crop has been planted by farmers
+            cropsSnapshot.forEach((doc) => {
+                const data = doc.data();
+                const cropName = data.name;
+                
+                // Only count crops that exist in our hardcoded list
+                if (cropCounts.hasOwnProperty(cropName)) {
+                    cropCounts[cropName] = (cropCounts[cropName] || 0) + 1;
+                }
+            });
+            
+            // Convert to array and sort by frequency
+            const recommendations: CropRecommendation[] = Object.entries(cropCounts)
+                .map(([crop, frequency]) => ({ crop, frequency }))
+                .sort((a, b) => b.frequency - a.frequency)
+                .slice(0, 5); // Top 5 crops planted by farmers
+                
+            setCropRecommendations(recommendations);
+        } catch (error) {
+            console.error("Error calculating crop recommendations:", error);
+            // Fallback to the previous method if there's an error
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            
+            // Filter reports for the current month
+            const currentMonthReports = reportsData.filter(report => {
+                const reportDate = report.createdAt?.toDate();
+                return reportDate && 
+                       reportDate.getMonth() === currentMonth && 
+                       reportDate.getFullYear() === currentYear;
+            });
+            
+            // Create a frequency map for the hardcoded crops
+            const cropCounts: { [key: string]: number } = {};
+            
+            // Initialize all hardcoded crops with 0 frequency
+            HARDCODED_CROPS.forEach(crop => {
+                cropCounts[crop] = 0;
+            });
+            
+            // Count how many times each crop appears in current month reports
+            currentMonthReports.forEach(report => {
+                report.recommendedCrops?.forEach(crop => {
+                    // Only count crops that exist in our hardcoded list
+                    if (cropCounts.hasOwnProperty(crop)) {
+                        cropCounts[crop] = (cropCounts[crop] || 0) + 1;
+                    }
+                });
+            });
+            
+            // Convert to array and sort by frequency
+            const recommendations: CropRecommendation[] = Object.entries(cropCounts)
+                .map(([crop, frequency]) => ({ crop, frequency }))
+                .sort((a, b) => b.frequency - a.frequency)
+                .slice(0, 5); // Top 5 crops for the current month
+                
+            setCropRecommendations(recommendations);
+        }
     };
 
     const loadFarmers = async () => {
@@ -448,6 +507,7 @@ export const useAdminDashboard = () => {
             calculateStatistics(updatedReports);
             calculateProblemsDistribution(updatedReports);
             calculateMonthlyTrends(updatedReports);
+            await calculateCropRecommendations(updatedReports);
 
             toast({
                 title: "Status Updated",

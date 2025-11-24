@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, Legend, FunnelChart, Funnel, LabelList } from "recharts";
 import { Download } from "lucide-react";
 
 interface ProblemData {
@@ -43,6 +43,12 @@ const AnalyticsCharts = ({
         name: item.name,
         value: item.count,
         percentage: totalReports > 0 ? Math.round((item.count / totalReports) * 100) : 0
+    }));
+
+    // Prepare data for funnel chart (top 5 crops)
+    const funnelData = cropRecommendations.slice(0, 5).map((item, index) => ({
+        ...item,
+        fill: COLORS[index % COLORS.length]
     }));
 
     return (
@@ -178,39 +184,58 @@ const AnalyticsCharts = ({
                     </CardContent>
                 </Card>
 
-                {/* Top Crop Recommendations */}
+                {/* Top Crop Recommendation Funnel Chart */}
                 <Card className="shadow-card">
                     <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Top Crop Recommendations</CardTitle>
-                                <CardDescription>Most frequently suggested crops</CardDescription>
-                            </div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => onExport('crops')}
-                                disabled={cropRecommendations.length === 0}
-                            >
-                                <Download className="h-4 w-4 mr-2" />
-                                Export
-                            </Button>
-                        </div>
+                        <CardTitle>Top Crop Recommendation</CardTitle>
+                        <CardDescription>Top 5 crops from Farmer Crop Management data</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {cropRecommendations.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={cropRecommendations} layout="horizontal">
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis type="number" />
-                                    <YAxis dataKey="crop" type="category" width={100} />
-                                    <Tooltip />
-                                    <Bar dataKey="frequency" fill="hsl(var(--success))" name="Recommendations" />
-                                </BarChart>
-                            </ResponsiveContainer>
+                        {funnelData.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="md:col-span-2 h-80">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <FunnelChart margin={{ top: 20, right: 20, left: 20, bottom: 0 }}>
+                                            <Funnel
+                                                data={funnelData}
+                                                dataKey="frequency"
+                                                nameKey="crop"
+                                                isAnimationActive
+                                            >
+                                                <LabelList
+                                                    position="inside"
+                                                    fill="#fff"
+                                                    stroke="none"
+                                                    dataKey="frequency"
+                                                    fontSize={14}
+                                                    fontWeight="bold"
+                                                />
+                                                {funnelData.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                                ))}
+                                            </Funnel>
+                                            <Tooltip formatter={(value) => [`${value} planted`, 'Quantity']} />
+                                        </FunnelChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="md:col-span-1 flex flex-col justify-center">
+                                    <div className="space-y-3">
+                                        <h4 className="font-semibold text-lg">Crop Legend</h4>
+                                        {funnelData.map((entry, index) => (
+                                            <div key={entry.crop} className="flex items-start">
+                                                <div 
+                                                    className="w-4 h-4 rounded-sm mr-2 mt-1 flex-shrink-0" 
+                                                    style={{ backgroundColor: entry.fill }}
+                                                ></div>
+                                                <span className="text-sm">{entry.crop}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         ) : (
                             <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                                No recommendations data available
+                                No data available
                             </div>
                         )}
                     </CardContent>
