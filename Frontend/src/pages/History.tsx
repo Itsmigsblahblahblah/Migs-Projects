@@ -395,7 +395,6 @@ const History = () => {
                 >
                   <option value="all">All Status</option>
                   <option value="processed">Processed</option>
-                  <option value="pending">Pending</option>
                   <option value="resolved">Resolved</option>
                 </select>
               </div>

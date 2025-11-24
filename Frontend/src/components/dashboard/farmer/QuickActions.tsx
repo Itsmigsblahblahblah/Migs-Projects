@@ -144,7 +144,7 @@ const QuickActions = ({ onAddCrop, onUpdateCrop, farmerProfile, weatherData, use
                     {/* History button moved here as requested */}
                     <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/history')}>
                         <History className="h-5 w-5" />
-                        <span>History</span>
+                        <span>Report History</span>
                     </Button>
                 </div>
             </CardContent>
