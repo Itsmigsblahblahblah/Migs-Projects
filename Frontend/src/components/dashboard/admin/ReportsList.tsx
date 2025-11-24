@@ -6,14 +6,14 @@ import { useState, useMemo, useRef, useEffect } from "react";
 
 import ReportDetailView from "./ReportDetailView";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -95,7 +95,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     // Sort and filter reports based on selected option
     const sortedReports = useMemo(() => {
         let sorted = [...localReports];
-        
+
         if (sortOption === 'newest') {
             sorted.sort((a, b) => {
                 const dateA = a.createdAt?.toDate?.() || new Date(0);
@@ -115,7 +115,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                 return barangayA.localeCompare(barangayB);
             });
         }
-        
+
         // Filter by selected barangay if not 'all'
         if (sortOption === 'barangay' && selectedBarangay !== 'all') {
             sorted = sorted.filter(report => {
@@ -123,7 +123,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                 return barangay === selectedBarangay;
             });
         }
-        
+
         return sorted;
     }, [localReports, sortOption, farmerAddressMap, selectedBarangay]);
 
@@ -143,17 +143,17 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     // Calculate statistics for the selected barangay
     const barangayStats = useMemo(() => {
         if (sortOption !== 'barangay' || selectedBarangay === 'all') return null;
-        
+
         const reportsInBarangay = sortedReports;
         const totalReports = reportsInBarangay.length;
-        
+
         // Count problems by type
         const problemCounts: Record<string, number> = {};
         reportsInBarangay.forEach(report => {
             const problem = report.problem || 'general';
             problemCounts[problem] = (problemCounts[problem] || 0) + 1;
         });
-        
+
         return {
             totalReports,
             problemCounts
@@ -166,10 +166,10 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const visibleReports = sortedReports.slice(startIndex, startIndex + reportsPerPage);
 
     // Pagination calculations for grouped view
-    const groupedReports = Object.entries(groupedByBarangay).flatMap(([barangay, reports]) => 
+    const groupedReports = Object.entries(groupedByBarangay).flatMap(([barangay, reports]) =>
         reports.map(report => ({ ...report, barangay }))
     );
-    
+
     const totalGroupedPages = Math.ceil(groupedReports.length / reportsPerPage);
     const startGroupedIndex = (currentPage - 1) * reportsPerPage;
     const visibleGroupedReports = groupedReports.slice(startGroupedIndex, startGroupedIndex + reportsPerPage);
@@ -221,22 +221,22 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     // Confirm delete
     const confirmDelete = async () => {
         if (!reportToDelete) return;
-        
+
         try {
             // Remove from local state immediately for instant UI update
-            setLocalReports(prevReports => 
+            setLocalReports(prevReports =>
                 prevReports.filter(report => report.id !== reportToDelete.id)
             );
-            
+
             // Delete from Firestore
             await deleteDoc(doc(db, "farmReports", reportToDelete.id));
-            
+
             // Show success toast
             toast({
                 title: "Report Deleted",
                 description: "The report has been successfully deleted.",
             });
-            
+
             // Close dialog and reset state
             setDeleteDialogOpen(false);
             setReportToDelete(null);
@@ -275,7 +275,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             Export All
                         </Button>
                     </div>
-                    
+
                     {/* Sorting Options */}
                     <div className="flex flex-wrap gap-2 pt-4">
                         <Button
@@ -296,13 +296,12 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             variant={sortOption === 'barangay' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setSortOption('barangay')}
-                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                            className="bg-green-600 hover:bg-green-700 text-white"
                         >
                             Group by Barangay
-                            <ChevronDown className="h-4 w-4" />
                         </Button>
                     </div>
-                    
+
                     {/* Barangay dropdown and stats when grouping is active */}
                     {sortOption === 'barangay' && (
                         <div className="pt-4 space-y-4">
@@ -321,7 +320,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                     ))}
                                 </select>
                             </div>
-                            
+
                             {/* Stats display for selected barangay */}
                             {selectedBarangay !== 'all' && barangayStats && (
                                 <div className="bg-muted p-3 rounded-md">
@@ -402,8 +401,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         Mark Resolved
                                                                     </Button>
                                                                 )}
-                                                                <Button 
-                                                                    variant="outline" 
+                                                                <Button
+                                                                    variant="outline"
                                                                     size="sm"
                                                                     onClick={() => openReportDetail(report)}
                                                                 >
@@ -426,7 +425,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                             </div>
                                         </div>
                                     ))}
-                                    
+
                                     {/* Pagination Controls for Grouped View - Updated to match crop management design */}
                                     {totalGroupedPages > 1 && (
                                         <div className="flex justify-center mt-6">
@@ -439,7 +438,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                 >
                                                     Previous
                                                 </Button>
-                                                
+
                                                 {Array.from({ length: Math.min(5, totalGroupedPages) }, (_, i) => {
                                                     // Calculate start index for pagination window
                                                     let start = 1;
@@ -452,7 +451,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             start = currentPage - 2;
                                                         }
                                                     }
-                                                    
+
                                                     const pageNum = start + i;
                                                     return (
                                                         <Button
@@ -465,7 +464,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         </Button>
                                                     );
                                                 })}
-                                                
+
                                                 {totalGroupedPages > 5 && (
                                                     <>
                                                         {currentPage < totalGroupedPages - 2 && (
@@ -482,7 +481,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         )}
                                                     </>
                                                 )}
-                                                
+
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -553,8 +552,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             Mark Resolved
                                                         </Button>
                                                     )}
-                                                    <Button 
-                                                        variant="outline" 
+                                                    <Button
+                                                        variant="outline"
                                                         size="sm"
                                                         onClick={() => openReportDetail(report)}
                                                     >
@@ -587,7 +586,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                 >
                                                     Previous
                                                 </Button>
-                                                
+
                                                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                                     // Calculate start index for pagination window
                                                     let start = 1;
@@ -600,7 +599,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             start = currentPage - 2;
                                                         }
                                                     }
-                                                    
+
                                                     const pageNum = start + i;
                                                     return (
                                                         <Button
@@ -613,7 +612,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         </Button>
                                                     );
                                                 })}
-                                                
+
                                                 {totalPages > 5 && (
                                                     <>
                                                         {currentPage < totalPages - 2 && (
@@ -630,7 +629,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         )}
                                                     </>
                                                 )}
-                                                
+
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -656,8 +655,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
 
             {/* Report Detail Modal */}
             {selectedReport && (
-                <ReportDetailView 
-                    report={selectedReport} 
+                <ReportDetailView
+                    report={selectedReport}
                     onClose={closeReportDetail}
                     onUpdateStatus={onUpdateStatus}
                     isAdminView={true} // Set to true for admin view
@@ -681,7 +680,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                             onClick={confirmDelete}
                             className="bg-red-600 hover:bg-red-700"
                         >
