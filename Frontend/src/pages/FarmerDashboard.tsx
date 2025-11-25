@@ -23,7 +23,7 @@ const createWeatherAlertId = (description: string, date: string) => {
 import ReportForm from "@/components/dashboard/farmer/ReportForm";
 import RecommendationResults from "@/components/dashboard/farmer/RecommendationResults";
 import QuickStats from "@/components/dashboard/farmer/QuickStats";
-import MarketDemandCard from "@/components/dashboard/farmer/MarketDemandCard";
+// MarketDemandCard import removed as per requirement
 import EditProfileDialog from "@/components/dashboard/farmer/EditProfileDialog";
 import AddCropDialog from "@/components/dashboard/farmer/AddCropDialog";
 import UpdateCropDialog from "@/components/dashboard/farmer/UpdateCropDialog";
@@ -672,8 +672,8 @@ const FarmerDashboard = () => {
           </div>
         </div>
 
-        {/* Market Demand Card */}
-        <MarketDemandCard />
+        {/* Market Demand Card - Removed as per requirement */}
+        {/* <MarketDemandCard /> */}
 
         {/* Dialogs */}
         <EditProfileDialog
