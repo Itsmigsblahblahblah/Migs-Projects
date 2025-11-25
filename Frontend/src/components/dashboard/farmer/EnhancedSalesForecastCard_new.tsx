@@ -77,44 +77,25 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
 
                 setInsights(cropInsights);
 
-                // Calculate values for chart data
-                const userInvestment = Number(crop.puhunan) || 0;
-                const suggestedCapital = cropInsights?.profit?.suggestedCapital || 0;
-                
-                // Calculate estimated yield based on user's investment
-                const estimatedYield = userInvestment === 0 ? 0 :
-                    (cropInsights?.profit?.estimatedYield || 0) *
-                    (userInvestment >= suggestedCapital ? 1 : (userInvestment / suggestedCapital));
-                
-                // Calculate potential revenue
-                const potentialRevenue = estimatedYield * (cropInsights?.market?.averagePrice || 0);
-                
-                // Calculate net profit based on user's investment (same as summary)
-                const chartNetProfit = userInvestment === 0 ? 0 : potentialRevenue - userInvestment;
-                
                 // Generate sales forecast data based on insights
-                // Distribute investment across all stages based on typical farming expense patterns
-                // Planting: 40% (seeds, initial soil prep, labor)
-                // Growth: 45% (fertilizers, ongoing labor, pest control)
-                // Harvest: 15% (harvesting, transport, post-harvest)
                 const forecastData: SalesData[] = [
                     {
                         stage: "Planting",
-                        puhunan: userInvestment * 0.4, // 40% of investment in planting stage
+                        puhunan: crop.puhunan,
                         grossSales: 0,
-                        netProfit: -userInvestment * 0.4 // Loss equal to planting investment
+                        netProfit: -crop.puhunan * 0.3 // 30% initial costs
                     },
                     {
                         stage: "Growth",
-                        puhunan: userInvestment * 0.45, // 45% of investment in growth stage
-                        grossSales: potentialRevenue * 0.5, // 50% of potential revenue
-                        netProfit: (potentialRevenue * 0.5) - (userInvestment * 0.85) // Revenue minus cumulative investment
+                        puhunan: crop.puhunan * 0.2, // Additional investment
+                        grossSales: cropInsights.profit.potentialRevenue * 0.3,
+                        netProfit: (cropInsights.profit.potentialRevenue * 0.3) - (crop.puhunan * 1.2)
                     },
                     {
                         stage: "Harvest",
-                        puhunan: userInvestment * 0.15, // 15% of investment in harvest stage
-                        grossSales: potentialRevenue, // 100% of potential revenue
-                        netProfit: chartNetProfit // Final net profit
+                        puhunan: 0,
+                        grossSales: cropInsights.profit.potentialRevenue,
+                        netProfit: cropInsights.profit.netProfit
                     }
                 ];
 
@@ -190,12 +171,6 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                             • Labor costs: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                             • Pest control and other chemicals: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
                             • Miscellaneous expenses: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                            
-                            Investment Distribution by Stage:
-                            • Planting Stage: 40% (₱${(userInvestment * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})
-                            • Growth Stage: 45% (₱${(userInvestment * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})
-                            • Harvest Stage: 15% (₱${(userInvestment * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})
-                            
                             Total Investment: ₱${userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} className="mt-2" />
                         </div>
 
@@ -212,12 +187,6 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                 • Labor costs: ₱${(suggestedCapital ? (suggestedCapital * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00')}
                                 • Pest control and other chemicals: ₱${(suggestedCapital ? (suggestedCapital * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00')}
                                 • Miscellaneous expenses: ₱${(suggestedCapital ? (suggestedCapital * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00')}
-                                
-                                Investment Distribution by Stage:
-                                • Planting Stage: 40% (₱${(suggestedCapital ? (suggestedCapital * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00')})
-                                • Growth Stage: 45% (₱${(suggestedCapital ? (suggestedCapital * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00')})
-                                • Harvest Stage: 15% (₱${(suggestedCapital ? (suggestedCapital * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00')})
-                                
                                 Total Suggested Capital: ₱${Number(suggestedCapital || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} className="mt-2" />
                             </div>
                         )}
@@ -401,7 +370,6 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                         </ul>
                         <p className="text-xs text-muted-foreground mt-3">
                             This chart shows how your money moves from spending to earning throughout the farming process.
-                            Investment is distributed as follows: 40% in Planting, 45% in Growth, and 15% in Harvest stages.
                             Positive bars (green) show profit, while negative bars (red) show losses.
                         </p>
                     </div>
