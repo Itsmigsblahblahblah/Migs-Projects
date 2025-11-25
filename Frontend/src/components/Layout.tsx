@@ -1,72 +1,18 @@
-import { ReactNode, useState, useEffect } from "react";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Sprout, User, LogOut } from "lucide-react";
+import { clearMarketDemandCache } from "@/services/marketDemandMultiCacheService";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { useNavigate, useLocation } from "react-router-dom";
-import {
-  Sprout,
-  LogOut,
-  User,
-  Settings,
-  Home
-} from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { clearMarketDemandCache } from "@/services/marketDemandCacheService";
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-const Layout = ({ children }: LayoutProps) => {
-  const navigate = useNavigate();
+const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [username, setUsername] = useState<string | null>(null);
+  const navigate = useNavigate();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
-  // Check authentication status and listen for changes
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      const role = localStorage.getItem('userRole');
-      const name = localStorage.getItem('username');
-      
-      setUserRole(role);
-      setUsername(name);
-      
-      // If user is not authenticated, redirect to login
-      if (!role) {
-        navigate('/login');
-      }
-    };
-    
-    checkAuthStatus();
-    
-    // Listen for storage changes (multi-tab logout)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'userRole' && !e.newValue) {
-        // User logged out in another tab
-        navigate('/login');
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Set up interval to periodically check auth status
-    const interval = setInterval(checkAuthStatus, 1000);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [navigate]);
+  // Get user info from localStorage
+  const userRole = localStorage.getItem('userRole');
+  const username = localStorage.getItem('username');
 
   const handleLogout = () => {
     // Remove all authentication data

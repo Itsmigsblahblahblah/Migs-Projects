@@ -32,7 +32,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { getCachedMarketDemandData, setCachedMarketDemandData } from "@/services/marketDemandCacheService";
+import { getCachedMarketDemandData, setCachedMarketDemandData } from "@/services/marketDemandMultiCacheService";
 
 interface MarketDemandData {
   vegetable: string;
@@ -163,10 +163,10 @@ const MarketDemand = () => {
       setLoading(true);
       
       // Check if we have cached data for the current parameters
-      const cacheKey = `${selectedMonth}-${selectedYear}-${selectedDemandLevel || 'all'}`;
-      const cachedData = getCachedMarketDemandData();
+      const cacheKey = `market-demand-${selectedMonth}-${selectedYear}-${selectedDemandLevel || 'all'}`;
+      const cachedData = getCachedMarketDemandData(cacheKey);
       
-      if (cachedData && cachedData.cacheKey === cacheKey) {
+      if (cachedData) {
         // Use cached data
         setMarketData(cachedData.data);
         setLoading(false);
@@ -191,9 +191,8 @@ const MarketDemand = () => {
       
       // Cache the data with the current parameters
       setCachedMarketDemandData({
-        cacheKey,
         data: marketData
-      });
+      }, cacheKey);
       
       setMarketData(marketData);
     } catch (err) {

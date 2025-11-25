@@ -19,7 +19,7 @@ import {
   signOut
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { clearMarketDemandCache } from "@/services/marketDemandCacheService";
+import { clearMarketDemandCache } from "@/services/marketDemandMultiCacheService";
 
 const Login = () => {
   const navigate = useNavigate();

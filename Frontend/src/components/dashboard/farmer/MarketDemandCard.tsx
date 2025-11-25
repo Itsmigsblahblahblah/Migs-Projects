@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Minus, AlertTriangle } from "lucide-react";
+import { getCachedMarketDemandData, setCachedMarketDemandData } from "@/services/marketDemandMultiCacheService";
 
 interface MarketDemandData {
   vegetable: string;
@@ -26,6 +27,22 @@ const MarketDemandCard = () => {
   const fetchMarketData = async () => {
     try {
       setLoading(true);
+      
+      // Use current month and year as cache key
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
+      const cacheKey = `farmer-dashboard-${currentMonth}-${currentYear}-top5`;
+      
+      // Check if we have cached data for the current parameters
+      const cachedData = getCachedMarketDemandData(cacheKey);
+      
+      if (cachedData) {
+        // Use cached data
+        setMarketData(cachedData.data);
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch("/api/vegetables/recommend-crops?top_n=5");
       
       if (!response.ok) {
@@ -33,7 +50,14 @@ const MarketDemandCard = () => {
       }
       
       const data = await response.json();
-      setMarketData(data.recommended_crops || []);
+      const marketData = data.recommended_crops || [];
+      
+      // Cache the data with the current parameters
+      setCachedMarketDemandData({
+        data: marketData
+      }, cacheKey);
+      
+      setMarketData(marketData);
     } catch (err) {
       setError("Failed to load market demand data. Please try again later.");
       console.error("Error fetching market data:", err);
