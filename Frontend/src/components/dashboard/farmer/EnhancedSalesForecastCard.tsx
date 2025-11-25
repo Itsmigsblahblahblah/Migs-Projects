@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, TrendingUp, Calendar, Sprout, Wallet } from "lucide-react";
+import { BarChart3, TrendingUp, Calendar, Sprout, Wallet, AlertTriangle } from "lucide-react";
 import {
     LineChart,
     Line,
@@ -166,6 +166,9 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
     // If investment is 0, profit should also be 0
     const netProfit = userInvestment === 0 ? 0 : potentialRevenue - userInvestment;
 
+    // Check if investment exceeds suggested capital
+    const investmentExceedsSuggested = userInvestment > suggestedCapital;
+
     return (
         <Card className="shadow-card">
             <CardHeader>
@@ -183,28 +186,44 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                             <div className="text-primary font-bold text-xl mb-2">1</div>
                             <p className="text-sm text-muted-foreground mb-1">Your Investment</p>
                             <p className="text-xl font-bold text-primary">₱{userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            {/* Show warning if investment exceeds suggested capital */}
+                            {investmentExceedsSuggested && (
+                                <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded-md">
+                                    <p className="text-xs text-yellow-800 flex items-center">
+                                        <AlertTriangle className="inline h-3 w-3 mr-1" />
+                                        Investment exceeds suggested capital by ₱{(userInvestment - suggestedCapital).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                            )}
                             <p className="text-xs mt-2 text-muted-foreground">This is the money you spend to plant and grow your {crop.name}</p>
                             <InfoTooltip content={`The total amount you've invested in seeds, fertilizers, labor, and other expenses for this crop. This includes:
-                            • Seeds/Cost of planting material: ₱${(userInvestment * 0.3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                            • Fertilizers and soil amendments: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                            • Labor costs: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                            • Pest control and other chemicals: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                            • Miscellaneous expenses: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                            • Seeds/Cost of planting material: ₱${((userInvestment * 0.3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) || '0.00'}
+                            • Fertilizers and soil amendments: ₱${((userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) || '0.00'}
+                            • Labor costs: ₱${((userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) || '0.00'}
+                            • Pest control and other chemicals: ₱${((userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) || '0.00'}
+                            • Miscellaneous expenses: ₱${((userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) || '0.00'}
                             
                             Investment Distribution by Stage:
-                            • Planting Stage: 40% (₱${(userInvestment * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})
-                            • Growth Stage: 45% (₱${(userInvestment * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})
-                            • Harvest Stage: 15% (₱${(userInvestment * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})
+                            • Planting Stage: 40% (₱${((userInvestment * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) || '0.00'})
+                            • Growth Stage: 45% (₱${((userInvestment * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) || '0.00'})
+                            • Harvest Stage: 15% (₱${((userInvestment * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })) || '0.00'})
                             
                             Total Investment: ₱${userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} className="mt-2" />
                         </div>
 
                         {/* Show Est. Suggested Capital only if user's investment is less than suggested capital */}
-                        {userInvestment < suggestedCapital && (
+                        {(userInvestment < suggestedCapital || investmentExceedsSuggested) && (
                             <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500">
                                 <div className="text-yellow-500 font-bold text-xl mb-2">2</div>
                                 <p className="text-sm text-muted-foreground mb-1">Est. Suggested Capital</p>
                                 <p className="text-xl font-bold text-yellow-500">₱{Number(suggestedCapital || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                {investmentExceedsSuggested && (
+                                    <div className="mt-2">
+                                        <p className="text-xs text-yellow-700">
+                                            Your investment is ₱{(userInvestment - suggestedCapital).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} higher than suggested
+                                        </p>
+                                    </div>
+                                )}
                                 <p className="text-xs mt-2 text-muted-foreground">This is the minimum money needed to successfully grow your {crop.name}</p>
                                 <InfoTooltip content={`The recommended minimum investment needed for optimal growth of your crop based on current market conditions. This includes:
                                 • Seeds/Cost of planting material: ₱${(suggestedCapital ? (suggestedCapital * 0.3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00')}
@@ -223,7 +242,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                         )}
 
                         <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500">
-                            <div className="text-blue-500 font-bold text-xl mb-2">{userInvestment < suggestedCapital ? '3' : '2'}</div>
+                            <div className="text-blue-500 font-bold text-xl mb-2">{(userInvestment < suggestedCapital || investmentExceedsSuggested) ? '3' : '2'}</div>
                             <p className="text-sm text-muted-foreground mb-1">Est. Expected Harvest</p>
                             <p className="text-xl font-bold text-blue-500">{estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</p>
                             <p className="text-xs mt-2 text-muted-foreground">This is your est. expected harvest</p>
@@ -242,7 +261,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                         </div>
 
                         <div className={`p-4 rounded-lg border ${netProfit >= 0 ? 'bg-success/10 border-success' : 'bg-destructive/10 border-destructive'}`}>
-                            <div className={`font-bold text-xl mb-2 ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{userInvestment < suggestedCapital ? '4' : '3'}</div>
+                            <div className={`font-bold text-xl mb-2 ${(userInvestment < suggestedCapital || investmentExceedsSuggested) ? '4' : '3'}`}></div>
                             <p className="text-sm text-muted-foreground mb-1">Your Est. Profit</p>
                             <p className={`text-xl font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                                 ₱{netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -253,15 +272,16 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                     : "You might lose money. Consider adjusting your approach."}
                             </p>
                             <InfoTooltip content={`Estimated Profit Calculation:
-Gross Sales: ${estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'} kg × ₱${Number(insights?.market?.averagePrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/kg = ₱${(estimatedYield * (insights?.market?.averagePrice || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+Gross Sales: ${(estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0')} kg × ₱${(Number(insights?.market?.averagePrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}/kg = ₱${((estimatedYield * (insights?.market?.averagePrice || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00')}
                             
-Total Expenses: ₱${userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+Total Expenses: ₱${(userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00')}
 
-Net Profit: ₱${(estimatedYield * (insights?.market?.averagePrice || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'} - ₱${userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'} = ₱${netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+Net Profit: ₱${((estimatedYield * (insights?.market?.averagePrice || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00')} - ₱${(userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00')} = ₱${(netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
 
 ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                                     userInvestment < suggestedCapital ? `Note: Profit is scaled down proportionally to your investment (${((userInvestment / suggestedCapital) * 100).toFixed(1)}% of optimal).` :
-                                        'Note: Profit is at optimal level based on your investment.'}`} className="mt-2" />
+                                        investmentExceedsSuggested ? `Note: Profit calculation assumes optimal yield despite excess investment.` :
+                                            'Note: Profit is at optimal level based on your investment.'}`} className="mt-2" />
                         </div>
                     </div>
                 </div>
