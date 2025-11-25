@@ -626,6 +626,17 @@ const CropDetails = () => {
                         cropName={crop.name}
                     />
                 </div>
+                
+                {/* Go Back button at the end of the content */}
+                <div className="flex justify-end mt-6">
+                    <Button 
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+                    >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Go Back to Top
+                    </Button>
+                </div>
             </div>
         </Layout>
     );
