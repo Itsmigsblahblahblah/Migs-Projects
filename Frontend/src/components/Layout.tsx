@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { clearMarketDemandCache } from "@/services/marketDemandCacheService";
 
 interface LayoutProps {
   children: ReactNode;
@@ -72,6 +73,9 @@ const Layout = ({ children }: LayoutProps) => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('username');
     localStorage.removeItem('userId');
+    
+    // Clear market demand cache
+    clearMarketDemandCache();
     
     // Close dialog
     setIsLogoutDialogOpen(false);

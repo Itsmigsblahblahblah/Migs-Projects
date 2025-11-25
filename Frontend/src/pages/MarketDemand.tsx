@@ -32,6 +32,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { getCachedMarketDemandData, setCachedMarketDemandData } from "@/services/marketDemandCacheService";
 
 interface MarketDemandData {
   vegetable: string;
@@ -160,6 +161,18 @@ const MarketDemand = () => {
   const fetchMarketData = async () => {
     try {
       setLoading(true);
+      
+      // Check if we have cached data for the current parameters
+      const cacheKey = `${selectedMonth}-${selectedYear}-${selectedDemandLevel || 'all'}`;
+      const cachedData = getCachedMarketDemandData();
+      
+      if (cachedData && cachedData.cacheKey === cacheKey) {
+        // Use cached data
+        setMarketData(cachedData.data);
+        setLoading(false);
+        return;
+      }
+      
       // Include month, year, and demand_level parameters in the API call
       // Request all crops instead of just 20
       let url = `/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
@@ -174,7 +187,15 @@ const MarketDemand = () => {
       }
 
       const data = await response.json();
-      setMarketData(data.recommended_crops || []);
+      const marketData = data.recommended_crops || [];
+      
+      // Cache the data with the current parameters
+      setCachedMarketDemandData({
+        cacheKey,
+        data: marketData
+      });
+      
+      setMarketData(marketData);
     } catch (err) {
       setError("Failed to load market demand data. Please try again later.");
       console.error("Error fetching market data:", err);

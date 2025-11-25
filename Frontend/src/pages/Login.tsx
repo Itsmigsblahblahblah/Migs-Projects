@@ -15,9 +15,11 @@ import {
   GoogleAuthProvider,
   UserCredential,
   sendEmailVerification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  signOut
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import { clearMarketDemandCache } from "@/services/marketDemandCacheService";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -141,7 +143,8 @@ const Login = () => {
         // New farmer - create profile only if email is verified (which it should be for Google)
         if (!user.emailVerified) {
           setError("Please verify your Google account before signing in.");
-          await auth.signOut();
+          await signOut(auth);
+          clearMarketDemandCache(); // Clear market demand cache on logout
           return;
         }
         
@@ -206,7 +209,8 @@ const Login = () => {
       await sendEmailVerification(userCredential.user);
 
       // Sign out user to prevent auto-login
-      await auth.signOut();
+      await signOut(auth);
+      clearMarketDemandCache(); // Clear market demand cache on logout
 
       // Show success message
       setSuccessMessage(
@@ -272,7 +276,8 @@ const Login = () => {
           "Please verify your email before logging in. Check your inbox for the verification link. " +
           "Didn't receive the email? Click 'Resend Verification Email' below."
         );
-        await auth.signOut();
+        await signOut(auth);
+        clearMarketDemandCache(); // Clear market demand cache on logout
         setLoading(false);
         return;
       }
@@ -344,14 +349,14 @@ const Login = () => {
       // Check if already verified
       if (userCredential.user.emailVerified) {
         setSuccessMessage("Your email is already verified! You can now log in.");
-        await auth.signOut();
+        await signOut(auth);
         setLoading(false);
         return;
       }
 
       // Resend verification email
       await sendEmailVerification(userCredential.user);
-      await auth.signOut();
+      await signOut(auth);
 
       setSuccessMessage(
         "Verification email sent! Please check your inbox at " + 
