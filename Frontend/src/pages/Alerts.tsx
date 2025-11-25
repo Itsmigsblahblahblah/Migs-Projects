@@ -255,13 +255,15 @@ const Alerts = () => {
         const weatherAlertId = createWeatherAlertId(alert.title, alert.date);
         await setDoc(doc(db, "userReadStatus", userId, "weather", weatherAlertId), {
           read: true,
+          // Remove deleted flag if it was previously deleted
+          deleted: false,
           timestamp: new Date()
         });
 
         // Update local read status immediately
         setUserReadStatus(prev => ({
           ...prev,
-          [weatherAlertId]: { read: true, timestamp: new Date() }
+          [weatherAlertId]: { read: true, deleted: false, timestamp: new Date() }
         }));
       }
 
@@ -313,6 +315,12 @@ const Alerts = () => {
       const weatherAlertId = createWeatherAlertId(alert.description, alert.date || '');
       const status = userReadStatus[weatherAlertId];
       const isRead = status ? (typeof status === 'boolean' ? status : status.read) : false;
+      const isDeleted = status && typeof status !== 'boolean' ? status.deleted : false;
+
+      // Skip deleted weather alerts
+      if (isDeleted) {
+        return null;
+      }
 
       return {
         id: weatherAlertId,
@@ -323,7 +331,7 @@ const Alerts = () => {
         type: 'weather',
         read: isRead
       };
-    });
+    }).filter(alert => alert !== null) as AlertItem[];
   };
 
   // Function to transform announcements to our alert format
@@ -392,6 +400,25 @@ const Alerts = () => {
 
       // New format - check deleted flag
       return !status.deleted;
+    }).filter(alert => {
+      // Also filter out weather alerts that have been cleared
+      if (alert.type !== 'weather') return true;
+      
+      // For weather alerts, check if they've been cleared (deleted from userReadStatus)
+      const weatherAlertId = createWeatherAlertId(alert.title, alert.date);
+      const status = userReadStatus[weatherAlertId];
+      
+      // If there's no read status, show the weather alert
+      if (!status) return true;
+      
+      // If there's a read status, check if it's marked as deleted
+      if (typeof status === 'boolean') {
+        // Old format - boolean means read but not deleted
+        return true;
+      }
+      
+      // New format - check deleted flag
+      return !status.deleted;
     });
 
     if (activeCategory === 'all') return filteredAlerts;
@@ -420,6 +447,13 @@ const Alerts = () => {
 
       // New format - check deleted flag
       return !status.deleted;
+    }).filter(alert => {
+      // Also filter out weather alerts that have been cleared
+      if (alert.type !== 'weather') return true;
+      
+      // For weather alerts, check if they've been cleared (deleted from userReadStatus)
+      const weatherAlertId = createWeatherAlertId(alert.title, alert.date);
+      return !userReadStatus[weatherAlertId]?.deleted;
     });
 
     return {
@@ -510,15 +544,41 @@ const Alerts = () => {
         // For weather alerts, remove from read status if it exists
         // Create the same stable ID based on the alert description and date
         const weatherAlertId = createWeatherAlertId(alertToDelete.title, alertToDelete.date);
+        
+        // Optimistically update UI
+        setUserReadStatus(prev => ({
+          ...prev,
+          [weatherAlertId]: { read: true, deleted: true, timestamp: new Date() }
+        }));
+        
+        // Also remove from selected alert if it's the same one
+        if (selectedAlert && selectedAlert.type === 'weather') {
+          const selectedAlertWeatherId = createWeatherAlertId(selectedAlert.title, selectedAlert.date);
+          if (selectedAlertWeatherId === weatherAlertId) {
+            setSelectedAlert(null);
+            setIsDialogOpen(false);
+          }
+        }
+
         try {
-          await deleteDoc(doc(db, "userReadStatus", userId, "weather", weatherAlertId));
+          // Instead of deleting the document, mark it as deleted
+          await setDoc(doc(db, "userReadStatus", userId, "weather", weatherAlertId), {
+            read: true,
+            deleted: true,
+            timestamp: new Date()
+          });
         } catch (e) {
-          // Ignore if read status doesn't exist
+          // If setting the document fails, try deleting it
+          try {
+            await deleteDoc(doc(db, "userReadStatus", userId, "weather", weatherAlertId));
+          } catch (deleteError) {
+            console.error("Error deleting weather alert:", deleteError);
+          }
         }
 
         toast({
           title: "Success",
-          description: "Weather alert read status removed.",
+          description: "Weather alert cleared successfully.",
         });
       } else {
         // For any other type, show an error
@@ -897,7 +957,9 @@ const Alerts = () => {
                     ? 'Are you sure you want to delete this message?'
                     : alertToDelete?.type === 'announcement'
                       ? 'Are you sure you want to delete this announcement?'
-                      : 'This alert cannot be deleted.'}
+                      : alertToDelete?.type === 'weather'
+                        ? 'Are you sure you want to clear this weather alert?'
+                        : 'This alert cannot be deleted.'}
                 </DialogDescription>
               </div>
             </div>

@@ -135,8 +135,8 @@ service cloud.firestore {
     
     // Weather Alerts Read Status - Allow tracking read status for weather alerts
     match /userReadStatus/{userId}/weather/{alertId} {
-      // Users can create/read/update their own weather alert read status
-      allow create, read, update: if request.auth != null && request.auth.uid == userId;
+      // Users can create/read/update/delete their own weather alert read status
+      allow create, read, update, delete: if request.auth != null && request.auth.uid == userId;
       
       // Admins can read all weather alert read status records
       allow read: if request.auth != null && 
