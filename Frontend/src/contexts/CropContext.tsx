@@ -10,6 +10,7 @@ interface ChecklistItem {
     completed: boolean;
     category: string;
     completedAt?: string; // Add timestamp for completion
+    detailedInstructions?: string[]; // Add detailed instructions property
 }
 
 interface Crop {
@@ -28,7 +29,7 @@ interface Crop {
 
 interface CropContextType {
     crops: Crop[];
-    addCrop: (crop: Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>) => Promise<void>;
+    addCrop: (crop: Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'> & { checklist?: ChecklistItem[] }) => Promise<void>;
     updateCrop: (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>>) => Promise<void>;
     deleteCrop: (id: string) => Promise<void>; // Add delete function
     getCropById: (id: string) => Crop | undefined;
@@ -125,7 +126,7 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    const addCrop = async (cropData: Omit<Crop, 'id' | 'createdAt' | 'userId'>) => {
+    const addCrop = async (cropData: Omit<Crop, 'id' | 'createdAt' | 'userId'> & { checklist?: ChecklistItem[] }) => {
       try {
         const userId = currentUserId || localStorage.getItem('userId') || 'default-user';
         if (!userId) {
@@ -142,14 +143,19 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
           createdAt: Timestamp.now()
         };
 
+        // Remove undefined properties to prevent Firebase errors
+        const cleanCropData: any = Object.fromEntries(
+            Object.entries(newCropData).filter(([_, value]) => value !== undefined)
+        );
+
         // Add to Firestore with auto-generated ID
         const cropsRef = collection(db, "farmerCrops");
-        const docRef = await addDoc(cropsRef, newCropData);
-            
+        const docRef = await addDoc(cropsRef, cleanCropData);
+        
         // Add to local state with the auto-generated ID
         const newCrop: Crop = {
             id: docRef.id, // Use the auto-generated ID
-            ...newCropData
+            ...cleanCropData
         };
 
         setCrops(prev => [newCrop, ...prev]);

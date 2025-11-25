@@ -84,6 +84,33 @@ export const useCropManagement = () => {
         }
 
         try {
+            // Check if there's an existing crop of the same type with detailed instructions
+            let checklistToCopy: any[] | undefined = undefined;
+            
+            // Find the first crop of the same name that has checklist items with detailed instructions
+            const existingCropWithInstructions = crops.find(crop => 
+                crop.name.toLowerCase() === newCrop.name.toLowerCase() && 
+                crop.checklist && 
+                crop.checklist.some(item => item.detailedInstructions && item.detailedInstructions.length > 0)
+            );
+
+            if (existingCropWithInstructions && existingCropWithInstructions.checklist) {
+                // Copy the checklist with detailed instructions
+                checklistToCopy = existingCropWithInstructions.checklist.map(item => {
+                    // Create a new object without undefined properties
+                    const copiedItem: any = {
+                        id: item.id,
+                        title: item.title,
+                        category: item.category,
+                        completed: false, // Reset completion status
+                        // Only include detailedInstructions if it exists
+                        ...(item.detailedInstructions && { detailedInstructions: item.detailedInstructions })
+                    };
+                    
+                    return copiedItem;
+                });
+            }
+
             // Prepare crop data (userId is added automatically in CropContext)
             const cropData = {
                 name: newCrop.name,
@@ -91,6 +118,7 @@ export const useCropManagement = () => {
                 landArea: parseFloat(newCrop.landArea),
                 plantedDate: newCrop.plantedDate, // This is already a string in YYYY-MM-DD format
                 puhunan: parseFloat(newCrop.puhunan),
+                ...(checklistToCopy && { checklist: checklistToCopy })
             };
 
             // Save to Firestore via context
@@ -98,7 +126,8 @@ export const useCropManagement = () => {
 
             toast({
                 title: "Crop Added Successfully",
-                description: `${newCrop.name} has been saved to the database.`,
+                description: `${newCrop.name} has been saved to the database.` + 
+                    (checklistToCopy ? " Maintenance instructions copied from existing crop." : ""),
             });
 
             // Reset form
