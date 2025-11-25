@@ -10,13 +10,75 @@ const VEGETABLE_PRICES_ENDPOINT = '/data/vegetable_prices.csv';
 const SEED_PRICES_ENDPOINT = '/data/seed.csv';
 const CROP_DATA_ENDPOINT = '/data/crop-data';
 
+// Define interfaces for type safety
+interface SoilDataRecord {
+  pH: number;
+  Nitrogen: string;
+  Phosphorus: string;
+  Potassium: string;
+}
+
+interface FertilizerRecommendation {
+  level: string;
+  recommendations: string[];
+  detailedInfo: string;
+}
+
+interface DetailedFertilizerRecommendations {
+  nitrogen: FertilizerRecommendation;
+  phosphorus: FertilizerRecommendation;
+  potassium: FertilizerRecommendation;
+}
+
+interface FertilizerInfo {
+  pH: number;
+  nitrogen: string;
+  phosphorus: string;
+  potassium: string;
+  recommendations: string[];
+  detailedRecommendations: DetailedFertilizerRecommendations;
+}
+
+interface MarketPriceInfo {
+  averagePrice: number;
+  trend: string;
+  priceHistory: Array<{
+    date: string;
+    price: number;
+    month: string;
+    year: string;
+  }>;
+}
+
+interface SeedPriceInfo {
+  seedPricePerKilo: number;
+  currency: string;
+}
+
+interface ProfitProjection {
+  estimatedYield: number;
+  potentialRevenue: number;
+  totalCosts: number;
+  netProfit: number;
+  profitMargin: number;
+  marketTrend: string;
+  averageMarketPrice: number;
+  suggestedCapital: number;
+}
+
+interface CropInsights {
+  fertilizer: FertilizerInfo;
+  market: MarketPriceInfo;
+  profit: ProfitProjection;
+}
+
 /**
  * Get fertilizer recommendations based on soil data
  * @param cropName Name of the crop
  * @param soilType Type of soil
  * @returns Fertilizer recommendations
  */
-export const getFertilizerRecommendations = async (cropName: string, soilType: string) => {
+export const getFertilizerRecommendations = async (cropName: string, soilType: string): Promise<FertilizerInfo> => {
   try {
     // Fetch from the backend API
     const soilData = await loadCSV(SOIL_DATA_ENDPOINT);
@@ -28,25 +90,72 @@ export const getFertilizerRecommendations = async (cropName: string, soilType: s
       // Get the first matching record for simplicity
       const record = matchingRecords[0];
       
-      // Generate fertilizer recommendation based on NPK levels
-      const recommendations = [];
+      // Generate detailed fertilizer recommendation based on NPK levels
+      const recommendations: string[] = [];
+      const detailedRecommendations: DetailedFertilizerRecommendations = {
+        nitrogen: {
+          level: record['Nitrogen(N)'],
+          recommendations: [],
+          detailedInfo: ""
+        },
+        phosphorus: {
+          level: record['Phosphorus(P)'],
+          recommendations: [],
+          detailedInfo: ""
+        },
+        potassium: {
+          level: record['Potassium(K)'],
+          recommendations: [],
+          detailedInfo: ""
+        }
+      };
       
+      // Nitrogen recommendations
       if (record['Nitrogen(N)'] === 'L') {
-        recommendations.push('Add nitrogen-rich fertilizer (e.g., ammonium nitrate)');
+        detailedRecommendations.nitrogen.recommendations.push('Add nitrogen-rich fertilizer (e.g., ammonium nitrate)');
+        detailedRecommendations.nitrogen.detailedInfo = "Nitrogen deficiency can cause stunted growth and yellowing of leaves. Apply nitrogen fertilizer in split doses to avoid leaching.";
       } else if (record['Nitrogen(N)'] === 'H') {
-        recommendations.push('Reduce nitrogen application to prevent excessive foliage growth');
+        detailedRecommendations.nitrogen.recommendations.push('Reduce nitrogen application to prevent excessive foliage growth');
+        detailedRecommendations.nitrogen.detailedInfo = "Excessive nitrogen can lead to lush foliage at the expense of fruit/flower development. Reduce nitrogen application and increase phosphorus and potassium.";
+      } else {
+        detailedRecommendations.nitrogen.recommendations.push('Maintain current nitrogen levels');
+        detailedRecommendations.nitrogen.detailedInfo = "Nitrogen levels are optimal. Continue with balanced fertilization program.";
       }
       
+      // Phosphorus recommendations
       if (record['Phosphorus(P)'] === 'L') {
-        recommendations.push('Add phosphorus-rich fertilizer (e.g., superphosphate)');
+        detailedRecommendations.phosphorus.recommendations.push('Add phosphorus-rich fertilizer (e.g., superphosphate)');
+        detailedRecommendations.phosphorus.detailedInfo = "Phosphorus deficiency can delay maturity and reduce flowering/fruiting. Apply phosphorus fertilizer near the root zone for better uptake.";
       } else if (record['Phosphorus(P)'] === 'H') {
-        recommendations.push('Reduce phosphorus application');
+        detailedRecommendations.phosphorus.recommendations.push('Reduce phosphorus application');
+        detailedRecommendations.phosphorus.detailedInfo = "Excessive phosphorus can interfere with micronutrient uptake, particularly zinc and iron. Reduce phosphorus application and consider soil testing.";
+      } else {
+        detailedRecommendations.phosphorus.recommendations.push('Maintain current phosphorus levels');
+        detailedRecommendations.phosphorus.detailedInfo = "Phosphorus levels are optimal. Continue with balanced fertilization program.";
       }
       
+      // Potassium recommendations
       if (record['Potassium(K)'] === 'L') {
-        recommendations.push('Add potassium-rich fertilizer (e.g., potassium chloride)');
+        detailedRecommendations.potassium.recommendations.push('Add potassium-rich fertilizer (e.g., potassium chloride)');
+        detailedRecommendations.potassium.detailedInfo = "Potassium deficiency can weaken plant resistance to diseases and reduce fruit quality. Apply potassium fertilizer in multiple applications.";
       } else if (record['Potassium(K)'] === 'H') {
-        recommendations.push('Reduce potassium application');
+        detailedRecommendations.potassium.recommendations.push('Reduce potassium application');
+        detailedRecommendations.potassium.detailedInfo = "Excessive potassium can interfere with magnesium and calcium uptake. Reduce potassium application and monitor other nutrients.";
+      } else {
+        detailedRecommendations.potassium.recommendations.push('Maintain current potassium levels');
+        detailedRecommendations.potassium.detailedInfo = "Potassium levels are optimal. Continue with balanced fertilization program.";
+      }
+      
+      // Combine all recommendations for backward compatibility
+      recommendations.push(...detailedRecommendations.nitrogen.recommendations);
+      recommendations.push(...detailedRecommendations.phosphorus.recommendations);
+      recommendations.push(...detailedRecommendations.potassium.recommendations);
+      
+      // Add general recommendations
+      if (record.pH < 6.0) {
+        recommendations.push('Consider adding lime to raise soil pH');
+      } else if (record.pH > 7.5) {
+        recommendations.push('Consider adding sulfur to lower soil pH');
       }
       
       return {
@@ -54,7 +163,8 @@ export const getFertilizerRecommendations = async (cropName: string, soilType: s
         nitrogen: record['Nitrogen(N)'],
         phosphorus: record['Phosphorus(P)'],
         potassium: record['Potassium(K)'],
-        recommendations
+        recommendations,
+        detailedRecommendations
       };
     }
     
@@ -68,7 +178,24 @@ export const getFertilizerRecommendations = async (cropName: string, soilType: s
         'Apply balanced NPK fertilizer',
         'Test soil pH and adjust if necessary',
         'Add organic compost to improve soil structure'
-      ]
+      ],
+      detailedRecommendations: {
+        nitrogen: {
+          level: 'M',
+          recommendations: ['Apply balanced nitrogen fertilizer'],
+          detailedInfo: "General recommendation for nitrogen management. Consider soil testing for precise requirements."
+        },
+        phosphorus: {
+          level: 'M',
+          recommendations: ['Apply balanced phosphorus fertilizer'],
+          detailedInfo: "General recommendation for phosphorus management. Consider soil testing for precise requirements."
+        },
+        potassium: {
+          level: 'M',
+          recommendations: ['Apply balanced potassium fertilizer'],
+          detailedInfo: "General recommendation for potassium management. Consider soil testing for precise requirements."
+        }
+      }
     };
   } catch (error) {
     console.error('Error getting fertilizer recommendations:', error);
@@ -81,7 +208,24 @@ export const getFertilizerRecommendations = async (cropName: string, soilType: s
         'Apply balanced NPK fertilizer',
         'Test soil pH and adjust if necessary',
         'Add organic compost to improve soil structure'
-      ]
+      ],
+      detailedRecommendations: {
+        nitrogen: {
+          level: 'M',
+          recommendations: ['Apply balanced nitrogen fertilizer'],
+          detailedInfo: "General recommendation for nitrogen management. Consider soil testing for precise requirements."
+        },
+        phosphorus: {
+          level: 'M',
+          recommendations: ['Apply balanced phosphorus fertilizer'],
+          detailedInfo: "General recommendation for phosphorus management. Consider soil testing for precise requirements."
+        },
+        potassium: {
+          level: 'M',
+          recommendations: ['Apply balanced potassium fertilizer'],
+          detailedInfo: "General recommendation for potassium management. Consider soil testing for precise requirements."
+        }
+      }
     };
   }
 };

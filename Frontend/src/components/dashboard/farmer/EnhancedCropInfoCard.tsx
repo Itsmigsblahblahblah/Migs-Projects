@@ -3,6 +3,15 @@ import { Leaf, MapPin, Wheat, Droplets, TrendingUpIcon, Calendar, Sprout, Bankno
 import { useEffect, useState } from "react";
 import { getCropInsights } from "@/services/cropDataService";
 import InfoTooltip from "@/components/ui/info-tooltip";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface EnhancedCropInfoCardProps {
     crop: any;
@@ -11,6 +20,7 @@ interface EnhancedCropInfoCardProps {
 const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
     const [insights, setInsights] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     useEffect(() => {
         const fetchInsights = async () => {
@@ -251,12 +261,105 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                 <p className="text-sm font-medium">Fertilizer Recommendations</p>
                             </div>
                             <ul className="text-sm space-y-1">
-                                {insights.fertilizer.recommendations.map((rec: string, index: number) => (
+                                {insights.fertilizer.recommendations.slice(0, 2).map((rec: string, index: number) => (
                                     <li key={index} className="flex items-start gap-2">
                                         <span className="text-primary">•</span>
                                         <span>{rec}</span>
                                     </li>
                                 ))}
+                                {insights.fertilizer.recommendations.length > 2 && (
+                                    <li className="flex items-start gap-2">
+                                        <span className="text-primary">•</span>
+                                        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button variant="link" className="h-auto p-0 text-primary underline">
+                                                    See more recommendations...
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                                <DialogHeader>
+                                                    <DialogTitle className="flex items-center gap-2">
+                                                        <Scale className="h-5 w-5 text-primary" />
+                                                        Detailed Fertilizer Recommendations
+                                                    </DialogTitle>
+                                                    <DialogDescription>
+                                                        Specific fertilizer recommendations based on your soil analysis for {crop.name}
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <div className="space-y-6">
+                                                    {insights.fertilizer.detailedRecommendations && (
+                                                        <>
+                                                            <div className="space-y-4">
+                                                                <h3 className="font-medium text-lg">Nitrogen (N) - Level: {insights.fertilizer.detailedRecommendations.nitrogen.level}</h3>
+                                                                <div className="p-3 bg-blue-50 rounded-lg">
+                                                                    <p className="text-sm text-muted-foreground mb-2">
+                                                                        {insights.fertilizer.detailedRecommendations.nitrogen.detailedInfo}
+                                                                    </p>
+                                                                    <ul className="text-sm space-y-1">
+                                                                        {insights.fertilizer.detailedRecommendations.nitrogen.recommendations.map((rec: string, index: number) => (
+                                                                            <li key={index} className="flex items-start gap-2">
+                                                                                <span className="text-primary">•</span>
+                                                                                <span>{rec}</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="space-y-4">
+                                                                <h3 className="font-medium text-lg">Phosphorus (P) - Level: {insights.fertilizer.detailedRecommendations.phosphorus.level}</h3>
+                                                                <div className="p-3 bg-green-50 rounded-lg">
+                                                                    <p className="text-sm text-muted-foreground mb-2">
+                                                                        {insights.fertilizer.detailedRecommendations.phosphorus.detailedInfo}
+                                                                    </p>
+                                                                    <ul className="text-sm space-y-1">
+                                                                        {insights.fertilizer.detailedRecommendations.phosphorus.recommendations.map((rec: string, index: number) => (
+                                                                            <li key={index} className="flex items-start gap-2">
+                                                                                <span className="text-primary">•</span>
+                                                                                <span>{rec}</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="space-y-4">
+                                                                <h3 className="font-medium text-lg">Potassium (K) - Level: {insights.fertilizer.detailedRecommendations.potassium.level}</h3>
+                                                                <div className="p-3 bg-purple-50 rounded-lg">
+                                                                    <p className="text-sm text-muted-foreground mb-2">
+                                                                        {insights.fertilizer.detailedRecommendations.potassium.detailedInfo}
+                                                                    </p>
+                                                                    <ul className="text-sm space-y-1">
+                                                                        {insights.fertilizer.detailedRecommendations.potassium.recommendations.map((rec: string, index: number) => (
+                                                                            <li key={index} className="flex items-start gap-2">
+                                                                                <span className="text-primary">•</span>
+                                                                                <span>{rec}</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                        </>
+                                                    )}
+
+                                                    <div className="space-y-4">
+                                                        <h3 className="font-medium text-lg">General Recommendations</h3>
+                                                        <div className="p-3 bg-yellow-50 rounded-lg">
+                                                            <ul className="text-sm space-y-1">
+                                                                {insights.fertilizer.recommendations.map((rec: string, index: number) => (
+                                                                    <li key={index} className="flex items-start gap-2">
+                                                                        <span className="text-primary">•</span>
+                                                                        <span>{rec}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                    </li>
+                                )}
                             </ul>
                         </div>
                     </div>

@@ -9,8 +9,18 @@ import {
   Droplets, 
   Sun,
   Calendar,
-  MapPin
+  MapPin,
+  Scale
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface RecommendationData {
   crop: string;
@@ -64,6 +74,88 @@ const CropRecommendationVisualization: React.FC<CropRecommendationVisualizationP
     { name: 'Phosphorus', value: soilData.Phosphorus === 'L' ? 1 : soilData.Phosphorus === 'M' ? 2 : 3 },
     { name: 'Potassium', value: soilData.Potassium === 'L' ? 1 : soilData.Potassium === 'M' ? 2 : 3 }
   ];
+
+  // Get detailed fertilizer information
+  const getFertilizerInfo = (nutrient: string, level: string) => {
+    switch (nutrient) {
+      case 'Nitrogen':
+        if (level === 'L') {
+          return {
+            level: 'Low',
+            color: 'destructive',
+            info: 'Nitrogen deficiency can cause stunted growth and yellowing of leaves. Apply nitrogen fertilizer in split doses to avoid leaching.',
+            recommendations: ['Add nitrogen-rich fertilizer (e.g., ammonium nitrate)', 'Consider organic sources like compost or manure']
+          };
+        } else if (level === 'H') {
+          return {
+            level: 'High',
+            color: 'destructive',
+            info: 'Excessive nitrogen can lead to lush foliage at the expense of fruit/flower development. Reduce nitrogen application and increase phosphorus and potassium.',
+            recommendations: ['Reduce nitrogen application', 'Increase phosphorus and potassium fertilization']
+          };
+        } else {
+          return {
+            level: 'Optimal',
+            color: 'default',
+            info: 'Nitrogen levels are optimal. Continue with balanced fertilization program.',
+            recommendations: ['Maintain current nitrogen levels', 'Continue with balanced fertilization']
+          };
+        }
+      case 'Phosphorus':
+        if (level === 'L') {
+          return {
+            level: 'Low',
+            color: 'destructive',
+            info: 'Phosphorus deficiency can delay maturity and reduce flowering/fruiting. Apply phosphorus fertilizer near the root zone for better uptake.',
+            recommendations: ['Add phosphorus-rich fertilizer (e.g., superphosphate)', 'Apply as basal dressing near roots']
+          };
+        } else if (level === 'H') {
+          return {
+            level: 'High',
+            color: 'destructive',
+            info: 'Excessive phosphorus can interfere with micronutrient uptake, particularly zinc and iron. Reduce phosphorus application and consider soil testing.',
+            recommendations: ['Reduce phosphorus application', 'Consider soil testing for micronutrient levels']
+          };
+        } else {
+          return {
+            level: 'Optimal',
+            color: 'default',
+            info: 'Phosphorus levels are optimal. Continue with balanced fertilization program.',
+            recommendations: ['Maintain current phosphorus levels', 'Continue with balanced fertilization']
+          };
+        }
+      case 'Potassium':
+        if (level === 'L') {
+          return {
+            level: 'Low',
+            color: 'destructive',
+            info: 'Potassium deficiency can weaken plant resistance to diseases and reduce fruit quality. Apply potassium fertilizer in multiple applications.',
+            recommendations: ['Add potassium-rich fertilizer (e.g., potassium chloride)', 'Apply in multiple split applications']
+          };
+        } else if (level === 'H') {
+          return {
+            level: 'High',
+            color: 'destructive',
+            info: 'Excessive potassium can interfere with magnesium and calcium uptake. Reduce potassium application and monitor other nutrients.',
+            recommendations: ['Reduce potassium application', 'Monitor magnesium and calcium levels']
+          };
+        } else {
+          return {
+            level: 'Optimal',
+            color: 'default',
+            info: 'Potassium levels are optimal. Continue with balanced fertilization program.',
+            recommendations: ['Maintain current potassium levels', 'Continue with balanced fertilization']
+          };
+        }
+      default:
+        return {
+          level: 'Unknown',
+          color: 'default',
+          info: 'No specific information available.',
+          recommendations: ['Follow general fertilization guidelines']
+        };
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -152,6 +244,111 @@ const CropRecommendationVisualization: React.FC<CropRecommendationVisualizationP
                     {soilData.Potassium === 'L' ? 'Low' : soilData.Potassium === 'M' ? 'Medium' : 'High'}
                   </Badge>
                 </div>
+              </div>
+              
+              {/* Detailed Fertilizer Recommendations Button */}
+              <div className="mt-4">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <Scale className="h-4 w-4 mr-2" />
+                      View Detailed Fertilizer Recommendations
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Scale className="h-5 w-5 text-primary" />
+                        Detailed Fertilizer Recommendations
+                      </DialogTitle>
+                      <DialogDescription>
+                        Specific fertilizer recommendations based on your soil analysis
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <h3 className="font-medium text-lg">Nitrogen (N) - Level: {soilData.Nitrogen}</h3>
+                        <div className="p-3 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {getFertilizerInfo('Nitrogen', soilData.Nitrogen).info}
+                          </p>
+                          <ul className="text-sm space-y-1">
+                            {getFertilizerInfo('Nitrogen', soilData.Nitrogen).recommendations.map((rec: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-primary">•</span>
+                                <span>{rec}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h3 className="font-medium text-lg">Phosphorus (P) - Level: {soilData.Phosphorus}</h3>
+                        <div className="p-3 bg-green-50 rounded-lg">
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {getFertilizerInfo('Phosphorus', soilData.Phosphorus).info}
+                          </p>
+                          <ul className="text-sm space-y-1">
+                            {getFertilizerInfo('Phosphorus', soilData.Phosphorus).recommendations.map((rec: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-primary">•</span>
+                                <span>{rec}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h3 className="font-medium text-lg">Potassium (K) - Level: {soilData.Potassium}</h3>
+                        <div className="p-3 bg-purple-50 rounded-lg">
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {getFertilizerInfo('Potassium', soilData.Potassium).info}
+                          </p>
+                          <ul className="text-sm space-y-1">
+                            {getFertilizerInfo('Potassium', soilData.Potassium).recommendations.map((rec: string, index: number) => (
+                              <li key={index} className="flex items-start gap-2">
+                                <span className="text-primary">•</span>
+                                <span>{rec}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h3 className="font-medium text-lg">pH Adjustment</h3>
+                        <div className="p-3 bg-yellow-50 rounded-lg">
+                          <ul className="text-sm space-y-1">
+                            {soilData.pH < 6 && (
+                              <li className="flex items-start gap-2">
+                                <span className="text-primary">•</span>
+                                <span>Soil pH is acidic ({soilData.pH}). Consider adding lime to raise pH level for optimal nutrient availability.</span>
+                              </li>
+                            )}
+                            {soilData.pH > 7.5 && (
+                              <li className="flex items-start gap-2">
+                                <span className="text-primary">•</span>
+                                <span>Soil pH is alkaline ({soilData.pH}). Consider adding sulfur or organic matter to lower pH level.</span>
+                              </li>
+                            )}
+                            {(soilData.pH >= 6 && soilData.pH <= 7.5) && (
+                              <li className="flex items-start gap-2">
+                                <span className="text-primary">•</span>
+                                <span>Soil pH is in the optimal range ({soilData.pH}) for most crops. Maintain current practices.</span>
+                              </li>
+                            )}
+                            <li className="flex items-start gap-2">
+                              <span className="text-primary">•</span>
+                              <span>Regular soil testing is recommended to monitor pH and nutrient levels.</span>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
             <div className="h-64">
