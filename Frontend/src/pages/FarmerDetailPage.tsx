@@ -349,9 +349,9 @@ const FarmerDetailPage = () => {
         {/* Farmer Header */}
         <div className="bg-gradient-primary rounded-xl p-6 text-primary-foreground">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <Avatar className="h-20 w-20 border-4 border-primary-foreground/20">
+            <Avatar className="h-20 w-20 border-4 border-primary-foreground/20 overflow-hidden rounded-full">
               {farmer.photoURL ? (
-                <AvatarImage src={farmer.photoURL} alt={farmer.fullName} />
+                <AvatarImage src={farmer.photoURL} alt={farmer.fullName} className="object-cover w-full h-full" />
               ) : (
                 <AvatarFallback className="text-2xl bg-primary/20">
                   {getInitials(farmer.fullName)}

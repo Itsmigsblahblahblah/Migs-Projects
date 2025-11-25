@@ -103,8 +103,8 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                                 >
                                     <div className="flex items-center gap-4">
                                         {/* Circular Profile Image */}
-                                        <Avatar className="h-16 w-16 cursor-pointer" onClick={() => navigate(`/admin/farmer/${farmer.uid}`)}>
-                                            <AvatarImage src={farmer.photoURL || undefined} alt={farmer.fullName} />
+                                        <Avatar className="h-16 w-16 cursor-pointer overflow-hidden rounded-full" onClick={() => navigate(`/admin/farmer/${farmer.uid}`)}>
+                                            <AvatarImage src={farmer.photoURL || undefined} alt={farmer.fullName} className="object-cover w-full h-full" />
                                             <AvatarFallback className="text-lg bg-primary/10 text-primary">
                                                 {getInitials(farmer.fullName)}
                                             </AvatarFallback>
