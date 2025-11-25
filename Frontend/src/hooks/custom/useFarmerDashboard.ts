@@ -519,42 +519,11 @@ export const useFarmerDashboard = () => {
         }));
     };
 
-    const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            // Check if file is an image
-            if (!file.type.match('image.*')) {
-                toast({
-                    title: "Invalid File Type",
-                    description: "Please select an image file (JPEG, PNG, GIF, etc.).",
-                    variant: "destructive",
-                });
-                return;
-            }
-            
-            // Check file size (max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                toast({
-                    title: "File Too Large",
-                    description: "Please select an image smaller than 5MB.",
-                    variant: "destructive",
-                });
-                return;
-            }
-            
-            setProfileImageFile(file);
-            
-            // Create preview URL and convert to data URL for Firestore storage
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                // Convert to data URL and store in editProfileData
-                setEditProfileData(prev => ({
-                    ...prev,
-                    photoURL: reader.result as string
-                }));
-            };
-            reader.readAsDataURL(file);
-        }
+    const handleProfileImageSelection = (imagePath: string) => {
+        setEditProfileData(prev => ({
+            ...prev,
+            photoURL: imagePath
+        }));
     };
 
     const handleUpdateProfile = async () => {
@@ -567,8 +536,8 @@ export const useFarmerDashboard = () => {
                 farmArea: editProfileData.farmArea
             };
 
-            // If there's a new profile image, save it as a data URL in Firestore
-            if (profileImageFile) {
+            // If there's a profile image selected, save it
+            if (editProfileData.photoURL) {
                 updates.photoURL = editProfileData.photoURL;
             }
 
@@ -601,7 +570,6 @@ export const useFarmerDashboard = () => {
     // Add a function to reset the edit profile data to match the current profile
     const resetEditProfileData = () => {
         setEditProfileData(farmerProfile);
-        setProfileImageFile(null);
     };
 
     const handleRequestAccountDeletion = async (reason?: string) => {
@@ -831,15 +799,13 @@ export const useFarmerDashboard = () => {
         monthlyReports,
         deletionRequest,
         farmerProfile,
-        profileImageFile,
         weatherData,
         weatherLoading,
         weatherError,
         crops,
         setUsername,
-        setProfileImageFile,
         handleProfileInputChange,
-        handleProfileImageUpload,
+        handleProfileImageSelection,
         handleUpdateProfile,
         handleRequestAccountDeletion,
         handleDeleteAccount,

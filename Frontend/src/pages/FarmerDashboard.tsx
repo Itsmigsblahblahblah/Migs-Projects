@@ -134,15 +134,13 @@ const FarmerDashboard = () => {
     deletionRequest,
     farmerProfile,
     editProfileData,
-    profileImageFile,
     weatherData,
     weatherLoading,
     weatherError,
     crops,
     setUsername,
-    setProfileImageFile,
     handleProfileInputChange,
-    handleProfileImageUpload,
+    handleProfileImageSelection,
     handleUpdateProfile,
     handleRequestAccountDeletion,
     handleDeleteAccount,
@@ -682,9 +680,8 @@ const FarmerDashboard = () => {
             }
           }}
           farmerProfile={editProfileData}
-          profileImageFile={profileImageFile}
           handleProfileInputChange={handleProfileInputChange}
-          handleProfileImageUpload={handleProfileImageUpload}
+          handleProfileImageSelection={handleProfileImageSelection}
           handleUpdateProfile={handleUpdateProfile}
           onRequestAccountDeletion={handleDeletionButtonClick}
           username={username}

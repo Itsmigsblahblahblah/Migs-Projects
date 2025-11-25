@@ -10,8 +10,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Upload, Trash2, Clock, CheckCircle, XCircle, ChevronDown } from "lucide-react";
+import { User, Trash2, Clock, CheckCircle, XCircle, ChevronDown } from "lucide-react";
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
+import ProfilePictureSelector from "./ProfilePictureSelector";
 
 interface EditProfileDialogProps {
     open: boolean;
@@ -25,9 +26,8 @@ interface EditProfileDialogProps {
         farmArea: string;
         photoURL?: string;
     };
-    profileImageFile: File | null;
     handleProfileInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    handleProfileImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    handleProfileImageSelection: (imagePath: string) => void;
     handleUpdateProfile: () => Promise<void>;
     onRequestAccountDeletion: () => void;
     username: string;
@@ -40,9 +40,8 @@ const EditProfileDialog = ({
     open,
     onOpenChange,
     farmerProfile,
-    profileImageFile,
     handleProfileInputChange,
-    handleProfileImageUpload,
+    handleProfileImageSelection,
     handleUpdateProfile,
     onRequestAccountDeletion,
     username,
@@ -50,7 +49,6 @@ const EditProfileDialog = ({
     isDeletionButtonDisabled,
     getDeletionButtonText
 }: EditProfileDialogProps) => {
-    const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
     // Dropdown states for home address
@@ -153,12 +151,6 @@ const EditProfileDialog = ({
         setShowFarmDropdown(true);
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setIsUploading(true);
-        handleProfileImageUpload(e);
-        setIsUploading(false);
-    };
-
     const handleSaveChanges = async () => {
         setIsSaving(true);
         try {
@@ -179,39 +171,12 @@ const EditProfileDialog = ({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                    {/* Profile Picture Upload */}
-                    <div className="space-y-2">
-                        <Label htmlFor="profile-image">Profile Picture</Label>
-                        <div className="flex items-center gap-4">
-                            {farmerProfile.photoURL ? (
-                                <img
-                                    src={farmerProfile.photoURL}
-                                    alt={username}
-                                    className="h-16 w-16 rounded-full object-cover"
-                                />
-                            ) : (
-                                <div className="bg-secondary rounded-full p-4">
-                                    <User className="h-8 w-8 text-secondary-foreground" />
-                                </div>
-                            )}
-                            <Input
-                                id="profile-image"
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                className="hidden"
-                            />
-                            <Button
-                                variant="outline"
-                                onClick={() => document.getElementById('profile-image')?.click()}
-                                className="flex items-center gap-2"
-                                disabled={isUploading || isSaving}
-                            >
-                                <Upload className="h-4 w-4" />
-                                {isUploading ? 'Uploading...' : farmerProfile.photoURL || profileImageFile ? 'Change Photo' : 'Upload Photo'}
-                            </Button>
-                        </div>
-                    </div>
+                    {/* Profile Picture Selection */}
+                    <ProfilePictureSelector
+                        selectedImage={farmerProfile.photoURL || null}
+                        onSelectImage={handleProfileImageSelection}
+                        disabled={isSaving}
+                    />
 
                     {/* Full Name and Contact Number - Grid */}
                     <div className="grid md:grid-cols-2 gap-4">
