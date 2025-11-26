@@ -355,10 +355,25 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     // Fetch market demand data for the selected crop
     const marketDemand = await fetchMarketDemand(crop.crop);
 
-    // Update the crop object with market demand data
+    // Update the crop object with market demand data and dynamic values
     const updatedCrop = {
       ...crop,
-      marketDemand: marketDemand || undefined
+      marketDemand: marketDemand || undefined,
+      plantingSeason: getPlantingSeason(crop.crop, inputSoilData, effectiveWeatherData),
+      marketTrend: getMarketTrend(marketDemand),
+      soilType: getSoilType(inputSoilData),
+      weatherCondition: getWeatherCondition(effectiveWeatherData),
+      recommendations: getCropRecommendations(
+        crop.crop, 
+        inputSoilData, 
+        effectiveWeatherData, 
+        marketDemand
+      ),
+      avoid: getThingsToAvoid(
+        crop.crop, 
+        inputSoilData, 
+        effectiveWeatherData
+      )
     };
 
     setSelectedCrop(updatedCrop);
@@ -419,6 +434,230 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     if (marketScore >= 0.8) return "default"; // High demand
     if (marketScore >= 0.6) return "secondary"; // Moderate demand
     return "outline"; // Low demand
+  };
+
+  // Function to get planting season based on crop and soil/weather data
+  const getPlantingSeason = (crop: string, soilData: SoilData, weatherData: any) => {
+    // Simple logic based on crop type and weather conditions
+    const temp = weatherData?.temperature || 25;
+    const humidity = weatherData?.humidity || 60;
+    
+    // Crop-specific planting season logic
+    if (crop.toLowerCase().includes("rice")) {
+      if (temp >= 20 && temp <= 35 && humidity >= 70) {
+        return "Wet season (June-October) - Optimal temperature and humidity for rice cultivation";
+      } else {
+        return "Dry season (November-April) - Irrigated rice cultivation recommended";
+      }
+    } else if (crop.toLowerCase().includes("corn")) {
+      if (temp >= 20 && temp <= 30) {
+        return "Two cropping seasons: Wet (June-September) and Dry (March-May)";
+      } else {
+        return "Optimal planting when temperature is between 20-30°C";
+      }
+    } else if (crop.toLowerCase().includes("carrot") || crop.toLowerCase().includes("karot")) {
+      if (temp >= 10 && temp <= 24) {
+        return "Cool season crop - Best planted in early spring or fall";
+      } else {
+        return "Plant during cooler months when temperature is 10-24°C";
+      }
+    } else if (crop.toLowerCase().includes("tomato") || crop.toLowerCase().includes("kamatis")) {
+      if (temp >= 18 && temp <= 24) {
+        return "Plant during dry season when temperature is 18-24°C";
+      } else {
+        return "Best planted in cooler months to avoid heat stress";
+      }
+    } else if (crop.toLowerCase().includes("pechay")) {
+      if (temp >= 15 && temp <= 25) {
+        return "Year-round planting possible with optimal temperature of 15-25°C";
+      } else {
+        return "Plant during cooler months for best growth";
+      }
+    } else {
+      // Generic logic based on soil and weather
+      if (temp >= 20 && temp <= 30 && humidity >= 50 && humidity <= 80) {
+        return "Current conditions are favorable for planting";
+      } else if (temp < 20) {
+        return "Temperature is low - consider warm-season crops or wait for warmer weather";
+      } else if (temp > 30) {
+        return "Temperature is high - consider cool-season crops or provide shade";
+      } else {
+        return "Conditions are generally suitable for most crops";
+      }
+    }
+  };
+
+  // Function to get weather condition based on weather data
+  const getWeatherCondition = (weatherData: any) => {
+    const temp = weatherData?.temperature || 25;
+    const humidity = weatherData?.humidity || 60;
+    const precipitation = weatherData?.extendedForecast?.[0]?.precipitationProbability || 0;
+    const windSpeed = weatherData?.extendedForecast?.[0]?.windSpeed || 5;
+    
+    let condition = "";
+    
+    if (temp < 15) {
+      condition += "Cool conditions - ";
+    } else if (temp >= 15 && temp <= 25) {
+      condition += "Mild conditions - ";
+    } else if (temp > 25 && temp <= 35) {
+      condition += "Warm conditions - ";
+    } else {
+      condition += "Hot conditions - ";
+    }
+    
+    if (humidity < 40) {
+      condition += "Low humidity ";
+    } else if (humidity >= 40 && humidity <= 70) {
+      condition += "Moderate humidity ";
+    } else {
+      condition += "High humidity ";
+    }
+    
+    if (precipitation > 70) {
+      condition += "with high chance of rain. ";
+    } else if (precipitation > 30) {
+      condition += "with moderate chance of rain. ";
+    } else {
+      condition += "with low chance of rain. ";
+    }
+    
+    if (windSpeed > 20) {
+      condition += "Strong winds expected.";
+    } else if (windSpeed > 10) {
+      condition += "Moderate winds expected.";
+    } else {
+      condition += "Light winds expected.";
+    }
+    
+    return condition;
+  };
+
+  // Function to get market trend based on market demand data
+  const getMarketTrend = (marketDemand: { predicted_price: number; current_avg_price: number; price_change: number; price_change_percent: number; demand_level: string; } | undefined) => {
+    if (!marketDemand) {
+      return "Market data not available - Check local market trends";
+    }
+    
+    const { price_change_percent, demand_level } = marketDemand;
+    
+    if (price_change_percent > 5) {
+      return `Strong upward trend (+${price_change_percent.toFixed(1)}%) - High demand expected`;
+    } else if (price_change_percent > 2) {
+      return `Moderate upward trend (+${price_change_percent.toFixed(1)}%) - Good demand`;
+    } else if (price_change_percent > 0) {
+      return `Stable trend (+${price_change_percent.toFixed(1)}%) - Steady demand`;
+    } else if (price_change_percent > -2) {
+      return `Slight downward trend (${price_change_percent.toFixed(1)}%) - Stable demand`;
+    } else {
+      return `Declining trend (${price_change_percent.toFixed(1)}%) - Consider alternative crops`;
+    }
+  };
+
+  // Function to get soil type description based on soil data
+  const getSoilType = (soilData: SoilData) => {
+    const { pH, Nitrogen, Phosphorus, Potassium } = soilData;
+    
+    let description = `pH: ${pH} (${pH < 6 ? 'Acidic' : pH > 7.5 ? 'Alkaline' : 'Neutral'}), `;
+    
+    description += `N: ${Nitrogen === 'L' ? 'Low' : Nitrogen === 'M' ? 'Medium' : 'High'}, `;
+    description += `P: ${Phosphorus === 'L' ? 'Low' : Phosphorus === 'M' ? 'Medium' : 'High'}, `;
+    description += `K: ${Potassium === 'L' ? 'Low' : Potassium === 'M' ? 'Medium' : 'High'}`;
+    
+    // Add fertility assessment
+    const nutrientLevels = [Nitrogen, Phosphorus, Potassium];
+    const highCount = nutrientLevels.filter(level => level === 'H').length;
+    const lowCount = nutrientLevels.filter(level => level === 'L').length;
+    
+    if (highCount >= 2) {
+      description += " - High fertility soil";
+    } else if (lowCount >= 2) {
+      description += " - Low fertility soil, consider fertilization";
+    } else {
+      description += " - Moderate fertility soil";
+    }
+    
+    return description;
+  };
+
+  // Function to get crop-specific recommendations
+  const getCropRecommendations = (crop: string, soilData: SoilData, weatherData: any, marketDemand: any) => {
+    const recommendations = [];
+    const temp = weatherData?.temperature || 25;
+    const humidity = weatherData?.humidity || 60;
+    const { Nitrogen, Phosphorus, Potassium } = soilData;
+    
+    // General recommendations
+    recommendations.push("Follow local agricultural guidelines for your region");
+    recommendations.push("Monitor soil moisture levels regularly");
+    
+    // Crop-specific recommendations
+    if (crop.toLowerCase().includes("rice")) {
+      recommendations.push("Ensure adequate water supply for paddy cultivation");
+      recommendations.push("Apply nitrogen fertilizer in split doses");
+    } else if (crop.toLowerCase().includes("corn")) {
+      recommendations.push("Plant in rows with proper spacing for optimal growth");
+      recommendations.push("Apply balanced fertilizer with higher nitrogen content");
+    } else if (crop.toLowerCase().includes("carrot") || crop.toLowerCase().includes("karot")) {
+      recommendations.push("Ensure deep, loose soil for proper root development");
+      recommendations.push("Thin seedlings to prevent overcrowding");
+    } else if (crop.toLowerCase().includes("tomato") || crop.toLowerCase().includes("kamatis")) {
+      recommendations.push("Provide support for plants as they grow");
+      recommendations.push("Apply mulch to retain soil moisture");
+    } else if (crop.toLowerCase().includes("pechay")) {
+      recommendations.push("Harvest regularly to encourage new growth");
+      recommendations.push("Protect from pests like aphids and caterpillars");
+    }
+    
+    // Soil-based recommendations
+    if (Nitrogen === 'L') recommendations.push("Apply nitrogen-rich fertilizer or compost");
+    if (Phosphorus === 'L') recommendations.push("Add bone meal or rock phosphate for phosphorus");
+    if (Potassium === 'L') recommendations.push("Use potash or wood ash to increase potassium");
+    
+    // Weather-based recommendations
+    if (temp > 30) recommendations.push("Provide shade during peak heat hours");
+    if (humidity > 80) recommendations.push("Ensure good air circulation to prevent fungal diseases");
+    if (humidity < 40) recommendations.push("Increase watering frequency to compensate for low humidity");
+    
+    return recommendations;
+  };
+
+  // Function to get things to avoid based on crop and conditions
+  const getThingsToAvoid = (crop: string, soilData: SoilData, weatherData: any) => {
+    const avoid = [];
+    const temp = weatherData?.temperature || 25;
+    const humidity = weatherData?.humidity || 60;
+    const { Nitrogen, Phosphorus, Potassium } = soilData;
+    
+    // General things to avoid
+    avoid.push("Plant in waterlogged areas as it can cause root rot");
+    avoid.push("Over-fertilize without soil testing as it can harm plants");
+    avoid.push("Ignore local climate conditions when selecting crops");
+    
+    // Crop-specific things to avoid
+    if (crop.toLowerCase().includes("rice")) {
+      avoid.push("Plant during flooding if drainage is poor");
+      avoid.push("Use excessive nitrogen which can cause lodging");
+    } else if (crop.toLowerCase().includes("corn")) {
+      avoid.push("Plant in poorly drained soils which can cause seed rot");
+      avoid.push("Overcrowd plants which reduces yield");
+    } else if (crop.toLowerCase().includes("carrot") || crop.toLowerCase().includes("karot")) {
+      avoid.push("Plant in heavy clay soils which can cause misshapen roots");
+      avoid.push("Overwater as it can cause root cracking");
+    } else if (crop.toLowerCase().includes("tomato") || crop.toLowerCase().includes("kamatis")) {
+      avoid.push("Overhead watering which can spread fungal diseases");
+      avoid.push("Planting too early in cold soil");
+    } else if (crop.toLowerCase().includes("pechay")) {
+      avoid.push("Allowing plants to bolt by exposing them to high temperatures");
+      avoid.push("Harvesting during hot midday hours");
+    }
+    
+    // Weather-based things to avoid
+    if (temp > 35) avoid.push("Plant heat-sensitive crops without shade");
+    if (humidity > 85) avoid.push("Grow susceptible crops without proper air circulation");
+    if (temp < 10) avoid.push("Plant cold-sensitive crops without protection");
+    
+    return avoid;
   };
 
   return (
@@ -646,21 +885,22 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                                     crop: recommendation.crop,
                                     reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
                                     confidence: Math.round(recommendation.confidence * 100),
-                                    plantingSeason: "Based on current conditions",
+                                    plantingSeason: getPlantingSeason(recommendation.crop, inputSoilData, effectiveWeatherData),
                                     expectedYield: "Varies by conditions",
-                                    marketTrend: "Check local market",
-                                    soilType: `pH: ${inputSoilData.pH}, N:${inputSoilData.Nitrogen}, P:${inputSoilData.Phosphorus}, K:${inputSoilData.Potassium}`,
-                                    weatherCondition: "Current weather patterns",
-                                    recommendations: [
-                                      "Follow local agricultural guidelines",
-                                      "Monitor soil moisture levels",
-                                      "Apply appropriate fertilizers based on soil test"
-                                    ],
-                                    avoid: [
-                                      "Plant in waterlogged areas",
-                                      "Over-fertilize without soil testing",
-                                      "Ignore local climate conditions"
-                                    ]
+                                    marketTrend: getMarketTrend(null), // Will be updated when market data is fetched
+                                    soilType: getSoilType(inputSoilData),
+                                    weatherCondition: getWeatherCondition(effectiveWeatherData),
+                                    recommendations: getCropRecommendations(
+                                      recommendation.crop, 
+                                      inputSoilData, 
+                                      effectiveWeatherData, 
+                                      null
+                                    ),
+                                    avoid: getThingsToAvoid(
+                                      recommendation.crop, 
+                                      inputSoilData, 
+                                      effectiveWeatherData
+                                    )
                                   })}
                                 >
                                   <CardHeader>
@@ -776,36 +1016,36 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-primary/5 rounded-lg border">
+                  <div>
                     <h4 className="font-medium mb-2 flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       Planting Season
                     </h4>
-                    <p>{selectedCrop.plantingSeason}</p>
+                    <p>{getPlantingSeason(selectedCrop.crop, inputSoilData, effectiveWeatherData)}</p>
                   </div>
 
-                  <div className="p-4 bg-primary/5 rounded-lg border">
+                  <div>
                     <h4 className="font-medium mb-2 flex items-center gap-2">
                       <TrendingUp className="h-4 w-4" />
                       Market Trend
                     </h4>
-                    <p>{selectedCrop.marketTrend}</p>
+                    <p>{getMarketTrend(selectedCrop.marketDemand)}</p>
                   </div>
 
-                  <div className="p-4 bg-primary/5 rounded-lg border">
+                  <div>
                     <h4 className="font-medium mb-2 flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
                       Soil Type
                     </h4>
-                    <p>{selectedCrop.soilType}</p>
+                    <p>{getSoilType(inputSoilData)}</p>
                   </div>
 
-                  <div className="p-4 bg-primary/5 rounded-lg border">
+                  <div>
                     <h4 className="font-medium mb-2 flex items-center gap-2">
                       <Sun className="h-4 w-4" />
                       Weather Condition
                     </h4>
-                    <p>Optimal growth with current temperature and humidity levels</p>
+                    <p>{getWeatherCondition(effectiveWeatherData)}</p>
                   </div>
 
                   {/* Market Demand Information */}
@@ -851,7 +1091,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                     Planting Recommendations
                   </h4>
                   <ul className="space-y-2">
-                    {selectedCrop.recommendations.map((rec, index) => (
+                    {getCropRecommendations(selectedCrop.crop, inputSoilData, effectiveWeatherData, selectedCrop.marketDemand).map((rec, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <span className="mt-1 w-2 h-2 rounded-full bg-success flex-shrink-0"></span>
                         <span>{rec}</span>
@@ -867,7 +1107,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                     Things to Avoid
                   </h4>
                   <ul className="space-y-2">
-                    {selectedCrop.avoid.map((item, index) => (
+                    {getThingsToAvoid(selectedCrop.crop, inputSoilData, effectiveWeatherData).map((item, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <span className="mt-1 w-2 h-2 rounded-full bg-destructive flex-shrink-0"></span>
                         <span>{item}</span>
