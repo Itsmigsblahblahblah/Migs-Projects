@@ -209,7 +209,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
       console.log('Fetching enhanced recommendations with request body:', requestBody);
 
-      const response = await fetch('/api/enhanced-soil/enhanced-recommend', {
+      const response = await fetch('/enhanced-soil/enhanced-recommend', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,7 +232,13 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       // Check if recommended_crops exists and is an array
       if (data.recommended_crops && Array.isArray(data.recommended_crops)) {
         console.log('Setting enhanced recommendations:', data.recommended_crops);
-        setRecommendations(data.recommended_crops);
+        // Transform the data to match our interface
+        const transformedRecommendations = data.recommended_crops.map((item: any) => ({
+          crop: item.crop,
+          confidence: item.final_score !== undefined ? item.final_score : item.confidence,
+          market_demand_score: item.market_demand_score
+        }));
+        setRecommendations(transformedRecommendations);
       } else {
         console.error('Invalid response format:', data);
         setError('Invalid response format from enhanced recommendation server');
@@ -716,7 +722,11 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
             <TabsContent value="visualization">
               <CropRecommendationVisualization
-                recommendations={recommendations}
+                recommendations={recommendations.map(rec => ({
+                  crop: rec.crop,
+                  confidence: rec.confidence,
+                  market_demand_score: rec.market_demand_score
+                }))}
                 soilData={inputSoilData}
                 weatherData={{
                   temperature: effectiveWeatherData?.temperature || 25,

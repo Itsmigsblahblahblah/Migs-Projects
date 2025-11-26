@@ -165,6 +165,51 @@ async def get_vegetable_data(vegetable_name: str, vegetable_file: str = 'Data/ve
             first_word = vegetable_name.split()[0] if vegetable_name.split() else vegetable_name
             logger.info(f"No match found for '{simplified_name}', trying first word: '{first_word}'")
             matching_rows = veg_df[veg_df['Vegetable'].str.contains(first_word, case=False, na=False)]
+            
+        # Additional matching for specific cases like Carrots/Karot
+        if matching_rows.empty:
+            # Handle special case for carrots - match "Carrots" or "Karot" with "KAROT"
+            if "carrot" in vegetable_name.lower() or "karot" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("karot", case=False, na=False)]
+            # Handle other common crop name variations
+            elif "broccoli" in vegetable_name.lower() or "brokoli" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("brokoli", case=False, na=False)]
+            elif "cabbage" in vegetable_name.lower() or "repol" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("repol", case=False, na=False)]
+            elif "eggplant" in vegetable_name.lower() or "talong" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("talong", case=False, na=False)]
+            elif "tomato" in vegetable_name.lower() or "kamatis" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("kamatis", case=False, na=False)]
+            elif "radish" in vegetable_name.lower() or "labanos" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("labanos", case=False, na=False)]
+            elif "onion" in vegetable_name.lower() or "sibuyas" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("sibuyas", case=False, na=False)]
+            elif "garlic" in vegetable_name.lower() or "bawang" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("bawang", case=False, na=False)]
+            elif "ginger" in vegetable_name.lower() or "luya" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("luya", case=False, na=False)]
+            elif "chili" in vegetable_name.lower() or "sili" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("sili", case=False, na=False)]
+            elif "potato" in vegetable_name.lower() or "patatas" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("patatas", case=False, na=False)]
+            elif "squash" in vegetable_name.lower() or "kalabasa" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("kalabasa", case=False, na=False)]
+            elif "okra" in vegetable_name.lower() or "lady" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("okra", case=False, na=False)]
+            elif "pechay" in vegetable_name.lower() or "bok choy" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("pechay|bok.*choy", case=False, na=False)]
+            elif "kangkong" in vegetable_name.lower() or "water spinach" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("kangkong|water.*spinach", case=False, na=False)]
+            elif "mustard" in vegetable_name.lower() or "mustasa" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("mustard|mustasa", case=False, na=False)]
+            elif "string bean" in vegetable_name.lower() or "sitaw" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("string.*bean|sitaw", case=False, na=False)]
+            elif "bitter gourd" in vegetable_name.lower() or "ampalaya" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("bitter.*gourd|ampalaya", case=False, na=False)]
+            elif "cauliflower" in vegetable_name.lower() or "koliflower" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("koliflower", case=False, na=False)]
+            elif "chayote" in vegetable_name.lower() or "sayote" in vegetable_name.lower():
+                matching_rows = veg_df[veg_df['Vegetable'].str.contains("sayote", case=False, na=False)]
         
         if not matching_rows.empty:
             # Sort by date
