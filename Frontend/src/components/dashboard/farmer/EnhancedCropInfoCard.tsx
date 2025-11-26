@@ -242,7 +242,9 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="font-bold text-lg">
-                                    ₱{Number(insights.market.averagePrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    ₱{Number((insights?.profit?.averageMarketPrice !== undefined && insights?.profit?.averageMarketPrice > 0) 
+                                      ? insights.profit.averageMarketPrice 
+                                      : (insights?.market?.averagePrice || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                                 {getTrendIcon(insights.market.trend)}
                             </div>
