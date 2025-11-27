@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { ArrowLeft, Sprout, Leaf, Calendar, Droplets, Sun, Activity, AlertTriangle, CheckCircle, XCircle, Wheat, TrendingUp, Package, MapPin } from "lucide-react";
+import { ArrowLeft, Sprout, Leaf, Calendar, Droplets, Sun, Activity, AlertTriangle, CheckCircle, XCircle, Wheat, TrendingUp, Package, MapPin, ArrowUp } from "lucide-react";
 import { useCrops } from "@/contexts/CropContext";
 import { Button } from "@/components/ui/button";
 import GrowthInsightsCard from "@/components/dashboard/farmer/GrowthInsightsCard";
@@ -31,6 +31,7 @@ const CropDetails = () => {
     const [harvestData, setHarvestData] = useState<any>(null);
     const [marketData, setMarketData] = useState<any>(null);
     const [cropsLoaded, setCropsLoaded] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false); // Add state for FAB visibility
     const maintenanceRef = useRef<HTMLDivElement>(null);
 
     // Mock checklist data
@@ -78,6 +79,20 @@ const CropDetails = () => {
 
         return existingChecklist;
     };
+
+    // Add scroll effect to detect when user scrolls down
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 300) {
+                setShowScrollTop(true);
+            } else {
+                setShowScrollTop(false);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Function to update checklist item instructions
     const updateChecklistInstructions = async (itemId: string, instructions: string[]) => {
@@ -627,16 +642,16 @@ const CropDetails = () => {
                     />
                 </div>
 
-                {/* Go Back button at the end of the content */}
-                <div className="flex justify-end mt-6">
+                {/* Floating Action Button for scrolling to top */}
+                {showScrollTop && (
                     <Button
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+                        className="fixed bottom-20 right-6 h-12 w-12 rounded-full bg-primary shadow-lg hover:bg-primary/90 transition-all duration-300 ease-in-out transform hover:scale-110 z-50"
+                        aria-label="Scroll to top"
                     >
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Go Back to Top
+                        <ArrowUp className="h-5 w-5 text-primary-foreground" />
                     </Button>
-                </div>
+                )}
             </div>
         </Layout>
     );
