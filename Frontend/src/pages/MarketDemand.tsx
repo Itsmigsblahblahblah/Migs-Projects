@@ -374,7 +374,7 @@ const MarketDemand = () => {
             <h1 className="text-2xl font-bold">Market Demand Forecast</h1>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="flex items-center gap-2">
