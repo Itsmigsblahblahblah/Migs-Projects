@@ -19,13 +19,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('username');
     localStorage.removeItem('userId');
-    
+
     // Clear market demand cache
     clearMarketDemandCache();
-    
+
     // Close dialog
     setIsLogoutDialogOpen(false);
-    
+
     // Navigate to login
     navigate('/login');
   };
@@ -69,11 +69,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       </AlertDialog>
 
       {/* Header */}
-      <header className="bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo - now acts as Dashboard link */}
-            <div 
+            <div
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => navigate(userRole === 'farmer' ? '/farmer' : '/admin')}
             >
@@ -81,8 +81,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <Sprout className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-primary">Majayjay Farm</h1>
-                <p className="text-xs text-muted-foreground">Resource Management</p>
+                <h1 className="text-lg font-bold text-primary">Harvestify</h1>
               </div>
             </div>
 
@@ -127,26 +126,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </div>
         </div>
       </header>
-
-      {/* Mobile Navigation */}
-      <nav className="md:hidden bg-card border-b border-border p-4">
-        <div className="flex gap-2 overflow-x-auto">
-          {navigationItems.map((item) => (
-            <Button
-              key={item.label}
-              variant="ghost"
-              size="sm"
-              onClick={item.onClick}
-              className={`flex-shrink-0 ${isActive(item.path)
-                ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90"
-                : "text-foreground hover:bg-accent hover:text-accent-foreground"}`}
-            >
-              <item.icon className="h-4 w-4 mr-2" />
-              {item.label}
-            </Button>
-          ))}
-        </div>
-      </nav>
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">

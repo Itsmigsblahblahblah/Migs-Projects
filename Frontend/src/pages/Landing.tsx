@@ -164,8 +164,7 @@ const Landing = () => {
                 <Sprout className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-primary">Majayjay Farm</h1>
-                <p className="text-xs text-muted-foreground">Resource Management</p>
+                <h1 className="text-lg font-bold text-primary">Harvestify</h1>
               </div>
             </div>
 
