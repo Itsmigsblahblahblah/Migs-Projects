@@ -191,7 +191,7 @@ const CropHistory = () => {
                             </div>
                         </div>
                         {/* Add Crop Button - Moved to the right side with improved contrast */}
-                        <div className="flex gap-2">
+                        <div className="flex flex-col md:flex-row gap-2">
                             <Button
                                 onClick={() => setIsAddCropDialogOpen(true)}
                                 className="bg-white text-primary hover:bg-white/90"
@@ -203,7 +203,7 @@ const CropHistory = () => {
                                 <Button
                                     variant="outline"
                                     onClick={() => setIsUpdateCropDialogOpen(true)}
-                                    className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+                                    className="bg-white/10 text-white border-white/20 hover:bg-white/20 md:mt-0 mt-2"
                                 >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Crop
@@ -273,10 +273,22 @@ const CropHistory = () => {
                             <p className="text-muted-foreground mb-4">
                                 You haven't added any crops yet. Start by adding your first crop.
                             </p>
-                            <Button onClick={() => setIsAddCropDialogOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Crop
-                            </Button>
+                            <div className="flex flex-col gap-2">
+                                <Button onClick={() => setIsAddCropDialogOpen(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Crop
+                                </Button>
+                                {crops.length > 0 && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setIsUpdateCropDialogOpen(true)}
+                                        className="mt-2"
+                                    >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Edit Crop
+                                    </Button>
+                                )}
+                            </div>
                         </CardContent>
                     </Card>
                 ) : (
