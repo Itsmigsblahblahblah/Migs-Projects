@@ -639,7 +639,7 @@ const MarketDemand = () => {
                         {(() => {
                           const totalPages = Math.ceil(filteredData.length / cropsPerPage);
                           const pageButtons = [];
-                          
+
                           // Always show first page
                           pageButtons.push(
                             <Button
@@ -663,7 +663,7 @@ const MarketDemand = () => {
                           // Show pages around current page (max 3 pages)
                           let startPage = Math.max(2, currentPage - 1);
                           let endPage = Math.min(totalPages - 1, currentPage + 1);
-                          
+
                           // Adjust if we're near the beginning or end
                           if (currentPage <= 3) {
                             endPage = Math.min(totalPages - 1, 4);
