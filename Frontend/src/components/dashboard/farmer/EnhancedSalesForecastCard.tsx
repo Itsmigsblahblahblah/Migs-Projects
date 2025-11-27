@@ -189,19 +189,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                         <div className={`p-4 rounded-lg border ${userInvestment < suggestedCapital ? 'bg-destructive/10 border-destructive' : 'bg-primary/10 border-primary'}`}>
                             <div className="flex justify-between items-start">
                                 <p className="text-sm text-muted-foreground mb-1">Your Investment</p>
-                                <InfoTooltip content={`The total amount you've invested in seeds, fertilizers, labor, and other expenses for this crop. This includes:
-                                • Seeds/Cost of planting material: ₱${(userInvestment * 0.3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                                • Fertilizers and soil amendments: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                                • Labor costs: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                                • Pest control and other chemicals: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                                • Miscellaneous expenses: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                                
-                                Investment Distribution by Stage:
-                                • Planting Stage: 40% (₱${(userInvestment * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})
-                                • Growth Stage: 45% (₱${(userInvestment * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})
-                                • Harvest Stage: 15% (₱${(userInvestment * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})
-                                
-                                Total Investment: ₱${userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                                <InfoTooltip content={`The total amount you've invested in seeds, fertilizers, labor, and other expenses for this crop. This includes:\n• Seeds/Cost of planting material: ₱${(userInvestment * 0.3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Fertilizers and soil amendments: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Labor costs: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Pest control and other chemicals: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Miscellaneous expenses: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n\nInvestment Distribution by Stage:\n• Planting Stage: 40% (₱${(userInvestment * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})\n• Growth Stage: 45% (₱${(userInvestment * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})\n• Harvest Stage: 15% (₱${(userInvestment * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})\n\nTotal Investment: ₱${userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                             </div>
                             <p className={`text-xl font-bold ${userInvestment < suggestedCapital ? 'text-destructive' : 'text-primary'}`}>₱{userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             {/* Show warning if investment is less than suggested capital */}
@@ -229,18 +217,18 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                 <div className="flex justify-between items-start">
                                     <p className="text-sm text-muted-foreground mb-1">Est. Suggested Capital</p>
                                     <InfoTooltip content={`The recommended minimum investment needed for optimal growth of your crop based on current market conditions. This includes:
-                                    • Seeds/Cost of planting material: ₱${suggestedCapital ? (suggestedCapital * 0.3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                                    • Fertilizers and soil amendments: ₱${suggestedCapital ? (suggestedCapital * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                                    • Labor costs: ₱${suggestedCapital ? (suggestedCapital * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                                    • Pest control and other chemicals: ₱${suggestedCapital ? (suggestedCapital * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                                    • Miscellaneous expenses: ₱${suggestedCapital ? (suggestedCapital * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                                    
-                                    Investment Distribution by Stage:
-                                    • Planting Stage: 40% (₱${suggestedCapital ? (suggestedCapital * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'})
-                                    • Growth Stage: 45% (₱${suggestedCapital ? (suggestedCapital * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'})
-                                    • Harvest Stage: 15% (₱${suggestedCapital ? (suggestedCapital * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'})
-                                    
-                                    Total Suggested Capital: ₱${Number(suggestedCapital || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+• Seeds/Cost of planting material: ₱${suggestedCapital ? (suggestedCapital * 0.3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+• Fertilizers and soil amendments: ₱${suggestedCapital ? (suggestedCapital * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+• Labor costs: ₱${suggestedCapital ? (suggestedCapital * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+• Pest control and other chemicals: ₱${suggestedCapital ? (suggestedCapital * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+• Miscellaneous expenses: ₱${suggestedCapital ? (suggestedCapital * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+
+Investment Distribution by Stage:
+• Planting Stage: 40% (₱${suggestedCapital ? (suggestedCapital * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'})
+• Growth Stage: 45% (₱${suggestedCapital ? (suggestedCapital * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'})
+• Harvest Stage: 15% (₱${suggestedCapital ? (suggestedCapital * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'})
+
+Total Suggested Capital: ₱${Number(suggestedCapital || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                                 </div>
                                 <p className="text-xl font-bold text-yellow-500">₱{Number(suggestedCapital || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                 {investmentExceedsSuggested && (
@@ -265,15 +253,15 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                             <div className="flex justify-between items-start">
                                 <p className="text-sm text-muted-foreground mb-1">Est. Expected Harvest</p>
                                 <InfoTooltip content={`The estimated yield you can expect from your crop based on land area, soil quality, and farming practices.
-                                
-                                Factors affecting yield:
-                                • Land area: ${crop.landArea} ha
-                                • Soil type: ${crop.soilType}
-                                • Investment level: ${userInvestment >= suggestedCapital ? 'Optimal' : 'Below suggested'}
-                                
-                                Estimated yield: ${estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
-                                
-                                ${userInvestment === 0 ? 'Note: Harvest is 0 because investment is 0.' :
+
+Factors affecting yield:
+• Land area: ${crop.landArea} ha
+• Soil type: ${crop.soilType}
+• Investment level: ${userInvestment >= suggestedCapital ? 'Optimal' : 'Below suggested'}
+
+Estimated yield: ${estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
+
+${userInvestment === 0 ? 'Note: Harvest is 0 because investment is 0.' :
                                         userInvestment < suggestedCapital ? `Note: Harvest is scaled down proportionally to your investment (${((userInvestment / suggestedCapital) * 100).toFixed(1)}% of optimal).` :
                                             'Note: Harvest is at optimal level based on your investment.'}`} />
                             </div>
@@ -319,12 +307,12 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                             <div className="flex flex-wrap justify-between items-center pb-2 border-b gap-2">
                                 <span className="text-sm">Current Market Price</span>
                                 <span className="font-medium">₱{Number(insights?.market?.averagePrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/kg</span>
-                                <InfoTooltip content="The current average price farmers are receiving for this crop type in the market" />
+                                <InfoTooltip content={`The current average price farmers are receiving for this crop type in the market`} />
                             </div>
                             <div className="flex flex-wrap justify-between items-center pb-2 border-b gap-2">
                                 <span className="text-sm">Est. Price Direction</span>
                                 <span className="font-medium capitalize">{insights?.market?.trend || 'Stable'}</span>
-                                <InfoTooltip content="The predicted direction of market prices for your crop in the near future" />
+                                <InfoTooltip content={`The predicted direction of market prices for your crop in the near future`} />
                             </div>
                             <div className="text-xs text-muted-foreground mt-3">
                                 <p>Higher prices mean more earnings. Watch for seasonal changes in prices.</p>
@@ -345,7 +333,7 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                                 <span className="font-medium">
                                     {crop.puhunan > 0 ? ((netProfit / crop.puhunan) * 100).toFixed(1) : '0.0'}%
                                 </span>
-                                <InfoTooltip content="Your estimated return on investment (ROI) percentage for this crop" />
+                                <InfoTooltip content={`Your estimated return on investment (ROI) percentage for this crop`} />
                             </div>
                             <div className="flex flex-wrap justify-between items-center pb-2 border-b gap-2">
                                 <span className="text-sm">
@@ -354,7 +342,7 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                                 <span className={`font-medium ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                                     {netProfit >= 0 ? "Profitable" : "Not Profitable"}
                                 </span>
-                                <InfoTooltip content="Whether your crop investment is expected to be profitable or result in a loss" />
+                                <InfoTooltip content={`Whether your crop investment is expected to be profitable or result in a loss`} />
                             </div>
                             <div className="text-xs text-muted-foreground mt-3">
                                 <p>

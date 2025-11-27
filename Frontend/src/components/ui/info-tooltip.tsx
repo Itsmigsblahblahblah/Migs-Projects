@@ -14,7 +14,7 @@ const InfoTooltip = ({ content, className = "" }: InfoTooltipProps) => {
                     <HelpCircle className={`h-4 w-4 text-muted-foreground cursor-help ${className}`} />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                    <p>{content}</p>
+                    <p className="whitespace-pre-line">{content}</p>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
