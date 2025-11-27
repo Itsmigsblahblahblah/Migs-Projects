@@ -161,18 +161,18 @@ const MarketDemand = () => {
   const fetchMarketData = async () => {
     try {
       setLoading(true);
-      
+
       // Check if we have cached data for the current parameters
       const cacheKey = `market-demand-${selectedMonth}-${selectedYear}-${selectedDemandLevel || 'all'}`;
       const cachedData = getCachedMarketDemandData(cacheKey);
-      
+
       if (cachedData) {
         // Use cached data
         setMarketData(cachedData.data);
         setLoading(false);
         return;
       }
-      
+
       // Include month, year, and demand_level parameters in the API call
       // Request all crops instead of just 20
       let url = `/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
@@ -188,12 +188,12 @@ const MarketDemand = () => {
 
       const data = await response.json();
       const marketData = data.recommended_crops || [];
-      
+
       // Cache the data with the current parameters
       setCachedMarketDemandData({
         data: marketData
       }, cacheKey);
-      
+
       setMarketData(marketData);
     } catch (err) {
       setError("Failed to load market demand data. Please try again later.");
@@ -617,12 +617,12 @@ const MarketDemand = () => {
 
                 {/* Pagination Controls */}
                 {filteredData.length > cropsPerPage && (
-                  <div className="border-t pt-1 px-4" style={{ paddingBottom: '15px', marginTop: 'auto' }}>
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
+                  <div className="border-t pt-4 px-4 pb-4">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                      <div className="text-sm text-muted-foreground md:text-left text-center">
                         Showing {(currentPage - 1) * cropsPerPage + 1} to {Math.min(currentPage * cropsPerPage, filteredData.length)} of {filteredData.length} crops
                       </div>
-                      <div className="flex space-x-1">
+                      <div className="flex flex-wrap justify-center gap-1">
                         <Button
                           variant="outline"
                           size="sm"
@@ -662,7 +662,7 @@ const MarketDemand = () => {
                             // Only show ellipsis if there's a significant gap
                             if (startPage > 2) {
                               pageButtons.push(
-                                <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm hidden md:inline">⋯</span>
                               );
                             }
                           }
@@ -687,7 +687,7 @@ const MarketDemand = () => {
                             // Only show ellipsis if there's a significant gap
                             if (endPage < totalPages - 1) {
                               pageButtons.push(
-                                <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm hidden md:inline">⋯</span>
                               );
                             }
                             pageButtons.push(
