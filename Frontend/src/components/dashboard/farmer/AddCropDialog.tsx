@@ -53,7 +53,7 @@ const AddCropDialog = ({
     const [showAddCropInput, setShowAddCropInput] = useState(false); // Toggle for admin to add new crops
     const [showCropDropdown, setShowCropDropdown] = useState(false); // For showing crop dropdown
     const [cropSearchTerm, setCropSearchTerm] = useState(newCrop.name || ""); // For filtering crops in dropdown
-    const [cropPrices, setCropPrices] = useState<{[key: string]: any}>({}); // For storing crop prices
+    const [cropPrices, setCropPrices] = useState<{ [key: string]: any }>({}); // For storing crop prices
     const [loadingPrices, setLoadingPrices] = useState(true); // For tracking if prices are loading
     const cropDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -99,8 +99,8 @@ const AddCropDialog = ({
     }, []);
 
     const handleAddCropSubmit = async () => {
-        const success = await handleAddCrop();
-        if (success) {
+        const result = await handleAddCrop();
+        if (result) {
             onOpenChange(false);
         }
     };
@@ -202,13 +202,13 @@ const AddCropDialog = ({
                                             ) : filteredCrops.length > 0 ? (
                                                 filteredCrops.map((crop) => {
                                                     // Find the price for this crop by doing a more accurate match
-                                                    const cropKey = Object.keys(cropPrices).find(key => 
+                                                    const cropKey = Object.keys(cropPrices).find(key =>
                                                         key.toLowerCase().includes(crop.toLowerCase()) ||
                                                         crop.toLowerCase().includes(key.toLowerCase())
                                                     );
-                                                    
+
                                                     const cropPriceInfo = cropKey ? cropPrices[cropKey] : null;
-                                                    
+
                                                     return (
                                                         <div
                                                             key={crop}
@@ -296,13 +296,13 @@ const AddCropDialog = ({
                                                 ) : filteredCrops.length > 0 ? (
                                                     filteredCrops.map((crop) => {
                                                         // Find the price for this crop by doing a more accurate match
-                                                        const cropKey = Object.keys(cropPrices).find(key => 
+                                                        const cropKey = Object.keys(cropPrices).find(key =>
                                                             key.toLowerCase().includes(crop.toLowerCase()) ||
                                                             crop.toLowerCase().includes(key.toLowerCase())
                                                         );
-                                                        
+
                                                         const cropPriceInfo = cropKey ? cropPrices[cropKey] : null;
-                                                        
+
                                                         return (
                                                             <div
                                                                 key={crop}

@@ -67,7 +67,7 @@ export const useCropManagement = () => {
                 description: "Please fill in all required fields.",
                 variant: "destructive",
             });
-            return;
+            return false;
         }
 
         // Validate planting date is not in the past
@@ -80,17 +80,17 @@ export const useCropManagement = () => {
                 description: "Planting date cannot be in the past. Please select today or a future date.",
                 variant: "destructive",
             });
-            return;
+            return false;
         }
 
         try {
             // Check if there's an existing crop of the same type with detailed instructions
             let checklistToCopy: any[] | undefined = undefined;
-            
+
             // Find the first crop of the same name that has checklist items with detailed instructions
-            const existingCropWithInstructions = crops.find(crop => 
-                crop.name.toLowerCase() === newCrop.name.toLowerCase() && 
-                crop.checklist && 
+            const existingCropWithInstructions = crops.find(crop =>
+                crop.name.toLowerCase() === newCrop.name.toLowerCase() &&
+                crop.checklist &&
                 crop.checklist.some(item => item.detailedInstructions && item.detailedInstructions.length > 0)
             );
 
@@ -106,7 +106,7 @@ export const useCropManagement = () => {
                         // Only include detailedInstructions if it exists
                         ...(item.detailedInstructions && { detailedInstructions: item.detailedInstructions })
                     };
-                    
+
                     return copiedItem;
                 });
             }
@@ -121,12 +121,12 @@ export const useCropManagement = () => {
                 ...(checklistToCopy && { checklist: checklistToCopy })
             };
 
-            // Save to Firestore via context
-            await addCrop(cropData);
+            // Save to Firestore via context and get the crop ID
+            const cropId = await addCrop(cropData);
 
             toast({
                 title: "Crop Added Successfully",
-                description: `${newCrop.name} has been saved to the database.` + 
+                description: `${newCrop.name} has been saved to the database.` +
                     (checklistToCopy ? " Maintenance instructions copied from existing crop." : ""),
             });
 
@@ -139,7 +139,8 @@ export const useCropManagement = () => {
                 puhunan: ""
             });
 
-            return true;
+            // Return the ID of the newly added crop
+            return cropId;
         } catch (error) {
             console.error("Error saving crop:", error);
             toast({
@@ -238,7 +239,7 @@ export const useCropManagement = () => {
 
     const selectCropForEditing = (crop: any) => {
         setSelectedCropId(crop.id);
-        
+
         // Format the plantedDate for the input field
         let plantedDate = "";
         if (crop.plantedDate) {
@@ -254,7 +255,7 @@ export const useCropManagement = () => {
                 plantedDate = crop.plantedDate.toISOString().split('T')[0];
             }
         }
-        
+
         setEditCrop({
             name: crop.name,
             soilType: crop.soilType,

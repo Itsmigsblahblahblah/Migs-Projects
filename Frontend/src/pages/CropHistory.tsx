@@ -41,6 +41,30 @@ const CropHistory = () => {
         selectCropForEditing
     } = useCropManagement();
 
+    // State to store the ID of the newly added crop
+    const [newlyAddedCropId, setNewlyAddedCropId] = useState<string | null>(null);
+
+    // Wrapper function for handleAddCrop that returns a boolean and captures the crop ID
+    const handleAddCropWrapper = async () => {
+        const result = await handleAddCrop();
+        if (result && typeof result === 'string') {
+            // Store the ID of the newly added crop
+            setNewlyAddedCropId(result);
+            return true;
+        }
+        return false;
+    };
+
+    // Effect to navigate to the Crop Details page when a new crop is added
+    useEffect(() => {
+        if (newlyAddedCropId) {
+            // Navigate to the Crop Details page using the correct route
+            navigate(`/crop/${newlyAddedCropId}`);
+            // Reset the newlyAddedCropId state
+            setNewlyAddedCropId(null);
+        }
+    }, [newlyAddedCropId, navigate]);
+
     useEffect(() => {
         const role = localStorage.getItem('userRole');
         const user = localStorage.getItem('username');
@@ -682,7 +706,7 @@ const CropHistory = () => {
                     newCrop={newCrop}
                     handleCropInputChange={handleCropInputChange}
                     handleSoilTypeChange={handleSoilTypeChange}
-                    handleAddCrop={handleAddCrop}
+                    handleAddCrop={handleAddCropWrapper}
                 />
 
                 <UpdateCropDialog
