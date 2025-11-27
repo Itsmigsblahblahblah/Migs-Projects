@@ -1,31 +1,184 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Sprout, User, LogOut } from "lucide-react";
+import { Sprout, User, LogOut, Bell, Sprout as SproutIcon, Leaf, TrendingUp, History } from "lucide-react";
 import { clearMarketDemandCache } from "@/services/marketDemandMultiCacheService";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { db } from "@/firebaseConfig";
+import { collection, query, where, onSnapshot, getDocs } from "firebase/firestore";
+import { useAnnouncements } from "@/components/dashboard/farmer/UserAnnouncements";
+import { useWeatherAlerts } from "@/hooks/custom/useWeatherAlerts";
+
+// Function to create a stable ID for weather alerts (copied from Alerts.tsx)
+const createWeatherAlertId = (description: string, date: string) => {
+  // Create a simple hash-based ID to avoid issues with special characters in btoa
+  let hash = 0;
+  const str = description + date;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return `weather-${Math.abs(hash)}`;
+};
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadWeatherAlerts, setUnreadWeatherAlerts] = useState(0);
+  const [unreadAnnouncements, setUnreadAnnouncements] = useState(0);
+  const [userReadStatus, setUserReadStatus] = useState<Record<string, any>>({});
+  const { announcements, loading: announcementsLoading } = useAnnouncements();
+  const { weatherAlerts, loading: weatherLoading } = useWeatherAlerts();
 
   // Get user info from localStorage
   const userRole = localStorage.getItem('userRole');
   const username = localStorage.getItem('username');
+  const userId = localStorage.getItem('userId');
+
+  // Fetch user read status for both announcements and weather alerts
+  useEffect(() => {
+    if (!userId || userRole !== 'farmer') return;
+
+    // Fetch announcement read status
+    const announcementReadStatusQuery = query(
+      collection(db, "userReadStatus", userId, "announcements")
+    );
+
+    const unsubscribeAnnouncements = onSnapshot(announcementReadStatusQuery, (snapshot) => {
+      const readStatus: Record<string, any> = {};
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        // Handle backward compatibility with old boolean format
+        if (typeof data === 'boolean') {
+          readStatus[doc.id] = { read: data, timestamp: null };
+        } else {
+          readStatus[doc.id] = data;
+        }
+      });
+      setUserReadStatus(prev => ({
+        ...prev,
+        ...readStatus
+      }));
+    });
+
+    // Fetch weather alert read status
+    const weatherReadStatusQuery = query(
+      collection(db, "userReadStatus", userId, "weather")
+    );
+
+    const unsubscribeWeather = onSnapshot(weatherReadStatusQuery, (snapshot) => {
+      const readStatus: Record<string, any> = {};
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        // Handle backward compatibility with old boolean format
+        if (typeof data === 'boolean') {
+          readStatus[doc.id] = { read: data, timestamp: null };
+        } else {
+          readStatus[doc.id] = data;
+        }
+      });
+
+      // Merge with existing read status
+      setUserReadStatus(prev => ({
+        ...prev,
+        ...readStatus
+      }));
+    });
+
+    return () => {
+      unsubscribeAnnouncements();
+      unsubscribeWeather();
+    };
+  }, [userId, userRole]);
+
+  // Fetch unread admin messages count
+  useEffect(() => {
+    if (!userId || userRole !== 'farmer') return;
+
+    const messagesQuery = query(
+      collection(db, "adminMessages"),
+      where("receiverId", "==", userId),
+      where("read", "==", false)
+    );
+
+    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+      setUnreadMessages(snapshot.size);
+    });
+
+    return () => unsubscribe();
+  }, [userId, userRole]);
+
+  // Fetch unread announcements count
+  useEffect(() => {
+    if (!announcementsLoading && userRole === 'farmer') {
+      // Filter out read and deleted announcements
+      const unreadCount = announcements.filter((announcement: any) => {
+        const status = userReadStatus[announcement.id];
+        // If there's no read status, it's unread
+        if (!status) return true;
+        // If it's marked as deleted, don't count it
+        if (status.deleted) return false;
+        // If it's marked as read, don't count it
+        return !status.read;
+      }).length;
+      setUnreadAnnouncements(unreadCount);
+    }
+  }, [announcements, announcementsLoading, userRole, userReadStatus]);
+
+  // Fetch unread weather alerts count
+  useEffect(() => {
+    if (!weatherLoading && userRole === 'farmer' && weatherAlerts) {
+      // Filter out read and deleted weather alerts
+      const unreadCount = weatherAlerts.filter((alert: any) => {
+        // Create a stable ID based on the alert description and date
+        const weatherAlertId = createWeatherAlertId(alert.description, alert.date || '');
+        const status = userReadStatus[weatherAlertId];
+        // If there's no read status, it's unread
+        if (!status) return true;
+        // If it's marked as deleted, don't count it
+        if (status.deleted) return false;
+        // If it's marked as read, don't count it
+        return !status.read;
+      }).length;
+      setUnreadWeatherAlerts(unreadCount);
+    }
+  }, [weatherAlerts, weatherLoading, userRole, userReadStatus]);
+
+  // Calculate total unread alerts
+  const totalUnreadAlerts = () => {
+    if (userRole !== 'farmer') return 0;
+    
+    let count = unreadMessages; // Admin messages
+    count += unreadAnnouncements; // Announcements
+    count += unreadWeatherAlerts; // Weather alerts
+    
+    return count;
+  };
 
   const handleLogout = () => {
     // Remove all authentication data
     localStorage.removeItem('userRole');
     localStorage.removeItem('username');
     localStorage.removeItem('userId');
-
+    
     // Clear market demand cache
     clearMarketDemandCache();
-
+    
     // Close dialog
     setIsLogoutDialogOpen(false);
-
+    
     // Navigate to login
     navigate('/login');
   };
@@ -38,12 +191,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     // For paths like '/history' or '/admin/rules', check if the current path starts with the item path
     return location.pathname.startsWith(path);
   };
-
-  const navigationItems = [
-    // Dashboard button removed as requested
-    // History button removed as requested
-    // Rules Manager button removed as requested
-  ];
 
   // Don't render layout if user is not authenticated
   if (!userRole) {
@@ -73,7 +220,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo - now acts as Dashboard link */}
-            <div
+            <div 
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => navigate(userRole === 'farmer' ? '/farmer' : '/admin')}
             >
@@ -85,43 +232,101 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </div>
             </div>
 
-            {/* Navigation */}
-            <nav className="hidden md:flex items-center space-x-4">
-              {navigationItems.map((item) => (
+            {/* Navigation - only for farmer role */}
+            {userRole === 'farmer' && (
+              <nav className="hidden md:flex items-center space-x-4">
                 <Button
-                  key={item.label}
                   variant="ghost"
                   size="sm"
-                  onClick={item.onClick}
-                  className={isActive(item.path)
+                  onClick={() => navigate('/prescribe-crop')}
+                  className={isActive('/prescribe-crop')
                     ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90 hover:text-primary-foreground"
                     : "text-foreground hover:bg-accent hover:text-accent-foreground"}
                 >
-                  <item.icon className="h-4 w-4 mr-2" />
-                  {item.label}
+                  <SproutIcon className="h-4 w-4 mr-2" />
+                  Prescribe
                 </Button>
-              ))}
-            </nav>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/crop-history')}
+                  className={isActive('/crop-history')
+                    ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90 hover:text-primary-foreground"
+                    : "text-foreground hover:bg-accent hover:text-accent-foreground"}
+                >
+                  <Leaf className="h-4 w-4 mr-2" />
+                  Manage
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/market-demand')}
+                  className={isActive('/market-demand')
+                    ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90 hover:text-primary-foreground"
+                    : "text-foreground hover:bg-accent hover:text-accent-foreground"}
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Market Demand
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/history')}
+                  className={isActive('/history')
+                    ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90 hover:text-primary-foreground"
+                    : "text-foreground hover:bg-accent hover:text-accent-foreground"}
+                >
+                  <History className="h-4 w-4 mr-2" />
+                  Reports
+                </Button>
+              </nav>
+            )}
 
             {/* User Menu */}
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-foreground">{username}</span>
-                <span className="text-muted-foreground">
-                  ({userRole === 'farmer' ? 'Farmer' : 'Administrator'})
-                </span>
-              </div>
+              {/* Alerts Icon - only for farmer role */}
+              {userRole === 'farmer' && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate('/alerts')}
+                  className="relative"
+                >
+                  <Bell className="h-5 w-5" />
+                  {totalUnreadAlerts() > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">
+                      {totalUnreadAlerts()}
+                    </Badge>
+                  )}
+                </Button>
+              )}
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsLogoutDialogOpen(true)}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
+              {/* Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span>{username}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {userRole === 'farmer' ? 'Farmer' : 'Administrator'}
+                      </span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

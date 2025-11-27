@@ -6,7 +6,6 @@ import { Sprout, Leaf, X, RotateCcw, ChevronLeft, ChevronRight } from "lucide-re
 import ProfileCard from "@/components/dashboard/farmer/ProfileCard";
 import WeatherCard from "@/components/dashboard/farmer/WeatherCard";
 import CropStatusCard from "@/components/dashboard/farmer/CropStatusCard";
-import QuickActions from "@/components/dashboard/farmer/QuickActions";
 
 // Function to create a stable ID for weather alerts (copied from Alerts.tsx)
 const createWeatherAlertId = (description: string, date: string) => {
@@ -632,16 +631,6 @@ const FarmerDashboard = () => {
             <CropStatusCard cropData={cropData} onClick={handleCropCardClick} />
           </div>
         </div>
-
-        {/* Quick Actions */}
-        <QuickActions
-          onAddCrop={() => setIsAddCropDialogOpen(true)}
-          onUpdateCrop={() => setIsUpdateCropDialogOpen(true)}
-          farmerProfile={farmerProfile}
-          weatherData={weatherData}
-          userId={userId} // Pass userId to QuickActions
-          unreadWeatherAlerts={unreadWeatherAlerts} // Pass unread weather alerts count
-        />
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Report Input Form */}
