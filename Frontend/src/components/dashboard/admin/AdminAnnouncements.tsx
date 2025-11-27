@@ -31,6 +31,9 @@ const AdminAnnouncements = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [announcementToDelete, setAnnouncementToDelete] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const announcementsPerPage = 10; // Show 10 announcements per page
   const { toast } = useToast();
 
   // Fetch announcements
@@ -74,6 +77,22 @@ const AdminAnnouncements = () => {
     setFilteredAnnouncements(filtered);
   }, [selectedMonth, announcements]);
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredAnnouncements.length / announcementsPerPage);
+  const startIndex = (currentPage - 1) * announcementsPerPage;
+  const endIndex = startIndex + announcementsPerPage;
+  const visibleAnnouncements = filteredAnnouncements.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedMonth, announcements]);
+
   // Get unique months from announcements
   const getUniqueMonths = () => {
     const months = new Set<string>();
@@ -99,7 +118,7 @@ const AdminAnnouncements = () => {
 
     try {
       const adminName = localStorage.getItem('username') || 'Admin';
-      
+
       await addDoc(collection(db, "announcements"), {
         title: newAnnouncement.title,
         content: newAnnouncement.content,
@@ -238,25 +257,232 @@ const AdminAnnouncements = () => {
               {selectedMonth ? `No announcements found for ${formatMonth(selectedMonth)}` : "No announcements yet"}
             </div>
           ) : (
-            <div className="max-h-96 overflow-y-auto pr-2 space-y-4">
-              {filteredAnnouncements.map((announcement) => (
-                <div key={announcement.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-bold text-lg">{announcement.title}</h3>
-                    <span className="text-xs text-muted-foreground">
-                      {announcement.createdAt?.toDate().toLocaleDateString()}
-                    </span>
+            <div className="flex flex-col h-full">
+              <div className="space-y-4 flex-grow">
+                {visibleAnnouncements.map((announcement) => (
+                  <div key={announcement.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-bold text-lg">{announcement.title}</h3>
+                      <span className="text-xs text-muted-foreground">
+                        {announcement.createdAt?.toDate().toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-muted-foreground">{announcement.content}</p>
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      Posted by: {announcement.createdBy}
+                    </div>
+                    <Button onClick={() => openDeleteDialog(announcement.id)} variant="destructive" size="sm" className="flex items-center gap-2 mt-3">
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </Button>
                   </div>
-                  <p className="mt-2 text-muted-foreground">{announcement.content}</p>
-                  <div className="mt-3 text-xs text-muted-foreground">
-                    Posted by: {announcement.createdBy}
+                ))}
+              </div>
+
+              {/* Pagination Controls - Same design as Farmer Reports */}
+              {totalPages > 0 && (
+                <div className="border-t pt-4 mt-auto">
+                  {/* Desktop layout - text on left, pagination on right */}
+                  <div className="hidden md:flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredAnnouncements.length)} of {filteredAnnouncements.length} announcements
+                    </div>
+                    <div className="flex space-x-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="h-8 px-3 text-sm"
+                      >
+                        Previous
+                      </Button>
+
+                      {/* Page Number Buttons */}
+                      {(() => {
+                        const pageButtons = [];
+                        // Show more pages (7 instead of 5) to reduce ellipsis
+                        let startPage = Math.max(1, currentPage - 3);
+                        let endPage = Math.min(totalPages, startPage + 6);
+
+                        // Adjust startPage if we're near the end
+                        if (endPage - startPage < 6) {
+                          startPage = Math.max(1, endPage - 6);
+                        }
+
+                        // First page button
+                        if (startPage > 1) {
+                          pageButtons.push(
+                            <Button
+                              key={1}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePageChange(1)}
+                              className="h-8 w-8 p-0 text-sm"
+                            >
+                              1
+                            </Button>
+                          );
+                          // Only show ellipsis if there's a significant gap
+                          if (startPage > 2) {
+                            pageButtons.push(
+                              <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                            );
+                          }
+                        }
+
+                        // Page number buttons
+                        for (let i = startPage; i <= endPage; i++) {
+                          pageButtons.push(
+                            <Button
+                              key={i}
+                              variant={currentPage === i ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handlePageChange(i)}
+                              className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                            >
+                              {i}
+                            </Button>
+                          );
+                        }
+
+                        // Last page button
+                        if (endPage < totalPages) {
+                          // Only show ellipsis if there's a significant gap
+                          if (endPage < totalPages - 1) {
+                            pageButtons.push(
+                              <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                            );
+                          }
+                          pageButtons.push(
+                            <Button
+                              key={totalPages}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePageChange(totalPages)}
+                              className="h-8 w-8 p-0 text-sm"
+                            >
+                              {totalPages}
+                            </Button>
+                          );
+                        }
+
+                        return pageButtons;
+                      })()}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="h-8 px-3 text-sm"
+                      >
+                        Next
+                      </Button>
+                    </div>
                   </div>
-                  <Button onClick={() => openDeleteDialog(announcement.id)} variant="destructive" size="sm" className="flex items-center gap-2 mt-3">
-                    <Trash2 className="h-4 w-4" />
-                    Delete
-                  </Button>
+
+                  {/* Mobile layout - text and pagination both centered, pagination below text */}
+                  <div className="md:hidden space-y-4">
+                    <div className="text-sm text-muted-foreground text-center">
+                      Showing {startIndex + 1} to {Math.min(endIndex, filteredAnnouncements.length)} of {filteredAnnouncements.length} announcements
+                    </div>
+                    <div className="flex justify-center space-x-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="h-8 px-3 text-sm"
+                      >
+                        Previous
+                      </Button>
+
+                      {/* Page Number Buttons */}
+                      {(() => {
+                        const pageButtons = [];
+                        // Show fewer pages on mobile to prevent overflow
+                        let startPage = Math.max(1, currentPage - 1);
+                        let endPage = Math.min(totalPages, startPage + 2);
+
+                        // Adjust startPage if we're near the end
+                        if (endPage - startPage < 2) {
+                          startPage = Math.max(1, endPage - 2);
+                        }
+
+                        // First page button
+                        if (startPage > 1) {
+                          pageButtons.push(
+                            <Button
+                              key={1}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePageChange(1)}
+                              className="h-8 w-8 p-0 text-sm"
+                            >
+                              1
+                            </Button>
+                          );
+                          // Only show ellipsis if there's a significant gap
+                          if (startPage > 2) {
+                            pageButtons.push(
+                              <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm hidden sm:inline">⋯</span>
+                            );
+                          }
+                        }
+
+                        // Page number buttons
+                        for (let i = startPage; i <= endPage; i++) {
+                          pageButtons.push(
+                            <Button
+                              key={i}
+                              variant={currentPage === i ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handlePageChange(i)}
+                              className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                            >
+                              {i}
+                            </Button>
+                          );
+                        }
+
+                        // Last page button
+                        if (endPage < totalPages) {
+                          // Only show ellipsis if there's a significant gap
+                          if (endPage < totalPages - 1) {
+                            pageButtons.push(
+                              <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm hidden sm:inline">⋯</span>
+                            );
+                          }
+                          pageButtons.push(
+                            <Button
+                              key={totalPages}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePageChange(totalPages)}
+                              className="h-8 w-8 p-0 text-sm"
+                            >
+                              {totalPages}
+                            </Button>
+                          );
+                        }
+
+                        return pageButtons;
+                      })()}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="h-8 px-3 text-sm"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </CardContent>
