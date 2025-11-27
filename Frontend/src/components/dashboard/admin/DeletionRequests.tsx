@@ -64,20 +64,67 @@ const DeletionRequests = ({
         <>
             <Card className="shadow-card">
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Account Deletion Requests</CardTitle>
-                            <CardDescription>
-                                Manage farmer account deletion requests ({deletionRequests.filter(r => r.status === 'pending').length} pending, {deletionRequests.length} total)
-                            </CardDescription>
+                    <div className="flex flex-col">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Account Deletion Requests</CardTitle>
+                                <CardDescription>
+                                    Manage farmer account deletion requests ({deletionRequests.filter(r => r.status === 'pending').length} pending, {deletionRequests.length} total)
+                                </CardDescription>
+                            </div>
+                            {/* Desktop view - buttons on the right */}
+                            <div className="hidden md:flex gap-2">
+                                {deleteMode ? (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={onDeleteModeToggle}
+                                        >
+                                            <X className="h-4 w-4 mr-2" />
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={onBulkDelete}
+                                            disabled={selectedRequests.length === 0}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete ({selectedRequests.length})
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={onRefresh}
+                                        >
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            Refresh
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={onDeleteModeToggle}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete
+                                        </Button>
+                                    </>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex gap-2">
+                        {/* Mobile view - buttons below description and full width but side by side */}
+                        <div className="md:hidden flex gap-2 mt-3">
                             {deleteMode ? (
                                 <>
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={onDeleteModeToggle}
+                                        className="flex-1"
                                     >
                                         <X className="h-4 w-4 mr-2" />
                                         Cancel
@@ -87,6 +134,7 @@ const DeletionRequests = ({
                                         size="sm"
                                         onClick={onBulkDelete}
                                         disabled={selectedRequests.length === 0}
+                                        className="flex-1"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Delete ({selectedRequests.length})
@@ -98,6 +146,7 @@ const DeletionRequests = ({
                                         variant="outline"
                                         size="sm"
                                         onClick={onRefresh}
+                                        className="flex-1"
                                     >
                                         <Eye className="h-4 w-4 mr-2" />
                                         Refresh
@@ -106,6 +155,7 @@ const DeletionRequests = ({
                                         variant="outline"
                                         size="sm"
                                         onClick={onDeleteModeToggle}
+                                        className="flex-1"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Delete
