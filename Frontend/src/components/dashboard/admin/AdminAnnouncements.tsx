@@ -13,7 +13,7 @@ import {
 import { db } from "@/firebaseConfig";
 import { collection, addDoc, query, orderBy, onSnapshot, Timestamp, deleteDoc, doc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Send, Trash2, Filter } from "lucide-react";
+import { Bell, Calendar, Send, Trash2, Filter } from "lucide-react";
 
 interface Announcement {
   id: string;
@@ -263,18 +263,28 @@ const AdminAnnouncements = () => {
                   <div key={announcement.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start">
                       <h3 className="font-bold text-lg">{announcement.title}</h3>
-                      <span className="text-xs text-muted-foreground">
-                        {announcement.createdAt?.toDate().toLocaleDateString()}
-                      </span>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          {announcement.createdAt?.toDate().toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
                     <p className="mt-2 text-muted-foreground">{announcement.content}</p>
-                    <div className="mt-3 text-xs text-muted-foreground">
-                      Posted by: {announcement.createdBy}
+                    <div className="flex justify-between items-center mt-3">
+                      <div className="text-xs text-muted-foreground">
+                        Posted by: {announcement.createdBy}
+                      </div>
+                      <Button
+                        onClick={() => openDeleteDialog(announcement.id)}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="hidden md:inline ml-1">Delete</span>
+                      </Button>
                     </div>
-                    <Button onClick={() => openDeleteDialog(announcement.id)} variant="destructive" size="sm" className="flex items-center gap-2 mt-3">
-                      <Trash2 className="h-4 w-4" />
-                      Delete
-                    </Button>
                   </div>
                 ))}
               </div>
