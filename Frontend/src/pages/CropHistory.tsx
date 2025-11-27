@@ -38,6 +38,7 @@ const CropHistory = () => {
         handleEditSoilTypeChange,
         handleAddCrop,
         handleEditCropSubmit,
+        handleDeleteCrop, // Import the delete function with toast notification
         selectCropForEditing
     } = useCropManagement();
 
@@ -140,16 +141,17 @@ const CropHistory = () => {
     };
 
     // Added delete crop handler
-    const handleDeleteCrop = (id: string, name: string) => {
+    const handleDeleteCropClick = (id: string, name: string) => {
         setCropToDelete({ id, name });
         setShowDeleteDialog(true);
     };
 
-    // Added confirm delete function
+    // Added confirm delete function - now using the hook's handleDeleteCrop function
     const confirmDeleteCrop = async () => {
         if (cropToDelete) {
             try {
-                await deleteCrop(cropToDelete.id);
+                // Use the hook's handleDeleteCrop function which includes toast notification
+                await handleDeleteCrop(cropToDelete.id, cropToDelete.name);
                 setShowDeleteDialog(false);
                 setCropToDelete(null);
             } catch (error) {
@@ -384,7 +386,7 @@ const CropHistory = () => {
                                                 size="sm"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    handleDeleteCrop(crop.id, crop.name);
+                                                    handleDeleteCropClick(crop.id, crop.name);
                                                 }}
                                             >
                                                 <Trash2 className="h-4 w-4" />
