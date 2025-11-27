@@ -117,7 +117,7 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                                                     <h3 className="font-semibold text-lg">{farmer.fullName}</h3>
                                                     <p className="text-sm text-muted-foreground">{farmer.contactNumber || "No contact number"}</p>
                                                 </div>
-                                                <Badge variant="secondary">Farmer</Badge>
+                                                <Badge variant="secondary" className="hidden md:inline-flex">Farmer</Badge>
                                             </div>
 
                                             <div className="grid md:grid-cols-3 gap-3 text-sm">
