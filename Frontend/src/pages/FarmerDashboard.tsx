@@ -274,10 +274,13 @@ const FarmerDashboard = () => {
   }, [weatherData, userReadStatus]);
 
   const handleAddCropSubmit = async () => {
-    const success = await handleAddCrop();
+    const result = await handleAddCrop();
+    // Convert string|false to boolean for AddCropDialog compatibility
+    const success = result !== false;
     if (success) {
       setIsAddCropDialogOpen(false);
     }
+    return success;
   };
 
   const handleEditCropSubmitWrapper = async () => {
@@ -684,7 +687,7 @@ const FarmerDashboard = () => {
           newCrop={newCrop}
           handleCropInputChange={handleCropInputChange}
           handleSoilTypeChange={handleSoilTypeChange}
-          handleAddCrop={handleAddCrop}
+          handleAddCrop={handleAddCropSubmit}
           userRole="farmer" // Pass user role to AddCropDialog
         />
 
