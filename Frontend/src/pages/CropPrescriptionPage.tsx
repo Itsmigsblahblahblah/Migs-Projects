@@ -116,6 +116,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
   // Add state for AddCropDialog
   const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false);
+  
+  // State to store the ID of the newly added crop
+  const [newlyAddedCropId, setNewlyAddedCropId] = useState<string | null>(null);
 
   // Use the crop management hook
   const {
@@ -125,6 +128,27 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     handleSoilTypeChange,
     handleAddCrop
   } = useCropManagement();
+  
+  // Wrapper function for handleAddCrop that returns a boolean and captures the crop ID
+  const handleAddCropWrapper = async (): Promise<boolean> => {
+    const result = await handleAddCrop();
+    if (result && typeof result === 'string') {
+      // Store the ID of the newly added crop
+      setNewlyAddedCropId(result);
+      return true;
+    }
+    return false;
+  };
+  
+  // Effect to navigate to the Crop Details page when a new crop is added
+  useEffect(() => {
+    if (newlyAddedCropId) {
+      // Navigate to the Crop Details page using the correct route
+      navigate(`/crop/${newlyAddedCropId}`);
+      // Reset the newlyAddedCropId state
+      setNewlyAddedCropId(null);
+    }
+  }, [newlyAddedCropId, navigate]);
 
   // Function to extract barangay name from farm address
   const extractBarangay = (farmAddress: string) => {
@@ -1137,7 +1161,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
           newCrop={newCrop}
           handleCropInputChange={handleCropInputChange}
           handleSoilTypeChange={handleSoilTypeChange}
-          handleAddCrop={handleAddCrop}
+          handleAddCrop={handleAddCropWrapper}
           lockedCropName={selectedCrop?.crop} // Pass the selected crop name as locked
         />
       </div>
