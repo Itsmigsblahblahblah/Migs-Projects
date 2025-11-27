@@ -3,7 +3,6 @@ import { ChevronDown, ChevronRight, Clock } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import InfoTooltip from "@/components/ui/info-tooltip";
 import { getStepByStepInstructions } from "@/services/geminiService";
 
 interface ChecklistItem {
@@ -27,7 +26,7 @@ const AccordionChecklistItem = ({
   item,
   onToggleItem,
   handleToggleWithConfirmation,
-  onUpdateInstructions = () => {}, // Default noop function
+  onUpdateInstructions = () => { }, // Default noop function
   cropName = "" // Default empty string
 }: AccordionChecklistItemProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -80,7 +79,7 @@ const AccordionChecklistItem = ({
   const toggleAccordion = () => {
     const newState = !isOpen;
     setIsOpen(newState);
-    
+
     if (newState) {
       fetchInstructions();
     }
@@ -97,7 +96,7 @@ const AccordionChecklistItem = ({
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="border rounded-lg hover:bg-muted/50 transition-colors">
         {/* Main accordion header */}
-        <div 
+        <div
           className="flex items-center gap-3 p-3 cursor-pointer"
           onClick={(e) => {
             // Prevent toggle when clicking on checkbox or info tooltip
@@ -111,7 +110,7 @@ const AccordionChecklistItem = ({
             checked={item.completed}
             onCheckedChange={() => handleToggleWithConfirmation(item.id, item.completed)}
           />
-          
+
           <div className="flex-1 min-w-0">
             <label
               htmlFor={item.id}
@@ -129,11 +128,11 @@ const AccordionChecklistItem = ({
               </div>
             )}
           </div>
-          
+
           <CollapsibleTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-6 w-6 p-0"
               onClick={(e) => {
                 e.stopPropagation();
@@ -148,10 +147,8 @@ const AccordionChecklistItem = ({
               <span className="sr-only">Toggle</span>
             </Button>
           </CollapsibleTrigger>
-          
-          <InfoTooltip content="Mark this task as completed when finished. Click the arrow to see detailed instructions." />
         </div>
-        
+
         {/* Collapsible content */}
         <CollapsibleContent className="px-3 pb-3">
           <div className="pl-8 pr-2 pt-2 border-l-2 border-muted ml-3">
@@ -172,28 +169,28 @@ const AccordionChecklistItem = ({
                       </li>
                     ))}
                   </ul>
-                  
+
                   {instructions.length > 3 && (
-                    <Button 
-                      variant="link" 
-                      size="sm" 
+                    <Button
+                      variant="link"
+                      size="sm"
                       className="p-0 h-auto mt-2 text-primary"
                       onClick={() => setShowFullDetails(!showFullDetails)}
                     >
                       {showFullDetails ? "Show Less" : "See More"}
                     </Button>
                   )}
-                  
+
                   {instructions.length === 0 && !isLoading && (
                     <p className="text-sm text-muted-foreground italic">
                       No detailed instructions available for this task.
                     </p>
                   )}
                 </div>
-                
+
                 {!item.completed && (
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     onClick={() => handleToggleWithConfirmation(item.id, item.completed)}
                     className="mt-2"
                   >

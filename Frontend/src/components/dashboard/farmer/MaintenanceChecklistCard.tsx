@@ -1,23 +1,22 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CheckCircle } from "lucide-react";
-import { 
-    RadialBarChart, 
-    RadialBar, 
-    Legend, 
-    ResponsiveContainer 
+import {
+    RadialBarChart,
+    RadialBar,
+    Legend,
+    ResponsiveContainer
 } from "recharts";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
-import InfoTooltip from "@/components/ui/info-tooltip";
 import AccordionChecklistItem from "./AccordionChecklistItem";
 
 interface ChecklistItem {
@@ -49,7 +48,7 @@ const MaintenanceChecklistCard = ({
     productivityData,
     checklistProductivity,
     onToggleItem,
-    onUpdateInstructions = () => {}, // Default noop function
+    onUpdateInstructions = () => { }, // Default noop function
     cropName = "" // Default empty string
 }: MaintenanceChecklistCardProps) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -100,7 +99,6 @@ const MaintenanceChecklistCard = ({
                     <CardTitle className="flex items-center gap-2">
                         <CheckCircle className="h-5 w-5" />
                         Maintenance Checklist
-                        <InfoTooltip content="A list of recommended tasks to ensure healthy crop growth and maximum yield" />
                     </CardTitle>
                     <CardDescription>
                         Track your progress through the growing season. Click on any task to see detailed instructions.
@@ -126,9 +124,9 @@ const MaintenanceChecklistCard = ({
                         <div className="flex flex-col items-center">
                             <div className="w-48 h-48 relative">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <RadialBarChart 
-                                        innerRadius="60%" 
-                                        outerRadius="90%" 
+                                    <RadialBarChart
+                                        innerRadius="60%"
+                                        outerRadius="90%"
                                         barSize={12}
                                         data={radialData}
                                         startAngle={90}
@@ -163,8 +161,8 @@ const MaintenanceChecklistCard = ({
                             {isCompleting ? "Mark Task as Completed?" : "Unmark Completed Task?"}
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            {isCompleting 
-                                ? "This will mark the task as completed and record the current time." 
+                            {isCompleting
+                                ? "This will mark the task as completed and record the current time."
                                 : "This will unmark the task as completed and remove the completion time."}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
