@@ -41,8 +41,8 @@ const ReportForm = ({ reportText, onReportTextChange, onSubmitReport, isProcessi
         if (error) {
             toast({
                 title: "Speech Recognition Error",
-                description: error === "not-allowed" 
-                    ? "Microphone access denied. Please allow microphone access to use this feature." 
+                description: error === "not-allowed"
+                    ? "Microphone access denied. Please allow microphone access to use this feature."
                     : `Error: ${error}`,
                 variant: "destructive",
             });
@@ -125,7 +125,7 @@ const ReportForm = ({ reportText, onReportTextChange, onSubmitReport, isProcessi
                         placeholder="Halimbawa: 'Nalubog sa baha ang tanim kong mais sa nakaraang linggo...'"
                         value={reportText}
                         onChange={(e) => onReportTextChange(e.target.value)}
-                        className="min-h-32 resize-none"
+                        className="min-h-64 resize-none"
                     />
                     {isListening && (
                         <div className="text-sm text-muted-foreground flex items-center gap-2">
@@ -140,7 +140,7 @@ const ReportForm = ({ reportText, onReportTextChange, onSubmitReport, isProcessi
                     )}
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                     <Label htmlFor="image">Upload Larawan (Optional)</Label>
                     <div className="flex items-center gap-2">
                         <Input
@@ -173,7 +173,7 @@ const ReportForm = ({ reportText, onReportTextChange, onSubmitReport, isProcessi
                             </div>
                         )}
                     </div>
-                </div>
+                </div> */}
 
                 <Button
                     onClick={onSubmitReport}
