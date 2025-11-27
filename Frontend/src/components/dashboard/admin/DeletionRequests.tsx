@@ -123,24 +123,26 @@ const DeletionRequests = ({
                                     key={request.id}
                                     className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                                 >
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-start gap-3">
                                         {/* Checkbox for delete mode */}
                                         {deleteMode && (
                                             <Checkbox
                                                 checked={selectedRequests.includes(request.id)}
                                                 onCheckedChange={() => onRequestSelect(request.id)}
-                                                className="h-5 w-5"
+                                                className="h-5 w-5 mt-1"
                                             />
                                         )}
 
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <div className="bg-secondary rounded-full p-2">
-                                                    <User className="h-5 w-5 text-secondary-foreground" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-semibold text-lg">{request.fullName}</h3>
-                                                    <p className="text-sm text-muted-foreground">{request.email}</p>
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="bg-secondary rounded-full p-2 mt-1">
+                                                        <User className="h-5 w-5 text-secondary-foreground" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-semibold text-lg">{request.fullName}</h3>
+                                                        <p className="text-sm text-muted-foreground">{request.email}</p>
+                                                    </div>
                                                 </div>
                                                 <Badge
                                                     variant={request.status === 'pending' ? 'secondary' : request.status === 'approved' ? 'default' : 'destructive'}
@@ -169,15 +171,15 @@ const DeletionRequests = ({
                                                     </div>
                                                 )}
                                             </div>
-                                            
+
                                             {/* Show reason button for pending requests */}
                                             {request.status === 'pending' && request.reason && (
                                                 <div className="mt-2">
                                                     <Dialog>
                                                         <DialogTrigger asChild>
-                                                            <Button 
-                                                                variant="outline" 
-                                                                size="sm" 
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
                                                                 className="text-xs"
                                                             >
                                                                 <Info className="h-3 w-3 mr-1" />
