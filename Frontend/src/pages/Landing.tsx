@@ -12,7 +12,9 @@ import {
   Star,
   CheckCircle,
   ArrowRight,
-  User
+  User,
+  Menu,
+  X
 } from "lucide-react";
 import dean from "@/assets/dean.jpg";
 import hyroin from "@/assets/hyroin.jpg";
@@ -22,10 +24,12 @@ import dondon from "@/assets/don2.jpg";
 const Landing = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Function to scroll to a section
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
+    setIsMobileMenuOpen(false); // Close mobile menu when clicking a link
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -150,7 +154,7 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-earth">
-      {/* Header - Updated to match Farmer/Admin design */}
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -165,7 +169,7 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* Navigation menu on the right */}
+            {/* Desktop Navigation - hidden on mobile */}
             <nav className="hidden md:flex items-center space-x-4">
               <button
                 onClick={() => scrollToSection('features')}
@@ -189,36 +193,51 @@ const Landing = () => {
                 <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'team' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
               </button>
             </nav>
+
+            {/* Mobile menu button - visible only on mobile */}
+            <div className="md:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle navigation menu"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
-      </header>
 
-      {/* Mobile Navigation */}
-      <nav className="md:hidden bg-card border-b border-border p-4 sticky top-16 z-40">
-        <div className="flex gap-2 overflow-x-auto">
-          <button
-            onClick={() => scrollToSection('features')}
-            className={`group flex-shrink-0 text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'features' ? 'text-yellow-500' : ''}`}
-          >
-            <span className="relative z-10">Overview</span>
-            <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'features' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
-          </button>
-          <button
-            onClick={() => scrollToSection('testimonials')}
-            className={`group flex-shrink-0 text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'testimonials' ? 'text-yellow-500' : ''}`}
-          >
-            <span className="relative z-10">Reviews</span>
-            <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'testimonials' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
-          </button>
-          <button
-            onClick={() => scrollToSection('team')}
-            className={`group flex-shrink-0 text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'team' ? 'text-yellow-500' : ''}`}
-          >
-            <span className="relative z-10">About Us</span>
-            <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'team' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
-          </button>
-        </div>
-      </nav>
+        {/* Mobile Navigation Menu - shown when menu is open */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-card border-b border-border">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              <button
+                onClick={() => scrollToSection('features')}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${activeSection === 'features' ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => scrollToSection('testimonials')}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${activeSection === 'testimonials' ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+              >
+                Reviews
+              </button>
+              <button
+                onClick={() => scrollToSection('team')}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${activeSection === 'team' ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+              >
+                About Us
+              </button>
+            </div>
+          </div>
+        )}
+      </header>
 
       {/* Hero Section */}
       <section className="py-16 md:py-24">
