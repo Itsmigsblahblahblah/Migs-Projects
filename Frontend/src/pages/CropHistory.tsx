@@ -330,7 +330,11 @@ const CropHistory = () => {
                                         </div>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {/* 
+                                        Mobile: 2 rows with 2 items each (Land+Capital, Soil+Planting)
+                                        Desktop (sm+): Original 2x2 grid layout
+                                        */}
+                                        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                             <div className="flex items-center gap-2">
                                                 <MapPin className="h-4 w-4 text-muted-foreground" />
                                                 <div>
@@ -357,6 +361,45 @@ const CropHistory = () => {
                                                 <div>
                                                     <p className="text-xs text-muted-foreground">Planting Date</p>
                                                     <p className="font-medium">{formatDate(crop.plantedDate)}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Mobile-only layout: 2 rows with 2 items each */}
+                                        <div className="sm:hidden grid grid-cols-1 gap-4">
+                                            {/* Row 1: Land Area and Capital side by side */}
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">Land Area</p>
+                                                        <p className="font-medium">{Number(crop.landArea)} hectares</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">Capital</p>
+                                                        <p className="font-medium">₱{Number(crop.puhunan).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Row 2: Soil Type and Planting Date side by side */}
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Leaf className="h-4 w-4 text-muted-foreground" />
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">Soil Type</p>
+                                                        <p className="font-medium">{crop.soilType}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">Planting Date</p>
+                                                        <p className="font-medium">{formatDate(crop.plantedDate)}</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
