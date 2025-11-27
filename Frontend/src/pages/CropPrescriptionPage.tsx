@@ -116,7 +116,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
   // Add state for AddCropDialog
   const [isAddCropDialogOpen, setIsAddCropDialogOpen] = useState(false);
-  
+
   // State to store the ID of the newly added crop
   const [newlyAddedCropId, setNewlyAddedCropId] = useState<string | null>(null);
 
@@ -128,7 +128,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     handleSoilTypeChange,
     handleAddCrop
   } = useCropManagement();
-  
+
   // Wrapper function for handleAddCrop that returns a boolean and captures the crop ID
   const handleAddCropWrapper = async (): Promise<boolean> => {
     const result = await handleAddCrop();
@@ -139,7 +139,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     }
     return false;
   };
-  
+
   // Effect to navigate to the Crop Details page when a new crop is added
   useEffect(() => {
     if (newlyAddedCropId) {
@@ -388,14 +388,14 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       soilType: getSoilType(inputSoilData),
       weatherCondition: getWeatherCondition(effectiveWeatherData),
       recommendations: getCropRecommendations(
-        crop.crop, 
-        inputSoilData, 
-        effectiveWeatherData, 
+        crop.crop,
+        inputSoilData,
+        effectiveWeatherData,
         marketDemand
       ),
       avoid: getThingsToAvoid(
-        crop.crop, 
-        inputSoilData, 
+        crop.crop,
+        inputSoilData,
         effectiveWeatherData
       )
     };
@@ -465,7 +465,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     // Simple logic based on crop type and weather conditions
     const temp = weatherData?.temperature || 25;
     const humidity = weatherData?.humidity || 60;
-    
+
     // Crop-specific planting season logic
     if (crop.toLowerCase().includes("rice")) {
       if (temp >= 20 && temp <= 35 && humidity >= 70) {
@@ -517,9 +517,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     const humidity = weatherData?.humidity || 60;
     const precipitation = weatherData?.extendedForecast?.[0]?.precipitationProbability || 0;
     const windSpeed = weatherData?.extendedForecast?.[0]?.windSpeed || 5;
-    
+
     let condition = "";
-    
+
     if (temp < 15) {
       condition += "Cool conditions - ";
     } else if (temp >= 15 && temp <= 25) {
@@ -529,7 +529,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     } else {
       condition += "Hot conditions - ";
     }
-    
+
     if (humidity < 40) {
       condition += "Low humidity ";
     } else if (humidity >= 40 && humidity <= 70) {
@@ -537,7 +537,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     } else {
       condition += "High humidity ";
     }
-    
+
     if (precipitation > 70) {
       condition += "with high chance of rain. ";
     } else if (precipitation > 30) {
@@ -545,7 +545,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     } else {
       condition += "with low chance of rain. ";
     }
-    
+
     if (windSpeed > 20) {
       condition += "Strong winds expected.";
     } else if (windSpeed > 10) {
@@ -553,7 +553,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     } else {
       condition += "Light winds expected.";
     }
-    
+
     return condition;
   };
 
@@ -562,9 +562,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     if (!marketDemand) {
       return "Market data not available - Check local market trends";
     }
-    
+
     const { price_change_percent, demand_level } = marketDemand;
-    
+
     if (price_change_percent > 5) {
       return `Strong upward trend (+${price_change_percent.toFixed(1)}%) - High demand expected`;
     } else if (price_change_percent > 2) {
@@ -581,18 +581,18 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   // Function to get soil type description based on soil data
   const getSoilType = (soilData: SoilData) => {
     const { pH, Nitrogen, Phosphorus, Potassium } = soilData;
-    
+
     let description = `pH: ${pH} (${pH < 6 ? 'Acidic' : pH > 7.5 ? 'Alkaline' : 'Neutral'}), `;
-    
+
     description += `N: ${Nitrogen === 'L' ? 'Low' : Nitrogen === 'M' ? 'Medium' : 'High'}, `;
     description += `P: ${Phosphorus === 'L' ? 'Low' : Phosphorus === 'M' ? 'Medium' : 'High'}, `;
     description += `K: ${Potassium === 'L' ? 'Low' : Potassium === 'M' ? 'Medium' : 'High'}`;
-    
+
     // Add fertility assessment
     const nutrientLevels = [Nitrogen, Phosphorus, Potassium];
     const highCount = nutrientLevels.filter(level => level === 'H').length;
     const lowCount = nutrientLevels.filter(level => level === 'L').length;
-    
+
     if (highCount >= 2) {
       description += " - High fertility soil";
     } else if (lowCount >= 2) {
@@ -600,7 +600,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     } else {
       description += " - Moderate fertility soil";
     }
-    
+
     return description;
   };
 
@@ -610,11 +610,11 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     const temp = weatherData?.temperature || 25;
     const humidity = weatherData?.humidity || 60;
     const { Nitrogen, Phosphorus, Potassium } = soilData;
-    
+
     // General recommendations
     recommendations.push("Follow local agricultural guidelines for your region");
     recommendations.push("Monitor soil moisture levels regularly");
-    
+
     // Crop-specific recommendations
     if (crop.toLowerCase().includes("rice")) {
       recommendations.push("Ensure adequate water supply for paddy cultivation");
@@ -632,17 +632,17 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       recommendations.push("Harvest regularly to encourage new growth");
       recommendations.push("Protect from pests like aphids and caterpillars");
     }
-    
+
     // Soil-based recommendations
     if (Nitrogen === 'L') recommendations.push("Apply nitrogen-rich fertilizer or compost");
     if (Phosphorus === 'L') recommendations.push("Add bone meal or rock phosphate for phosphorus");
     if (Potassium === 'L') recommendations.push("Use potash or wood ash to increase potassium");
-    
+
     // Weather-based recommendations
     if (temp > 30) recommendations.push("Provide shade during peak heat hours");
     if (humidity > 80) recommendations.push("Ensure good air circulation to prevent fungal diseases");
     if (humidity < 40) recommendations.push("Increase watering frequency to compensate for low humidity");
-    
+
     return recommendations;
   };
 
@@ -652,12 +652,12 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     const temp = weatherData?.temperature || 25;
     const humidity = weatherData?.humidity || 60;
     const { Nitrogen, Phosphorus, Potassium } = soilData;
-    
+
     // General things to avoid
     avoid.push("Plant in waterlogged areas as it can cause root rot");
     avoid.push("Over-fertilize without soil testing as it can harm plants");
     avoid.push("Ignore local climate conditions when selecting crops");
-    
+
     // Crop-specific things to avoid
     if (crop.toLowerCase().includes("rice")) {
       avoid.push("Plant during flooding if drainage is poor");
@@ -675,12 +675,12 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       avoid.push("Allowing plants to bolt by exposing them to high temperatures");
       avoid.push("Harvesting during hot midday hours");
     }
-    
+
     // Weather-based things to avoid
     if (temp > 35) avoid.push("Plant heat-sensitive crops without shade");
     if (humidity > 85) avoid.push("Grow susceptible crops without proper air circulation");
     if (temp < 10) avoid.push("Plant cold-sensitive crops without protection");
-    
+
     return avoid;
   };
 
@@ -915,14 +915,14 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                                     soilType: getSoilType(inputSoilData),
                                     weatherCondition: getWeatherCondition(effectiveWeatherData),
                                     recommendations: getCropRecommendations(
-                                      recommendation.crop, 
-                                      inputSoilData, 
-                                      effectiveWeatherData, 
+                                      recommendation.crop,
+                                      inputSoilData,
+                                      effectiveWeatherData,
                                       null
                                     ),
                                     avoid: getThingsToAvoid(
-                                      recommendation.crop, 
-                                      inputSoilData, 
+                                      recommendation.crop,
+                                      inputSoilData,
                                       effectiveWeatherData
                                     )
                                   })}
