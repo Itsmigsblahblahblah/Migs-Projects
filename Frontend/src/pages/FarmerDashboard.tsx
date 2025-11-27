@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Sprout, Leaf, X, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sprout, Leaf, X, RotateCcw, ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
 import ProfileCard from "@/components/dashboard/farmer/ProfileCard";
 import WeatherCard from "@/components/dashboard/farmer/WeatherCard";
 import CropStatusCard from "@/components/dashboard/farmer/CropStatusCard";
@@ -38,7 +38,7 @@ import { db } from '@/firebaseConfig';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -125,6 +125,7 @@ const FarmerDashboard = () => {
   const [selectedCropId, setSelectedCropId] = useState<string | null>(null); // State for selected crop ID
   const [userReadStatus, setUserReadStatus] = useState<Record<string, boolean>>({}); // State for user read status
   const [unreadWeatherAlerts, setUnreadWeatherAlerts] = useState(0); // State for unread weather alerts
+  const [isRecommendationModalOpen, setIsRecommendationModalOpen] = useState(false); // State for recommendation modal
 
   const {
     username,
@@ -341,6 +342,13 @@ const FarmerDashboard = () => {
 
   const handleRefresh = () => {
     setRecommendation(null);
+  };
+
+  // Custom submit handler that opens the modal after processing
+  const handleSubmitReportWithModal = async () => {
+    await handleSubmitReport();
+    // Open the recommendation modal after submitting the report
+    setIsRecommendationModalOpen(true);
   };
 
   // Function to get crop data for the CropStatusCard
@@ -632,30 +640,14 @@ const FarmerDashboard = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Report Input Form */}
+        {/* Report Input Form - now full width */}
+        <div className="w-full">
           <ReportForm
             reportText={reportText}
             onReportTextChange={setReportText}
-            onSubmitReport={handleSubmitReport}
+            onSubmitReport={handleSubmitReportWithModal}
             isProcessing={isProcessing}
           />
-
-          {/* Recommendation Results */}
-          <div className="relative">
-            <RecommendationResults recommendation={recommendation} />
-            {recommendation && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                className="absolute top-4 right-4 h-8 w-8 p-0"
-                title="Clear recommendations"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
         </div>
 
         {/* Dialogs */}
@@ -735,6 +727,32 @@ const FarmerDashboard = () => {
                 checklistProductivity={checklistProductivity}
                 onToggleItem={handleToggleChecklistItem}
               />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* AI Recommendation Modal */}
+        <Dialog open={isRecommendationModalOpen} onOpenChange={setIsRecommendationModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>AI Recommendation</DialogTitle>
+              <DialogDescription>
+                Smart farming guidance based on your reported issue
+              </DialogDescription>
+            </DialogHeader>
+            <RecommendationResults recommendation={recommendation} />
+            {recommendation && (
+              <div className="flex justify-end mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  title="Clear recommendations"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Clear Recommendations
+                </Button>
+              </div>
             )}
           </DialogContent>
         </Dialog>
