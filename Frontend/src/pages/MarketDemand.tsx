@@ -375,73 +375,75 @@ const MarketDemand = () => {
           </div>
 
           <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  {getMonthName(selectedMonth)}
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <div className="grid grid-cols-3 gap-1 p-2">
-                  {months.map((month) => (
-                    <DropdownMenuItem
-                      key={month}
-                      onClick={() => handleMonthChange(month)}
-                      className={month === selectedMonth ? "bg-accent" : ""}
-                    >
-                      {getMonthName(month).substring(0, 3)}
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2 w-full">
+                    <Calendar className="h-4 w-4" />
+                    {getMonthName(selectedMonth)}
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <div className="grid grid-cols-3 gap-1 p-2">
+                    {months.map((month) => (
+                      <DropdownMenuItem
+                        key={month}
+                        onClick={() => handleMonthChange(month)}
+                        className={month === selectedMonth ? "bg-accent" : ""}
+                      >
+                        {getMonthName(month).substring(0, 3)}
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  {selectedYear}
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <div className="flex items-center justify-between p-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigateYearRange('prev')}
-                    disabled={yearRangeStart <= minForecastYear}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2 w-full">
+                    <Calendar className="h-4 w-4" />
+                    {selectedYear}
+                    <ChevronDown className="h-4 w-4" />
                   </Button>
-                  <span className="text-sm font-medium">
-                    {yearRangeStart} - {yearRangeStart + 5}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigateYearRange('next')}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                <DropdownMenuSeparator />
-                <div className="grid grid-cols-3 gap-1 p-2">
-                  {years.map((year) => (
-                    <DropdownMenuItem
-                      key={year}
-                      onClick={() => handleYearChange(year)}
-                      className={year === selectedYear ? "bg-accent" : ""}
-                      disabled={year < minForecastYear}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <div className="flex items-center justify-between p-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigateYearRange('prev')}
+                      disabled={yearRangeStart <= minForecastYear}
                     >
-                      {year}
-                    </DropdownMenuItem>
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-medium">
+                      {yearRangeStart} - {yearRangeStart + 5}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigateYearRange('next')}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <div className="grid grid-cols-3 gap-1 p-2">
+                    {years.map((year) => (
+                      <DropdownMenuItem
+                        key={year}
+                        onClick={() => handleYearChange(year)}
+                        className={year === selectedYear ? "bg-accent" : ""}
+                        disabled={year < minForecastYear}
+                      >
+                        {year}
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
