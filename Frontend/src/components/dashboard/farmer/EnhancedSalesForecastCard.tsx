@@ -186,10 +186,16 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                 <div className="mb-8">
                     <h3 className="font-bold text-lg mb-4">How Your Money Works</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="p-4 bg-primary/10 rounded-lg border border-primary">
-                            <div className="text-primary font-bold text-xl mb-2">1</div>
+                        <div className={`p-4 rounded-lg border ${userInvestment < suggestedCapital ? 'bg-destructive/10 border-destructive' : 'bg-primary/10 border-primary'}`}>
                             <p className="text-sm text-muted-foreground mb-1">Your Investment</p>
-                            <p className="text-xl font-bold text-primary">₱{userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className={`text-xl font-bold ${userInvestment < suggestedCapital ? 'text-destructive' : 'text-primary'}`}>₱{userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            {/* Show warning if investment is less than suggested capital */}
+                            {userInvestment < suggestedCapital && (
+                                <p className={`text-xs flex items-center gap-1 mt-2 ${userInvestment < suggestedCapital ? 'text-destructive' : 'text-destructive-foreground'}`}>
+                                    <AlertTriangle className="inline h-3 w-3 flex-shrink-0" />
+                                    <span>Investment is below suggested capital by ₱{(suggestedCapital - userInvestment).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </p>
+                            )}
                             {/* Show warning if investment exceeds suggested capital */}
                             {investmentExceedsSuggested && (
                                 <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded-md">
@@ -218,13 +224,19 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                         {/* Show Est. Suggested Capital only if user's investment is less than suggested capital */}
                         {(userInvestment < suggestedCapital || investmentExceedsSuggested) && (
                             <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500">
-                                <div className="text-yellow-500 font-bold text-xl mb-2">2</div>
                                 <p className="text-sm text-muted-foreground mb-1">Est. Suggested Capital</p>
                                 <p className="text-xl font-bold text-yellow-500">₱{Number(suggestedCapital || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                 {investmentExceedsSuggested && (
                                     <div className="mt-2">
                                         <p className="text-xs text-yellow-700">
                                             Your investment is ₱{(userInvestment - suggestedCapital).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} higher than suggested
+                                        </p>
+                                    </div>
+                                )}
+                                {userInvestment < suggestedCapital && (
+                                    <div className="mt-2">
+                                        <p className="text-xs text-destructive">
+                                            You need ₱{(suggestedCapital - userInvestment).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more for optimal results
                                         </p>
                                     </div>
                                 )}
@@ -246,7 +258,6 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                         )}
 
                         <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500">
-                            <div className="text-blue-500 font-bold text-xl mb-2">{(userInvestment < suggestedCapital || investmentExceedsSuggested) ? '3' : '2'}</div>
                             <p className="text-sm text-muted-foreground mb-1">Est. Expected Harvest</p>
                             <p className="text-xl font-bold text-blue-500">{estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</p>
                             <p className="text-xs mt-2 text-muted-foreground">This is your est. expected harvest</p>
@@ -264,15 +275,14 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                                         'Note: Harvest is at optimal level based on your investment.'}`} className="mt-2" />
                         </div>
 
-                        <div className={`p-4 rounded-lg border ${netProfit >= 0 ? 'bg-success/10 border-success' : 'bg-destructive/10 border-destructive'}`}>
-                            <div className={`font-bold text-xl mb-2 ${(userInvestment < suggestedCapital || investmentExceedsSuggested) ? '4' : '3'}`}></div>
+                        <div className={`p-4 rounded-lg border ${netProfit >= 0 ? (userInvestment < suggestedCapital ? 'bg-destructive/10 border-destructive' : 'bg-success/10 border-success') : 'bg-destructive/10 border-destructive'}`}>
                             <p className="text-sm text-muted-foreground mb-1">Your Est. Profit</p>
-                            <p className={`text-xl font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                            <p className={`text-xl font-bold ${netProfit >= 0 ? (userInvestment < suggestedCapital ? 'text-destructive' : 'text-success') : 'text-destructive'}`}>
                                 ₱{netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                             <p className="text-xs mt-2 text-muted-foreground">
                                 {netProfit >= 0
-                                    ? "This is your est. expected profit after all expenses"
+                                    ? (userInvestment < suggestedCapital ? "Below suggested investment" : "This is your est. expected profit after all expenses")
                                     : "You might lose money. Consider adjusting your approach."}
                             </p>
                             <InfoTooltip content={`Estimated Profit Calculation:
