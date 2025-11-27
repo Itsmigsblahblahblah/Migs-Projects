@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Sprout, User, LogOut, Bell, Sprout as SproutIcon, Leaf, TrendingUp, History } from "lucide-react";
+import { Sprout, User, LogOut, Bell, Sprout as SproutIcon, Leaf, TrendingUp, History, Menu, X } from "lucide-react";
 import { clearMarketDemandCache } from "@/services/marketDemandMultiCacheService";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadWeatherAlerts, setUnreadWeatherAlerts] = useState(0);
   const [unreadAnnouncements, setUnreadAnnouncements] = useState(0);
@@ -232,7 +233,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </div>
             </div>
 
-            {/* Navigation - only for farmer role */}
+            {/* Desktop Navigation - only for farmer role */}
             {userRole === 'farmer' && (
               <nav className="hidden md:flex items-center space-x-4">
                 <button
@@ -269,7 +270,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </nav>
             )}
 
-            {/* User Menu */}
+            {/* User Menu Area - flex container for alerts, profile, and mobile menu */}
             <div className="flex items-center gap-3">
               {/* Alerts Icon - only for farmer role */}
               {userRole === 'farmer' && (
@@ -288,32 +289,121 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 </Button>
               )}
 
-              {/* Profile Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <User className="h-5 w-5" />
+              {/* Desktop Profile Dropdown - hidden on mobile */}
+              <div className="hidden md:block">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col">
+                        <span>{username}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {userRole === 'farmer' ? 'Farmer' : 'Administrator'}
+                        </span>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {/* Mobile menu area - visible only on mobile for farmer role */}
+              {userRole === 'farmer' && (
+                <div className="md:hidden flex items-center gap-3">
+                  {/* Mobile profile dropdown - between alert icon and hamburger menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="rounded-full">
+                        <User className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>
+                        <div className="flex flex-col">
+                          <span>{username}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {userRole === 'farmer' ? 'Farmer' : 'Administrator'}
+                          </span>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Logout</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Mobile menu button - on the far right */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    aria-label="Toggle navigation menu"
+                  >
+                    {isMobileMenuOpen ? (
+                      <X className="h-6 w-6" />
+                    ) : (
+                      <Menu className="h-6 w-6" />
+                    )}
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col">
-                      <span>{username}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {userRole === 'farmer' ? 'Farmer' : 'Administrator'}
-                      </span>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </div>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Mobile Navigation Menu - shown when menu is open for farmer role */}
+        {userRole === 'farmer' && isMobileMenuOpen && (
+          <div className="md:hidden bg-card border-b border-border">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              <button
+                onClick={() => {
+                  navigate('/prescribe-crop');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${isActive('/prescribe-crop') ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+              >
+                Prescribe
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/crop-history');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${isActive('/crop-history') ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+              >
+                Manage Crop
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/market-demand');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${isActive('/market-demand') ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+              >
+                Market Demand
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/history');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${isActive('/history') ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+              >
+                Reports
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content */}
