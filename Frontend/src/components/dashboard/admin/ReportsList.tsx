@@ -765,7 +765,11 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                     <div className="flex flex-col items-end gap-1">
                                                         <Badge
                                                             variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                                                            className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
+                                                            className={
+                                                                report.status === 'resolved' ? 'bg-success text-success-foreground' :
+                                                                    report.status === 'processed' ? 'bg-yellow-500 text-yellow-foreground' :
+                                                                        ''
+                                                            }
                                                         >
                                                             {report.status}
                                                         </Badge>
