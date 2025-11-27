@@ -85,7 +85,7 @@ const CropDetails = () => {
             if (item.id === itemId) {
                 // Create a clean object without undefined properties
                 const updatedItem: ChecklistItem = { ...item };
-                
+
                 // Only add detailedInstructions if it's not empty
                 if (instructions && instructions.length > 0) {
                     updatedItem.detailedInstructions = instructions;
@@ -93,7 +93,7 @@ const CropDetails = () => {
                     // Remove the property if it's empty
                     delete updatedItem.detailedInstructions;
                 }
-                
+
                 return updatedItem;
             }
             return item;
@@ -244,12 +244,12 @@ const CropDetails = () => {
                     ...item,
                     completed: newCompletedStatus,
                 };
-                
+
                 // Only add completedAt if completing the item, don't add undefined values
                 if (newCompletedStatus) {
                     updatedItem.completedAt = new Date().toISOString();
                 }
-                
+
                 return updatedItem;
             }
             return item;
@@ -626,10 +626,10 @@ const CropDetails = () => {
                         cropName={crop.name}
                     />
                 </div>
-                
+
                 {/* Go Back button at the end of the content */}
                 <div className="flex justify-end mt-6">
-                    <Button 
+                    <Button
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                         className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
                     >
