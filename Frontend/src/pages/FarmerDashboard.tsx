@@ -351,6 +351,13 @@ const FarmerDashboard = () => {
     setIsRecommendationModalOpen(true);
   };
 
+  // Function to handle modal close and clear the report text
+  const handleModalClose = () => {
+    setIsRecommendationModalOpen(false);
+    // Clear the report text when modal is closed
+    setReportText("");
+  };
+
   // Function to get crop data for the CropStatusCard
   const getCropData = () => {
     if (cropHistory.length === 0) {
@@ -732,7 +739,7 @@ const FarmerDashboard = () => {
         </Dialog>
 
         {/* AI Recommendation Modal */}
-        <Dialog open={isRecommendationModalOpen} onOpenChange={setIsRecommendationModalOpen}>
+        <Dialog open={isRecommendationModalOpen} onOpenChange={handleModalClose}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
             <RecommendationResults recommendation={recommendation} />
             {recommendation && (
@@ -740,7 +747,7 @@ const FarmerDashboard = () => {
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => setIsRecommendationModalOpen(false)}
+                  onClick={handleModalClose}
                   title="Report another problem"
                   className="w-full"
                 >
