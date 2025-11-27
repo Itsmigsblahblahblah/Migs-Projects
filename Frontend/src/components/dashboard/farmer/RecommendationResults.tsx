@@ -20,10 +20,10 @@ interface RecommendationResultsProps {
 const RecommendationResults = ({ recommendation }: RecommendationResultsProps) => {
     const [showAllRecommend, setShowAllRecommend] = useState(false);
     const [showAllAvoid, setShowAllAvoid] = useState(false);
-    
+
     // Limit for displaying items before showing "See More"
     const DISPLAY_LIMIT = 3;
-    
+
     return (
         <Card className="shadow-card h-full flex flex-col">
             <CardHeader>
@@ -66,7 +66,7 @@ const RecommendationResults = ({ recommendation }: RecommendationResultsProps) =
                         {/* Best Practices */}
                         <div className="space-y-4">
                             {recommendation.recommend.length > 0 && (
-                                <div className="p-4 bg-success/10 rounded-lg border border-success/20">
+                                <div className="p-4 bg-success/10 rounded-lg border border-success/10">
                                     <div className="flex items-center gap-2 mb-3">
                                         <CheckCircle className="h-4 w-4 text-success" />
                                         <span className="font-medium text-success">Best Practices</span>
@@ -75,7 +75,7 @@ const RecommendationResults = ({ recommendation }: RecommendationResultsProps) =
                                         {recommendation.recommend
                                             .slice(0, showAllRecommend ? recommendation.recommend.length : DISPLAY_LIMIT)
                                             .map((crop: string, index: number) => (
-                                                <Badge key={index} className="bg-success text-success-foreground">
+                                                <Badge key={index} className="bg-success text-success-foreground rounded-[5px]">
                                                     {crop}
                                                 </Badge>
                                             ))}
@@ -105,7 +105,7 @@ const RecommendationResults = ({ recommendation }: RecommendationResultsProps) =
 
                             {/* Caution / Things to Avoid */}
                             {recommendation.avoid.length > 0 && (
-                                <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                                <div className="p-4 bg-destructive/10 rounded-[10px] border border-destructive/20">
                                     <div className="flex items-center gap-2 mb-3">
                                         <AlertTriangle className="h-4 w-4 text-destructive" />
                                         <span className="font-medium text-destructive">Caution / Things to Avoid</span>
@@ -114,7 +114,7 @@ const RecommendationResults = ({ recommendation }: RecommendationResultsProps) =
                                         {recommendation.avoid
                                             .slice(0, showAllAvoid ? recommendation.avoid.length : DISPLAY_LIMIT)
                                             .map((crop: string, index: number) => (
-                                                <Badge key={index} variant="destructive">
+                                                <Badge key={index} variant="destructive" className="rounded-[5px]">
                                                     {crop}
                                                 </Badge>
                                             ))}

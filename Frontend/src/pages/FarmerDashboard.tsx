@@ -733,24 +733,18 @@ const FarmerDashboard = () => {
 
         {/* AI Recommendation Modal */}
         <Dialog open={isRecommendationModalOpen} onOpenChange={setIsRecommendationModalOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>AI Recommendation</DialogTitle>
-              <DialogDescription>
-                Smart farming guidance based on your reported issue
-              </DialogDescription>
-            </DialogHeader>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
             <RecommendationResults recommendation={recommendation} />
             {recommendation && (
-              <div className="flex justify-end mt-4">
+              <div className="p-4">
                 <Button
                   variant="outline"
-                  size="sm"
-                  onClick={handleRefresh}
-                  title="Clear recommendations"
+                  size="lg"
+                  onClick={() => setIsRecommendationModalOpen(false)}
+                  title="Report another problem"
+                  className="w-full"
                 >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Clear Recommendations
+                  Report Another Problem
                 </Button>
               </div>
             )}
