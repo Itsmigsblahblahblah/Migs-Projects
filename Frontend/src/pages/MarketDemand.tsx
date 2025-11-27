@@ -624,13 +624,13 @@ const MarketDemand = () => {
                       <div className="text-sm text-muted-foreground md:text-left text-center">
                         Showing {(currentPage - 1) * cropsPerPage + 1} to {Math.min(currentPage * cropsPerPage, filteredData.length)} of {filteredData.length} crops
                       </div>
-                      <div className="flex flex-wrap justify-center gap-1">
+                      <div className="flex flex-nowrap justify-center gap-1">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                           disabled={currentPage === 1}
-                          className="h-8 px-3 text-sm"
+                          className="h-8 px-3 text-sm flex-shrink-0"
                         >
                           Previous
                         </Button>
@@ -639,37 +639,39 @@ const MarketDemand = () => {
                         {(() => {
                           const totalPages = Math.ceil(filteredData.length / cropsPerPage);
                           const pageButtons = [];
-                          // Show more pages (7 instead of 5) to reduce ellipsis
-                          let startPage = Math.max(1, currentPage - 3);
-                          let endPage = Math.min(totalPages, startPage + 6);
+                          
+                          // Always show first page
+                          pageButtons.push(
+                            <Button
+                              key={1}
+                              variant={currentPage === 1 ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(1)}
+                              className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === 1 ? "bg-primary text-primary-foreground" : ""}`}
+                            >
+                              1
+                            </Button>
+                          );
 
-                          // Adjust startPage if we're near the end
-                          if (endPage - startPage < 6) {
-                            startPage = Math.max(1, endPage - 6);
-                          }
-
-                          // First page button
-                          if (startPage > 1) {
+                          // Show ellipsis if there are pages between first and current range
+                          if (currentPage > 3) {
                             pageButtons.push(
-                              <Button
-                                key={1}
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setCurrentPage(1)}
-                                className="h-8 w-8 p-0 text-sm"
-                              >
-                                1
-                              </Button>
+                              <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm flex-shrink-0">⋯</span>
                             );
-                            // Only show ellipsis if there's a significant gap
-                            if (startPage > 2) {
-                              pageButtons.push(
-                                <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm hidden md:inline">⋯</span>
-                              );
-                            }
                           }
 
-                          // Page number buttons
+                          // Show pages around current page (max 3 pages)
+                          let startPage = Math.max(2, currentPage - 1);
+                          let endPage = Math.min(totalPages - 1, currentPage + 1);
+                          
+                          // Adjust if we're near the beginning or end
+                          if (currentPage <= 3) {
+                            endPage = Math.min(totalPages - 1, 4);
+                          }
+                          if (currentPage >= totalPages - 2) {
+                            startPage = Math.max(2, totalPages - 3);
+                          }
+
                           for (let i = startPage; i <= endPage; i++) {
                             pageButtons.push(
                               <Button
@@ -677,28 +679,29 @@ const MarketDemand = () => {
                                 variant={currentPage === i ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => setCurrentPage(i)}
-                                className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
                               >
                                 {i}
                               </Button>
                             );
                           }
 
-                          // Last page button
-                          if (endPage < totalPages) {
-                            // Only show ellipsis if there's a significant gap
-                            if (endPage < totalPages - 1) {
-                              pageButtons.push(
-                                <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm hidden md:inline">⋯</span>
-                              );
-                            }
+                          // Show ellipsis if there are pages between current range and last
+                          if (currentPage < totalPages - 2) {
+                            pageButtons.push(
+                              <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm flex-shrink-0">⋯</span>
+                            );
+                          }
+
+                          // Always show last page if there's more than one page
+                          if (totalPages > 1) {
                             pageButtons.push(
                               <Button
                                 key={totalPages}
-                                variant="outline"
+                                variant={currentPage === totalPages ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => setCurrentPage(totalPages)}
-                                className="h-8 w-8 p-0 text-sm"
+                                className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === totalPages ? "bg-primary text-primary-foreground" : ""}`}
                               >
                                 {totalPages}
                               </Button>
@@ -713,7 +716,7 @@ const MarketDemand = () => {
                           size="sm"
                           onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredData.length / cropsPerPage)))}
                           disabled={currentPage === Math.ceil(filteredData.length / cropsPerPage)}
-                          className="h-8 px-3 text-sm"
+                          className="h-8 px-3 text-sm flex-shrink-0"
                         >
                           Next
                         </Button>
