@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
 import { Settings, Users, FileText, BarChart3, Bell } from "lucide-react";
@@ -15,8 +15,21 @@ import { useAdminDashboard } from "@/hooks/custom/useAdminDashboard";
 
 const AdminDashboard = () => {
   const [username, setUsername] = useState("");
-  const [activeSection, setActiveSection] = useState("analytics"); // Default to analytics
+  const [activeSection, setActiveSection] = useState(() => {
+    // Initialize from localStorage or URL hash, default to analytics
+    const hash = window.location.hash.replace('#', '');
+    const savedSection = localStorage.getItem('adminActiveSection');
+
+    if (hash && ['farmers', 'deletion-requests', 'analytics', 'reports', 'announcements'].includes(hash)) {
+      return hash;
+    } else if (savedSection && ['farmers', 'deletion-requests', 'analytics', 'reports', 'announcements'].includes(savedSection)) {
+      return savedSection;
+    } else {
+      return "analytics"; // Default to analytics
+    }
+  });
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const {
@@ -39,11 +52,33 @@ const AdminDashboard = () => {
     exportData
   } = useAdminDashboard();
 
+  // Update active section and persist it
+  const handleSetActiveSection = (section) => {
+    setActiveSection(section);
+    localStorage.setItem('adminActiveSection', section);
+    window.location.hash = section;
+  };
+
+  // Sync with URL hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && ['farmers', 'deletion-requests', 'analytics', 'reports', 'announcements'].includes(hash)) {
+        setActiveSection(hash);
+      }
+    };
+
+    // Check initial hash
+    handleHashChange();
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Load user data
   useEffect(() => {
     const role = localStorage.getItem('userRole');
     const user = localStorage.getItem('username');
-
-    // Removed navigation check since it's now handled by ProtectedRoute
 
     setUsername(user || 'Admin');
     loadDashboardData();
@@ -87,7 +122,7 @@ const AdminDashboard = () => {
               <Button
                 variant={activeSection === "farmers" ? "default" : "outline"}
                 className="h-20 flex flex-col gap-2"
-                onClick={() => setActiveSection("farmers")}
+                onClick={() => handleSetActiveSection("farmers")}
               >
                 <Users className="h-5 w-5" />
                 <span>Registered Farmers</span>
@@ -95,7 +130,7 @@ const AdminDashboard = () => {
               <Button
                 variant={activeSection === "deletion-requests" ? "default" : "outline"}
                 className="h-20 flex flex-col gap-2"
-                onClick={() => setActiveSection("deletion-requests")}
+                onClick={() => handleSetActiveSection("deletion-requests")}
               >
                 <FileText className="h-5 w-5" />
                 <span>Deletion Requests</span>
@@ -103,7 +138,7 @@ const AdminDashboard = () => {
               <Button
                 variant={activeSection === "analytics" ? "default" : "outline"}
                 className="h-20 flex flex-col gap-2"
-                onClick={() => setActiveSection("analytics")}
+                onClick={() => handleSetActiveSection("analytics")}
               >
                 <BarChart3 className="h-5 w-5" />
                 <span>Analytics</span>
@@ -111,7 +146,7 @@ const AdminDashboard = () => {
               <Button
                 variant={activeSection === "reports" ? "default" : "outline"}
                 className="h-20 flex flex-col gap-2"
-                onClick={() => setActiveSection("reports")}
+                onClick={() => handleSetActiveSection("reports")}
               >
                 <FileText className="h-5 w-5" />
                 <span>Reports</span>
@@ -119,7 +154,7 @@ const AdminDashboard = () => {
               <Button
                 variant={activeSection === "announcements" ? "default" : "outline"}
                 className="h-20 flex flex-col gap-2"
-                onClick={() => setActiveSection("announcements")}
+                onClick={() => handleSetActiveSection("announcements")}
               >
                 <Bell className="h-5 w-5" />
                 <span>Announcements</span>
