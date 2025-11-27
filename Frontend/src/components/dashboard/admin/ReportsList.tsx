@@ -701,8 +701,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                 size="sm"
                                                                 onClick={() => onUpdateStatus(report.id, 'resolved')}
                                                             >
-                                                                <CheckCircle className="h-4 w-4 mr-1" />
-                                                                Mark Resolved
+                                                                <CheckCircle className="h-4 w-4" />
+                                                                <span className="hidden md:inline ml-1">Mark Resolved</span>
                                                             </Button>
                                                         )}
                                                         <Button
@@ -710,8 +710,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             size="sm"
                                                             onClick={() => openReportDetail(report)}
                                                         >
-                                                            <Eye className="h-4 w-4 mr-1" />
-                                                            View Details
+                                                            <Eye className="h-4 w-4" />
+                                                            <span className="hidden md:inline ml-1">View Details</span>
                                                         </Button>
                                                         <Button
                                                             variant="outline"
@@ -719,8 +719,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             onClick={() => handleDeleteRequest(report)}
                                                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                                         >
-                                                            <Trash2 className="h-4 w-4 mr-1" />
-                                                            Delete
+                                                            <Trash2 className="h-4 w-4" />
+                                                            <span className="hidden md:inline ml-1">Delete</span>
                                                         </Button>
                                                     </div>
                                                 </div>
