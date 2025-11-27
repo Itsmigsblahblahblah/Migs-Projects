@@ -175,7 +175,8 @@ const CropHistory = () => {
             <div className="space-y-6">
                 {/* Header - Added Add Crop Button */}
                 <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
-                    <div className="flex items-center justify-between">
+                    {/* Desktop layout - buttons on the right */}
+                    <div className="hidden md:flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
                                 <ArrowLeft className="h-4 w-4" />
@@ -191,7 +192,7 @@ const CropHistory = () => {
                             </div>
                         </div>
                         {/* Add Crop Button - Moved to the right side with improved contrast */}
-                        <div className="flex flex-col md:flex-row gap-2">
+                        <div className="flex flex-row gap-2">
                             <Button
                                 onClick={() => setIsAddCropDialogOpen(true)}
                                 className="bg-white text-primary hover:bg-white/90"
@@ -203,7 +204,44 @@ const CropHistory = () => {
                                 <Button
                                     variant="outline"
                                     onClick={() => setIsUpdateCropDialogOpen(true)}
-                                    className="bg-white/10 text-white border-white/20 hover:bg-white/20 md:mt-0 mt-2"
+                                    className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+                                >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Crop
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Mobile layout - buttons below description but side by side */}
+                    <div className="md:hidden">
+                        <div className="flex items-center gap-4">
+                            <Button variant="outline" onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <Leaf className="h-6 w-6" />
+                                    <h1 className="text-2xl font-bold">Crop History</h1>
+                                </div>
+                                <p className="text-primary-foreground/90">
+                                    View and manage all your crop plantings
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex flex-row gap-2 mt-4">
+                            <Button
+                                onClick={() => setIsAddCropDialogOpen(true)}
+                                className="bg-white text-primary hover:bg-white/90 flex-1"
+                            >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Crop
+                            </Button>
+                            {crops.length > 0 && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsUpdateCropDialogOpen(true)}
+                                    className="bg-white/10 text-white border-white/20 hover:bg-white/20 flex-1"
                                 >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Crop
