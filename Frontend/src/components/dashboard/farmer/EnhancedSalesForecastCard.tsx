@@ -80,22 +80,22 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                 // Calculate values for chart data
                 const userInvestment = Number(crop.puhunan) || 0;
                 const suggestedCapital = cropInsights?.profit?.suggestedCapital || 0;
-                
+
                 // Calculate estimated yield based on user's investment
                 const estimatedYield = userInvestment === 0 ? 0 :
                     (cropInsights?.profit?.estimatedYield || 0) *
                     (userInvestment >= suggestedCapital ? 1 : (userInvestment / suggestedCapital));
-                
+
                 // Calculate potential revenue using the same ML logic as Market Demand feature
                 // Use predicted_price from demand prediction if available, otherwise fall back to averagePrice
-                const marketPrice = (cropInsights?.profit?.averageMarketPrice !== undefined && cropInsights?.profit?.averageMarketPrice > 0) 
-                  ? insights.profit.averageMarketPrice 
-                  : (cropInsights?.market?.averagePrice || 0);
+                const marketPrice = (cropInsights?.profit?.averageMarketPrice !== undefined && cropInsights?.profit?.averageMarketPrice > 0)
+                    ? insights.profit.averageMarketPrice
+                    : (cropInsights?.market?.averagePrice || 0);
                 const potentialRevenue = estimatedYield * marketPrice;
-                
+
                 // Calculate net profit based on user's investment (same as summary)
                 const chartNetProfit = userInvestment === 0 ? 0 : potentialRevenue - userInvestment;
-                
+
                 // Generate sales forecast data based on insights
                 // Distribute investment across all stages based on typical farming expense patterns
                 // Planting: 40% (seeds, initial soil prep, labor)
@@ -185,7 +185,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                 {/* Simplified Financial Flow - Step by step explanation */}
                 <div className="mb-8">
                     <h3 className="font-bold text-lg mb-4">How Your Money Works</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="p-4 bg-primary/10 rounded-lg border border-primary">
                             <div className="text-primary font-bold text-xl mb-2">1</div>
                             <p className="text-sm text-muted-foreground mb-1">Your Investment</p>
@@ -193,9 +193,9 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                             {/* Show warning if investment exceeds suggested capital */}
                             {investmentExceedsSuggested && (
                                 <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded-md">
-                                    <p className="text-xs text-yellow-800 flex items-center">
-                                        <AlertTriangle className="inline h-3 w-3 mr-1" />
-                                        Investment exceeds suggested capital by ₱{(userInvestment - suggestedCapital).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    <p className="text-xs text-yellow-800 flex flex-wrap items-center gap-1">
+                                        <AlertTriangle className="inline h-3 w-3 flex-shrink-0" />
+                                        <span>Investment exceeds suggested capital by ₱{(userInvestment - suggestedCapital).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </p>
                                 </div>
                             )}
@@ -298,12 +298,12 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                             <p className="font-bold">What Affects Your Earnings</p>
                         </div>
                         <div className="space-y-3">
-                            <div className="flex justify-between items-center pb-2 border-b">
+                            <div className="flex flex-wrap justify-between items-center pb-2 border-b gap-2">
                                 <span className="text-sm">Current Market Price</span>
                                 <span className="font-medium">₱{Number(insights?.market?.averagePrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/kg</span>
                                 <InfoTooltip content="The current average price farmers are receiving for this crop type in the market" />
                             </div>
-                            <div className="flex justify-between items-center pb-2 border-b">
+                            <div className="flex flex-wrap justify-between items-center pb-2 border-b gap-2">
                                 <span className="text-sm">Est. Price Direction</span>
                                 <span className="font-medium capitalize">{insights?.market?.trend || 'Stable'}</span>
                                 <InfoTooltip content="The predicted direction of market prices for your crop in the near future" />
@@ -320,7 +320,7 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                             <p className="font-bold">Understanding Your Est. Profit</p>
                         </div>
                         <div className="space-y-3">
-                            <div className="flex justify-between items-center pb-2 border-b">
+                            <div className="flex flex-wrap justify-between items-center pb-2 border-b gap-2">
                                 <span className="text-sm">
                                     {netProfit >= 0 ? "Est. Profit Percentage" : "Est. Loss Percentage"}
                                 </span>
@@ -329,7 +329,7 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                                 </span>
                                 <InfoTooltip content="Your estimated return on investment (ROI) percentage for this crop" />
                             </div>
-                            <div className="flex justify-between items-center pb-2 border-b">
+                            <div className="flex flex-wrap justify-between items-center pb-2 border-b gap-2">
                                 <span className="text-sm">
                                     {netProfit >= 0 ? "Est. Profit Status" : "Est. Loss Status"}
                                 </span>
@@ -352,7 +352,7 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                 {/* Improved Visualization */}
                 <div className="mt-6">
                     <h3 className="font-bold text-lg mb-4">Your Farming Journey</h3>
-                    <div className="h-80 w-full">
+                    <div className="h-64 sm:h-80 w-full">
                         <ChartContainer config={salesChartConfig} className="h-full w-full">
                             <BarChart
                                 accessibilityLayer
@@ -429,7 +429,7 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                             Positive bars (green) show profit, while negative bars (red) show losses.
                         </p>
                         <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                            <p className="text-xs text-yellow-500 font-medium">Disclaimer: This forecast is based on historical data and market trends. Actual results may vary due to factors such as weather conditions, market fluctuations, and other unforeseen circumstances. This projection should be used as a guide only and not as a guarantee of income.</p>
+                            <p className="text-xs text-yellow-500 font-medium break-words">Disclaimer: This forecast is based on historical data and market trends. Actual results may vary due to factors such as weather conditions, market fluctuations, and other unforeseen circumstances. This projection should be used as a guide only and not as a guarantee of income.</p>
                         </div>
                     </div>
                 </div>
