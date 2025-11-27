@@ -220,17 +220,17 @@ const FarmerDashboard = () => {
 
     // Extract current alerts
     let currentAlerts = weatherData.currentAlerts || [];
-    
+
     // Add today's date to current alerts
     currentAlerts = currentAlerts.map((alert: any) => ({
       ...alert,
-      date: new Date().toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric' 
+      date: new Date().toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
       })
     }));
-    
+
     // Extract forecast alerts for the next few days
     let forecastAlerts: any[] = [];
     if (weatherData.extendedForecast && Array.isArray(weatherData.extendedForecast)) {
@@ -241,25 +241,25 @@ const FarmerDashboard = () => {
           // Add date information to forecast alerts
           const alertsWIthDate = day.alerts.map((alert: any) => ({
             ...alert,
-            date: new Date(day.date).toLocaleDateString('en-US', { 
-              weekday: 'short', 
-              month: 'short', 
-              day: 'numeric' 
+            date: new Date(day.date).toLocaleDateString('en-US', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric'
             })
           }));
           forecastAlerts.push(...alertsWIthDate);
         }
       }
     }
-    
+
     // Combine current and forecast alerts
     const allAlerts = [...currentAlerts, ...forecastAlerts];
-    
+
     // Remove duplicates based on description
-    const uniqueAlerts = allAlerts.filter((alert, index, self) => 
+    const uniqueAlerts = allAlerts.filter((alert, index, self) =>
       index === self.findIndex(a => a.description === alert.description)
     );
-    
+
     // Count unread alerts
     let unreadCount = 0;
     uniqueAlerts.forEach(alert => {
@@ -268,7 +268,7 @@ const FarmerDashboard = () => {
         unreadCount++;
       }
     });
-    
+
     setUnreadWeatherAlerts(unreadCount);
   }, [weatherData, userReadStatus]);
 
@@ -469,12 +469,12 @@ const FarmerDashboard = () => {
           ...item,
           completed: newCompletedStatus,
         };
-        
+
         // Only add completedAt if completing the item
         if (newCompletedStatus) {
           updatedItem.completedAt = new Date().toISOString();
         }
-        
+
         return updatedItem;
       }
       return item;

@@ -159,11 +159,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   // Calculate total unread alerts
   const totalUnreadAlerts = () => {
     if (userRole !== 'farmer') return 0;
-    
+
     let count = unreadMessages; // Admin messages
     count += unreadAnnouncements; // Announcements
     count += unreadWeatherAlerts; // Weather alerts
-    
+
     return count;
   };
 
@@ -172,13 +172,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('username');
     localStorage.removeItem('userId');
-    
+
     // Clear market demand cache
     clearMarketDemandCache();
-    
+
     // Close dialog
     setIsLogoutDialogOpen(false);
-    
+
     // Navigate to login
     navigate('/login');
   };
@@ -220,7 +220,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo - now acts as Dashboard link */}
-            <div 
+            <div
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => navigate(userRole === 'farmer' ? '/farmer' : '/admin')}
             >
@@ -235,53 +235,37 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             {/* Navigation - only for farmer role */}
             {userRole === 'farmer' && (
               <nav className="hidden md:flex items-center space-x-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   onClick={() => navigate('/prescribe-crop')}
-                  className={isActive('/prescribe-crop')
-                    ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90 hover:text-primary-foreground"
-                    : "text-foreground hover:bg-accent hover:text-accent-foreground"}
+                  className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/prescribe-crop') ? 'text-yellow-500' : ''}`}
                 >
-                  <SproutIcon className="h-4 w-4 mr-2" />
-                  Prescribe
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
+                  <span className="relative z-10">Prescribe</span>
+                  <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${isActive('/prescribe-crop') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                </button>
+
+                <button
                   onClick={() => navigate('/crop-history')}
-                  className={isActive('/crop-history')
-                    ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90 hover:text-primary-foreground"
-                    : "text-foreground hover:bg-accent hover:text-accent-foreground"}
+                  className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/crop-history') ? 'text-yellow-500' : ''}`}
                 >
-                  <Leaf className="h-4 w-4 mr-2" />
-                  Manage
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
+                  <span className="relative z-10">Manage Crop</span>
+                  <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${isActive('/crop-history') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                </button>
+
+                <button
                   onClick={() => navigate('/market-demand')}
-                  className={isActive('/market-demand')
-                    ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90 hover:text-primary-foreground"
-                    : "text-foreground hover:bg-accent hover:text-accent-foreground"}
+                  className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/market-demand') ? 'text-yellow-500' : ''}`}
                 >
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  Market Demand
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
+                  <span className="relative z-10">Market Demand</span>
+                  <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${isActive('/market-demand') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                </button>
+
+                <button
                   onClick={() => navigate('/history')}
-                  className={isActive('/history')
-                    ? "bg-gradient-primary text-primary-foreground hover:bg-gradient-primary/90 hover:text-primary-foreground"
-                    : "text-foreground hover:bg-accent hover:text-accent-foreground"}
+                  className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/history') ? 'text-yellow-500' : ''}`}
                 >
-                  <History className="h-4 w-4 mr-2" />
-                  Reports
-                </Button>
+                  <span className="relative z-10">Reports</span>
+                  <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${isActive('/history') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                </button>
               </nav>
             )}
 
