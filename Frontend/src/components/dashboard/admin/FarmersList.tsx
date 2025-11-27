@@ -153,9 +153,10 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
 
                         {/* Pagination Controls */}
                         {farmers.length > 0 && (
-                            <div className="border-t pt-1 px-4 mt-auto" style={{ paddingBottom: '0px' }}>
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
+                            <div className="border-t pt-4 mt-auto">
+                                {/* Desktop layout - text on left, pagination on right */}
+                                <div className="hidden md:flex items-center justify-between">
+                                    <div className="text-sm text-muted-foreground">
                                         Showing {startIndex + 1} to {Math.min(endIndex, filteredFarmers.length)} of {filteredFarmers.length} farmers
                                     </div>
                                     <div className="flex space-x-1">
@@ -223,6 +224,106 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                                                 if (endPage < totalPages - 1) {
                                                     pageButtons.push(
                                                         <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                                                    );
+                                                }
+                                                pageButtons.push(
+                                                    <Button
+                                                        key={totalPages}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setCurrentPage(totalPages)}
+                                                        className="h-8 w-8 p-0 text-sm"
+                                                    >
+                                                        {totalPages}
+                                                    </Button>
+                                                );
+                                            }
+
+                                            return pageButtons;
+                                        })()}
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                            disabled={currentPage === totalPages}
+                                            className="h-8 px-3 text-sm"
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Mobile layout - text and pagination both centered, pagination below text */}
+                                <div className="md:hidden space-y-4">
+                                    <div className="text-sm text-muted-foreground text-center">
+                                        Showing {startIndex + 1} to {Math.min(endIndex, filteredFarmers.length)} of {filteredFarmers.length} farmers
+                                    </div>
+                                    <div className="flex justify-center space-x-1">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                            className="h-8 px-3 text-sm"
+                                        >
+                                            Previous
+                                        </Button>
+
+                                        {/* Page Number Buttons */}
+                                        {(() => {
+                                            const pageButtons = [];
+                                            // Show fewer pages on mobile to prevent overflow
+                                            let startPage = Math.max(1, currentPage - 1);
+                                            let endPage = Math.min(totalPages, startPage + 2);
+
+                                            // Adjust startPage if we're near the end
+                                            if (endPage - startPage < 2) {
+                                                startPage = Math.max(1, endPage - 2);
+                                            }
+
+                                            // First page button
+                                            if (startPage > 1) {
+                                                pageButtons.push(
+                                                    <Button
+                                                        key={1}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setCurrentPage(1)}
+                                                        className="h-8 w-8 p-0 text-sm"
+                                                    >
+                                                        1
+                                                    </Button>
+                                                );
+                                                // Only show ellipsis if there's a significant gap
+                                                if (startPage > 2) {
+                                                    pageButtons.push(
+                                                        <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm hidden sm:inline">⋯</span>
+                                                    );
+                                                }
+                                            }
+
+                                            // Page number buttons
+                                            for (let i = startPage; i <= endPage; i++) {
+                                                pageButtons.push(
+                                                    <Button
+                                                        key={i}
+                                                        variant={currentPage === i ? "default" : "outline"}
+                                                        size="sm"
+                                                        onClick={() => setCurrentPage(i)}
+                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                                    >
+                                                        {i}
+                                                    </Button>
+                                                );
+                                            }
+
+                                            // Last page button
+                                            if (endPage < totalPages) {
+                                                // Only show ellipsis if there's a significant gap
+                                                if (endPage < totalPages - 1) {
+                                                    pageButtons.push(
+                                                        <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm hidden sm:inline">⋯</span>
                                                     );
                                                 }
                                                 pageButtons.push(
