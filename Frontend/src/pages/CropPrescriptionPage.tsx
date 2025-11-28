@@ -95,7 +95,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   // Get data from location state if not passed as props
   const locationState: any = location.state || {};
   const effectiveFarmerProfile = farmerProfile || locationState.farmerProfile;
-  const effectiveWeatherData = weatherData || locationState.weatherData;
+  // Ensure weatherData is properly retrieved from location state or localStorage
+  const effectiveWeatherData = weatherData || locationState.weatherData || JSON.parse(localStorage.getItem('weatherData') || 'null');
 
   const [selectedCrop, setSelectedCrop] = useState<PrescriptionDetails | null>(null);
   // Add state for loading and recommendations
