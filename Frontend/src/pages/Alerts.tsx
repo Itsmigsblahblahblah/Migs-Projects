@@ -170,7 +170,10 @@ const Alerts = () => {
           console.error("Error fetching admin messages:", error);
 
           // If it's an index error, fall back to simple query without orderBy
-          if (error.code === 'failed-precondition' || (error.message && error.message.includes('index'))) {
+          if (error.code === 'failed-precondition' || 
+              (error.message && error.message.includes('index')) ||
+              (error.code === 'resource-exhausted' && error.message && error.message.includes('composite index')) ||
+              (error.message && error.message.includes('FirebaseError') && error.message.includes('requires an index'))) {
             const fallbackMessages: AdminMessage[] = [];
             simpleSnapshot.docs.forEach((doc) => {
               fallbackMessages.push({
@@ -466,6 +469,21 @@ const Alerts = () => {
 
   // Handle alert click to open dialog
   const handleAlertClick = (alert: AlertItem) => {
+    // Check if this is a message linked to a report
+    if (alert.type === 'message') {
+      // Find the corresponding admin message to get the reportId
+      const messageId = alert.id.replace('message-', '');
+      const adminMessage = adminMessages.find(msg => msg.id === messageId);
+      
+      // If this message is linked to a report, navigate to the report detail page
+      if (adminMessage && adminMessage.reportId) {
+        // Navigate to the report detail page
+        navigate(`/farmer/reports/${adminMessage.reportId}`);
+        return;
+      }
+    }
+    
+    // For all other alerts, open the dialog as before
     setSelectedAlert(alert);
     setIsDialogOpen(true);
 
