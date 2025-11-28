@@ -51,10 +51,12 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
 
     // Fetch admin messages for this report
     useEffect(() => {
+        // Query without orderBy to avoid index issues
+        // We'll sort manually instead
         const messagesQuery = query(
             collection(db, "adminMessages"),
-            where("reportId", "==", report.id),
-            orderBy("timestamp", "asc")
+            where("reportId", "==", report.id)
+            // Removed orderBy to avoid composite index requirement
         );
 
         const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
@@ -65,6 +67,21 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                     ...doc.data()
                 } as AdminMessage);
             });
+            
+            // Sort by timestamp manually in ascending order
+            messagesData.sort((a, b) => {
+                if (a.timestamp && b.timestamp) {
+                    try {
+                        const dateA = a.timestamp.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+                        const dateB = b.timestamp.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+                        return dateA.getTime() - dateB.getTime(); // Ascending order
+                    } catch (e) {
+                        return 0;
+                    }
+                }
+                return 0;
+            });
+            
             setAdminMessages(messagesData);
         });
 
