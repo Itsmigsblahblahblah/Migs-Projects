@@ -149,11 +149,12 @@ const Alerts = () => {
 
     getDocs(simpleQuery).then((simpleSnapshot) => {
       if (simpleSnapshot.size > 0) {
-        // If we get results, set up the real-time listener with orderBy
+        // If we get results, set up the real-time listener without orderBy to avoid index issues
+        // We'll sort manually instead
         const messagesQuery = query(
           collection(db, "adminMessages"),
-          where("receiverId", "==", userId),
-          orderBy("timestamp", "desc")
+          where("receiverId", "==", userId)
+          // Removed orderBy to avoid composite index requirement
         );
 
         const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
@@ -164,16 +165,39 @@ const Alerts = () => {
               ...doc.data()
             } as AdminMessage);
           });
+          
+          // Sort by timestamp manually
+          messagesData.sort((a, b) => {
+            if (a.timestamp && b.timestamp) {
+              try {
+                const dateA = a.timestamp.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+                const dateB = b.timestamp.toDate ? b.timestamp.toDate() : new Date(b.timestamp);
+                return dateB.getTime() - dateA.getTime(); // Descending order
+              } catch (e) {
+                return 0;
+              }
+            }
+            return 0;
+          });
+          
           setAdminMessages(messagesData);
           setMessagesLoading(false);
         }, (error) => {
           console.error("Error fetching admin messages:", error);
 
           // If it's an index error, fall back to simple query without orderBy
-          if (error.code === 'failed-precondition' || 
+          // Log the full error for debugging
+          console.log("Full error object:", JSON.stringify(error, null, 2));
+          
+          // Check for various types of index errors
+          const isIndexError = error.code === 'failed-precondition' || 
               (error.message && error.message.includes('index')) ||
               (error.code === 'resource-exhausted' && error.message && error.message.includes('composite index')) ||
-              (error.message && error.message.includes('FirebaseError') && error.message.includes('requires an index'))) {
+              (error.message && error.message.includes('FirebaseError') && error.message.includes('requires an index')) ||
+              (error.code === 'permission-denied' && error.message && error.message.includes('Missing or insufficient permissions')) ||
+              (error.message && error.message.includes('query requires an index'));
+          
+          if (isIndexError) {
             const fallbackMessages: AdminMessage[] = [];
             simpleSnapshot.docs.forEach((doc) => {
               fallbackMessages.push({
@@ -200,9 +224,14 @@ const Alerts = () => {
           }
 
           setMessagesLoading(false);
+          // Check if this is specifically an index error that provides a creation link
+          let errorMessage = error.message || 'Unknown error';
+          if (errorMessage.includes('query requires an index') && errorMessage.includes('https://console.firebase.google.com')) {
+            errorMessage += '. The system will continue to work but may be slower. An administrator can fix this by creating the required index.';
+          }
           toast({
             title: "Error",
-            description: "Failed to load messages.",
+            description: `Failed to load messages: ${errorMessage}`,
             variant: "destructive",
           });
         });
@@ -216,9 +245,14 @@ const Alerts = () => {
     }).catch((error) => {
       console.error("Error in simple query:", error);
       setMessagesLoading(false);
+      // Check if this is specifically an index error that provides a creation link
+      let errorMessage = error.message || 'Unknown error';
+      if (errorMessage.includes('query requires an index') && errorMessage.includes('https://console.firebase.google.com')) {
+        errorMessage += '. The system will continue to work but may be slower. An administrator can fix this by creating the required index.';
+      }
       toast({
         title: "Error",
-        description: "Failed to load messages.",
+        description: `Failed to load messages: ${errorMessage}`,
         variant: "destructive",
       });
     });
