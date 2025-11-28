@@ -55,6 +55,7 @@ const AddCropDialog = ({
     const [cropSearchTerm, setCropSearchTerm] = useState(newCrop.name || ""); // For filtering crops in dropdown
     const [cropPrices, setCropPrices] = useState<{ [key: string]: any }>({}); // For storing crop prices
     const [loadingPrices, setLoadingPrices] = useState(true); // For tracking if prices are loading
+    const [isSubmitting, setIsSubmitting] = useState(false); // For preventing multiple submissions
     const cropDropdownRef = useRef<HTMLDivElement>(null);
 
     // Filter crops based on search term
@@ -99,10 +100,12 @@ const AddCropDialog = ({
     }, []);
 
     const handleAddCropSubmit = async () => {
+        setIsSubmitting(true);
         const result = await handleAddCrop();
         if (result) {
             onOpenChange(false);
         }
+        setIsSubmitting(false);
     };
 
     // Handle crop selection
@@ -387,7 +390,7 @@ const AddCropDialog = ({
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Cancel
                     </Button>
-                    <Button onClick={handleAddCropSubmit}>
+                    <Button onClick={handleAddCropSubmit} disabled={isSubmitting}>
                         Add Crop
                     </Button>
                 </DialogFooter>
