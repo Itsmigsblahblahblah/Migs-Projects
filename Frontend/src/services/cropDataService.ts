@@ -363,11 +363,30 @@ export const calculateProfitProjection = async (
   puhunan: number
 ) => {
   try {
+    console.log('calculateProfitProjection called with:', { cropName, landArea, puhunan });
+    
+    // Validate inputs
+    if (!landArea || landArea <= 0) {
+      console.warn('Invalid landArea provided:', landArea);
+      return {
+        estimatedYield: 0,
+        potentialRevenue: 0,
+        totalCosts: 0,
+        netProfit: 0,
+        profitMargin: 0,
+        marketTrend: 'unknown',
+        averageMarketPrice: 0,
+        suggestedCapital: 0
+      };
+    }
+    
     // Get market price information from the backend API
     const marketInfo = await getMarketPriceInfo(cropName);
+    console.log('Market info:', marketInfo);
     
     // Get demand prediction for more accurate pricing
     const historicalData = await getVegetableHistoricalData(cropName);
+    console.log('Historical data length:', historicalData?.length);
     
     let predictedPrice = marketInfo.averagePrice;
     if (historicalData && historicalData.length > 0) {
@@ -384,6 +403,7 @@ export const calculateProfitProjection = async (
           annualPrices,
           months
         );
+        console.log('Demand prediction:', demandPrediction);
         
         // Use predicted price if available
         if (demandPrediction && demandPrediction.predicted_price) {
@@ -396,18 +416,22 @@ export const calculateProfitProjection = async (
     }
     
     const seedInfo = await getSeedPriceInfo(cropName);
+    console.log('Seed info:', seedInfo);
     
     // Estimate yield (this would be more sophisticated in a real implementation)
     // Assuming 10 tons per hectare average yield
     const estimatedYieldPerHectare = 10000; // kg per hectare
     const totalEstimatedYield = landArea * estimatedYieldPerHectare;
+    console.log('Total estimated yield:', totalEstimatedYield);
     
     // Calculate suggested capital to avoid shortage
     // This ensures at least 20% buffer over the minimum required capital
+    console.log('Calculating capital - landArea:', landArea, 'seedInfo.seedPricePerKilo:', seedInfo.seedPricePerKilo);
     const seedCostPerHectare = seedInfo.seedPricePerKilo * 5;
     const totalSeedCost = landArea * seedCostPerHectare;
     const minimumRequiredCapital = totalSeedCost / 0.3; // If 30% goes to seed costs, then 70% is other costs
     const suggestedCapital = minimumRequiredCapital * 1.2; // Add 20% buffer
+    console.log('Calculated capital - seedCostPerHectare:', seedCostPerHectare, 'totalSeedCost:', totalSeedCost, 'minimumRequiredCapital:', minimumRequiredCapital, 'suggestedCapital:', suggestedCapital);
     
     // Calculate values based on user's investment
     // If investment is 0, yield and profit should also be 0
@@ -418,14 +442,17 @@ export const calculateProfitProjection = async (
     
     // Calculate potential revenue using predicted price
     const potentialRevenue = estimatedYield * predictedPrice; // Revenue = yield (kg) * price (PHP/kg)
+    console.log('Potential revenue:', potentialRevenue);
     
     // Calculate net profit based on user's investment
     // If investment is 0, profit should also be 0
     const netProfit = userInvestment === 0 ? 0 : potentialRevenue - userInvestment;
+    console.log('Net profit:', netProfit);
     
     const profitMargin = potentialRevenue > 0 ? (netProfit / potentialRevenue) * 100 : 0;
+    console.log('Profit margin:', profitMargin);
     
-    return {
+    const result = {
       estimatedYield: estimatedYield,
       potentialRevenue,
       totalCosts: userInvestment, // Total costs equal user's investment
@@ -435,6 +462,9 @@ export const calculateProfitProjection = async (
       averageMarketPrice: predictedPrice, // Use predicted price instead of average
       suggestedCapital: suggestedCapital
     };
+    
+    console.log('Returning profit projection result:', result);
+    return result;
   } catch (error) {
     console.error('Error calculating profit projection:', error);
     return {

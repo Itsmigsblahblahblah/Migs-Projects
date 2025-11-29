@@ -628,7 +628,7 @@ const CropDetails = () => {
                 </div>
 
                 <div className="w-full">
-                    <EnhancedSalesForecastCard crop={crop} marketData={marketData} />
+                    <EnhancedSalesForecastCard crop={crop} />
                 </div>
 
                 <div className="w-full" ref={maintenanceRef}>

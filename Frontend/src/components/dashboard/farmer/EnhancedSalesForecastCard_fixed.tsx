@@ -31,7 +31,6 @@ interface SalesData {
 
 interface EnhancedSalesForecastCardProps {
     crop: any;
-    marketData?: any; // Added optional marketData prop
 }
 
 // Chart configuration for ShadCN chart
@@ -50,7 +49,7 @@ const salesChartConfig = {
     },
 } satisfies ChartConfig;
 
-const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCardProps) => {
+const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => {
     const [insights, setInsights] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [salesForecastData, setSalesForecastData] = useState<SalesData[]>([]);
@@ -62,18 +61,13 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
             try {
                 setLoading(true);
 
-                // Use provided marketData or fetch new insights
-                let cropInsights;
-                if (marketData) {
-                    cropInsights = marketData;
-                } else {
-                    cropInsights = await getCropInsights(
-                        crop.name,
-                        crop.soilType,
-                        crop.landArea,
-                        crop.puhunan
-                    );
-                }
+                // Always fetch fresh insights to ensure we have up-to-date calculations based on current investment
+                const cropInsights = await getCropInsights(
+                    crop.name,
+                    crop.soilType,
+                    crop.landArea,
+                    crop.puhunan
+                );
 
                 setInsights(cropInsights);
 
@@ -110,7 +104,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
         if (crop) {
             fetchInsights();
         }
-    }, [crop, marketData]);
+    }, [crop?.name, crop?.puhunan, crop?.landArea, crop?.soilType]);
 
     if (loading) {
         return (
@@ -138,7 +132,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
     // If investment is 0, yield should also be 0
     const estimatedYield = userInvestment === 0 ? 0 :
         (insights?.profit?.estimatedYield || 0) *
-        (userInvestment >= suggestedCapital ? 1 : (userInvestment / suggestedCapital));
+        (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 ? 1 : (userInvestment / suggestedCapital));
 
     // Calculate potential revenue
     const potentialRevenue = estimatedYield * (insights?.market?.averagePrice || 0);

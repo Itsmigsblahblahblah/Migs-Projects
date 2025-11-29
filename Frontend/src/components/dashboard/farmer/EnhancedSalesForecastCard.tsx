@@ -31,7 +31,6 @@ interface SalesData {
 
 interface EnhancedSalesForecastCardProps {
     crop: any;
-    marketData?: any; // Added optional marketData prop
 }
 
 // Chart configuration for ShadCN chart
@@ -50,7 +49,7 @@ const salesChartConfig = {
     },
 } satisfies ChartConfig;
 
-const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCardProps) => {
+const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => {
     const [insights, setInsights] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [salesForecastData, setSalesForecastData] = useState<SalesData[]>([]);
@@ -61,20 +60,22 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
         const fetchInsights = async () => {
             try {
                 setLoading(true);
+                console.log('Fetching insights for crop:', crop?.name, 'with investment:', crop?.puhunan);
+                console.log('Crop data:', crop);
+                console.log('Crop landArea:', crop?.landArea, 'type:', typeof crop?.landArea);
+                console.log('Crop soilType:', crop?.soilType);
+                console.log('Crop puhunan:', crop?.puhunan, 'type:', typeof crop?.puhunan);
 
-                // Use provided marketData or fetch new insights
-                let cropInsights;
-                if (marketData) {
-                    cropInsights = marketData;
-                } else {
-                    cropInsights = await getCropInsights(
-                        crop.name,
-                        crop.soilType,
-                        crop.landArea,
-                        crop.puhunan
-                    );
-                }
+                // Always fetch fresh insights to ensure we have up-to-date calculations based on current investment
+                console.log('Fetching new insights');
+                const cropInsights = await getCropInsights(
+                    crop.name,
+                    crop.soilType,
+                    crop.landArea,
+                    crop.puhunan
+                );
 
+                console.log('Received cropInsights:', cropInsights);
                 setInsights(cropInsights);
 
                 // Calculate values for chart data
@@ -84,7 +85,9 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                 // Calculate estimated yield based on user's investment
                 const estimatedYield = userInvestment === 0 ? 0 :
                     (cropInsights?.profit?.estimatedYield || 0) *
-                    (userInvestment >= suggestedCapital ? 1 : (userInvestment / suggestedCapital));
+                    (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 ? 1 : (userInvestment / suggestedCapital));
+                
+                console.log('Calculating yield - userInvestment:', userInvestment, 'suggestedCapital:', suggestedCapital, 'cropInsights.estimatedYield:', cropInsights?.profit?.estimatedYield, 'calculated estimatedYield:', estimatedYield);
 
                 // Calculate potential revenue using the same ML logic as Market Demand feature
                 // Use predicted_price from demand prediction if available, otherwise fall back to averagePrice
@@ -133,7 +136,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
         if (crop) {
             fetchInsights();
         }
-    }, [crop, marketData]);
+    }, [crop?.name, crop?.puhunan, crop?.landArea, crop?.soilType]);
 
     if (loading) {
         return (
@@ -156,12 +159,17 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
     // Calculate values based on user's investment
     const userInvestment = Number(crop.puhunan) || 0;
     const suggestedCapital = insights?.profit?.suggestedCapital || 0;
+    
+    console.log('Render calculations - crop.puhunan:', crop.puhunan, 'userInvestment:', userInvestment, 'suggestedCapital:', suggestedCapital);
+    console.log('Render calculations - insights.profit:', insights?.profit);
 
     // Calculate estimated yield based on user's investment
     // If investment is 0, yield should also be 0
     const estimatedYield = userInvestment === 0 ? 0 :
         (insights?.profit?.estimatedYield || 0) *
-        (userInvestment >= suggestedCapital ? 1 : (userInvestment / suggestedCapital));
+        (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 ? 1 : (userInvestment / suggestedCapital));
+    
+    console.log('Render - userInvestment:', userInvestment, 'suggestedCapital:', suggestedCapital, 'insights.estimatedYield:', insights?.profit?.estimatedYield, 'calculated estimatedYield:', estimatedYield);
 
     // Calculate potential revenue
     const potentialRevenue = estimatedYield * (insights?.market?.averagePrice || 0);
