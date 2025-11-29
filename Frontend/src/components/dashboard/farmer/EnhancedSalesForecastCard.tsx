@@ -89,7 +89,7 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                 // Calculate potential revenue using the same ML logic as Market Demand feature
                 // Use predicted_price from demand prediction if available, otherwise fall back to averagePrice
                 const marketPrice = (cropInsights?.profit?.averageMarketPrice !== undefined && cropInsights?.profit?.averageMarketPrice > 0)
-                    ? insights.profit.averageMarketPrice
+                    ? cropInsights?.profit?.averageMarketPrice
                     : (cropInsights?.market?.averagePrice || 0);
                 const potentialRevenue = estimatedYield * marketPrice;
 
@@ -251,7 +251,7 @@ Total Suggested Capital: ₱${Number(suggestedCapital || 0).toLocaleString('en-U
 
                         <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500">
                             <div className="flex justify-between items-start">
-                                <p className="text-sm text-muted-foreground mb-1">Est. Expected Harvest</p>
+                                <p className="text-sm text-muted-foreground mb-1">Est. Yield Harvest</p>
                                 <InfoTooltip content={`The estimated yield you can expect from your crop based on land area, soil quality, and farming practices.
 
 Factors affecting yield:
@@ -266,7 +266,7 @@ ${userInvestment === 0 ? 'Note: Harvest is 0 because investment is 0.' :
                                             'Note: Harvest is at optimal level based on your investment.'}`} />
                             </div>
                             <p className="text-xl font-bold text-blue-500">{estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</p>
-                            <p className="text-xs mt-2 text-muted-foreground">This is your est. expected harvest</p>
+                            <p className="text-xs mt-2 text-muted-foreground">This is your est. yield harvest</p>
                         </div>
 
                         <div className={`p-4 rounded-lg border ${netProfit >= 0 ? (userInvestment < suggestedCapital ? 'bg-destructive/10 border-destructive' : 'bg-success/10 border-success') : 'bg-destructive/10 border-destructive'}`}>

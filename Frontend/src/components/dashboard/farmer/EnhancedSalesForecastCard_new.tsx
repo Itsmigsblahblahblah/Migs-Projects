@@ -88,14 +88,14 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
                     {
                         stage: "Growth",
                         puhunan: crop.puhunan * 0.2, // Additional investment
-                        grossSales: cropInsights.profit.potentialRevenue * 0.3,
-                        netProfit: (cropInsights.profit.potentialRevenue * 0.3) - (crop.puhunan * 1.2)
+                        grossSales: cropInsights?.profit?.potentialRevenue * 0.3 || 0,
+                        netProfit: (cropInsights?.profit?.potentialRevenue * 0.3 || 0) - (crop.puhunan * 1.2)
                     },
                     {
                         stage: "Harvest",
                         puhunan: 0,
-                        grossSales: cropInsights.profit.potentialRevenue,
-                        netProfit: cropInsights.profit.netProfit
+                        grossSales: cropInsights?.profit?.potentialRevenue || 0,
+                        netProfit: cropInsights?.profit?.netProfit || 0
                     }
                 ];
 
@@ -193,9 +193,9 @@ const EnhancedSalesForecastCard = ({ crop, marketData }: EnhancedSalesForecastCa
 
                         <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500">
                             <div className="text-blue-500 font-bold text-xl mb-2">{userInvestment < suggestedCapital ? '3' : '2'}</div>
-                            <p className="text-sm text-muted-foreground mb-1">Est. Expected Harvest</p>
+                            <p className="text-sm text-muted-foreground mb-1">Est. Yield Harvest</p>
                             <p className="text-xl font-bold text-blue-500">{estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</p>
-                            <p className="text-xs mt-2 text-muted-foreground">This is your est. expected harvest</p>
+                            <p className="text-xs mt-2 text-muted-foreground">This is your est. yield harvest</p>
                             <InfoTooltip content={`The estimated yield you can expect from your crop based on land area, soil quality, and farming practices.
                             
                             Factors affecting yield:
