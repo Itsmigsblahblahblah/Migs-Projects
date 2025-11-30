@@ -1,7 +1,3 @@
-"""
-API routes for serving CSV data files
-"""
-
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 import pandas as pd
@@ -58,6 +54,21 @@ async def get_seed_prices():
         return FileResponse(file_path, media_type='text/csv', filename='seed.csv')
     except Exception as e:
         logger.error(f"Error serving seed prices data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error serving file: {str(e)}")
+
+@app.get("/crop_yield_ranges.csv")
+async def get_crop_yield_ranges():
+    """
+    Serve the crop yield ranges dataset CSV file
+    """
+    try:
+        file_path = os.path.join("Data", "crop yield ranges.csv")
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        return FileResponse(file_path, media_type='text/csv', filename='crop_yield_ranges.csv')
+    except Exception as e:
+        logger.error(f"Error serving crop yield ranges data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error serving file: {str(e)}")
 
 @app.get("/crop-data/{crop_name}")

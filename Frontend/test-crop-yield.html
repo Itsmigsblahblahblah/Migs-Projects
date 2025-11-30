@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crop Yield Test</title>
+    <script type="module">
+        // Import the crop yield service
+        import { calculateEstimatedYield } from './src/services/cropYieldService.js';
+        
+        async function testCropYield() {
+            const resultsDiv = document.getElementById('results');
+            try {
+                // Test with a few different crops
+                const testCrops = [
+                    'CABBAGE (REPOLYO)',
+                    'KANGKONG (WATER SPINACH)',
+                    'KAMATIS (TOMATO)',
+                    'NON-EXISTENT CROP'
+                ];
+                
+                const landArea = 1.0; // 1 hectare
+                
+                let results = '';
+                for (const crop of testCrops) {
+                    results += `<p>Testing crop: ${crop}</p>`;
+                    const estimatedYield = await calculateEstimatedYield(crop, landArea);
+                    results += `<p>Estimated yield for ${landArea} hectare(s): ${estimatedYield} kg</p>`;
+                    results += '<hr>';
+                }
+                
+                resultsDiv.innerHTML = results;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error testing crop yield calculation: ${error.message}</p>`;
+            }
+        }
+        
+        // Run the test when the page loads
+        window.onload = testCropYield;
+    </script>
+</head>
+<body>
+    <h1>Crop Yield Calculation Test</h1>
+    <div id="results">
+        <p>Loading...</p>
+    </div>
+</body>
+</html>

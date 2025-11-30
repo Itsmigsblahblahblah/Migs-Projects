@@ -3,6 +3,7 @@
  */
 import { parseCSV, findMatchingRecords, loadCSV } from '@/utils/csvParser';
 import { getVegetableDemandPrediction, getVegetableHistoricalData } from '@/services/vegetableDemandService';
+import { calculateEstimatedYield, getCropYieldRanges } from '@/services/cropYieldService';
 
 // API endpoints
 const SOIL_DATA_ENDPOINT = '/data/brgy_soil_dataset.csv';
@@ -418,19 +419,33 @@ export const calculateProfitProjection = async (
     const seedInfo = await getSeedPriceInfo(cropName);
     console.log('Seed info:', seedInfo);
     
-    // Estimate yield (this would be more sophisticated in a real implementation)
-    // Assuming 10 tons per hectare average yield
-    const estimatedYieldPerHectare = 10000; // kg per hectare
-    const totalEstimatedYield = landArea * estimatedYieldPerHectare;
+    // Estimate yield based on crop-specific yield ranges
+    const totalEstimatedYield = await calculateEstimatedYield(cropName, landArea);
     console.log('Total estimated yield:', totalEstimatedYield);
     
-    // Calculate suggested capital to avoid shortage
-    // This ensures at least 20% buffer over the minimum required capital
-    console.log('Calculating capital - landArea:', landArea, 'seedInfo.seedPricePerKilo:', seedInfo.seedPricePerKilo);
-    const seedCostPerHectare = seedInfo.seedPricePerKilo * 5;
+    // Calculate suggested capital based on maximum yield range of the specific crop
+    // First, get the max yield range for this crop
+    const yieldRanges = await getCropYieldRanges(cropName);
+    const maxYieldPer0_1Ha = yieldRanges.maxKGPer0_1Ha;
+    
+    // Calculate max yield for the given land area
+    const landAreaIn0_1Ha = landArea * 10;
+    const maxTotalYield = landAreaIn0_1Ha * maxYieldPer0_1Ha;
+    
+    // Base capital calculation on seed costs for maximum yield
+    // We assume that achieving maximum yield requires optimal investment
+    const seedCostPerHectare = seedInfo.seedPricePerKilo * 5; // Same as before
     const totalSeedCost = landArea * seedCostPerHectare;
-    const minimumRequiredCapital = totalSeedCost / 0.3; // If 30% goes to seed costs, then 70% is other costs
-    const suggestedCapital = minimumRequiredCapital * 1.2; // Add 20% buffer
+    
+    // Scale the suggested capital based on the ratio of max yield to average yield
+    // This reflects that higher yields typically require more inputs
+    const avgYieldPer0_1Ha = (yieldRanges.minKGPer0_1Ha + yieldRanges.maxKGPer0_1Ha) / 2;
+    const yieldRatio = maxYieldPer0_1Ha / avgYieldPer0_1Ha;
+    
+    // Calculate minimum required capital and scale it based on yield ratio
+    const minimumRequiredCapital = totalSeedCost / 0.3; // If 30% goes to seed costs
+    const suggestedCapital = minimumRequiredCapital * 1.2 * yieldRatio; // Add 20% buffer and scale by yield ratio
+    
     console.log('Calculated capital - seedCostPerHectare:', seedCostPerHectare, 'totalSeedCost:', totalSeedCost, 'minimumRequiredCapital:', minimumRequiredCapital, 'suggestedCapital:', suggestedCapital);
     
     // Calculate values based on user's investment
