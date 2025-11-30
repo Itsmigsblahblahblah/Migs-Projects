@@ -71,15 +71,15 @@ const FarmerDetailPage = () => {
   const cropsPerPage = 6; // Show 6 crops per page
 
   // Add sorting state (keeping for now, will be replaced with filter system)
-  const [inProgressSortConfig, setInProgressSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
-  const [harvestedSortConfig, setHarvestedSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
-  
+  const [inProgressSortConfig, setInProgressSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+  const [harvestedSortConfig, setHarvestedSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
   // Add filter state (similar to History page)
   const [inProgressFilters, setInProgressFilters] = useState({
     crop: 'all',
     soilType: 'all'
   });
-  
+
   const [harvestedFilters, setHarvestedFilters] = useState({
     crop: 'all',
     soilType: 'all'
@@ -89,7 +89,7 @@ const FarmerDetailPage = () => {
   const calculateHarvestDate = (plantedDate: any, cropName: string) => {
     try {
       let planted: Date;
-      
+
       // Handle string dates (YYYY-MM-DD format)
       if (typeof plantedDate === 'string') {
         planted = new Date(plantedDate);
@@ -104,14 +104,14 @@ const FarmerDetailPage = () => {
       } else {
         return 'Unknown date';
       }
-      
+
       if (isNaN(planted.getTime())) {
         return 'Unknown date';
       }
-      
+
       // Calculate days to harvest based on crop type (using the same logic as in CropDetails)
       let daysToHarvest = 90; // Default
-      
+
       if (cropName.toLowerCase().includes("rice")) {
         daysToHarvest = 120;
       } else if (cropName.toLowerCase().includes("corn")) {
@@ -147,11 +147,11 @@ const FarmerDetailPage = () => {
       } else if (cropName.toLowerCase().includes("talong")) {
         daysToHarvest = 70;
       }
-      
+
       // Calculate harvest date
       const harvestDate = new Date(planted);
       harvestDate.setDate(harvestDate.getDate() + daysToHarvest);
-      
+
       return harvestDate.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
@@ -163,13 +163,13 @@ const FarmerDetailPage = () => {
   };
 
   // Helper function to sort crops
-  const sortCrops = (crops: any[], sortConfig: {key: string, direction: 'asc' | 'desc'} | null) => {
+  const sortCrops = (crops: any[], sortConfig: { key: string, direction: 'asc' | 'desc' } | null) => {
     if (!sortConfig) return crops;
-    
+
     return [...crops].sort((a, b) => {
       // Handle special cases for different data types
       let aValue, bValue;
-      
+
       switch (sortConfig.key) {
         case 'name':
           aValue = a.name?.toLowerCase() || '';
@@ -194,7 +194,7 @@ const FarmerDetailPage = () => {
             } else {
               aDate = a.plantedDate instanceof Date ? a.plantedDate : new Date(0);
             }
-            
+
             if (typeof b.plantedDate === 'string') {
               bDate = new Date(b.plantedDate);
             } else if (b.plantedDate?.toDate) {
@@ -202,7 +202,7 @@ const FarmerDetailPage = () => {
             } else {
               bDate = b.plantedDate instanceof Date ? b.plantedDate : new Date(0);
             }
-            
+
             aValue = aDate.getTime();
             bValue = bDate.getTime();
           } catch (e) {
@@ -215,12 +215,12 @@ const FarmerDetailPage = () => {
           try {
             const aHarvestDateStr = calculateHarvestDate(a.plantedDate, a.name);
             const bHarvestDateStr = calculateHarvestDate(b.plantedDate, b.name);
-            
+
             // Convert date strings to Date objects for comparison
             // We'll use a default date if parsing fails
             const aHarvestDate = aHarvestDateStr !== 'Unknown date' ? new Date(aHarvestDateStr) : new Date(0);
             const bHarvestDate = bHarvestDateStr !== 'Unknown date' ? new Date(bHarvestDateStr) : new Date(0);
-            
+
             aValue = aHarvestDate.getTime();
             bValue = bHarvestDate.getTime();
           } catch (e) {
@@ -232,7 +232,7 @@ const FarmerDetailPage = () => {
           aValue = a[sortConfig.key]?.toString().toLowerCase() || '';
           bValue = b[sortConfig.key]?.toString().toLowerCase() || '';
       }
-      
+
       if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1;
       }
@@ -247,15 +247,15 @@ const FarmerDetailPage = () => {
   const filterCrops = (crops: any[], filters: any) => {
     return crops.filter(crop => {
       // Filter by crop name
-      const matchesCropFilter = 
-        filters.crop === 'all' || 
+      const matchesCropFilter =
+        filters.crop === 'all' ||
         crop.name.toLowerCase() === filters.crop.toLowerCase();
-      
+
       // Filter by soil type
-      const matchesSoilTypeFilter = 
-        filters.soilType === 'all' || 
+      const matchesSoilTypeFilter =
+        filters.soilType === 'all' ||
         crop.soilType.toLowerCase() === filters.soilType.toLowerCase();
-      
+
       return matchesCropFilter && matchesSoilTypeFilter;
     });
   };
@@ -300,13 +300,13 @@ const FarmerDetailPage = () => {
   const requestSort = (type: 'inProgress' | 'harvested', key: string) => {
     let sortConfig = type === 'inProgress' ? inProgressSortConfig : harvestedSortConfig;
     let direction: 'asc' | 'desc' = 'asc';
-    
+
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
     }
-    
+
     const newSortConfig = { key, direction };
-    
+
     if (type === 'inProgress') {
       setInProgressSortConfig(newSortConfig);
       // Reset to first page when sorting changes
@@ -335,7 +335,7 @@ const FarmerDetailPage = () => {
     try {
       // Load farmer profile
       const farmerDoc = await getDoc(doc(db, "farmers", uid));
-      
+
       if (!farmerDoc.exists()) {
         toast({
           title: "Error",
@@ -403,39 +403,39 @@ const FarmerDetailPage = () => {
     }
   };
 
-    const determineCropStatus = (plantedDate: any): string => {
-        try {
-            let planted: Date;
-            
-            // Handle string dates (YYYY-MM-DD format)
-            if (typeof plantedDate === 'string') {
-                planted = new Date(plantedDate);
-            }
-            // Handle Firestore Timestamp
-            else if (plantedDate?.toDate) {
-                planted = plantedDate.toDate();
-            }
-            // Handle JavaScript Date objects
-            else if (plantedDate instanceof Date) {
-                planted = plantedDate;
-            } else {
-                return "In Progress";
-            }
-            
-            if (isNaN(planted.getTime())) {
-                return "In Progress";
-            }
-            
-            const now = new Date();
-            const daysDiff = Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
-            
-            // Simple logic: crops harvested after 90 days
-            if (daysDiff > 90) return "Harvested";
-            return "In Progress";
-        } catch {
-            return "In Progress";
-        }
-    };
+  const determineCropStatus = (plantedDate: any): string => {
+    try {
+      let planted: Date;
+
+      // Handle string dates (YYYY-MM-DD format)
+      if (typeof plantedDate === 'string') {
+        planted = new Date(plantedDate);
+      }
+      // Handle Firestore Timestamp
+      else if (plantedDate?.toDate) {
+        planted = plantedDate.toDate();
+      }
+      // Handle JavaScript Date objects
+      else if (plantedDate instanceof Date) {
+        planted = plantedDate;
+      } else {
+        return "In Progress";
+      }
+
+      if (isNaN(planted.getTime())) {
+        return "In Progress";
+      }
+
+      const now = new Date();
+      const daysDiff = Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Simple logic: crops harvested after 90 days
+      if (daysDiff > 90) return "Harvested";
+      return "In Progress";
+    } catch {
+      return "In Progress";
+    }
+  };
 
   const getCropsByStatus = (status: string) => {
     return crops.filter(crop => crop.status === status);
@@ -466,7 +466,7 @@ const FarmerDetailPage = () => {
           });
         }
       }
-      
+
       // Handle Firestore Timestamp
       if (timestamp?.toDate) {
         return timestamp.toDate().toLocaleDateString('en-US', {
@@ -475,7 +475,7 @@ const FarmerDetailPage = () => {
           day: 'numeric'
         });
       }
-      
+
       // Handle JavaScript Date objects
       if (timestamp instanceof Date) {
         return timestamp.toLocaleDateString('en-US', {
@@ -484,7 +484,7 @@ const FarmerDetailPage = () => {
           day: 'numeric'
         });
       }
-      
+
       return 'Unknown date';
     } catch {
       return 'Unknown date';
@@ -529,7 +529,7 @@ const FarmerDetailPage = () => {
     return (
       <Layout>
         <div className="max-w-4xl mx-auto p-6">
-          <Button variant="outline" onClick={() => navigate('/admin')} className="mb-6">
+          <Button variant="outline" onClick={() => navigate('/admin')} className="mb-6 hover:bg-blue-50 hover:text-blue-600">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Dashboard
           </Button>
@@ -552,29 +552,29 @@ const FarmerDetailPage = () => {
 
   const inProgressCrops = getCropsByStatus("In Progress");
   const harvestedCrops = getCropsByStatus("Harvested");
-  
+
   // Apply filtering to crops
   const filteredInProgressCrops = filterCrops(inProgressCrops, inProgressFilters);
   const filteredHarvestedCrops = filterCrops(harvestedCrops, harvestedFilters);
-  
+
   // Apply sorting to filtered crops
   const sortedInProgressCrops = sortCrops(filteredInProgressCrops, inProgressSortConfig);
   const sortedHarvestedCrops = sortCrops(filteredHarvestedCrops, harvestedSortConfig);
-  
+
   // Get paginated crops
   const paginatedInProgressCrops = getPaginatedCrops(sortedInProgressCrops, inProgressCurrentPage, cropsPerPage);
   const paginatedHarvestedCrops = getPaginatedCrops(sortedHarvestedCrops, harvestedCurrentPage, cropsPerPage);
-  
+
   // Generate page numbers
   const inProgressPageNumbers = generatePageNumbers(sortedInProgressCrops.length, cropsPerPage);
   const harvestedPageNumbers = generatePageNumbers(sortedHarvestedCrops.length, cropsPerPage);
-  
+
   const totalInvestment = crops.reduce((sum, crop) => sum + (crop.puhunan || 0), 0);
   const totalCrops = crops.length;
 
   const handleSendMessage = async () => {
     if (!farmer || !customMessage.trim()) return;
-    
+
     setIsSendingMessage(true);
     try {
       // Save message to Firestore
@@ -586,13 +586,13 @@ const FarmerDetailPage = () => {
         timestamp: Timestamp.now(),
         read: false
       });
-      
+
       // Show success feedback using toast notification
       toast({
         title: "Message Sent",
         description: `Your message has been sent to farmer ${farmer.fullName}.`,
       });
-      
+
       // Clear the message input
       setCustomMessage("");
       // Hide the form after sending
@@ -612,26 +612,26 @@ const FarmerDetailPage = () => {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto p-6 space-y-6">
-        <Button variant="outline" onClick={() => navigate('/admin')} className="mb-2">
+        <Button variant="outline" onClick={() => navigate('/admin')} className="mb-2 hover:bg-blue-50 hover:text-blue-600">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Dashboard
         </Button>
 
         {/* Farmer Header */}
-        <div className="bg-gradient-primary rounded-xl p-6 text-primary-foreground">
+        <div className="bg-blue-600 rounded-xl p-6 text-white">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <Avatar className="h-20 w-20 border-4 border-primary-foreground/20 overflow-hidden rounded-full">
+            <Avatar className="h-20 w-20 border-4 border-white/20 overflow-hidden rounded-full">
               {farmer.photoURL ? (
                 <AvatarImage src={farmer.photoURL} alt={farmer.fullName} className="object-cover w-full h-full" />
               ) : (
-                <AvatarFallback className="text-2xl bg-primary/20">
+                <AvatarFallback className="text-2xl bg-blue-500/20">
                   {getInitials(farmer.fullName)}
                 </AvatarFallback>
               )}
             </Avatar>
             <div className="flex-1">
               <h1 className="text-3xl font-bold mb-2">{farmer.fullName}</h1>
-              <p className="text-primary-foreground/90 mb-4">
+              <p className="text-white/90 mb-4">
                 {farmer.contactNumber || "No contact number provided"}
               </p>
               <div className="flex flex-wrap gap-4">
@@ -730,13 +730,13 @@ const FarmerDetailPage = () => {
               </div>
             </div>
           </CardContent>
-          
+
           {/* Request Contact Button - Only show if contact number is missing */}
           {!farmer.contactNumber && !showMessageForm && (
             <div className="p-6 border-t">
-              <Button 
+              <Button
                 onClick={() => setShowMessageForm(true)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-600"
                 variant="outline"
               >
                 <MessageSquare className="h-4 w-4" />
@@ -744,7 +744,7 @@ const FarmerDetailPage = () => {
               </Button>
             </div>
           )}
-          
+
           {/* Message Form - Only show when showMessageForm is true */}
           {!farmer.contactNumber && showMessageForm && (
             <div className="p-6 border-t">
@@ -763,13 +763,14 @@ const FarmerDetailPage = () => {
                   className="resize-none"
                 />
                 <div className="flex justify-end gap-2">
-                  <Button 
+                  <Button
                     variant="outline"
                     onClick={() => setShowMessageForm(false)}
+                    className="hover:bg-blue-50 hover:text-blue-600"
                   >
                     Cancel
                   </Button>
-                  <Button 
+                  <Button
                     onClick={handleSendMessage}
                     disabled={isSendingMessage || !customMessage.trim()}
                     className="flex items-center gap-2"
@@ -839,7 +840,7 @@ const FarmerDetailPage = () => {
                     </Card>
                   ))}
                 </div>
-                
+
                 {/* Pagination for In Progress Crops */}
                 {inProgressPageNumbers.length > 1 && (
                   <div className="flex justify-center mt-6">
@@ -852,7 +853,7 @@ const FarmerDetailPage = () => {
                       >
                         Previous
                       </Button>
-                      
+
                       {inProgressPageNumbers.map(pageNumber => (
                         <Button
                           key={pageNumber}
@@ -863,7 +864,7 @@ const FarmerDetailPage = () => {
                           {pageNumber}
                         </Button>
                       ))}
-                      
+
                       <Button
                         variant="outline"
                         size="sm"
@@ -925,7 +926,7 @@ const FarmerDetailPage = () => {
                     </Card>
                   ))}
                 </div>
-                
+
                 {/* Pagination for Harvested Crops */}
                 {harvestedPageNumbers.length > 1 && (
                   <div className="flex justify-center mt-6">
@@ -938,7 +939,7 @@ const FarmerDetailPage = () => {
                       >
                         Previous
                       </Button>
-                      
+
                       {harvestedPageNumbers.map(pageNumber => (
                         <Button
                           key={pageNumber}
@@ -949,7 +950,7 @@ const FarmerDetailPage = () => {
                           {pageNumber}
                         </Button>
                       ))}
-                      
+
                       <Button
                         variant="outline"
                         size="sm"

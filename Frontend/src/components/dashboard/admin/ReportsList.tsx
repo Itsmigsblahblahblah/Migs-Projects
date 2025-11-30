@@ -323,6 +323,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             variant="outline"
                             onClick={onExport}
                             disabled={localReports.length === 0}
+                            className="hover:bg-blue-50 hover:text-blue-700"
                         >
                             <Download className="h-4 w-4 mr-2" />
                             Export All
@@ -333,7 +334,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     <div className="flex flex-wrap gap-2 pt-4">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                                     Sort: {getSortByLabel()} - {getOrderLabel()}
                                     <ChevronDown className="h-4 w-4" />
                                 </Button>
@@ -347,18 +348,18 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                     className="w-full"
                                 >
                                     <AccordionItem value="date" className="border-b-0">
-                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
                                             <span className="flex items-center">
                                                 <ChevronRight className="h-4 w-4 mr-2" />
                                                 Date
                                             </span>
                                         </AccordionTrigger>
                                         <AccordionContent className="pb-0">
-                                            <DropdownMenuItem onClick={() => handleSortChange("date", "desc")}>
+                                            <DropdownMenuItem onClick={() => handleSortChange("date", "desc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ '--tw-bg-opacity': '1' } as React.CSSProperties} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 <ArrowDown className="h-4 w-4 mr-2" />
                                                 Newest
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleSortChange("date", "asc")}>
+                                            <DropdownMenuItem onClick={() => handleSortChange("date", "asc")} className="hover:bg-blue-50 hover:text-blue-700" onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 <ArrowUp className="h-4 w-4 mr-2" />
                                                 Oldest
                                             </DropdownMenuItem>
@@ -368,18 +369,18 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                     <DropdownMenuSeparator />
 
                                     <AccordionItem value="status" className="border-b-0">
-                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
                                             <span className="flex items-center">
                                                 <ChevronRight className="h-4 w-4 mr-2" />
                                                 Group by
                                             </span>
                                         </AccordionTrigger>
                                         <AccordionContent className="pb-0">
-                                            <DropdownMenuItem onClick={() => handleSortChange("status", "desc")}>
+                                            <DropdownMenuItem onClick={() => handleSortChange("status", "desc")} className="hover:bg-blue-50 hover:text-blue-700" onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 <ArrowDown className="h-4 w-4 mr-2" />
                                                 Resolved
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleSortChange("status", "asc")}>
+                                            <DropdownMenuItem onClick={() => handleSortChange("status", "asc")} className="hover:bg-blue-50 hover:text-blue-700" onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 <ArrowUp className="h-4 w-4 mr-2" />
                                                 Processed
                                             </DropdownMenuItem>
@@ -393,6 +394,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             variant={sortOption === 'barangay' ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setSortOption('barangay')}
+                            className={`text-blue-600 hover:text-white ${sortOption === 'barangay' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-blue-50'}`}
                         >
                             Group by Barangay
                         </Button>
@@ -403,7 +405,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                 <span className="text-sm font-medium whitespace-nowrap">Filter by Barangay:</span>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                                             {selectedBarangay === 'all' ? 'All Barangays' : selectedBarangay}
                                             <ChevronDown className="h-4 w-4" />
                                         </Button>
@@ -411,8 +413,18 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                     <DropdownMenuContent align="end" className="w-64 max-h-60 overflow-y-auto">
                                         <DropdownMenuItem
                                             onClick={() => setSelectedBarangay('all')}
-                                            className={`cursor-pointer ${selectedBarangay === 'all' ? "bg-accent" : ""}`}
-                                            style={{ cursor: 'pointer' }}
+                                            className={`cursor-pointer ${selectedBarangay === 'all' ? "bg-blue-50 text-blue-700" : ""}`}
+                                            style={{ cursor: 'pointer', '--tw-bg-opacity': '1' } as React.CSSProperties}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#eff6ff';
+                                                e.currentTarget.style.color = '#1d4ed8';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (selectedBarangay !== 'all') {
+                                                    e.currentTarget.style.backgroundColor = '';
+                                                    e.currentTarget.style.color = '';
+                                                }
+                                            }}
                                         >
                                             All Barangays
                                         </DropdownMenuItem>
@@ -421,8 +433,18 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                             <DropdownMenuItem
                                                 key={barangay}
                                                 onClick={() => setSelectedBarangay(barangay)}
-                                                className={`cursor-pointer ${selectedBarangay === barangay ? "bg-accent" : ""}`}
-                                                style={{ cursor: 'pointer' }}
+                                                className={`cursor-pointer ${selectedBarangay === barangay ? "bg-blue-50 text-blue-700" : ""}`}
+                                                style={{ cursor: 'pointer', '--tw-bg-opacity': '1' } as React.CSSProperties}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#eff6ff';
+                                                    e.currentTarget.style.color = '#1d4ed8';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (selectedBarangay !== barangay) {
+                                                        e.currentTarget.style.backgroundColor = '';
+                                                        e.currentTarget.style.color = '';
+                                                    }
+                                                }}
                                             >
                                                 {barangay}
                                             </DropdownMenuItem>
@@ -559,7 +581,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             size="sm"
                                                             onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                                                             disabled={currentPage === 1}
-                                                            className="h-8 px-3 text-sm"
+                                                            className="h-8 px-3 text-sm hover:bg-blue-50"
                                                         >
                                                             Previous
                                                         </Button>
@@ -584,7 +606,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(1)}
-                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                        className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                     >
                                                                         1
                                                                     </Button>
@@ -605,7 +627,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant={currentPage === i ? "default" : "outline"}
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(i)}
-                                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-blue-600 text-white hover:bg-blue-700" : "hover:bg-blue-50"}`}
                                                                     >
                                                                         {i}
                                                                     </Button>
@@ -626,7 +648,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(totalGroupedPages)}
-                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                        className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                     >
                                                                         {totalGroupedPages}
                                                                     </Button>
@@ -641,7 +663,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             size="sm"
                                                             onClick={() => handlePageChange(Math.min(currentPage + 1, totalGroupedPages))}
                                                             disabled={currentPage === totalGroupedPages}
-                                                            className="h-8 px-3 text-sm"
+                                                            className="h-8 px-3 text-sm hover:bg-blue-50"
                                                         >
                                                             Next
                                                         </Button>
@@ -659,7 +681,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             size="sm"
                                                             onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                                                             disabled={currentPage === 1}
-                                                            className="h-8 px-3 text-sm"
+                                                            className="h-8 px-3 text-sm hover:bg-blue-50"
                                                         >
                                                             Previous
                                                         </Button>
@@ -684,7 +706,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(1)}
-                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                        className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                     >
                                                                         1
                                                                     </Button>
@@ -705,7 +727,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant={currentPage === i ? "default" : "outline"}
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(i)}
-                                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-blue-600 text-white hover:bg-blue-700" : "hover:bg-blue-50"}`}
                                                                     >
                                                                         {i}
                                                                     </Button>
@@ -726,7 +748,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(totalGroupedPages)}
-                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                        className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                     >
                                                                         {totalGroupedPages}
                                                                     </Button>
@@ -741,7 +763,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             size="sm"
                                                             onClick={() => handlePageChange(Math.min(currentPage + 1, totalGroupedPages))}
                                                             disabled={currentPage === totalGroupedPages}
-                                                            className="h-8 px-3 text-sm"
+                                                            className="h-8 px-3 text-sm hover:bg-blue-50"
                                                         >
                                                             Next
                                                         </Button>
@@ -846,7 +868,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             size="sm"
                                                             onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                                                             disabled={currentPage === 1}
-                                                            className="h-8 px-3 text-sm"
+                                                            className="h-8 px-3 text-sm hover:bg-blue-50"
                                                         >
                                                             Previous
                                                         </Button>
@@ -871,7 +893,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(1)}
-                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                        className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                     >
                                                                         1
                                                                     </Button>
@@ -892,7 +914,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant={currentPage === i ? "default" : "outline"}
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(i)}
-                                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-blue-600 text-white hover:bg-blue-700" : "hover:bg-blue-50"}`}
                                                                     >
                                                                         {i}
                                                                     </Button>
@@ -913,7 +935,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(totalPages)}
-                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                        className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                     >
                                                                         {totalPages}
                                                                     </Button>
@@ -928,7 +950,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             size="sm"
                                                             onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
                                                             disabled={currentPage === totalPages}
-                                                            className="h-8 px-3 text-sm"
+                                                            className="h-8 px-3 text-sm hover:bg-blue-50"
                                                         >
                                                             Next
                                                         </Button>
@@ -946,7 +968,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             size="sm"
                                                             onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                                                             disabled={currentPage === 1}
-                                                            className="h-8 px-3 text-sm"
+                                                            className="h-8 px-3 text-sm hover:bg-blue-50"
                                                         >
                                                             Previous
                                                         </Button>
@@ -971,7 +993,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(1)}
-                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                        className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                     >
                                                                         1
                                                                     </Button>
@@ -992,7 +1014,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant={currentPage === i ? "default" : "outline"}
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(i)}
-                                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-blue-600 text-white hover:bg-blue-700" : "hover:bg-blue-50"}`}
                                                                     >
                                                                         {i}
                                                                     </Button>
@@ -1013,7 +1035,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() => handlePageChange(totalPages)}
-                                                                        className="h-8 w-8 p-0 text-sm"
+                                                                        className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                     >
                                                                         {totalPages}
                                                                     </Button>
@@ -1028,7 +1050,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             size="sm"
                                                             onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
                                                             disabled={currentPage === totalPages}
-                                                            className="h-8 px-3 text-sm"
+                                                            className="h-8 px-3 text-sm hover:bg-blue-50"
                                                         >
                                                             Next
                                                         </Button>

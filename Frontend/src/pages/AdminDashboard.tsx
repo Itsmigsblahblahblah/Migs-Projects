@@ -101,11 +101,11 @@ const AdminDashboard = () => {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
+        <div className="bg-blue-600 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              <p className="text-primary-foreground/90">
+              <p className="text-white/90">
                 Welcome back, {username}. Here's your farm management overview.
               </p>
             </div>
@@ -116,12 +116,12 @@ const AdminDashboard = () => {
         <AdminStatsOverview stats={stats} />
 
         {/* Quick Actions Style Navigation */}
-        <Card className="shadow-card">
+        <Card className="shadow-card border-blue-200">
           <CardContent className="pt-6">
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
               <Button
                 variant={activeSection === "farmers" ? "default" : "outline"}
-                className="h-20 flex flex-col gap-2"
+                className={`h-20 flex flex-col gap-2 ${activeSection === "farmers" ? "bg-blue-600 hover:bg-blue-700 text-white" : "hover:bg-blue-50"}`}
                 onClick={() => handleSetActiveSection("farmers")}
               >
                 <Users className="h-5 w-5" />
@@ -129,7 +129,7 @@ const AdminDashboard = () => {
               </Button>
               <Button
                 variant={activeSection === "deletion-requests" ? "default" : "outline"}
-                className="h-20 flex flex-col gap-2"
+                className={`h-20 flex flex-col gap-2 ${activeSection === "deletion-requests" ? "bg-blue-600 hover:bg-blue-700 text-white" : "hover:bg-blue-50"}`}
                 onClick={() => handleSetActiveSection("deletion-requests")}
               >
                 <FileText className="h-5 w-5" />
@@ -137,7 +137,7 @@ const AdminDashboard = () => {
               </Button>
               <Button
                 variant={activeSection === "analytics" ? "default" : "outline"}
-                className="h-20 flex flex-col gap-2"
+                className={`h-20 flex flex-col gap-2 ${activeSection === "analytics" ? "bg-blue-600 hover:bg-blue-700 text-white" : "hover:bg-blue-50"}`}
                 onClick={() => handleSetActiveSection("analytics")}
               >
                 <BarChart3 className="h-5 w-5" />
@@ -145,7 +145,7 @@ const AdminDashboard = () => {
               </Button>
               <Button
                 variant={activeSection === "reports" ? "default" : "outline"}
-                className="h-20 flex flex-col gap-2"
+                className={`h-20 flex flex-col gap-2 ${activeSection === "reports" ? "bg-blue-600 hover:bg-blue-700 text-white" : "hover:bg-blue-50"}`}
                 onClick={() => handleSetActiveSection("reports")}
               >
                 <FileText className="h-5 w-5" />
@@ -153,7 +153,7 @@ const AdminDashboard = () => {
               </Button>
               <Button
                 variant={activeSection === "announcements" ? "default" : "outline"}
-                className="h-20 flex flex-col gap-2"
+                className={`h-20 flex flex-col gap-2 ${activeSection === "announcements" ? "bg-blue-600 hover:bg-blue-700 text-white" : "hover:bg-blue-50"}`}
                 onClick={() => handleSetActiveSection("announcements")}
               >
                 <Bell className="h-5 w-5" />

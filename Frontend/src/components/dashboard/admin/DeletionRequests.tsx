@@ -100,6 +100,7 @@ const DeletionRequests = ({
                                             variant="outline"
                                             size="sm"
                                             onClick={onRefresh}
+                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                         >
                                             <Eye className="h-4 w-4 mr-2" />
                                             Refresh
@@ -108,6 +109,7 @@ const DeletionRequests = ({
                                             variant="outline"
                                             size="sm"
                                             onClick={onDeleteModeToggle}
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                         >
                                             <Trash2 className="h-4 w-4 mr-2" />
                                             Delete
@@ -146,7 +148,7 @@ const DeletionRequests = ({
                                         variant="outline"
                                         size="sm"
                                         onClick={onRefresh}
-                                        className="flex-1"
+                                        className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                     >
                                         <Eye className="h-4 w-4 mr-2" />
                                         Refresh
@@ -155,7 +157,7 @@ const DeletionRequests = ({
                                         variant="outline"
                                         size="sm"
                                         onClick={onDeleteModeToggle}
-                                        className="flex-1"
+                                        className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Delete

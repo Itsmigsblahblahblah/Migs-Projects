@@ -397,7 +397,7 @@ const AnalyticsCharts = ({
                                         Showing {currentReports.length} of {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''} categorized as "{selectedCategory}"
                                     </p>
                                 </div>
-                                <Button variant="ghost" onClick={closeCategoryModal} className="h-8 w-8 p-0">
+                                <Button variant="ghost" onClick={closeCategoryModal} className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                                     <span className="text-2xl">×</span>
                                 </Button>
                             </div>
@@ -469,7 +469,7 @@ const AnalyticsCharts = ({
                                                         size="sm"
                                                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                                         disabled={currentPage === 1}
-                                                        className="h-8 px-3 text-sm"
+                                                        className="h-8 px-3 text-sm hover:bg-blue-50"
                                                     >
                                                         Previous
                                                     </Button>
@@ -494,7 +494,7 @@ const AnalyticsCharts = ({
                                                                     variant="outline"
                                                                     size="sm"
                                                                     onClick={() => setCurrentPage(1)}
-                                                                    className="h-8 w-8 p-0 text-sm"
+                                                                    className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                 >
                                                                     1
                                                                 </Button>
@@ -515,7 +515,7 @@ const AnalyticsCharts = ({
                                                                     variant={currentPage === i ? "default" : "outline"}
                                                                     size="sm"
                                                                     onClick={() => setCurrentPage(i)}
-                                                                    className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                                                    className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-blue-600 text-white hover:bg-blue-700" : "hover:bg-blue-50"}`}
                                                                 >
                                                                     {i}
                                                                 </Button>
@@ -536,7 +536,7 @@ const AnalyticsCharts = ({
                                                                     variant="outline"
                                                                     size="sm"
                                                                     onClick={() => setCurrentPage(totalPages)}
-                                                                    className="h-8 w-8 p-0 text-sm"
+                                                                    className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                 >
                                                                     {totalPages}
                                                                 </Button>
@@ -551,7 +551,7 @@ const AnalyticsCharts = ({
                                                         size="sm"
                                                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                                         disabled={currentPage === totalPages}
-                                                        className="h-8 px-3 text-sm"
+                                                        className="h-8 px-3 text-sm hover:bg-blue-50"
                                                     >
                                                         Next
                                                     </Button>

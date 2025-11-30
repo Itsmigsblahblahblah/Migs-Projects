@@ -225,11 +225,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => navigate(userRole === 'farmer' ? '/farmer' : '/admin')}
             >
-              <div className="p-2 rounded-lg bg-gradient-primary">
-                <Sprout className="h-6 w-6 text-primary-foreground" />
+              <div className={`p-2 rounded-lg ${userRole === 'admin' ? 'bg-blue-600' : 'bg-gradient-primary'}`}>
+                <Sprout className={`h-6 w-6 ${userRole === 'admin' ? 'text-white' : 'text-primary-foreground'}`} />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-primary">Harvestify</h1>
+                <h1 className={`text-lg font-bold ${userRole === 'admin' ? 'text-blue-600' : 'text-primary'}`}>Harvestify</h1>
               </div>
             </div>
 
@@ -293,21 +293,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <div className="hidden md:block">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                      <User className="h-5 w-5" />
+                    <Button variant="ghost" size="icon" className={`rounded-full ${userRole && userRole === 'admin' ? 'hover:bg-blue-50' : ''}`}>
+                      <User className={`h-5 w-5 ${userRole && userRole === 'admin' ? 'text-blue-600' : ''}`} />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className={`w-56 ${userRole && userRole === 'admin' ? 'border-blue-100' : ''}`}>
                     <DropdownMenuLabel>
                       <div className="flex flex-col">
-                        <span>{username}</span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className={userRole && userRole === 'admin' ? 'text-blue-900' : ''}>{username}</span>
+                        <span className={`text-xs ${userRole && userRole === 'admin' ? 'text-blue-700' : 'text-muted-foreground'}`}>
                           {userRole === 'farmer' ? 'Farmer' : 'Administrator'}
                         </span>
                       </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)}>
+                    <DropdownMenuSeparator className={userRole && userRole === 'admin' ? 'bg-blue-100' : ''} />
+                    <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={userRole && userRole === 'admin' ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={userRole && userRole === 'admin' ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Logout</span>
                     </DropdownMenuItem>
@@ -321,21 +321,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   {/* Mobile profile dropdown - between alert icon and hamburger menu */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="rounded-full">
-                        <User className="h-5 w-5" />
+                      <Button variant="ghost" size="icon" className={`rounded-full ${userRole && userRole === 'admin' ? 'hover:bg-blue-50' : ''}`}>
+                        <User className={`h-5 w-5 ${userRole && userRole === 'admin' ? 'text-blue-600' : ''}`} />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent align="end" className={`w-56 ${userRole && userRole === 'admin' ? 'border-blue-100' : ''}`}>
                       <DropdownMenuLabel>
                         <div className="flex flex-col">
-                          <span>{username}</span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className={userRole && userRole === 'admin' ? 'text-blue-900' : ''}>{username}</span>
+                          <span className={`text-xs ${userRole && userRole === 'admin' ? 'text-blue-700' : 'text-muted-foreground'}`}>
                             {userRole === 'farmer' ? 'Farmer' : 'Administrator'}
                           </span>
                         </div>
                       </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)}>
+                      <DropdownMenuSeparator className={userRole && userRole === 'admin' ? 'bg-blue-100' : ''} />
+                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={userRole && userRole === 'admin' ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={userRole && userRole === 'admin' ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Logout</span>
                       </DropdownMenuItem>
@@ -363,21 +363,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <div className="md:hidden">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="rounded-full">
-                        <User className="h-5 w-5" />
+                      <Button variant="ghost" size="icon" className={`rounded-full ${userRole && userRole === 'admin' ? 'hover:bg-blue-50' : ''}`}>
+                        <User className={`h-5 w-5 ${userRole && userRole === 'admin' ? 'text-blue-600' : ''}`} />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent align="end" className={`w-56 ${userRole && userRole === 'admin' ? 'border-blue-100' : ''}`}>
                       <DropdownMenuLabel>
                         <div className="flex flex-col">
-                          <span>{username}</span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className={userRole && userRole === 'admin' ? 'text-blue-900' : ''}>{username}</span>
+                          <span className={`text-xs ${userRole && userRole === 'admin' ? 'text-blue-700' : 'text-muted-foreground'}`}>
                             Administrator
                           </span>
                         </div>
                       </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)}>
+                      <DropdownMenuSeparator className={userRole && userRole === 'admin' ? 'bg-blue-100' : ''} />
+                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={userRole && userRole === 'admin' ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={userRole && userRole === 'admin' ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Logout</span>
                       </DropdownMenuItem>

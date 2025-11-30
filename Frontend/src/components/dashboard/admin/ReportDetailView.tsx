@@ -67,7 +67,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                     ...doc.data()
                 } as AdminMessage);
             });
-            
+
             // Sort by timestamp manually in ascending order
             messagesData.sort((a, b) => {
                 if (a.timestamp && b.timestamp) {
@@ -81,7 +81,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                 }
                 return 0;
             });
-            
+
             setAdminMessages(messagesData);
         });
 
@@ -145,7 +145,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                 Submitted by {report.username} on {formatDate(report.createdAt)}
                             </p>
                         </div>
-                        <Button variant="ghost" onClick={onClose} className="h-8 w-8 p-0">
+                        <Button variant="ghost" onClick={onClose} className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                             <XCircle className="h-5 w-5" />
                         </Button>
                     </div>
@@ -287,7 +287,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                     <Button
                                         onClick={handleSendMessage}
                                         disabled={isSending || !message.trim()}
-                                        className="flex items-center gap-2"
+                                        className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
                                     >
                                         {isSending ? (
                                             <>
@@ -330,13 +330,14 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                     <Button
                                         variant="outline"
                                         onClick={() => onUpdateStatus(report.id, 'pending')}
+                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                     >
                                         <Clock className="h-4 w-4 mr-2 text-yellow-500" />
                                         Reopen Report
                                     </Button>
                                 )}
 
-                                <Button variant="outline" onClick={onClose}>
+                                <Button variant="outline" onClick={onClose} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                                     Close
                                 </Button>
                             </div>
@@ -346,7 +347,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                     {/* For farmer view, just show a close button */}
                     {!isAdminView && (
                         <div className="flex justify-end pt-4">
-                            <Button variant="outline" onClick={onClose}>
+                            <Button variant="outline" onClick={onClose} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                                 Close
                             </Button>
                         </div>
