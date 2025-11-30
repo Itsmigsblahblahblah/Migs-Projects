@@ -854,17 +854,17 @@ const Alerts = () => {
 
             {/* Pagination Controls - Always visible */}
             <div className="border-t pt-1 px-4" style={{ paddingBottom: '15px', marginTop: 'auto' }}>
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div className="text-sm text-muted-foreground md:text-left text-center">
                   Showing {startIndex + 1} to {Math.min(endIndex, filteredAlerts.length)} of {filteredAlerts.length} alerts
                 </div>
-                <div className="flex space-x-1">
+                <div className="flex flex-nowrap justify-center gap-1">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="h-8 px-3 text-sm"
+                    className="h-8 px-3 text-sm flex-shrink-0"
                   >
                     Previous
                   </Button>
@@ -889,7 +889,7 @@ const Alerts = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => setCurrentPage(1)}
-                          className="h-8 w-8 p-0 text-sm"
+                          className="h-8 w-8 p-0 text-sm flex-shrink-0"
                         >
                           1
                         </Button>
@@ -897,7 +897,7 @@ const Alerts = () => {
                       // Only show ellipsis if there's a significant gap
                       if (startPage > 2) {
                         pageButtons.push(
-                          <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                          <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm flex-shrink-0">⋯</span>
                         );
                       }
                     }
@@ -910,7 +910,7 @@ const Alerts = () => {
                           variant={currentPage === i ? "default" : "outline"}
                           size="sm"
                           onClick={() => setCurrentPage(i)}
-                          className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                          className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
                         >
                           {i}
                         </Button>
@@ -922,7 +922,7 @@ const Alerts = () => {
                       // Only show ellipsis if there's a significant gap
                       if (endPage < totalPages - 1) {
                         pageButtons.push(
-                          <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                          <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm flex-shrink-0">⋯</span>
                         );
                       }
                       pageButtons.push(
@@ -931,7 +931,7 @@ const Alerts = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => setCurrentPage(totalPages)}
-                          className="h-8 w-8 p-0 text-sm"
+                          className="h-8 w-8 p-0 text-sm flex-shrink-0"
                         >
                           {totalPages}
                         </Button>
@@ -946,7 +946,7 @@ const Alerts = () => {
                     size="sm"
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className="h-8 px-3 text-sm"
+                    className="h-8 px-3 text-sm flex-shrink-0"
                   >
                     Next
                   </Button>
