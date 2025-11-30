@@ -27,36 +27,38 @@ const MarketDemandCard = () => {
   const fetchMarketData = async () => {
     try {
       setLoading(true);
-      
+
       // Use current month and year as cache key
       const currentMonth = currentDate.getMonth() + 1;
       const currentYear = currentDate.getFullYear();
       const cacheKey = `farmer-dashboard-${currentMonth}-${currentYear}-top5`;
-      
+
       // Check if we have cached data for the current parameters
       const cachedData = getCachedMarketDemandData(cacheKey);
-      
+
       if (cachedData) {
         // Use cached data
         setMarketData(cachedData.data);
         setLoading(false);
         return;
       }
-      
-      const response = await fetch("/api/vegetables/recommend-crops?top_n=5");
-      
+
+      // Use environment variable for backend URL or default to localhost
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${BACKEND_URL}/vegetables/recommend-crops?top_n=5`);
+
       if (!response.ok) {
         throw new Error("Failed to fetch market demand data");
       }
-      
+
       const data = await response.json();
       const marketData = data.recommended_crops || [];
-      
+
       // Cache the data with the current parameters
       setCachedMarketDemandData({
         data: marketData
       }, cacheKey);
-      
+
       setMarketData(marketData);
     } catch (err) {
       setError("Failed to load market demand data. Please try again later.");

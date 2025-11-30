@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Sprout, 
-  Thermometer, 
-  Droplets, 
-  Sun, 
-  TrendingUp, 
+import {
+  Sprout,
+  Thermometer,
+  Droplets,
+  Sun,
+  TrendingUp,
   Leaf,
   Calendar,
   MapPin,
@@ -109,23 +109,25 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
   const fetchSoilDataByBarangay = async (barangay: string) => {
     setSoilDataLoading(true);
     setError(null);
-    
+
     try {
       console.log('Fetching soil data for barangay:', barangay);
-      const response = await fetch(`/api/soil-data/${encodeURIComponent(barangay)}`);
-      
+      // Use environment variable for backend URL or default to localhost
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${BACKEND_URL}/soil-data/${encodeURIComponent(barangay)}`);
+
       console.log('Soil data response status:', response.status);
       console.log('Soil data response ok:', response.ok);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Soil data error response:', errorText);
         throw new Error(`Failed to fetch soil data: ${response.status} ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       console.log('Soil data response:', data);
-      
+
       if (data.soil_data && Object.keys(data.soil_data).length > 0) {
         // Update input soil data with fetched data
         setInputSoilData({
@@ -154,37 +156,39 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
     setLoading(true);
     setError(null);
     setRecommendations([]); // Clear previous recommendations
-    
+
     try {
       // Use the weather-enhanced endpoint if weather data is available
       const endpoint = weatherDataForRecommendation ? '/api/recommend-with-weather' : '/api/recommend';
-      const requestBody = weatherDataForRecommendation 
+      const requestBody = weatherDataForRecommendation
         ? { soil_data: soilData, weather_data: weatherDataForRecommendation }
         : soilData;
-      
+
       console.log('Fetching recommendations from:', endpoint);
       console.log('Request body:', requestBody);
-      
-      const response = await fetch(endpoint, {
+
+      // Use environment variable for backend URL or default to localhost
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
       });
-      
+
       console.log('Response status:', response.status);
       console.log('Response ok:', response.ok);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Error response:', errorText);
         throw new Error(`Failed to fetch recommendations: ${response.status} ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       console.log('Response data:', data);
-      
+
       // Check if recommended_crops exists and is an array
       if (data.recommended_crops && Array.isArray(data.recommended_crops)) {
         console.log('Setting recommendations:', data.recommended_crops);
@@ -205,20 +209,22 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
   const fetchMarketDemand = async (cropName: string) => {
     try {
       console.log('Fetching market demand for crop:', cropName);
-      const response = await fetch(`/api/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
-      
+      // Use environment variable for backend URL or default to localhost
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${BACKEND_URL}/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
+
       console.log('Market demand response status:', response.status);
       console.log('Market demand response ok:', response.ok);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Market demand error response:', errorText);
         return null;
       }
-      
+
       const data = await response.json();
       console.log('Market demand response:', data);
-      
+
       // If we have vegetable data, we can make a demand prediction
       if (data.vegetable_data && data.vegetable_data.length > 0) {
         // Extract historical data for prediction
@@ -226,9 +232,11 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
         const historicalPrices = historicalData.map((item: any) => parseFloat(item.Price));
         const historicalAnnualPrices = historicalData.map((item: any) => parseFloat(item.Annual_Price));
         const historicalMonths = historicalData.map((item: any) => parseInt(item.MonthNum));
-        
+
         // Make demand prediction
-        const predictionResponse = await fetch('/api/vegetables/predict-demand', {
+        // Use environment variable for backend URL or default to localhost
+        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+        const predictionResponse = await fetch(`${BACKEND_URL}/vegetables/predict-demand`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -240,14 +248,14 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
             historical_months: historicalMonths
           }),
         });
-        
+
         if (predictionResponse.ok) {
           const predictionData = await predictionResponse.json();
           console.log('Prediction data:', predictionData);
           return predictionData;
         }
       }
-      
+
       return null;
     } catch (err) {
       console.error('Error fetching market demand:', err);
@@ -264,7 +272,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
         const barangay = extractBarangay(farmerProfile.farmAddress);
         console.log('Extracted barangay:', barangay);
         const soilData = await fetchSoilDataByBarangay(barangay);
-        
+
         // Prepare weather data if available
         let weatherDataForRecommendation: WeatherData | undefined;
         if (weatherData) {
@@ -276,7 +284,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
             uv_index: weatherData.extendedForecast?.[0]?.uvIndex || 5
           };
         }
-        
+
         // If we got soil data, use it for recommendations
         if (soilData) {
           console.log('Using fetched soil data for recommendations:', soilData);
@@ -304,13 +312,13 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
   const handleCropSelect = async (crop: PrescriptionDetails) => {
     // Fetch market demand data for the selected crop
     const marketDemand = await fetchMarketDemand(crop.crop);
-    
+
     // Update the crop object with market demand data
     const updatedCrop = {
       ...crop,
       marketDemand: marketDemand || undefined
     };
-    
+
     setSelectedCrop(updatedCrop);
   };
 
@@ -322,10 +330,10 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
     console.log('Get Recommendations button clicked');
     console.log('Current input soil data:', inputSoilData);
     console.log('Current weather data:', weatherData);
-    
+
     // Clear any previous error
     setError(null);
-    
+
     // Prepare weather data if available
     let weatherDataForRecommendation: WeatherData | undefined;
     if (weatherData) {
@@ -338,7 +346,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
       };
       console.log('Prepared weather data for recommendation:', weatherDataForRecommendation);
     }
-    
+
     fetchRecommendations(inputSoilData, weatherDataForRecommendation);
   };
 
@@ -358,7 +366,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
             </div>
           </div>
         </div>
-        
+
         {!selectedCrop ? (
           <div className="space-y-6">
             {/* Soil Data Input */}
@@ -386,7 +394,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                       min="0"
                       max="14"
                       value={inputSoilData.pH}
-                      onChange={(e) => setInputSoilData({...inputSoilData, pH: parseFloat(e.target.value) || 0})}
+                      onChange={(e) => setInputSoilData({ ...inputSoilData, pH: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       disabled={soilDataLoading || loading}
                     />
@@ -394,9 +402,9 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                   <div className="grid grid-cols-3 gap-2">
                     <div>
                       <label className="block text-sm font-medium mb-1">Nitrogen</label>
-                      <select 
-                        value={inputSoilData.Nitrogen} 
-                        onChange={(e) => setInputSoilData({...inputSoilData, Nitrogen: e.target.value})}
+                      <select
+                        value={inputSoilData.Nitrogen}
+                        onChange={(e) => setInputSoilData({ ...inputSoilData, Nitrogen: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                         disabled={soilDataLoading || loading}
                       >
@@ -407,9 +415,9 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Phosphorus</label>
-                      <select 
-                        value={inputSoilData.Phosphorus} 
-                        onChange={(e) => setInputSoilData({...inputSoilData, Phosphorus: e.target.value})}
+                      <select
+                        value={inputSoilData.Phosphorus}
+                        onChange={(e) => setInputSoilData({ ...inputSoilData, Phosphorus: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                         disabled={soilDataLoading || loading}
                       >
@@ -420,9 +428,9 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Potassium</label>
-                      <select 
-                        value={inputSoilData.Potassium} 
-                        onChange={(e) => setInputSoilData({...inputSoilData, Potassium: e.target.value})}
+                      <select
+                        value={inputSoilData.Potassium}
+                        onChange={(e) => setInputSoilData({ ...inputSoilData, Potassium: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                         disabled={soilDataLoading || loading}
                       >
@@ -433,7 +441,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                     </div>
                   </div>
                 </div>
-                <Button 
+                <Button
                   onClick={handleGetRecommendations}
                   disabled={loading || soilDataLoading}
                   className="w-full"
@@ -460,7 +468,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                   <p className="text-2xl font-bold">{weatherData?.temperature ? `${Math.round(weatherData.temperature)}°C` : '28°C'}</p>
                   <p className="text-sm text-muted-foreground">Current temperature</p>
                 </div>
-                
+
                 <div className="p-4 bg-accent/10 rounded-lg border">
                   <div className="flex items-center gap-2 mb-2">
                     <Droplets className="h-4 w-4 text-accent" />
@@ -469,7 +477,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                   <p className="text-2xl font-bold">{weatherData?.humidity ? `${Math.round(weatherData.humidity)}%` : '65%'}</p>
                   <p className="text-sm text-muted-foreground">Relative humidity</p>
                 </div>
-                
+
                 <div className="p-4 bg-accent/10 rounded-lg border">
                   <div className="flex items-center gap-2 mb-2">
                     <Sun className="h-4 w-4 text-accent" />
@@ -517,25 +525,25 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
               <p className="text-sm text-muted-foreground mb-4">
                 Based on your soil conditions and current weather patterns
               </p>
-              
+
               {loading && (
                 <div className="flex justify-center items-center h-32">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   <span className="ml-2">Analyzing soil and weather data...</span>
                 </div>
               )}
-              
+
               {error && (
                 <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 text-destructive">
                   {error}
                 </div>
               )}
-              
+
               {!loading && !error && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {recommendations.length > 0 ? (
                     recommendations.map((recommendation, index) => (
-                      <Card 
+                      <Card
                         key={index}
                         className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
                         onClick={() => handleCropSelect({
@@ -559,27 +567,27 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                             "Ignore local climate conditions"
                           ]
                         })}
-                        >
-                          <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                              <span>{recommendation.crop}</span>
-                              <Badge variant="secondary">{Math.round(recommendation.confidence * 100)}%</Badge>
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              Recommended based on your soil analysis and current weather conditions with {Math.round(recommendation.confidence * 100)}% confidence.
-                            </p>
-                            <div className="flex items-center gap-2 text-xs">
-                              <Calendar className="h-3 w-3" />
-                              <span>Planting season varies</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs mt-1">
-                              <TrendingUp className="h-3 w-3" />
-                              <span>Check local market trends</span>
-                            </div>
-                          </CardContent>
-                        </Card>
+                      >
+                        <CardHeader>
+                          <CardTitle className="flex items-center justify-between">
+                            <span>{recommendation.crop}</span>
+                            <Badge variant="secondary">{Math.round(recommendation.confidence * 100)}%</Badge>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Recommended based on your soil analysis and current weather conditions with {Math.round(recommendation.confidence * 100)}% confidence.
+                          </p>
+                          <div className="flex items-center gap-2 text-xs">
+                            <Calendar className="h-3 w-3" />
+                            <span>Planting season varies</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs mt-1">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>Check local market trends</span>
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
@@ -636,7 +644,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                     </h4>
                     <p>{selectedCrop.plantingSeason}</p>
                   </div>
-                  
+
                   <div className="p-4 bg-primary/5 rounded-lg border">
                     <h4 className="font-medium mb-2 flex items-center gap-2">
                       <TrendingUp className="h-4 w-4" />
@@ -644,7 +652,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                     </h4>
                     <p>{selectedCrop.marketTrend}</p>
                   </div>
-                  
+
                   <div className="p-4 bg-primary/5 rounded-lg border">
                     <h4 className="font-medium mb-2 flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
@@ -652,7 +660,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                     </h4>
                     <p>{selectedCrop.soilType}</p>
                   </div>
-                  
+
                   <div className="p-4 bg-primary/5 rounded-lg border">
                     <h4 className="font-medium mb-2 flex items-center gap-2">
                       <Sun className="h-4 w-4" />
@@ -660,7 +668,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                     </h4>
                     <p>Optimal growth with current temperature and humidity levels</p>
                   </div>
-                  
+
                   {/* Market Demand Information */}
                   {selectedCrop.marketDemand && (
                     <div className="p-4 bg-primary/5 rounded-lg border md:col-span-2">
@@ -680,7 +688,7 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                         <div>
                           <p className="text-sm text-muted-foreground">Est. Price Change</p>
                           <p className={`font-medium ${selectedCrop.marketDemand.price_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {selectedCrop.marketDemand.price_change >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change.toFixed(2)} 
+                            {selectedCrop.marketDemand.price_change >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change.toFixed(2)}
                             ({selectedCrop.marketDemand.price_change_percent >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change_percent.toFixed(2)}%)
                           </p>
                         </div>
