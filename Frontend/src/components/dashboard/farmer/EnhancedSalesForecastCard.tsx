@@ -178,8 +178,14 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
     // If investment is 0, profit should also be 0
     const netProfit = userInvestment === 0 ? 0 : potentialRevenue - userInvestment;
 
-    // Check if investment exceeds suggested capital
-    const investmentExceedsSuggested = userInvestment > suggestedCapital;
+    // Check if investment exceeds suggested capital (with tolerance for floating point precision)
+    const investmentExceedsSuggested = userInvestment > suggestedCapital && Math.abs(userInvestment - suggestedCapital) >= 0.01;
+    
+    // Check if investment is less than suggested capital (with tolerance for floating point precision)
+    const investmentBelowSuggested = userInvestment < suggestedCapital && Math.abs(userInvestment - suggestedCapital) >= 0.01;
+    
+    // Check if investment is effectively equal to suggested capital (within tolerance)
+    const investmentEqualToSuggested = Math.abs(userInvestment - suggestedCapital) < 0.01;
 
     return (
         <Card className="shadow-card">
@@ -194,15 +200,15 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
                 <div className="mb-8">
                     <h3 className="font-bold text-lg mb-4">How Your Money Works</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className={`p-4 rounded-lg border ${userInvestment < suggestedCapital ? 'bg-destructive/10 border-destructive' : 'bg-primary/10 border-primary'}`}>
+                        <div className={`p-4 rounded-lg border ${investmentBelowSuggested ? 'bg-destructive/10 border-destructive' : 'bg-primary/10 border-primary'}`}>
                             <div className="flex justify-between items-start">
                                 <p className="text-sm text-muted-foreground mb-1">Your Investment</p>
                                 <InfoTooltip content={`The total amount you've invested in seeds, fertilizers, labor, and other expenses for this crop. This includes:\n• Seeds/Cost of planting material: ₱${(userInvestment * 0.3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Fertilizers and soil amendments: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Labor costs: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Pest control and other chemicals: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Miscellaneous expenses: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n\nInvestment Distribution by Stage:\n• Planting Stage: 40% (₱${(userInvestment * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})\n• Growth Stage: 45% (₱${(userInvestment * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})\n• Harvest Stage: 15% (₱${(userInvestment * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})\n\nTotal Investment: ₱${userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                             </div>
-                            <p className={`text-xl font-bold ${userInvestment < suggestedCapital ? 'text-destructive' : 'text-primary'}`}>₱{userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className={`text-xl font-bold ${investmentBelowSuggested ? 'text-destructive' : 'text-primary'}`}>₱{userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             {/* Show warning if investment is less than suggested capital */}
-                            {userInvestment < suggestedCapital && (
-                                <p className={`text-xs flex items-center gap-1 mt-2 ${userInvestment < suggestedCapital ? 'text-destructive' : 'text-destructive-foreground'}`}>
+                            {investmentBelowSuggested && (
+                                <p className={`text-xs flex items-center gap-1 mt-2 ${investmentBelowSuggested ? 'text-destructive' : 'text-destructive-foreground'}`}>
                                     <AlertTriangle className="inline h-3 w-3 flex-shrink-0" />
                                     <span>Investment is below suggested capital by ₱{(suggestedCapital - userInvestment).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </p>
@@ -220,7 +226,7 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
                         </div>
 
                         {/* Show Est. Suggested Capital only if user's investment is less than suggested capital */}
-                        {(userInvestment < suggestedCapital || investmentExceedsSuggested) && (
+                        {(!investmentEqualToSuggested) && (
                             <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500">
                                 <div className="flex justify-between items-start">
                                     <p className="text-sm text-muted-foreground mb-1">Est. Suggested Capital</p>
@@ -246,7 +252,7 @@ Total Suggested Capital: ₱${Number(suggestedCapital || 0).toLocaleString('en-U
                                         </p>
                                     </div>
                                 )}
-                                {userInvestment < suggestedCapital && (
+                                {investmentBelowSuggested && (
                                     <div className="mt-2">
                                         <p className="text-xs text-destructive">
                                             You need ₱{(suggestedCapital - userInvestment).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} more for optimal results
@@ -265,19 +271,19 @@ Total Suggested Capital: ₱${Number(suggestedCapital || 0).toLocaleString('en-U
 Factors affecting yield:
 • Land area: ${crop.landArea} ha
 • Soil type: ${crop.soilType}
-• Investment level: ${userInvestment >= suggestedCapital ? 'Optimal' : 'Below suggested'}
+• Investment level: ${investmentEqualToSuggested || investmentExceedsSuggested ? 'Optimal' : 'Below suggested'}
 
 Estimated yield: ${estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg
 
 ${userInvestment === 0 ? 'Note: Harvest is 0 because investment is 0.' :
-                                        userInvestment < suggestedCapital ? `Note: Harvest is scaled down proportionally to your investment (${((userInvestment / suggestedCapital) * 100).toFixed(1)}% of optimal).` :
+                                        investmentBelowSuggested ? `Note: Harvest is scaled down proportionally to your investment (${((userInvestment / suggestedCapital) * 100).toFixed(1)}% of optimal).` :
                                             'Note: Harvest is at optimal level based on your investment.'}`} />
                             </div>
                             <p className="text-xl font-bold text-blue-500">{estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</p>
                             <p className="text-xs mt-2 text-muted-foreground">This is your est. yield harvest</p>
                         </div>
 
-                        <div className={`p-4 rounded-lg border ${netProfit >= 0 ? (userInvestment < suggestedCapital ? 'bg-destructive/10 border-destructive' : 'bg-success/10 border-success') : 'bg-destructive/10 border-destructive'}`}>
+                        <div className={`p-4 rounded-lg border ${netProfit >= 0 ? (investmentBelowSuggested ? 'bg-destructive/10 border-destructive' : 'bg-success/10 border-success') : 'bg-destructive/10 border-destructive'}`}>
                             <div className="flex justify-between items-start">
                                 <p className="text-sm text-muted-foreground mb-1">Your Est. Profit</p>
                                 <InfoTooltip content={`Estimated Profit Calculation:
@@ -288,16 +294,16 @@ Total Expenses: ₱${userInvestment.toLocaleString('en-US', { minimumFractionDig
 Net Profit: ₱${(estimatedYield * (insights?.market?.averagePrice || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'} - ₱${userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'} = ₱${netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
 
 ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
-                                        userInvestment < suggestedCapital ? `Note: Profit is scaled down proportionally to your investment (${((userInvestment / suggestedCapital) * 100).toFixed(1)}% of optimal).` :
+                                        investmentBelowSuggested ? `Note: Profit is scaled down proportionally to your investment (${((userInvestment / suggestedCapital) * 100).toFixed(1)}% of optimal).` :
                                             investmentExceedsSuggested ? `Note: Profit calculation assumes optimal yield despite excess investment.` :
                                                 'Note: Profit is at optimal level based on your investment.'}`} />
                             </div>
-                            <p className={`text-xl font-bold ${netProfit >= 0 ? (userInvestment < suggestedCapital ? 'text-destructive' : 'text-success') : 'text-destructive'}`}>
+                            <p className={`text-xl font-bold ${netProfit >= 0 ? (investmentBelowSuggested ? 'text-destructive' : 'text-success') : 'text-destructive'}`}>
                                 ₱{netProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                             <p className="text-xs mt-2 text-muted-foreground">
                                 {netProfit >= 0
-                                    ? (userInvestment < suggestedCapital ? "Below suggested investment" : "This is your est. expected profit after all expenses")
+                                    ? (investmentBelowSuggested ? "Below suggested investment" : "This is your est. expected profit after all expenses")
                                     : "You might lose money. Consider adjusting your approach."}
                             </p>
                         </div>

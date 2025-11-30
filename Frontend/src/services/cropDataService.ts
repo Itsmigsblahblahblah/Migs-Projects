@@ -453,7 +453,7 @@ export const calculateProfitProjection = async (
     const userInvestment = Number(puhunan) || 0;
     const estimatedYield = userInvestment === 0 ? 0 : 
         totalEstimatedYield * 
-        (userInvestment >= suggestedCapital ? 1 : (userInvestment / suggestedCapital));
+        (Math.abs(userInvestment - suggestedCapital) < 0.01 || userInvestment > suggestedCapital ? 1 : (userInvestment / suggestedCapital));
     
     // Calculate potential revenue using predicted price
     const potentialRevenue = estimatedYield * predictedPrice; // Revenue = yield (kg) * price (PHP/kg)
