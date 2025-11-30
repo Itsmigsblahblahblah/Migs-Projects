@@ -40,6 +40,8 @@ export const useSpeechRecognition = () => {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptBufferRef = useRef<string>("");
+  const retryCountRef = useRef<number>(0);
+  const maxRetries = 3;
 
   useEffect(() => {
     // Check if browser supports speech recognition
@@ -51,10 +53,10 @@ export const useSpeechRecognition = () => {
     }
 
     recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = false; // Changed to false to prevent multiple results
+    recognitionRef.current.continuous = false;
     recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = "fil-PH";
-    recognitionRef.current.maxAlternatives = 3; // Increased for better accuracy
+    recognitionRef.current.maxAlternatives = 3;
 
     recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
       let interim = "";
@@ -77,6 +79,7 @@ export const useSpeechRecognition = () => {
       }
       
       setInterimTranscript(interim);
+      retryCountRef.current = 0; // Reset retry count on successful result
     };
 
     recognitionRef.current.onerror = (event: any) => {
@@ -84,43 +87,140 @@ export const useSpeechRecognition = () => {
       setError(event.error || "Unknown error");
       setIsListening(false);
       
-      // Handle specific iOS Safari error
+      // Handle iOS Safari specific errors
       if (event.error === "service-not-allowed" || event.error === "not-allowed") {
-        // This is a known issue with iOS Safari, try to restart after a delay
-        if (restartTimeoutRef.current) {
-          clearTimeout(restartTimeoutRef.current);
-        }
-        restartTimeoutRef.current = setTimeout(() => {
-          if (isListening && recognitionRef.current) {
-            try {
-              recognitionRef.current.abort();
-              setTimeout(() => {
-                if (recognitionRef.current && isListening) {
-                  recognitionRef.current.start();
-                }
-              }, 100);
-            } catch (e) {
-              console.error("Failed to restart speech recognition:", e);
-            }
+        // For iOS, we need to completely recreate the recognition object
+        if (retryCountRef.current < maxRetries) {
+          retryCountRef.current++;
+          
+          if (restartTimeoutRef.current) {
+            clearTimeout(restartTimeoutRef.current);
           }
-        }, 300);
+          
+          restartTimeoutRef.current = setTimeout(() => {
+            // Completely recreate the recognition object for iOS
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition && recognitionRef.current) {
+              // Clean up existing recognition
+              try {
+                recognitionRef.current.abort();
+              } catch (e) {
+                console.warn("Error aborting recognition:", e);
+              }
+              
+              // Create new recognition object
+              try {
+                recognitionRef.current = new SpeechRecognition();
+                recognitionRef.current.continuous = false;
+                recognitionRef.current.interimResults = true;
+                recognitionRef.current.lang = "fil-PH";
+                recognitionRef.current.maxAlternatives = 3;
+                
+                // Reattach event handlers
+                recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+                  let interim = "";
+                  let final = "";
+                  
+                  for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                      final += transcript + " ";
+                    } else {
+                      interim += transcript;
+                    }
+                  }
+                  
+                  if (final) {
+                    const newTranscript = transcriptBufferRef.current + final;
+                    transcriptBufferRef.current = newTranscript;
+                    setTranscript(newTranscript);
+                  }
+                  
+                  setInterimTranscript(interim);
+                  retryCountRef.current = 0;
+                };
+                
+                recognitionRef.current.onerror = recognitionRef.current.onerror;
+                recognitionRef.current.onend = recognitionRef.current.onend;
+                
+                // Try to start again
+                if (isListening) {
+                  try {
+                    recognitionRef.current.start();
+                  } catch (e) {
+                    console.error("Failed to restart speech recognition after recreation:", e);
+                    setIsListening(false);
+                  }
+                }
+              } catch (e) {
+                console.error("Failed to recreate speech recognition object:", e);
+              }
+            }
+          }, 500);
+        } else {
+          // Max retries reached
+          console.error("Max retries reached for speech recognition");
+          setIsListening(false);
+        }
       }
     };
 
     recognitionRef.current.onend = () => {
-      // Auto-restart if we were listening (helps with mobile devices)
+      // Auto-restart if we were listening
       if (isListening) {
-        // Add a small delay before restarting to prevent rapid restart loops
         setTimeout(() => {
           if (isListening && recognitionRef.current) {
             try {
               recognitionRef.current.start();
             } catch (e) {
               console.error("Failed to restart speech recognition:", e);
-              setIsListening(false);
+              // For iOS, try recreating the object
+              const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+              if (SpeechRecognition) {
+                try {
+                  recognitionRef.current = new SpeechRecognition();
+                  recognitionRef.current.continuous = false;
+                  recognitionRef.current.interimResults = true;
+                  recognitionRef.current.lang = "fil-PH";
+                  recognitionRef.current.maxAlternatives = 3;
+                  recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+                    let interim = "";
+                    let final = "";
+                    
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                      const transcript = event.results[i][0].transcript;
+                      if (event.results[i].isFinal) {
+                        final += transcript + " ";
+                      } else {
+                        interim += transcript;
+                      }
+                    }
+                    
+                    if (final) {
+                      const newTranscript = transcriptBufferRef.current + final;
+                      transcriptBufferRef.current = newTranscript;
+                      setTranscript(newTranscript);
+                    }
+                    
+                    setInterimTranscript(interim);
+                    retryCountRef.current = 0;
+                  };
+                  recognitionRef.current.onerror = recognitionRef.current.onerror;
+                  recognitionRef.current.onend = recognitionRef.current.onend;
+                  
+                  if (isListening) {
+                    recognitionRef.current.start();
+                  }
+                } catch (recreateError) {
+                  console.error("Failed to recreate speech recognition object:", recreateError);
+                  setIsListening(false);
+                }
+              } else {
+                setIsListening(false);
+              }
             }
           }
-        }, 100);
+        }, 300);
       } else {
         setIsListening(false);
       }
@@ -128,7 +228,11 @@ export const useSpeechRecognition = () => {
 
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.warn("Error stopping recognition:", e);
+        }
       }
       if (restartTimeoutRef.current) {
         clearTimeout(restartTimeoutRef.current);
@@ -142,12 +246,51 @@ export const useSpeechRecognition = () => {
       setTranscript("");
       setInterimTranscript("");
       setError(null);
+      retryCountRef.current = 0; // Reset retry count
+      
       try {
+        // Ensure we have a fresh recognition object
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!recognitionRef.current && SpeechRecognition) {
+          recognitionRef.current = new SpeechRecognition();
+          recognitionRef.current.continuous = false;
+          recognitionRef.current.interimResults = true;
+          recognitionRef.current.lang = "fil-PH";
+          recognitionRef.current.maxAlternatives = 3;
+          
+          // Reattach event handlers if needed
+          recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+            let interim = "";
+            let final = "";
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const transcript = event.results[i][0].transcript;
+              if (event.results[i].isFinal) {
+                final += transcript + " ";
+              } else {
+                interim += transcript;
+              }
+            }
+            
+            if (final) {
+              const newTranscript = transcriptBufferRef.current + final;
+              transcriptBufferRef.current = newTranscript;
+              setTranscript(newTranscript);
+            }
+            
+            setInterimTranscript(interim);
+            retryCountRef.current = 0;
+          };
+          
+          recognitionRef.current.onerror = recognitionRef.current.onerror;
+          recognitionRef.current.onend = recognitionRef.current.onend;
+        }
+        
         recognitionRef.current.start();
         setIsListening(true);
       } catch (error) {
         console.error("Error starting speech recognition:", error);
-        setError("Failed to start speech recognition");
+        setError("Failed to start speech recognition. Please ensure microphone permissions are granted.");
         setIsListening(false);
       }
     }
@@ -155,7 +298,11 @@ export const useSpeechRecognition = () => {
 
   const stopListening = () => {
     if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        console.warn("Error stopping recognition:", e);
+      }
       setIsListening(false);
     }
   };
