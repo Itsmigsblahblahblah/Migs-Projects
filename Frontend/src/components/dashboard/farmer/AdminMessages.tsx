@@ -219,7 +219,7 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle className="flex items-center gap-2">
-              <Send className="h-5 w-5 text-blue-500" />
+              <Send className="h-5 w-5 text-green-500" />
               Messages from Admin
             </CardTitle>
           </div>
@@ -227,7 +227,7 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
         <CardContent>
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-3"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-3"></div>
               <p>Loading messages...</p>
             </div>
           ) : messages.length === 0 ? (
@@ -251,7 +251,7 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
                     className={`border rounded-lg p-4 transition-colors cursor-pointer hover:bg-muted/50 ${
                       message.read 
                         ? "bg-muted/30 border-muted-foreground/20" 
-                        : "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900"
+                        : "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900"
                     }`}
                     onClick={() => handleMessageClick(message)}
                   >
@@ -259,7 +259,7 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
                       <div className="flex items-center gap-2">
                         <span className="font-medium">Admin</span>
                         {!message.read && (
-                          <span className="inline-flex h-2 w-2 rounded-full bg-blue-500"></span>
+                          <span className="inline-flex h-2 w-2 rounded-full bg-green-500"></span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
@@ -287,7 +287,7 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
                               markAsRead(message.id);
                             }}
                           >
-                            <CheckCircle className="h-4 w-4 text-blue-500" />
+                            <CheckCircle className="h-4 w-4 text-green-500" />
                           </Button>
                         )}
                       </div>
@@ -307,13 +307,13 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
       {/* Message Detail Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="flex-shrink-0 p-6 pb-4 border-b bg-blue-500 text-white">
+          <DialogHeader className="flex-shrink-0 p-6 pb-4 border-b bg-green-500 text-white">
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="text-xl text-white">
                   Message from Admin
                 </DialogTitle>
-                <DialogDescription className="mt-2 text-blue-100">
+                <DialogDescription className="mt-2 text-green-100">
                   {selectedMessage?.timestamp?.toDate().toLocaleString()}
                 </DialogDescription>
               </div>

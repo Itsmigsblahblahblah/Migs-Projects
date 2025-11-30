@@ -608,7 +608,7 @@ const FarmerDetailPage = () => {
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-blue-500" />
+                  <Package className="h-5 w-5 text-green-500" />
                   Harvested ({harvestedCrops.length})
                 </CardTitle>
                 <CardDescription>Successfully grown crops</CardDescription>

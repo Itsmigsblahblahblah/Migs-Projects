@@ -732,7 +732,7 @@ const Alerts = () => {
                 Announcements
                 <Badge
                   variant="secondary"
-                  className="ml-2 bg-blue-500 text-white hover:bg-blue-600"
+                  className="ml-2 bg-green-500 text-white hover:bg-green-600"
                 >
                   {alertCounts.informational}
                 </Badge>
@@ -781,7 +781,7 @@ const Alerts = () => {
                       key={alert.id}
                       className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 mb-3 last:mb-0 ${alert.category === 'critical' ? 'bg-red-50 border-red-200' :
                         alert.category === 'messages' ? 'bg-green-50 border-green-200' :
-                          'bg-blue-50 border-blue-200'
+                          'bg-green-50 border-green-200'
                         } ${alert.read ? 'opacity-75' : ''}`}
                       onClick={() => handleAlertClick(alert)}
                     >
@@ -797,7 +797,7 @@ const Alerts = () => {
                               className={`
                                 ml-2
                                 ${alert.category === 'critical' ? 'bg-red-500 hover:bg-red-600' : ''}
-                                ${alert.category === 'informational' ? 'bg-blue-500 hover:bg-blue-600' : ''}
+                                ${alert.category === 'informational' ? 'bg-green-500 hover:bg-green-600' : ''}
                                 ${alert.category === 'messages' ? 'bg-green-500 hover:bg-green-600' : ''}
                                 text-white
                                 whitespace-nowrap
@@ -960,13 +960,13 @@ const Alerts = () => {
       {/* Alert Detail Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className={`flex-shrink-0 p-6 pb-4 border-b text-white ${selectedAlert?.category === 'critical' ? 'bg-red-500' : selectedAlert?.category === 'messages' ? 'bg-green-500' : 'bg-blue-500'}`}>
+          <DialogHeader className={`flex-shrink-0 p-6 pb-4 border-b text-white ${selectedAlert?.category === 'critical' ? 'bg-red-500' : selectedAlert?.category === 'messages' ? 'bg-green-500' : 'bg-green-500'}`}>
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="text-xl text-white">
                   {selectedAlert?.title}
                 </DialogTitle>
-                <DialogDescription className={`mt-2 ${selectedAlert?.category === 'critical' ? 'text-red-100' : selectedAlert?.category === 'messages' ? 'text-green-100' : 'text-blue-100'}`}>
+                <DialogDescription className={`mt-2 ${selectedAlert?.category === 'critical' ? 'text-red-100' : selectedAlert?.category === 'messages' ? 'text-green-100' : 'text-green-100'}`}>
                   <div className="flex items-center gap-2">
                     <span className="capitalize">
                       {selectedAlert?.type === 'weather' ? 'Weather Alert' :

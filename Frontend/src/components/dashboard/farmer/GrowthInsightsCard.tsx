@@ -89,7 +89,7 @@ const GrowthInsightsCard = ({
                         </div>
                         <div className="p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                             <div className="flex items-center gap-2 mb-1">
-                                <Droplets className="h-4 w-4 text-blue-500" />
+                                <Droplets className="h-4 w-4 text-green-500" />
                                 <span className="font-medium text-sm">Disease Prevention</span>
                             </div>
                             <p className="text-sm text-muted-foreground">

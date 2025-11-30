@@ -185,10 +185,10 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
                             </div>
                         )}
 
-                        <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500">
-                            <div className="text-blue-500 font-bold text-xl mb-2">{userInvestment < suggestedCapital ? '3' : '2'}</div>
+                        <div className="p-4 bg-green-500/10 rounded-lg border border-green-500">
+                            <div className="text-green-500 font-bold text-xl mb-2">{userInvestment < suggestedCapital ? '3' : '2'}</div>
                             <p className="text-sm text-muted-foreground mb-1">Est. Yield Harvest</p>
-                            <p className="text-xl font-bold text-blue-500">{estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</p>
+                            <p className="text-xl font-bold text-green-500">{estimatedYield.toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</p>
                             <p className="text-xs mt-2 text-muted-foreground">This is your est. yield harvest</p>
                             <InfoTooltip content={`The estimated yield you can expect from your crop based on land area, soil quality, and farming practices.
                             
@@ -231,9 +231,9 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
 
                 {/* Simplified Explanation Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div className="p-4 bg-blue-500/5 rounded-lg border">
+                    <div className="p-4 bg-green-500/5 rounded-lg border">
                         <div className="flex items-center gap-2 mb-3">
-                            <TrendingUp className="h-5 w-5 text-blue-500" />
+                            <TrendingUp className="h-5 w-5 text-green-500" />
                             <p className="font-bold">What Affects Your Earnings</p>
                         </div>
                         <div className="space-y-3">

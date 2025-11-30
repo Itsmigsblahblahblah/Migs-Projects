@@ -194,7 +194,7 @@ const UserAnnouncements = () => {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Bell className="h-5 w-5 text-blue-500" />
+          <Bell className="h-5 w-5 text-green-500" />
           Announcements
         </h3>
       </div>
@@ -209,7 +209,7 @@ const UserAnnouncements = () => {
           return (
             <div 
               key={announcement.id} 
-              className={`border rounded-lg p-3 ${isRead ? 'bg-blue-50 border-blue-200' : 'bg-blue-100 border-blue-300'}`}
+              className={`border rounded-lg p-3 ${isRead ? 'bg-green-50 border-green-200' : 'bg-green-100 border-green-300'}`}
             >
               <div className="flex justify-between items-start">
                 <h4 className="font-medium">{announcement.title}</h4>
@@ -222,7 +222,7 @@ const UserAnnouncements = () => {
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                        className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
                         onClick={(e) => {
                           e.stopPropagation();
                           markAsRead(announcement.id);

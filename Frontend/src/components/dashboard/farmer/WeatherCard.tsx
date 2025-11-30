@@ -63,13 +63,13 @@ const WeatherCard = ({
         if (conditionLower.includes('clear') || conditionLower.includes('sun')) {
             return <Sun className="h-5 w-5 text-yellow-500" />;
         } else if (conditionLower.includes('rain') || conditionLower.includes('shower')) {
-            return <CloudRain className="h-5 w-5 text-blue-500" />;
+            return <CloudRain className="h-5 w-5 text-green-500" />;
         } else if (conditionLower.includes('cloud')) {
             return <Cloud className="h-5 w-5 text-gray-500" />;
         } else if (conditionLower.includes('thunder') || conditionLower.includes('storm')) {
             return <Zap className="h-5 w-5 text-purple-500" />;
         } else if (conditionLower.includes('snow')) {
-            return <Snowflake className="h-5 w-5 text-blue-200" />;
+            return <Snowflake className="h-5 w-5 text-green-200" />;
         } else {
             return <Sun className="h-5 w-5 text-yellow-500" />;
         }

@@ -293,7 +293,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                                         <>
                                                             <div className="space-y-4">
                                                                 <h3 className="font-medium text-lg">Nitrogen (N) - Level: {insights.fertilizer.detailedRecommendations.nitrogen.level}</h3>
-                                                                <div className="p-3 bg-blue-50 rounded-lg">
+                                                                <div className="p-3 bg-green-50 rounded-lg">
                                                                     <p className="text-sm text-muted-foreground mb-2">
                                                                         {insights.fertilizer.detailedRecommendations.nitrogen.detailedInfo}
                                                                     </p>

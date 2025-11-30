@@ -213,7 +213,7 @@ const History = () => {
 
   const getProblemColor = (problem: string) => {
     const colors = {
-      flood: 'bg-blue-500/10 text-blue-700 border-blue-200',
+      flood: 'bg-green-500/10 text-green-700 border-green-200',
       pest: 'bg-red-500/10 text-red-700 border-red-200',
       drought: 'bg-orange-500/10 text-orange-700 border-orange-200',
       disease: 'bg-purple-500/10 text-purple-700 border-purple-200',
