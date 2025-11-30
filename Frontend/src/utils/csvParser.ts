@@ -49,7 +49,8 @@ export const loadCSV = async (filePath: string): Promise<any[]> => {
     // For frontend, we'll need to fetch the file from the backend
     // In a real implementation, this would be an API endpoint
     const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-    const response = await fetch(`${BACKEND_URL}/api${filePath}`);
+    // Remove the extra /api prefix since our endpoints don't use it
+    const response = await fetch(`${BACKEND_URL}${filePath}`);
     if (!response.ok) {
       throw new Error(`Failed to load CSV file: ${response.statusText}`);
     }

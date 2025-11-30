@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crop Yield Test</title>
+</head>
+<body>
+    <h1>Crop Yield Service Test</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        import { getCropYieldRanges, calculateEstimatedYield } from './src/services/cropYieldService.ts';
+
+        async function runTests() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Running tests...</p>';
+
+            try {
+                // Test with Cabbage (Repolyo)
+                resultsDiv.innerHTML += '<h2>Testing CABBAGE (REPOLYO)</h2>';
+                const repolyoRanges = await getCropYieldRanges('CABBAGE (REPOLYO)');
+                resultsDiv.innerHTML += `<p>Cabbage yield ranges: ${JSON.stringify(repolyoRanges)}</p>`;
+                
+                const repolyoYield = await calculateEstimatedYield('CABBAGE (REPOLYO)', 0.1);
+                resultsDiv.innerHTML += `<p>Cabbage yield for 0.1 hectare: ${repolyoYield} kg</p>`;
+                
+                // Test with another crop
+                resultsDiv.innerHTML += '<h2>Testing KANGKONG (WATER SPINACH)</h2>';
+                const kangkongRanges = await getCropYieldRanges('KANGKONG (WATER SPINACH)');
+                resultsDiv.innerHTML += `<p>Kangkong yield ranges: ${JSON.stringify(kangkongRanges)}</p>`;
+                
+                const kangkongYield = await calculateEstimatedYield('KANGKONG (WATER SPINACH)', 0.1);
+                resultsDiv.innerHTML += `<p>Kangkong yield for 0.1 hectare: ${kangkongYield} kg</p>`;
+                
+                resultsDiv.innerHTML += '<p style="color: green;">All tests completed successfully!</p>';
+            } catch (error) {
+                resultsDiv.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Test error:', error);
+            }
+        }
+
+        // Run tests when page loads
+        window.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>
