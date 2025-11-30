@@ -10,12 +10,12 @@
  */
 export const parseCSV = (csvString: string, delimiter = ','): any[] => {
   const lines = csvString.split('\n').filter(line => line.trim() !== '');
-  
+
   if (lines.length === 0) return [];
-  
+
   // Parse headers
   const headers = lines[0].split(delimiter).map(header => header.trim().replace(/"/g, ''));
-  
+
   // Parse data rows
   const data = [];
   for (let i = 1; i < lines.length; i++) {
@@ -35,7 +35,7 @@ export const parseCSV = (csvString: string, delimiter = ','): any[] => {
       data.push(obj);
     }
   }
-  
+
   return data;
 };
 
@@ -48,7 +48,8 @@ export const loadCSV = async (filePath: string): Promise<any[]> => {
   try {
     // For frontend, we'll need to fetch the file from the backend
     // In a real implementation, this would be an API endpoint
-    const response = await fetch(`/api${filePath}`);
+    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+    const response = await fetch(`${BACKEND_URL}/api${filePath}`);
     if (!response.ok) {
       throw new Error(`Failed to load CSV file: ${response.statusText}`);
     }
@@ -69,19 +70,19 @@ export const loadCSV = async (filePath: string): Promise<any[]> => {
  * @returns Array of matching records
  */
 export const findMatchingRecords = (
-  data: any[], 
-  field: string, 
-  value: string, 
+  data: any[],
+  field: string,
+  value: string,
   caseSensitive = false
 ): any[] => {
   if (!caseSensitive) {
-    return data.filter(record => 
-      record[field] && 
+    return data.filter(record =>
+      record[field] &&
       record[field].toString().toLowerCase().includes(value.toLowerCase())
     );
   }
-  return data.filter(record => 
-    record[field] && 
+  return data.filter(record =>
+    record[field] &&
     record[field].toString().includes(value)
   );
 };

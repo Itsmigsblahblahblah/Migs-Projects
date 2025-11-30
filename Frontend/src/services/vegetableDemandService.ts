@@ -2,8 +2,8 @@
  * Service for interacting with the vegetable demand prediction API
  */
 
-// API base URL - adjust this to match your backend URL
-const API_BASE_URL = 'http://localhost:8000';
+// API base URL - use environment variable or default to localhost
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 /**
  * Get vegetable demand prediction for a specific crop
@@ -63,15 +63,15 @@ export const getRecommendedCrops = async (
     // Build query parameters
     const params = new URLSearchParams();
     params.append('top_n', topN.toString());
-    
+
     if (month !== undefined) {
       params.append('month', month.toString());
     }
-    
+
     if (year !== undefined) {
       params.append('year', year.toString());
     }
-    
+
     if (demandLevel !== undefined) {
       params.append('demand_level', demandLevel);
     }
@@ -112,11 +112,11 @@ export const getVegetableHistoricalData = async (vegetableName: string) => {
       const simplifiedName = vegetableName.replace(/\s*\(.*?\)/g, '').trim();
       console.log('Trying with simplified name:', simplifiedName);
       const response = await fetch(`${API_BASE_URL}/vegetables/vegetable-data/${encodeURIComponent(simplifiedName)}`);
-      
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       if (data.vegetable_data && data.vegetable_data.length > 0) {
         console.log('Found data with simplified name:', simplifiedName);
@@ -125,7 +125,7 @@ export const getVegetableHistoricalData = async (vegetableName: string) => {
     } catch (simplifiedError) {
       console.error('Error with simplified name:', simplifiedError);
     }
-    
+
     throw error;
   }
 };

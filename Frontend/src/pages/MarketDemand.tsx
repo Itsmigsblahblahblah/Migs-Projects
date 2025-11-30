@@ -175,7 +175,8 @@ const MarketDemand = () => {
 
       // Include month, year, and demand_level parameters in the API call
       // Request all crops instead of just 20
-      let url = `/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      let url = `${BACKEND_URL}/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
       if (selectedDemandLevel) {
         url += `&demand_level=${selectedDemandLevel}`;
       }
