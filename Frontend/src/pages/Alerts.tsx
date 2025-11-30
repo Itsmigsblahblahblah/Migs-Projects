@@ -165,7 +165,7 @@ const Alerts = () => {
               ...doc.data()
             } as AdminMessage);
           });
-          
+
           // Sort by timestamp manually
           messagesData.sort((a, b) => {
             if (a.timestamp && b.timestamp) {
@@ -179,7 +179,7 @@ const Alerts = () => {
             }
             return 0;
           });
-          
+
           setAdminMessages(messagesData);
           setMessagesLoading(false);
         }, (error) => {
@@ -188,15 +188,15 @@ const Alerts = () => {
           // If it's an index error, fall back to simple query without orderBy
           // Log the full error for debugging
           console.log("Full error object:", JSON.stringify(error, null, 2));
-          
+
           // Check for various types of index errors
-          const isIndexError = error.code === 'failed-precondition' || 
-              (error.message && error.message.includes('index')) ||
-              (error.code === 'resource-exhausted' && error.message && error.message.includes('composite index')) ||
-              (error.message && error.message.includes('FirebaseError') && error.message.includes('requires an index')) ||
-              (error.code === 'permission-denied' && error.message && error.message.includes('Missing or insufficient permissions')) ||
-              (error.message && error.message.includes('query requires an index'));
-          
+          const isIndexError = error.code === 'failed-precondition' ||
+            (error.message && error.message.includes('index')) ||
+            (error.code === 'resource-exhausted' && error.message && error.message.includes('composite index')) ||
+            (error.message && error.message.includes('FirebaseError') && error.message.includes('requires an index')) ||
+            (error.code === 'permission-denied' && error.message && error.message.includes('Missing or insufficient permissions')) ||
+            (error.message && error.message.includes('query requires an index'));
+
           if (isIndexError) {
             const fallbackMessages: AdminMessage[] = [];
             simpleSnapshot.docs.forEach((doc) => {
@@ -440,20 +440,20 @@ const Alerts = () => {
     }).filter(alert => {
       // Also filter out weather alerts that have been cleared
       if (alert.type !== 'weather') return true;
-      
+
       // For weather alerts, check if they've been cleared (deleted from userReadStatus)
       const weatherAlertId = createWeatherAlertId(alert.title, alert.date);
       const status = userReadStatus[weatherAlertId];
-      
+
       // If there's no read status, show the weather alert
       if (!status) return true;
-      
+
       // If there's a read status, check if it's marked as deleted
       if (typeof status === 'boolean') {
         // Old format - boolean means read but not deleted
         return true;
       }
-      
+
       // New format - check deleted flag
       return !status.deleted;
     });
@@ -487,7 +487,7 @@ const Alerts = () => {
     }).filter(alert => {
       // Also filter out weather alerts that have been cleared
       if (alert.type !== 'weather') return true;
-      
+
       // For weather alerts, check if they've been cleared (deleted from userReadStatus)
       const weatherAlertId = createWeatherAlertId(alert.title, alert.date);
       return !userReadStatus[weatherAlertId]?.deleted;
@@ -508,7 +508,7 @@ const Alerts = () => {
       // Find the corresponding admin message to get the reportId
       const messageId = alert.id.replace('message-', '');
       const adminMessage = adminMessages.find(msg => msg.id === messageId);
-      
+
       // If this message is linked to a report, navigate to the report detail page
       if (adminMessage && adminMessage.reportId) {
         // Navigate to the report detail page
@@ -516,7 +516,7 @@ const Alerts = () => {
         return;
       }
     }
-    
+
     // For all other alerts, open the dialog as before
     setSelectedAlert(alert);
     setIsDialogOpen(true);
@@ -596,13 +596,13 @@ const Alerts = () => {
         // For weather alerts, remove from read status if it exists
         // Create the same stable ID based on the alert description and date
         const weatherAlertId = createWeatherAlertId(alertToDelete.title, alertToDelete.date);
-        
+
         // Optimistically update UI
         setUserReadStatus(prev => ({
           ...prev,
           [weatherAlertId]: { read: true, deleted: true, timestamp: new Date() }
         }));
-        
+
         // Also remove from selected alert if it's the same one
         if (selectedAlert && selectedAlert.type === 'weather') {
           const selectedAlertWeatherId = createWeatherAlertId(selectedAlert.title, selectedAlert.date);
@@ -779,19 +779,19 @@ const Alerts = () => {
                   {currentAlerts.map((alert) => (
                     <div
                       key={alert.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 mb-3 last:mb-0 ${alert.category === 'critical' ? 'bg-red-50 border-red-200' :
-                          alert.category === 'messages' ? 'bg-green-50 border-green-200' :
-                            'bg-blue-50 border-blue-200'
+                      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 mb-3 last:mb-0 ${alert.category === 'critical' ? 'bg-red-50 border-red-200' :
+                        alert.category === 'messages' ? 'bg-green-50 border-green-200' :
+                          'bg-blue-50 border-blue-200'
                         } ${alert.read ? 'opacity-75' : ''}`}
                       onClick={() => handleAlertClick(alert)}
                     >
-                      <span className="text-2xl">
+                      <span className="text-2xl mt-1">
                         {alert.type === 'weather' ? '🌤️' : alert.type === 'message' ? '✉️' : '📢'}
                       </span>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
-                          <p className="font-medium">{alert.title}</p>
-                          <div className="flex items-center gap-2">
+                          <p className="font-medium truncate max-w-[70%]">{alert.title}</p>
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             <Badge
                               variant="secondary"
                               className={`
@@ -800,13 +800,14 @@ const Alerts = () => {
                                 ${alert.category === 'informational' ? 'bg-blue-500 hover:bg-blue-600' : ''}
                                 ${alert.category === 'messages' ? 'bg-green-500 hover:bg-green-600' : ''}
                                 text-white
+                                whitespace-nowrap
                               `}
                             >
                               {alert.category.charAt(0).toUpperCase() + alert.category.slice(1)}
                             </Badge>
                             {/* Show action buttons for messages, announcements, and weather alerts */}
                             {(alert.type === 'message' || alert.type === 'announcement' || alert.type === 'weather') && (
-                              <div className="flex gap-1">
+                              <div className="flex gap-1 flex-shrink-0">
                                 {!alert.read && (
                                   <Button
                                     variant="ghost"
@@ -832,15 +833,15 @@ const Alerts = () => {
                           </div>
                         </div>
                         <div className="flex justify-between items-center mt-1">
-                          <p className="text-xs text-muted-foreground capitalize">
+                          <p className="text-xs text-muted-foreground capitalize truncate">
                             {alert.type === 'weather' ? 'Weather Alert' : alert.type === 'message' ? 'Message' : 'Announcement'}
                           </p>
-                          <span className="text-xs bg-secondary px-2 py-1 rounded">
+                          <span className="text-xs bg-secondary px-2 py-1 rounded flex-shrink-0">
                             {alert.date}
                           </span>
                         </div>
                         {alert.content && (
-                          <p className="text-sm mt-2 text-muted-foreground line-clamp-2">
+                          <p className="text-sm mt-2 text-muted-foreground line-clamp-2 overflow-hidden">
                             {alert.content}
                           </p>
                         )}
@@ -853,17 +854,17 @@ const Alerts = () => {
 
             {/* Pagination Controls - Always visible */}
             <div className="border-t pt-1 px-4" style={{ paddingBottom: '15px', marginTop: 'auto' }}>
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground" style={{ margin: '1px 0' }}>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div className="text-sm text-muted-foreground md:text-left text-center">
                   Showing {startIndex + 1} to {Math.min(endIndex, filteredAlerts.length)} of {filteredAlerts.length} alerts
                 </div>
-                <div className="flex space-x-1">
+                <div className="flex flex-nowrap justify-center gap-1">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="h-8 px-3 text-sm"
+                    className="h-8 px-3 text-sm flex-shrink-0"
                   >
                     Previous
                   </Button>
@@ -888,7 +889,7 @@ const Alerts = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => setCurrentPage(1)}
-                          className="h-8 w-8 p-0 text-sm"
+                          className="h-8 w-8 p-0 text-sm flex-shrink-0"
                         >
                           1
                         </Button>
@@ -896,7 +897,7 @@ const Alerts = () => {
                       // Only show ellipsis if there's a significant gap
                       if (startPage > 2) {
                         pageButtons.push(
-                          <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                          <span key="start-ellipsis" className="px-1 py-0 text-muted-foreground text-sm flex-shrink-0">⋯</span>
                         );
                       }
                     }
@@ -909,7 +910,7 @@ const Alerts = () => {
                           variant={currentPage === i ? "default" : "outline"}
                           size="sm"
                           onClick={() => setCurrentPage(i)}
-                          className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                          className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
                         >
                           {i}
                         </Button>
@@ -921,7 +922,7 @@ const Alerts = () => {
                       // Only show ellipsis if there's a significant gap
                       if (endPage < totalPages - 1) {
                         pageButtons.push(
-                          <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
+                          <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm flex-shrink-0">⋯</span>
                         );
                       }
                       pageButtons.push(
@@ -930,7 +931,7 @@ const Alerts = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => setCurrentPage(totalPages)}
-                          className="h-8 w-8 p-0 text-sm"
+                          className="h-8 w-8 p-0 text-sm flex-shrink-0"
                         >
                           {totalPages}
                         </Button>
@@ -945,7 +946,7 @@ const Alerts = () => {
                     size="sm"
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className="h-8 px-3 text-sm"
+                    className="h-8 px-3 text-sm flex-shrink-0"
                   >
                     Next
                   </Button>
