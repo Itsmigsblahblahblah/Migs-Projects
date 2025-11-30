@@ -42,23 +42,24 @@ export const useSpeechRecognition = () => {
   const transcriptBufferRef = useRef<string>("");
   const retryCountRef = useRef<number>(0);
   const maxRetries = 3;
+  const userInteractionRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    // Check if browser supports speech recognition
+  // Function to initialize speech recognition
+  const initSpeechRecognition = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
       setIsSupported(false);
-      return;
+      return null;
     }
 
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = false;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = "fil-PH";
-    recognitionRef.current.maxAlternatives = 3;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "fil-PH";
+    recognition.maxAlternatives = 3;
 
-    recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = "";
       let final = "";
       
@@ -71,7 +72,6 @@ export const useSpeechRecognition = () => {
         }
       }
       
-      // Prevent duplication by using a buffer
       if (final) {
         const newTranscript = transcriptBufferRef.current + final;
         transcriptBufferRef.current = newTranscript;
@@ -79,17 +79,17 @@ export const useSpeechRecognition = () => {
       }
       
       setInterimTranscript(interim);
-      retryCountRef.current = 0; // Reset retry count on successful result
+      retryCountRef.current = 0;
+      setError(null);
     };
 
-    recognitionRef.current.onerror = (event: any) => {
+    recognition.onerror = (event: any) => {
       console.error("Speech recognition error", event.error || event);
       setError(event.error || "Unknown error");
       setIsListening(false);
       
       // Handle iOS Safari specific errors
       if (event.error === "service-not-allowed" || event.error === "not-allowed") {
-        // For iOS, we need to completely recreate the recognition object
         if (retryCountRef.current < maxRetries) {
           retryCountRef.current++;
           
@@ -98,133 +98,67 @@ export const useSpeechRecognition = () => {
           }
           
           restartTimeoutRef.current = setTimeout(() => {
-            // Completely recreate the recognition object for iOS
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (SpeechRecognition && recognitionRef.current) {
-              // Clean up existing recognition
-              try {
-                recognitionRef.current.abort();
-              } catch (e) {
-                console.warn("Error aborting recognition:", e);
-              }
-              
-              // Create new recognition object
-              try {
-                recognitionRef.current = new SpeechRecognition();
-                recognitionRef.current.continuous = false;
-                recognitionRef.current.interimResults = true;
-                recognitionRef.current.lang = "fil-PH";
-                recognitionRef.current.maxAlternatives = 3;
-                
-                // Reattach event handlers
-                recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-                  let interim = "";
-                  let final = "";
-                  
-                  for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                      final += transcript + " ";
-                    } else {
-                      interim += transcript;
-                    }
-                  }
-                  
-                  if (final) {
-                    const newTranscript = transcriptBufferRef.current + final;
-                    transcriptBufferRef.current = newTranscript;
-                    setTranscript(newTranscript);
-                  }
-                  
-                  setInterimTranscript(interim);
-                  retryCountRef.current = 0;
-                };
-                
-                recognitionRef.current.onerror = recognitionRef.current.onerror;
-                recognitionRef.current.onend = recognitionRef.current.onend;
-                
-                // Try to start again
+            // For iOS, we need to recreate everything
+            if (userInteractionRef.current) {
+              const newRecognition = initSpeechRecognition();
+              if (newRecognition) {
+                recognitionRef.current = newRecognition;
                 if (isListening) {
-                  try {
-                    recognitionRef.current.start();
-                  } catch (e) {
-                    console.error("Failed to restart speech recognition after recreation:", e);
-                    setIsListening(false);
-                  }
+                  startListeningInternal();
                 }
-              } catch (e) {
-                console.error("Failed to recreate speech recognition object:", e);
               }
             }
-          }, 500);
+          }, 1000);
         } else {
-          // Max retries reached
           console.error("Max retries reached for speech recognition");
           setIsListening(false);
+        }
+      } else if (event.error === "no-speech") {
+        // This is normal, just restart if needed
+        if (isListening) {
+          setTimeout(() => {
+            if (isListening && userInteractionRef.current) {
+              startListeningInternal();
+            }
+          }, 300);
         }
       }
     };
 
-    recognitionRef.current.onend = () => {
-      // Auto-restart if we were listening
-      if (isListening) {
+    recognition.onend = () => {
+      if (isListening && userInteractionRef.current) {
         setTimeout(() => {
-          if (isListening && recognitionRef.current) {
-            try {
-              recognitionRef.current.start();
-            } catch (e) {
-              console.error("Failed to restart speech recognition:", e);
-              // For iOS, try recreating the object
-              const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-              if (SpeechRecognition) {
-                try {
-                  recognitionRef.current = new SpeechRecognition();
-                  recognitionRef.current.continuous = false;
-                  recognitionRef.current.interimResults = true;
-                  recognitionRef.current.lang = "fil-PH";
-                  recognitionRef.current.maxAlternatives = 3;
-                  recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-                    let interim = "";
-                    let final = "";
-                    
-                    for (let i = event.resultIndex; i < event.results.length; i++) {
-                      const transcript = event.results[i][0].transcript;
-                      if (event.results[i].isFinal) {
-                        final += transcript + " ";
-                      } else {
-                        interim += transcript;
-                      }
-                    }
-                    
-                    if (final) {
-                      const newTranscript = transcriptBufferRef.current + final;
-                      transcriptBufferRef.current = newTranscript;
-                      setTranscript(newTranscript);
-                    }
-                    
-                    setInterimTranscript(interim);
-                    retryCountRef.current = 0;
-                  };
-                  recognitionRef.current.onerror = recognitionRef.current.onerror;
-                  recognitionRef.current.onend = recognitionRef.current.onend;
-                  
-                  if (isListening) {
-                    recognitionRef.current.start();
-                  }
-                } catch (recreateError) {
-                  console.error("Failed to recreate speech recognition object:", recreateError);
-                  setIsListening(false);
-                }
-              } else {
-                setIsListening(false);
-              }
-            }
+          if (isListening && userInteractionRef.current) {
+            startListeningInternal();
           }
         }, 300);
       } else {
         setIsListening(false);
       }
     };
+
+    return recognition;
+  };
+
+  const startListeningInternal = () => {
+    if (recognitionRef.current && !isListening && isSupported) {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+        setError(null);
+        return true;
+      } catch (error) {
+        console.error("Error starting speech recognition:", error);
+        setError("Failed to start speech recognition. Please ensure microphone permissions are granted.");
+        setIsListening(false);
+        return false;
+      }
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    recognitionRef.current = initSpeechRecognition();
 
     return () => {
       if (recognitionRef.current) {
@@ -241,62 +175,32 @@ export const useSpeechRecognition = () => {
   }, []);
 
   const startListening = () => {
-    if (recognitionRef.current && !isListening && isSupported) {
-      transcriptBufferRef.current = "";
-      setTranscript("");
-      setInterimTranscript("");
-      setError(null);
-      retryCountRef.current = 0; // Reset retry count
-      
-      try {
-        // Ensure we have a fresh recognition object
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!recognitionRef.current && SpeechRecognition) {
-          recognitionRef.current = new SpeechRecognition();
-          recognitionRef.current.continuous = false;
-          recognitionRef.current.interimResults = true;
-          recognitionRef.current.lang = "fil-PH";
-          recognitionRef.current.maxAlternatives = 3;
-          
-          // Reattach event handlers if needed
-          recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-            let interim = "";
-            let final = "";
-            
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-              const transcript = event.results[i][0].transcript;
-              if (event.results[i].isFinal) {
-                final += transcript + " ";
-              } else {
-                interim += transcript;
-              }
-            }
-            
-            if (final) {
-              const newTranscript = transcriptBufferRef.current + final;
-              transcriptBufferRef.current = newTranscript;
-              setTranscript(newTranscript);
-            }
-            
-            setInterimTranscript(interim);
-            retryCountRef.current = 0;
-          };
-          
-          recognitionRef.current.onerror = recognitionRef.current.onerror;
-          recognitionRef.current.onend = recognitionRef.current.onend;
-        }
-        
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch (error) {
-        console.error("Error starting speech recognition:", error);
-        setError("Failed to start speech recognition. Please ensure microphone permissions are granted.");
-        setIsListening(false);
-      }
+    // Mark that user initiated this action
+    userInteractionRef.current = true;
+    
+    // Reset state
+    transcriptBufferRef.current = "";
+    setTranscript("");
+    setInterimTranscript("");
+    setError(null);
+    retryCountRef.current = 0;
+    
+    // Ensure we have a recognition object
+    if (!recognitionRef.current) {
+      recognitionRef.current = initSpeechRecognition();
     }
+    
+    // Start listening
+    if (recognitionRef.current) {
+      return startListeningInternal();
+    }
+    
+    return false;
   };
 
   const stopListening = () => {
+    userInteractionRef.current = false;
+    
     if (recognitionRef.current && isListening) {
       try {
         recognitionRef.current.stop();
