@@ -83,6 +83,93 @@ export const useCropManagement = () => {
             return false;
         }
 
+        // Check if there's already an in-progress crop of the same type
+        const isInProgress = (plantedDate: any, cropName: string): boolean => {
+            try {
+                let planted: Date;
+                
+                // Handle string dates (YYYY-MM-DD format)
+                if (typeof plantedDate === 'string') {
+                    planted = new Date(plantedDate);
+                }
+                // Handle Firestore Timestamp
+                else if (plantedDate?.toDate) {
+                    planted = plantedDate.toDate();
+                }
+                // Handle JavaScript Date objects
+                else if (plantedDate instanceof Date) {
+                    planted = plantedDate;
+                } else {
+                    return true; // Default to in progress if we can't determine
+                }
+                
+                if (isNaN(planted.getTime())) {
+                    return true; // Default to in progress if invalid date
+                }
+                
+                // Calculate days to harvest based on crop type (using the same logic as in CropDetails)
+                let daysToHarvest = 90; // Default
+                
+                if (cropName.toLowerCase().includes("rice")) {
+                    daysToHarvest = 120;
+                } else if (cropName.toLowerCase().includes("corn")) {
+                    daysToHarvest = 100;
+                } else if (cropName.toLowerCase().includes("tomato")) {
+                    daysToHarvest = 70;
+                } else if (cropName.toLowerCase().includes("eggplant")) {
+                    daysToHarvest = 75;
+                } else if (cropName.toLowerCase().includes("pechay")) {
+                    daysToHarvest = 45;
+                } else if (cropName.toLowerCase().includes("mustard")) {
+                    daysToHarvest = 40;
+                } else if (cropName.toLowerCase().includes("kangkong")) {
+                    daysToHarvest = 30;
+                } else if (cropName.toLowerCase().includes("squash")) {
+                    daysToHarvest = 60;
+                } else if (cropName.toLowerCase().includes("melon")) {
+                    daysToHarvest = 80;
+                } else if (cropName.toLowerCase().includes("watermelon")) {
+                    daysToHarvest = 90;
+                } else if (cropName.toLowerCase().includes("cucumber")) {
+                    daysToHarvest = 60;
+                } else if (cropName.toLowerCase().includes("okra")) {
+                    daysToHarvest = 60;
+                } else if (cropName.toLowerCase().includes("sitaw")) {
+                    daysToHarvest = 60;
+                } else if (cropName.toLowerCase().includes("patani")) {
+                    daysToHarvest = 60;
+                } else if (cropName.toLowerCase().includes("ampalaya")) {
+                    daysToHarvest = 70;
+                } else if (cropName.toLowerCase().includes("labanos")) {
+                    daysToHarvest = 30;
+                } else if (cropName.toLowerCase().includes("talong")) {
+                    daysToHarvest = 70;
+                }
+                
+                const now = new Date();
+                const daysDiff = Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
+                
+                // Crop is in progress if it hasn't reached its harvest date yet
+                return daysDiff <= daysToHarvest;
+            } catch {
+                return true; // Default to in progress if error
+            }
+        };
+
+        const inProgressCrop = crops.find(crop =>
+            crop.name.toLowerCase() === newCrop.name.toLowerCase() &&
+            isInProgress(crop.plantedDate, crop.name)
+        );
+
+        if (inProgressCrop) {
+            toast({
+                title: "Crop Already Exists",
+                description: `You already have an in-progress ${newCrop.name} crop. Please wait until it's harvested before adding another.`,
+                variant: "destructive",
+            });
+            return false;
+        }
+
         try {
             // Check if there's an existing crop of the same type with detailed instructions
             let checklistToCopy: any[] | undefined = undefined;

@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import Layout from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
 import { collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp } from "firebase/firestore";
@@ -23,7 +24,8 @@ import {
   Package,
   Sprout,
   Send,
-  MessageSquare
+  MessageSquare,
+  Filter
 } from "lucide-react";
 
 interface Farmer {
@@ -67,6 +69,254 @@ const FarmerDetailPage = () => {
   const [inProgressCurrentPage, setInProgressCurrentPage] = useState(1);
   const [harvestedCurrentPage, setHarvestedCurrentPage] = useState(1);
   const cropsPerPage = 6; // Show 6 crops per page
+
+  // Add sorting state (keeping for now, will be replaced with filter system)
+  const [inProgressSortConfig, setInProgressSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
+  const [harvestedSortConfig, setHarvestedSortConfig] = useState<{key: string, direction: 'asc' | 'desc'} | null>(null);
+  
+  // Add filter state (similar to History page)
+  const [inProgressFilters, setInProgressFilters] = useState({
+    crop: 'all',
+    soilType: 'all'
+  });
+  
+  const [harvestedFilters, setHarvestedFilters] = useState({
+    crop: 'all',
+    soilType: 'all'
+  });
+
+  // Helper function to calculate harvest date
+  const calculateHarvestDate = (plantedDate: any, cropName: string) => {
+    try {
+      let planted: Date;
+      
+      // Handle string dates (YYYY-MM-DD format)
+      if (typeof plantedDate === 'string') {
+        planted = new Date(plantedDate);
+      }
+      // Handle Firestore Timestamp
+      else if (plantedDate?.toDate) {
+        planted = plantedDate.toDate();
+      }
+      // Handle JavaScript Date objects
+      else if (plantedDate instanceof Date) {
+        planted = plantedDate;
+      } else {
+        return 'Unknown date';
+      }
+      
+      if (isNaN(planted.getTime())) {
+        return 'Unknown date';
+      }
+      
+      // Calculate days to harvest based on crop type (using the same logic as in CropDetails)
+      let daysToHarvest = 90; // Default
+      
+      if (cropName.toLowerCase().includes("rice")) {
+        daysToHarvest = 120;
+      } else if (cropName.toLowerCase().includes("corn")) {
+        daysToHarvest = 100;
+      } else if (cropName.toLowerCase().includes("tomato")) {
+        daysToHarvest = 70;
+      } else if (cropName.toLowerCase().includes("eggplant")) {
+        daysToHarvest = 75;
+      } else if (cropName.toLowerCase().includes("pechay")) {
+        daysToHarvest = 45;
+      } else if (cropName.toLowerCase().includes("mustard")) {
+        daysToHarvest = 40;
+      } else if (cropName.toLowerCase().includes("kangkong")) {
+        daysToHarvest = 30;
+      } else if (cropName.toLowerCase().includes("squash")) {
+        daysToHarvest = 60;
+      } else if (cropName.toLowerCase().includes("melon")) {
+        daysToHarvest = 80;
+      } else if (cropName.toLowerCase().includes("watermelon")) {
+        daysToHarvest = 90;
+      } else if (cropName.toLowerCase().includes("cucumber")) {
+        daysToHarvest = 60;
+      } else if (cropName.toLowerCase().includes("okra")) {
+        daysToHarvest = 60;
+      } else if (cropName.toLowerCase().includes("sitaw")) {
+        daysToHarvest = 60;
+      } else if (cropName.toLowerCase().includes("patani")) {
+        daysToHarvest = 60;
+      } else if (cropName.toLowerCase().includes("ampalaya")) {
+        daysToHarvest = 70;
+      } else if (cropName.toLowerCase().includes("labanos")) {
+        daysToHarvest = 30;
+      } else if (cropName.toLowerCase().includes("talong")) {
+        daysToHarvest = 70;
+      }
+      
+      // Calculate harvest date
+      const harvestDate = new Date(planted);
+      harvestDate.setDate(harvestDate.getDate() + daysToHarvest);
+      
+      return harvestDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return 'Unknown date';
+    }
+  };
+
+  // Helper function to sort crops
+  const sortCrops = (crops: any[], sortConfig: {key: string, direction: 'asc' | 'desc'} | null) => {
+    if (!sortConfig) return crops;
+    
+    return [...crops].sort((a, b) => {
+      // Handle special cases for different data types
+      let aValue, bValue;
+      
+      switch (sortConfig.key) {
+        case 'name':
+          aValue = a.name?.toLowerCase() || '';
+          bValue = b.name?.toLowerCase() || '';
+          break;
+        case 'landArea':
+          aValue = parseFloat(a.landArea) || 0;
+          bValue = parseFloat(b.landArea) || 0;
+          break;
+        case 'puhunan':
+          aValue = parseFloat(a.puhunan) || 0;
+          bValue = parseFloat(b.puhunan) || 0;
+          break;
+        case 'plantedDate':
+          // Convert dates for comparison
+          try {
+            let aDate, bDate;
+            if (typeof a.plantedDate === 'string') {
+              aDate = new Date(a.plantedDate);
+            } else if (a.plantedDate?.toDate) {
+              aDate = a.plantedDate.toDate();
+            } else {
+              aDate = a.plantedDate instanceof Date ? a.plantedDate : new Date(0);
+            }
+            
+            if (typeof b.plantedDate === 'string') {
+              bDate = new Date(b.plantedDate);
+            } else if (b.plantedDate?.toDate) {
+              bDate = b.plantedDate.toDate();
+            } else {
+              bDate = b.plantedDate instanceof Date ? b.plantedDate : new Date(0);
+            }
+            
+            aValue = aDate.getTime();
+            bValue = bDate.getTime();
+          } catch (e) {
+            aValue = 0;
+            bValue = 0;
+          }
+          break;
+        case 'harvestDate':
+          // For harvest date sorting, we'll sort by the calculated harvest date
+          try {
+            const aHarvestDateStr = calculateHarvestDate(a.plantedDate, a.name);
+            const bHarvestDateStr = calculateHarvestDate(b.plantedDate, b.name);
+            
+            // Convert date strings to Date objects for comparison
+            // We'll use a default date if parsing fails
+            const aHarvestDate = aHarvestDateStr !== 'Unknown date' ? new Date(aHarvestDateStr) : new Date(0);
+            const bHarvestDate = bHarvestDateStr !== 'Unknown date' ? new Date(bHarvestDateStr) : new Date(0);
+            
+            aValue = aHarvestDate.getTime();
+            bValue = bHarvestDate.getTime();
+          } catch (e) {
+            aValue = 0;
+            bValue = 0;
+          }
+          break;
+        default:
+          aValue = a[sortConfig.key]?.toString().toLowerCase() || '';
+          bValue = b[sortConfig.key]?.toString().toLowerCase() || '';
+      }
+      
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  };
+
+  // Helper function to filter crops (similar to History page)
+  const filterCrops = (crops: any[], filters: any) => {
+    return crops.filter(crop => {
+      // Filter by crop name
+      const matchesCropFilter = 
+        filters.crop === 'all' || 
+        crop.name.toLowerCase() === filters.crop.toLowerCase();
+      
+      // Filter by soil type
+      const matchesSoilTypeFilter = 
+        filters.soilType === 'all' || 
+        crop.soilType.toLowerCase() === filters.soilType.toLowerCase();
+      
+      return matchesCropFilter && matchesSoilTypeFilter;
+    });
+  };
+
+  // Helper function to handle filter changes (similar to History page)
+  const handleFilterChange = (type: 'inProgress' | 'harvested', filterName: string, value: string) => {
+    if (type === 'inProgress') {
+      setInProgressFilters(prev => ({
+        ...prev,
+        [filterName]: value
+      }));
+      // Reset to first page when filters change
+      setInProgressCurrentPage(1);
+    } else {
+      setHarvestedFilters(prev => ({
+        ...prev,
+        [filterName]: value
+      }));
+      // Reset to first page when filters change
+      setHarvestedCurrentPage(1);
+    }
+  };
+
+  // Helper function to clear all filters (similar to History page)
+  const clearFilters = (type: 'inProgress' | 'harvested') => {
+    if (type === 'inProgress') {
+      setInProgressFilters({
+        crop: 'all',
+        soilType: 'all'
+      });
+      setInProgressCurrentPage(1);
+    } else {
+      setHarvestedFilters({
+        crop: 'all',
+        soilType: 'all'
+      });
+      setHarvestedCurrentPage(1);
+    }
+  };
+
+  // Helper function to handle sort requests
+  const requestSort = (type: 'inProgress' | 'harvested', key: string) => {
+    let sortConfig = type === 'inProgress' ? inProgressSortConfig : harvestedSortConfig;
+    let direction: 'asc' | 'desc' = 'asc';
+    
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    
+    const newSortConfig = { key, direction };
+    
+    if (type === 'inProgress') {
+      setInProgressSortConfig(newSortConfig);
+      // Reset to first page when sorting changes
+      setInProgressCurrentPage(1);
+    } else {
+      setHarvestedSortConfig(newSortConfig);
+      // Reset to first page when sorting changes
+      setHarvestedCurrentPage(1);
+    }
+  };
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
@@ -250,6 +500,18 @@ const FarmerDetailPage = () => {
       .slice(0, 2);
   };
 
+  // Helper function to get unique crop names
+  const getUniqueCrops = (crops: any[]) => {
+    const uniqueCrops = [...new Set(crops.map(crop => crop.name))];
+    return uniqueCrops.sort();
+  };
+
+  // Helper function to get unique soil types
+  const getUniqueSoilTypes = (crops: any[]) => {
+    const uniqueSoilTypes = [...new Set(crops.map(crop => crop.soilType))];
+    return uniqueSoilTypes.sort();
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -290,16 +552,25 @@ const FarmerDetailPage = () => {
 
   const inProgressCrops = getCropsByStatus("In Progress");
   const harvestedCrops = getCropsByStatus("Harvested");
-  const totalInvestment = crops.reduce((sum, crop) => sum + (crop.puhunan || 0), 0);
-  const totalCrops = crops.length;
+  
+  // Apply filtering to crops
+  const filteredInProgressCrops = filterCrops(inProgressCrops, inProgressFilters);
+  const filteredHarvestedCrops = filterCrops(harvestedCrops, harvestedFilters);
+  
+  // Apply sorting to filtered crops
+  const sortedInProgressCrops = sortCrops(filteredInProgressCrops, inProgressSortConfig);
+  const sortedHarvestedCrops = sortCrops(filteredHarvestedCrops, harvestedSortConfig);
   
   // Get paginated crops
-  const paginatedInProgressCrops = getPaginatedCrops(inProgressCrops, inProgressCurrentPage, cropsPerPage);
-  const paginatedHarvestedCrops = getPaginatedCrops(harvestedCrops, harvestedCurrentPage, cropsPerPage);
+  const paginatedInProgressCrops = getPaginatedCrops(sortedInProgressCrops, inProgressCurrentPage, cropsPerPage);
+  const paginatedHarvestedCrops = getPaginatedCrops(sortedHarvestedCrops, harvestedCurrentPage, cropsPerPage);
   
   // Generate page numbers
-  const inProgressPageNumbers = generatePageNumbers(inProgressCrops.length, cropsPerPage);
-  const harvestedPageNumbers = generatePageNumbers(harvestedCrops.length, cropsPerPage);
+  const inProgressPageNumbers = generatePageNumbers(sortedInProgressCrops.length, cropsPerPage);
+  const harvestedPageNumbers = generatePageNumbers(sortedHarvestedCrops.length, cropsPerPage);
+  
+  const totalInvestment = crops.reduce((sum, crop) => sum + (crop.puhunan || 0), 0);
+  const totalCrops = crops.length;
 
   const handleSendMessage = async () => {
     if (!farmer || !customMessage.trim()) return;
@@ -533,6 +804,7 @@ const FarmerDetailPage = () => {
                 <CardDescription>Currently growing crops</CardDescription>
               </CardHeader>
               <CardContent>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {paginatedInProgressCrops.map((crop) => (
                     <Card key={crop.id} className="hover:shadow-md transition-shadow">
@@ -557,6 +829,10 @@ const FarmerDetailPage = () => {
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Planted:</span>
                             <span>{formatTimestamp(crop.plantedDate)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Est. Harvest:</span>
+                            <span>{calculateHarvestDate(crop.plantedDate, crop.name)}</span>
                           </div>
                         </div>
                       </CardContent>
@@ -614,6 +890,7 @@ const FarmerDetailPage = () => {
                 <CardDescription>Successfully grown crops</CardDescription>
               </CardHeader>
               <CardContent>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {paginatedHarvestedCrops.map((crop) => (
                     <Card key={crop.id} className="hover:shadow-md transition-shadow">
@@ -638,6 +915,10 @@ const FarmerDetailPage = () => {
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Planted:</span>
                             <span>{formatTimestamp(crop.plantedDate)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Est. Harvest:</span>
+                            <span>{calculateHarvestDate(crop.plantedDate, crop.name)}</span>
                           </div>
                         </div>
                       </CardContent>

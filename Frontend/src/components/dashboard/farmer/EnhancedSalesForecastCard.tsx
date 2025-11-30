@@ -345,7 +345,7 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                                     {netProfit >= 0 ? "Est. Profit Percentage" : "Est. Loss Percentage"}
                                 </span>
                                 <span className="font-medium">
-                                    {crop.puhunan > 0 ? ((netProfit / crop.puhunan) * 100).toFixed(1) : '0.0'}%
+                                    {crop.puhunan > 0 ? Math.min(((netProfit / crop.puhunan) * 100), 100).toFixed(1) : '0.0'}%
                                 </span>
                                 <InfoTooltip content={`Your estimated return on investment (ROI) percentage for this crop`} />
                             </div>
