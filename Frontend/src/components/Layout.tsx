@@ -445,7 +445,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Sprout className="h-4 w-4 text-primary" />
-              <span>© 2025 Majayjay Farm Resource Management System</span>
+              <span>© 2025 Harvestify</span>
             </div>
             <div className="text-sm text-muted-foreground">
               Empowering farmers with smart technology

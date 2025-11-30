@@ -246,7 +246,7 @@ const Landing = () => {
               <div className="p-3 rounded-full bg-gradient-primary">
                 <Sprout className="h-8 w-8 text-primary-foreground" />
               </div>
-              <h1 className="text-2xl font-bold text-primary">Majayjay Farm Resource Management</h1>
+              <h1 className="text-2xl font-bold text-primary">Harvestify</h1>
             </div>
 
             <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
@@ -456,7 +456,7 @@ const Landing = () => {
               </div>
             </div>
             <div className="text-sm text-muted-foreground">
-              © 2025 Majayjay Farm Resource Management System. Empowering farmers with smart technology.
+              © 2025 Harvestify. Empowering farmers with smart technology.
             </div>
           </div>
         </div>

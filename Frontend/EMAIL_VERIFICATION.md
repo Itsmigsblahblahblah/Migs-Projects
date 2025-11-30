@@ -1,7 +1,7 @@
 # Email Verification Feature Documentation
 
 ## Overview
-This document describes the email verification feature that has been added to prevent fake or inactive email addresses from accessing the Majayjay Farm Resource Management System.
+This document describes the email verification feature that has been added to prevent fake or inactive email addresses from accessing Harvestify.
 
 ## 🎯 Purpose
 - **Prevent fake accounts**: Ensures users provide valid, active email addresses

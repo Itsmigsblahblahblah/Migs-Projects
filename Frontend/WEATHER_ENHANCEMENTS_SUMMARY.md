@@ -1,7 +1,7 @@
 # Weather Enhancements Implementation Summary
 
 ## Overview
-This document summarizes the enhancements made to the weather functionality in the Majayjay Farm Resource Management System. The improvements include adding severe weather alerts and implementing collapsible sections in the WeatherCard component to improve UI/UX.
+This document summarizes the enhancements made to the weather functionality in Harvestify. The improvements include adding severe weather alerts and implementing collapsible sections in the WeatherCard component to improve UI/UX.
 
 ## Features Implemented
 

@@ -1,4 +1,4 @@
-# Majayjay Farm Resource Management System
+# Harvestify
 
 This is a smart farming web application for Majayjay farmers. The system provides expert crop recommendations, allows farmers to report farming issues, and connects them with agricultural specialists to optimize farm productivity.
 

@@ -1,6 +1,6 @@
 # Backend Organization Summary
 
-This document provides a comprehensive overview of the restructured Backend directory for the Majayjay Farm Resource Management System.
+This document provides a comprehensive overview of the restructured Backend directory for Harvestify.
 
 ## Final Directory Structure
 

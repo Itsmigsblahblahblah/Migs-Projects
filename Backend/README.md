@@ -1,6 +1,6 @@
 # Backend Structure
 
-This directory contains all backend-related components for the Majayjay Farm Resource Management System.
+This directory contains all backend-related components for Harvestify.
 
 ## Directory Structure
 

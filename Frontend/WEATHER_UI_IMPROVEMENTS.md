@@ -1,7 +1,7 @@
 # Weather UI Improvements Implementation Summary
 
 ## Overview
-This document summarizes the UI improvements made to the weather functionality in the Majayjay Farm Resource Management System. The enhancements focus on replacing scroll boxes with modal popups and arranging forecast days in a horizontal layout for better readability.
+This document summarizes the UI improvements made to the weather functionality in Harvestify. The enhancements focus on replacing scroll boxes with modal popups and arranging forecast days in a horizontal layout for better readability.
 
 ## Features Implemented
 

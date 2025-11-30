@@ -1,7 +1,7 @@
 # Weather Integration Documentation
 
 ## Overview
-This document explains how the Open-Meteo weather API integration works in the Majayjay Farm Resource Management System.
+This document explains how the Open-Meteo weather API integration works in Harvestify.
 
 ## Implementation Details
 
