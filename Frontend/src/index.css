@@ -18,10 +18,10 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 120 15% 15%;
 
-    /* Deep Forest Green Primary */
-    --primary: 120 60% 20%;
+    /* Deep Blue Primary */
+    --primary: 220 70% 30%;
     --primary-foreground: 0 0% 98%;
-    --primary-glow: 120 50% 35%;
+    --primary-glow: 220 60% 40%;
 
     /* Warm Earth Secondary */
     --secondary: 35 25% 85%;
@@ -30,15 +30,15 @@ All colors MUST be HSL.
     --muted: 45 15% 92%;
     --muted-foreground: 120 10% 45%;
 
-    /* Golden Accent */
-    --accent: 42 78% 60%;
+    /* Blue Accent */
+    --accent: 220 80% 60%;
     --accent-foreground: 120 15% 15%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    /* Success Green for Crop Recommendations */
-    --success: 120 50% 35%;
+    /* Success Blue for Crop Recommendations */
+    --success: 220 60% 40%;
     --success-foreground: 0 0% 98%;
 
     /* Warning for Problem Alerts */
@@ -46,25 +46,25 @@ All colors MUST be HSL.
     --warning-foreground: 120 15% 15%;
 
     /* Chart Colors */
-    --chart-1: 120 60% 20%;
-    --chart-2: 42 78% 60%;
-    --chart-3: 120 50% 35%;
+    --chart-1: 220 70% 30%;
+    --chart-2: 220 80% 60%;
+    --chart-3: 220 60% 40%;
     --chart-4: 35 25% 85%;
-    --chart-5: 120 15% 88%;
+    --chart-5: 220 15% 88%;
 
-    --border: 120 15% 88%;
-    --input: 120 15% 94%;
-    --ring: 120 60% 20%;
+    --border: 220 15% 88%;
+    --input: 220 15% 94%;
+    --ring: 220 70% 30%;
 
     /* Agricultural Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(120 60% 20%), hsl(120 50% 35%));
+    --gradient-primary: linear-gradient(135deg, hsl(220 70% 30%), hsl(220 60% 40%));
     --gradient-earth: linear-gradient(180deg, hsl(45 25% 98%), hsl(35 25% 92%));
-    --gradient-hero: linear-gradient(135deg, hsl(120 60% 20%) 0%, hsl(120 50% 35%) 50%, hsl(42 78% 60%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(220 70% 30%) 0%, hsl(220 60% 40%) 50%, hsl(220 80% 60%) 100%);
 
     /* Shadows */
-    --shadow-soft: 0 4px 20px -4px hsl(120 60% 20% / 0.1);
-    --shadow-card: 0 8px 25px -8px hsl(120 60% 20% / 0.15);
-    --shadow-glow: 0 0 30px hsl(42 78% 60% / 0.3);
+    --shadow-soft: 0 4px 20px -4px hsl(220 70% 30% / 0.1);
+    --shadow-card: 0 8px 25px -8px hsl(220 70% 30% / 0.15);
+    --shadow-glow: 0 0 30px hsl(220 80% 60% / 0.3);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -73,14 +73,14 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     /* Agricultural Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(120 60% 20%), hsl(120 50% 35%));
+    --gradient-primary: linear-gradient(135deg, hsl(220 70% 30%), hsl(220 60% 40%));
     --gradient-earth: linear-gradient(180deg, hsl(45 25% 98%), hsl(35 25% 92%));
-    --gradient-hero: linear-gradient(135deg, hsl(120 60% 20%) 0%, hsl(120 50% 35%) 50%, hsl(42 78% 60%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(220 70% 30%) 0%, hsl(220 60% 40%) 50%, hsl(220 80% 60%) 100%);
 
     /* Shadows */
-    --shadow-soft: 0 4px 20px -4px hsl(120 60% 20% / 0.1);
-    --shadow-card: 0 8px 25px -8px hsl(120 60% 20% / 0.15);
-    --shadow-glow: 0 0 30px hsl(42 78% 60% / 0.3);
+    --shadow-soft: 0 4px 20px -4px hsl(220 70% 30% / 0.1);
+    --shadow-card: 0 8px 25px -8px hsl(220 70% 30% / 0.15);
+    --shadow-glow: 0 0 30px hsl(220 80% 60% / 0.3);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -115,7 +115,7 @@ All colors MUST be HSL.
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 220 80% 60%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
@@ -123,8 +123,8 @@ All colors MUST be HSL.
 
     /* Chart Colors */
     --chart-1: 210 40% 98%;
-    --chart-2: 42 78% 60%;
-    --chart-3: 120 50% 35%;
+    --chart-2: 220 80% 60%;
+    --chart-3: 220 60% 40%;
     --chart-4: 217.2 32.6% 17.5%;
     --chart-5: 215 20.2% 65.1%;
 

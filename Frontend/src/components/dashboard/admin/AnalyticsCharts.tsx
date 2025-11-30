@@ -448,6 +448,7 @@ const AnalyticsCharts = ({
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => openReportDetail(report)}
+                                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                                 >
                                                     View Details
                                                 </Button>

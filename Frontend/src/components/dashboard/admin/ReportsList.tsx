@@ -501,16 +501,19 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                 </div>
                                                             </div>
 
-                                                            <div className="flex justify-between items-center">
-                                                                <p className="text-sm text-muted-foreground line-clamp-1">
-                                                                    {report.reportText}
-                                                                </p>
-                                                                <div className="flex gap-2">
+                                                            <div className="flex flex-col">
+                                                                <div className="flex justify-between items-center">
+                                                                    <p className="text-sm text-muted-foreground line-clamp-1">
+                                                                        {report.reportText}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex gap-2 mt-2 md:mt-0 md:justify-end w-full md:w-auto">
                                                                     {report.status !== 'resolved' && (
                                                                         <Button
                                                                             variant="outline"
                                                                             size="sm"
                                                                             onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                                            className="text-green-600 hover:text-green-700 hover:bg-green-50 w-full md:w-auto"
                                                                         >
                                                                             <CheckCircle className="h-4 w-4 mr-1" />
                                                                             Mark Resolved
@@ -520,6 +523,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() => openReportDetail(report)}
+                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-full md:w-auto"
                                                                     >
                                                                         <Eye className="h-4 w-4 mr-1" />
                                                                         View Details
@@ -528,7 +532,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         variant="outline"
                                                                         size="sm"
                                                                         onClick={() => handleDeleteRequest(report)}
-                                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full md:w-auto"
                                                                     >
                                                                         <Trash2 className="h-4 w-4 mr-1" />
                                                                         Delete
@@ -785,17 +789,20 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         <span className="text-muted-foreground">Problem: </span>
                                                         <span className="capitalize">{report.problem}</span>
                                                     </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <span className="text-muted-foreground">Affected Crop: </span>
-                                                            <span className="capitalize">{report.affectedCrop}</span>
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <span className="text-muted-foreground">Affected Crop: </span>
+                                                                <span className="capitalize">{report.affectedCrop}</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex gap-2">
+                                                        <div className="flex gap-2 mt-2 md:mt-0 md:justify-end w-full md:w-auto">
                                                             {report.status !== 'resolved' && (
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
                                                                     onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                                    className="text-green-600 hover:text-green-700 hover:bg-green-50 w-full md:w-auto"
                                                                 >
                                                                     <CheckCircle className="h-4 w-4" />
                                                                     <span className="hidden md:inline ml-1">Mark Resolved</span>
@@ -805,6 +812,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                 variant="outline"
                                                                 size="sm"
                                                                 onClick={() => openReportDetail(report)}
+                                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-full md:w-auto"
                                                             >
                                                                 <Eye className="h-4 w-4" />
                                                                 <span className="hidden md:inline ml-1">View Details</span>
@@ -813,7 +821,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                 variant="outline"
                                                                 size="sm"
                                                                 onClick={() => handleDeleteRequest(report)}
-                                                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full md:w-auto"
                                                             >
                                                                 <Trash2 className="h-4 w-4" />
                                                                 <span className="hidden md:inline ml-1">Delete</span>

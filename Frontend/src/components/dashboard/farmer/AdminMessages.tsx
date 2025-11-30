@@ -287,7 +287,7 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
                               markAsRead(message.id);
                             }}
                           >
-                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <CheckCircle className="h-4 w-4 text-blue-500" />
                           </Button>
                         )}
                       </div>
@@ -307,13 +307,13 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
       {/* Message Detail Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="flex-shrink-0 p-6 pb-4 border-b bg-green-500 text-white">
+          <DialogHeader className="flex-shrink-0 p-6 pb-4 border-b bg-blue-500 text-white">
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="text-xl text-white">
                   Message from Admin
                 </DialogTitle>
-                <DialogDescription className="mt-2 text-green-100">
+                <DialogDescription className="mt-2 text-blue-100">
                   {selectedMessage?.timestamp?.toDate().toLocaleString()}
                 </DialogDescription>
               </div>

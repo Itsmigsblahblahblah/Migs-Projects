@@ -319,6 +319,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                     <Button
                                         variant="default"
                                         onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                        className="text-green-600 hover:text-green-700 hover:bg-green-50 bg-white border border-green-300"
                                     >
                                         <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
                                         Mark as Resolved
