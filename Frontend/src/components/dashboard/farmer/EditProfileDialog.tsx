@@ -14,21 +14,23 @@ import { User, Trash2, Clock, CheckCircle, XCircle, ChevronDown } from "lucide-r
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ProfilePictureSelector from "./ProfilePictureSelector";
 
+interface FarmerProfileData {
+    fullName: string;
+    email: string;
+    contactNumber: string;
+    homeAddress: string;
+    farmAddress: string;
+    farmArea: string;
+    photoURL?: string;
+}
+
 interface EditProfileDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    farmerProfile: {
-        fullName: string;
-        email: string;
-        contactNumber: string;
-        homeAddress: string;
-        farmAddress: string;
-        farmArea: string;
-        photoURL?: string;
-    };
+    farmerProfile: FarmerProfileData;
     handleProfileInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleProfileImageSelection: (imagePath: string) => void;
-    handleUpdateProfile: () => Promise<void>;
+    handleUpdateProfile: (profileData?: FarmerProfileData) => Promise<void>;
     onRequestAccountDeletion: () => void;
     username: string;
     deletionRequest: any;
@@ -50,6 +52,7 @@ const EditProfileDialog = ({
     getDeletionButtonText
 }: EditProfileDialogProps) => {
     const [isSaving, setIsSaving] = useState(false);
+    const wasJustSaved = useRef(false);
     
     // Dropdown states for home address
     const [showHomeDropdown, setShowHomeDropdown] = useState(false);
@@ -65,23 +68,36 @@ const EditProfileDialog = ({
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
 
-    // Sync dropdown values with farmerProfile when it changes
+    // Sync dropdown values with farmerProfile when it changes or when dialog opens
     useEffect(() => {
-        setHomeSearchTerm(farmerProfile.homeAddress || "");
-        setFarmSearchTerm(farmerProfile.farmAddress || "");
-        
-        // Split full name into first and last name
-        if (farmerProfile.fullName) {
-            const nameParts = farmerProfile.fullName.split(" ");
-            if (nameParts.length >= 2) {
-                setFirstName(nameParts[0]);
-                setLastName(nameParts.slice(1).join(" "));
-            } else {
-                setFirstName(farmerProfile.fullName);
-                setLastName("");
-            }
+        if (open) { // Only sync when dialog is open
+            // Small delay to ensure state propagation
+            setTimeout(() => {
+                setHomeSearchTerm(farmerProfile.homeAddress || "");
+                setFarmSearchTerm(farmerProfile.farmAddress || "");
+            }, 10);
         }
-    }, [farmerProfile.homeAddress, farmerProfile.farmAddress, farmerProfile.fullName]);
+    }, [farmerProfile.homeAddress, farmerProfile.farmAddress, open]);
+    
+    // Sync name fields only when dialog opens or when fullName changes from external sources
+    useEffect(() => {
+        if (open) { // Only sync when dialog is open
+            // Small delay to ensure state propagation
+            setTimeout(() => {
+                // Split full name into first and last name
+                if (farmerProfile.fullName) {
+                    const nameParts = farmerProfile.fullName.split(" ");
+                    if (nameParts.length >= 2) {
+                        setFirstName(nameParts[0]);
+                        setLastName(nameParts.slice(1).join(" "));
+                    } else {
+                        setFirstName(farmerProfile.fullName);
+                        setLastName("");
+                    }
+                }
+            }, 10);
+        }
+    }, [farmerProfile.fullName, open]);
     
     // Home address options
     const homeAddressOptions = [
@@ -184,14 +200,19 @@ const EditProfileDialog = ({
             // Combine first and last name into full name before saving
             const combinedFullName = `${firstName} ${lastName}`.trim();
             
-            // Update the full name in the profile data
-            handleProfileInputChange({
-                target: { name: "fullName", value: combinedFullName }
-            } as React.ChangeEvent<HTMLInputElement>);
+            // Create updated profile data with the new fullName
+            const updatedProfileData = {
+                ...farmerProfile,
+                fullName: combinedFullName
+            };
             
-            // Call the original update function
-            await handleUpdateProfile();
+            // Call the update function with the updated profile data
+            await handleUpdateProfile(updatedProfileData);
             onOpenChange(false);
+        } catch (error) {
+            setIsSaving(false);
+            console.error("Error saving profile:", error);
+            throw error;
         } finally {
             setIsSaving(false);
         }
