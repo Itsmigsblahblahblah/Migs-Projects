@@ -607,7 +607,14 @@ const FarmerDashboard = () => {
           <ProfileCard
             username={username}
             farmerProfile={farmerProfile}
-            onEditProfile={() => setIsEditProfileDialogOpen(true)}
+            onEditProfile={() => {
+              // Ensure we have the latest data before opening the dialog
+              resetEditProfileData();
+              // Small delay to ensure state propagation
+              setTimeout(() => {
+                setIsEditProfileDialogOpen(true);
+              }, 10);
+            }}
           />
           <WeatherCard
             weatherData={weatherData || {
@@ -665,8 +672,9 @@ const FarmerDashboard = () => {
           open={isEditProfileDialogOpen}
           onOpenChange={(open) => {
             setIsEditProfileDialogOpen(open);
-            // Reset the edit profile data when the dialog is closed
+            // Only reset the edit profile data when the dialog is closed
             if (!open) {
+              // Reset immediately to ensure we're always working with the latest data
               resetEditProfileData();
             }
           }}

@@ -526,30 +526,36 @@ export const useFarmerDashboard = () => {
         }));
     };
 
-    const handleUpdateProfile = async () => {
+    const handleUpdateProfile = async (profileData?: typeof editProfileData) => {
         try {
+            // Use provided profile data or fallback to editProfileData
+            const dataToUse = profileData || editProfileData;
+            
             const updates: any = {
-                fullName: editProfileData.fullName,
-                contactNumber: editProfileData.contactNumber,
-                homeAddress: editProfileData.homeAddress,
-                farmAddress: editProfileData.farmAddress,
-                farmArea: editProfileData.farmArea
+                fullName: dataToUse.fullName,
+                contactNumber: dataToUse.contactNumber,
+                homeAddress: dataToUse.homeAddress,
+                farmAddress: dataToUse.farmAddress,
+                farmArea: dataToUse.farmArea
             };
 
             // If there's a profile image selected, save it
-            if (editProfileData.photoURL) {
-                updates.photoURL = editProfileData.photoURL;
+            if (dataToUse.photoURL) {
+                updates.photoURL = dataToUse.photoURL;
             }
 
             await updateDoc(doc(db, "farmers", userId), updates);
 
             // Update the main profile state with the new data
-            setFarmerProfile(editProfileData);
+            setFarmerProfile(dataToUse);
+            
+            // Also update the edit profile data to match
+            setEditProfileData(dataToUse);
 
             // Update username in localStorage if name changed
-            if (editProfileData.fullName !== username) {
-                localStorage.setItem('username', editProfileData.fullName);
-                setUsername(editProfileData.fullName);
+            if (dataToUse.fullName !== username) {
+                localStorage.setItem('username', dataToUse.fullName);
+                setUsername(dataToUse.fullName);
             }
 
             toast({

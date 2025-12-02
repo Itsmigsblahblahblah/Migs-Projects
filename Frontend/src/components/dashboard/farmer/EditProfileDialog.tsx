@@ -14,21 +14,23 @@ import { User, Trash2, Clock, CheckCircle, XCircle, ChevronDown } from "lucide-r
 import LoadingSpinner from "@/components/shared/LoadingSpinner";
 import ProfilePictureSelector from "./ProfilePictureSelector";
 
+interface FarmerProfileData {
+    fullName: string;
+    email: string;
+    contactNumber: string;
+    homeAddress: string;
+    farmAddress: string;
+    farmArea: string;
+    photoURL?: string;
+}
+
 interface EditProfileDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    farmerProfile: {
-        fullName: string;
-        email: string;
-        contactNumber: string;
-        homeAddress: string;
-        farmAddress: string;
-        farmArea: string;
-        photoURL?: string;
-    };
+    farmerProfile: FarmerProfileData;
     handleProfileInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     handleProfileImageSelection: (imagePath: string) => void;
-    handleUpdateProfile: () => Promise<void>;
+    handleUpdateProfile: (profileData?: FarmerProfileData) => Promise<void>;
     onRequestAccountDeletion: () => void;
     username: string;
     deletionRequest: any;
@@ -50,6 +52,7 @@ const EditProfileDialog = ({
     getDeletionButtonText
 }: EditProfileDialogProps) => {
     const [isSaving, setIsSaving] = useState(false);
+    const wasJustSaved = useRef(false);
     
     // Dropdown states for home address
     const [showHomeDropdown, setShowHomeDropdown] = useState(false);
@@ -61,11 +64,40 @@ const EditProfileDialog = ({
     const [farmSearchTerm, setFarmSearchTerm] = useState(farmerProfile.farmAddress || "");
     const farmDropdownRef = useRef<HTMLDivElement>(null);
 
-    // Sync dropdown values with farmerProfile when it changes
+    // Split full name into first and last name for editing
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+
+    // Sync dropdown values with farmerProfile when it changes or when dialog opens
     useEffect(() => {
-        setHomeSearchTerm(farmerProfile.homeAddress || "");
-        setFarmSearchTerm(farmerProfile.farmAddress || "");
-    }, [farmerProfile.homeAddress, farmerProfile.farmAddress]);
+        if (open) { // Only sync when dialog is open
+            // Small delay to ensure state propagation
+            setTimeout(() => {
+                setHomeSearchTerm(farmerProfile.homeAddress || "");
+                setFarmSearchTerm(farmerProfile.farmAddress || "");
+            }, 10);
+        }
+    }, [farmerProfile.homeAddress, farmerProfile.farmAddress, open]);
+    
+    // Sync name fields only when dialog opens or when fullName changes from external sources
+    useEffect(() => {
+        if (open) { // Only sync when dialog is open
+            // Small delay to ensure state propagation
+            setTimeout(() => {
+                // Split full name into first and last name
+                if (farmerProfile.fullName) {
+                    const nameParts = farmerProfile.fullName.split(" ");
+                    if (nameParts.length >= 2) {
+                        setFirstName(nameParts[0]);
+                        setLastName(nameParts.slice(1).join(" "));
+                    } else {
+                        setFirstName(farmerProfile.fullName);
+                        setLastName("");
+                    }
+                }
+            }, 10);
+        }
+    }, [farmerProfile.fullName, open]);
     
     // Home address options
     const homeAddressOptions = [
@@ -151,11 +183,36 @@ const EditProfileDialog = ({
         setShowFarmDropdown(true);
     };
 
+    // Handle input change for first name
+    const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFirstName(e.target.value);
+    };
+
+    // Handle input change for last name
+    const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setLastName(e.target.value);
+    };
+
+    // Handle save changes with combined full name
     const handleSaveChanges = async () => {
         setIsSaving(true);
         try {
-            await handleUpdateProfile();
+            // Combine first and last name into full name before saving
+            const combinedFullName = `${firstName} ${lastName}`.trim();
+            
+            // Create updated profile data with the new fullName
+            const updatedProfileData = {
+                ...farmerProfile,
+                fullName: combinedFullName
+            };
+            
+            // Call the update function with the updated profile data
+            await handleUpdateProfile(updatedProfileData);
             onOpenChange(false);
+        } catch (error) {
+            setIsSaving(false);
+            console.error("Error saving profile:", error);
+            throw error;
         } finally {
             setIsSaving(false);
         }
@@ -178,31 +235,42 @@ const EditProfileDialog = ({
                         disabled={isSaving}
                     />
 
-                    {/* Full Name and Contact Number - Grid */}
+                    {/* First Name and Last Name - Grid */}
                     <div className="grid md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="profile-fullName">Full Name</Label>
+                            <Label htmlFor="profile-firstName">First Name</Label>
                             <Input
-                                id="profile-fullName"
-                                name="fullName"
-                                value={farmerProfile.fullName}
-                                onChange={handleProfileInputChange}
-                                placeholder="Enter your full name"
+                                id="profile-firstName"
+                                value={firstName}
+                                onChange={handleFirstNameChange}
+                                placeholder="Enter your first name"
                                 disabled={isSaving}
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="profile-contactNumber">Contact Number</Label>
+                            <Label htmlFor="profile-lastName">Last Name</Label>
                             <Input
-                                id="profile-contactNumber"
-                                name="contactNumber"
-                                value={farmerProfile.contactNumber}
-                                onChange={handleProfileInputChange}
-                                placeholder="e.g., 09123456789"
+                                id="profile-lastName"
+                                value={lastName}
+                                onChange={handleLastNameChange}
+                                placeholder="Enter your last name"
                                 disabled={isSaving}
                             />
                         </div>
+                    </div>
+
+                    {/* Contact Number - Full width */}
+                    <div className="space-y-2">
+                        <Label htmlFor="profile-contactNumber">Contact Number</Label>
+                        <Input
+                            id="profile-contactNumber"
+                            name="contactNumber"
+                            value={farmerProfile.contactNumber}
+                            onChange={handleProfileInputChange}
+                            placeholder="e.g., 09123456789"
+                            disabled={isSaving}
+                        />
                     </div>
 
                     {/* Email (Disabled) - Full width */}
