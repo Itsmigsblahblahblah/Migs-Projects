@@ -39,7 +39,7 @@ const Login = () => {
   const barangayOptions = [
     "Brgy. Amonoy",
     "Brgy. Balayong",
-    "Brgy. Dobi",
+    "Brgy. Oobi",
     "Brgy. Banga",
     "Brgy. Bukal",
     "Brgy. Gagalot",

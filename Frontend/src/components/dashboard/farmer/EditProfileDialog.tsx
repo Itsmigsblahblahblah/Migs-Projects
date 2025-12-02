@@ -80,7 +80,7 @@ const EditProfileDialog = ({
     
     // Farm address options
     const farmAddressOptions = [
-        "Brgy. Amonoy", "Brgy. Balayong", "Brgy. Dobi", "Brgy. Banga", "Brgy. Bukal", 
+        "Brgy. Amonoy", "Brgy. Balayong", "Brgy. Oobi", "Brgy. Banga", "Brgy. Bukal", 
         "Brgy. Gagalot", "Brgy. Malinao", "Brgy. Burgos", "Brgy. San Francisco", 
         "Brgy. Munting Kawayan", "Brgy. Piit", "Brgy. Taytay", "Brgy. Olla", 
         "Brgy. Coralao", "Brgy. San Roque", "Brgy. Suba", "Brgy. Pangil"

@@ -48,9 +48,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const username = localStorage.getItem('username');
   const userId = localStorage.getItem('userId');
 
+  // Type guards for userRole
+  const isFarmer = userRole === 'farmer';
+  const isAdmin = userRole === 'admin';
+
   // Fetch user read status for both announcements and weather alerts
   useEffect(() => {
-    if (!userId || userRole !== 'farmer') return;
+    if (!userId || !isFarmer) return;
 
     // Fetch announcement read status
     const announcementReadStatusQuery = query(
@@ -106,7 +110,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   // Fetch unread admin messages count
   useEffect(() => {
-    if (!userId || userRole !== 'farmer') return;
+    if (!userId || !isFarmer) return;
 
     const messagesQuery = query(
       collection(db, "adminMessages"),
@@ -123,7 +127,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   // Fetch unread announcements count
   useEffect(() => {
-    if (!announcementsLoading && userRole === 'farmer') {
+    if (!announcementsLoading && isFarmer) {
       // Filter out read and deleted announcements
       const unreadCount = announcements.filter((announcement: any) => {
         const status = userReadStatus[announcement.id];
@@ -140,7 +144,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   // Fetch unread weather alerts count
   useEffect(() => {
-    if (!weatherLoading && userRole === 'farmer' && weatherAlerts) {
+    if (!weatherLoading && isFarmer && weatherAlerts) {
       // Filter out read and deleted weather alerts
       const unreadCount = weatherAlerts.filter((alert: any) => {
         // Create a stable ID based on the alert description and date
@@ -159,7 +163,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   // Calculate total unread alerts
   const totalUnreadAlerts = () => {
-    if (userRole !== 'farmer') return 0;
+    if (!isFarmer) return 0;
 
     let count = unreadMessages; // Admin messages
     count += unreadAnnouncements; // Announcements
@@ -210,8 +214,17 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout}>Yes, Logout</AlertDialogAction>
+            <AlertDialogCancel 
+              className={`${isAdmin ? 'bg-white border-blue-300 text-blue-600 hover:bg-blue-50' : 'bg-white border-green-300 text-green-600 hover:bg-green-50'}`}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleLogout}
+              className={`${isAdmin ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-green-600 text-white hover:bg-green-700'}`}
+            >
+              Yes, Logout
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -223,18 +236,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             {/* Logo - now acts as Dashboard link */}
             <div
               className="flex items-center gap-3 cursor-pointer"
-              onClick={() => navigate(userRole === 'farmer' ? '/farmer' : '/admin')}
+              onClick={() => navigate(isFarmer ? '/farmer' : '/admin')}
             >
-              <div className={`p-2 rounded-lg ${userRole === 'admin' ? 'bg-blue-600' : 'bg-gradient-primary'}`}>
-                <Sprout className={`h-6 w-6 ${userRole === 'admin' ? 'text-white' : 'text-primary-foreground'}`} />
+              <div className={`p-2 rounded-lg ${isAdmin ? 'bg-blue-600' : 'bg-gradient-primary'}`}>
+                <Sprout className={`h-6 w-6 ${isAdmin ? 'text-white' : 'text-primary-foreground'}`} />
               </div>
               <div>
-                <h1 className={`text-lg font-bold ${userRole === 'admin' ? 'text-blue-600' : 'text-primary'}`}>Harvestify</h1>
+                <h1 className={`text-lg font-bold ${isAdmin ? 'text-blue-600' : 'text-primary'}`}>Harvestify</h1>
               </div>
             </div>
 
             {/* Desktop Navigation - only for farmer role */}
-            {userRole === 'farmer' && (
+            {isFarmer && (
               <nav className="hidden md:flex items-center space-x-4">
                 <button
                   onClick={() => navigate('/prescribe-crop')}
@@ -273,7 +286,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             {/* User Menu Area - flex container for alerts, profile, and mobile menu */}
             <div className="flex items-center gap-3">
               {/* Alerts Icon - only for farmer role */}
-              {userRole === 'farmer' && (
+              {isFarmer && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -293,21 +306,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <div className="hidden md:block">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className={`rounded-full ${userRole && userRole === 'admin' ? 'hover:bg-blue-50' : ''}`}>
-                      <User className={`h-5 w-5 ${userRole && userRole === 'admin' ? 'text-blue-600' : ''}`} />
+                    <Button variant="ghost" size="icon" className={`rounded-full ${isAdmin ? 'hover:bg-blue-50' : ''}`}>
+                      <User className={`h-5 w-5 ${isAdmin ? 'text-blue-600' : ''}`} />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className={`w-56 ${userRole && userRole === 'admin' ? 'border-blue-100' : ''}`}>
+                  <DropdownMenuContent align="end" className={`w-56 ${isAdmin ? 'border-blue-100' : ''}`}>
                     <DropdownMenuLabel>
                       <div className="flex flex-col">
-                        <span className={userRole && userRole === 'admin' ? 'text-blue-900' : ''}>{username}</span>
-                        <span className={`text-xs ${userRole && userRole === 'admin' ? 'text-blue-700' : 'text-muted-foreground'}`}>
-                          {userRole === 'farmer' ? 'Farmer' : 'Administrator'}
+                        <span className={isAdmin ? 'text-blue-900' : ''}>{username}</span>
+                        <span className={`text-xs ${isAdmin ? 'text-blue-700' : 'text-muted-foreground'}`}>
+                          {isFarmer ? 'Farmer' : 'Administrator'}
                         </span>
                       </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator className={userRole && userRole === 'admin' ? 'bg-blue-100' : ''} />
-                    <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={userRole && userRole === 'admin' ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={userRole && userRole === 'admin' ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
+                    <DropdownMenuSeparator className={isAdmin ? 'bg-blue-100' : ''} />
+                    <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={isAdmin ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={isAdmin ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Logout</span>
                     </DropdownMenuItem>
@@ -316,26 +329,26 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </div>
 
               {/* Mobile menu area - visible only on mobile for farmer role */}
-              {userRole === 'farmer' && (
+              {isFarmer && (
                 <div className="md:hidden flex items-center gap-3">
                   {/* Mobile profile dropdown - between alert icon and hamburger menu */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className={`rounded-full ${userRole && userRole === 'admin' ? 'hover:bg-blue-50' : ''}`}>
-                        <User className={`h-5 w-5 ${userRole && userRole === 'admin' ? 'text-blue-600' : ''}`} />
+                      <Button variant="ghost" size="icon" className={`rounded-full ${isAdmin ? 'hover:bg-blue-50' : ''}`}>
+                        <User className={`h-5 w-5 ${isAdmin ? 'text-blue-600' : ''}`} />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className={`w-56 ${userRole && userRole === 'admin' ? 'border-blue-100' : ''}`}>
+                    <DropdownMenuContent align="end" className={`w-56 ${isAdmin ? 'border-blue-100' : ''}`}>
                       <DropdownMenuLabel>
                         <div className="flex flex-col">
-                          <span className={userRole && userRole === 'admin' ? 'text-blue-900' : ''}>{username}</span>
-                          <span className={`text-xs ${userRole && userRole === 'admin' ? 'text-blue-700' : 'text-muted-foreground'}`}>
-                            {userRole === 'farmer' ? 'Farmer' : 'Administrator'}
+                          <span className={isAdmin ? 'text-blue-900' : ''}>{username}</span>
+                          <span className={`text-xs ${isAdmin ? 'text-blue-700' : 'text-muted-foreground'}`}>
+                            {isFarmer ? 'Farmer' : 'Administrator'}
                           </span>
                         </div>
                       </DropdownMenuLabel>
-                      <DropdownMenuSeparator className={userRole && userRole === 'admin' ? 'bg-blue-100' : ''} />
-                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={userRole && userRole === 'admin' ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={userRole && userRole === 'admin' ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
+                      <DropdownMenuSeparator className={isAdmin ? 'bg-blue-100' : ''} />
+                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={isAdmin ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={isAdmin ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Logout</span>
                       </DropdownMenuItem>
@@ -359,25 +372,25 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               )}
 
               {/* Mobile profile icon for admin role - visible only on mobile */}
-              {userRole === 'admin' && (
+              {isAdmin && (
                 <div className="md:hidden">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className={`rounded-full ${userRole && userRole === 'admin' ? 'hover:bg-blue-50' : ''}`}>
-                        <User className={`h-5 w-5 ${userRole && userRole === 'admin' ? 'text-blue-600' : ''}`} />
+                      <Button variant="ghost" size="icon" className={`rounded-full ${isAdmin ? 'hover:bg-blue-50' : ''}`}>
+                        <User className={`h-5 w-5 ${isAdmin ? 'text-blue-600' : ''}`} />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className={`w-56 ${userRole && userRole === 'admin' ? 'border-blue-100' : ''}`}>
+                    <DropdownMenuContent align="end" className={`w-56 ${isAdmin ? 'border-blue-100' : ''}`}>
                       <DropdownMenuLabel>
                         <div className="flex flex-col">
-                          <span className={userRole && userRole === 'admin' ? 'text-blue-900' : ''}>{username}</span>
-                          <span className={`text-xs ${userRole && userRole === 'admin' ? 'text-blue-700' : 'text-muted-foreground'}`}>
+                          <span className={isAdmin ? 'text-blue-900' : ''}>{username}</span>
+                          <span className={`text-xs ${isAdmin ? 'text-blue-700' : 'text-muted-foreground'}`}>
                             Administrator
                           </span>
                         </div>
                       </DropdownMenuLabel>
-                      <DropdownMenuSeparator className={userRole && userRole === 'admin' ? 'bg-blue-100' : ''} />
-                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={userRole && userRole === 'admin' ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={userRole && userRole === 'admin' ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={userRole && userRole === 'admin' ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
+                      <DropdownMenuSeparator className={isAdmin ? 'bg-blue-100' : ''} />
+                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={isAdmin ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={isAdmin ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Logout</span>
                       </DropdownMenuItem>
@@ -390,7 +403,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </div>
 
         {/* Mobile Navigation Menu - shown when menu is open for farmer role */}
-        {userRole === 'farmer' && isMobileMenuOpen && (
+        {isFarmer && isMobileMenuOpen && (
           <div className="md:hidden bg-card border-b border-border">
             <div className="px-2 pt-2 pb-3 space-y-1">
               <button
