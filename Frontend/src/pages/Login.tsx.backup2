@@ -32,7 +32,7 @@ const Login = () => {
     email: "",
     password: "",
     fullName: "",
-    farmAddress: ""
+    farmName: ""
   });
 
   // Barangay options
@@ -88,7 +88,7 @@ const Login = () => {
   }, []);
 
   const handleSelect = (value: string) => {
-    setCredentials({ ...credentials, farmAddress: value });
+    setCredentials({ ...credentials, farmName: value });
     setShowDropdown(false);
     setSearchTerm("");
   };
@@ -153,7 +153,7 @@ const Login = () => {
         await setDoc(doc(db, "farmers", user.uid), {
           email: user.email,
           fullName: displayName,
-          farmAddress: `${displayName}'s Farm`,
+          farmName: `${displayName}'s Farm`,
           role: "farmer",
           createdAt: new Date().toISOString(),
           uid: user.uid,
@@ -186,7 +186,7 @@ const Login = () => {
     setSuccessMessage("");
 
     try {
-      if (!credentials.email || !credentials.password || !credentials.fullName || !credentials.farmAddress) {
+      if (!credentials.email || !credentials.password || !credentials.fullName || !credentials.farmName) {
         setError("Please fill in all fields");
         setLoading(false);
         return;
@@ -209,7 +209,7 @@ const Login = () => {
       await setDoc(doc(db, "farmers", userCredential.user.uid), {
         email: credentials.email,
         fullName: credentials.fullName,
-        farmAddress: credentials.farmAddress,
+        farmName: credentials.farmName,
         role: "farmer",
         createdAt: new Date().toISOString(),
         uid: userCredential.user.uid,
@@ -235,7 +235,7 @@ const Login = () => {
         email: "",
         password: "",
         fullName: "",
-        farmAddress: ""
+        farmName: ""
       });
 
     } catch (err: any) {
@@ -302,7 +302,7 @@ const Login = () => {
         await setDoc(doc(db, "farmers", userCredential.user.uid), {
           email: userCredential.user.email,
           fullName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer',
-          farmAddress: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
+          farmName: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
           role: "farmer",
           createdAt: new Date().toISOString(),
           uid: userCredential.user.uid,
@@ -312,7 +312,7 @@ const Login = () => {
         const farmerData = {
           email: userCredential.user.email,
           fullName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer',
-          farmAddress: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
+          farmName: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
           role: "farmer",
           createdAt: new Date().toISOString(),
           uid: userCredential.user.uid,
@@ -637,17 +637,17 @@ const Login = () => {
                 </div>
 
                 <div className="space-y-2 group mt-10" ref={dropdownRef}>
-                  <Label htmlFor="farmAddress" className="flex items-center gap-2">
+                  <Label htmlFor="farmName" className="flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
                     Farm Address
                   </Label>
                   <div className="relative">
                     <Input
-                      id="farmAddress"
+                      id="farmName"
                       placeholder="Select or type your farm address"
-                      value={credentials.farmAddress}
+                      value={credentials.farmName}
                       onChange={(e) => {
-                        setCredentials({ ...credentials, farmAddress: e.target.value });
+                        setCredentials({ ...credentials, farmName: e.target.value });
                         setSearchTerm(e.target.value);
                         setShowDropdown(true);
                       }}
