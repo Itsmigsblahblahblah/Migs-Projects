@@ -185,98 +185,102 @@ const DeletionRequests = ({
                                             />
                                         )}
 
-                                        <div className="flex-1">
-                                            <div className="flex items-start justify-between mb-2">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="bg-secondary rounded-full p-2 mt-1">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                                                <div className="flex items-start gap-3 min-w-0">
+                                                    <div className="bg-secondary rounded-full p-2 mt-1 flex-shrink-0">
                                                         <User className="h-5 w-5 text-secondary-foreground" />
                                                     </div>
-                                                    <div>
-                                                        <h3 className="font-semibold text-lg">{request.fullName}</h3>
-                                                        <p className="text-sm text-muted-foreground">{request.email}</p>
+                                                    <div className="min-w-0">
+                                                        <h3 className="font-semibold text-lg truncate">{request.fullName}</h3>
+                                                        <p className="text-sm text-muted-foreground truncate">{request.email}</p>
                                                     </div>
                                                 </div>
                                                 <Badge
                                                     variant={request.status === 'pending' ? 'secondary' : request.status === 'approved' ? 'default' : 'destructive'}
-                                                    className={request.status === 'approved' ? 'bg-success text-success-foreground' : ''}
+                                                    className={`${request.status === 'approved' ? 'bg-success text-success-foreground' : ''} flex-shrink-0`}
                                                 >
                                                     {request.status.toUpperCase()}
                                                 </Badge>
                                             </div>
 
-                                            <div className="grid md:grid-cols-2 gap-3 text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                                    <div>
-                                                        <span className="text-muted-foreground">Requested: </span>
-                                                        <span>{request.requestedAt?.toDate().toLocaleDateString()}</span>
-                                                    </div>
-                                                </div>
-                                                {request.reviewedAt && (
+                                            <div className="flex flex-col md:flex-row md:items-start gap-3">
+                                                <div className="grid md:grid-cols-2 gap-3 text-sm flex-1 min-w-0">
                                                     <div className="flex items-center gap-2">
-                                                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                                                        <div>
-                                                            <span className="text-muted-foreground">Reviewed: </span>
-                                                            <span>{request.reviewedAt?.toDate().toLocaleDateString()}</span>
-                                                            {request.reviewedBy && <span className="ml-1">by {request.reviewedBy}</span>}
+                                                        <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                        <div className="min-w-0">
+                                                            <span className="text-muted-foreground">Requested: </span>
+                                                            <span className="truncate">{request.requestedAt?.toDate().toLocaleDateString()}</span>
+                                                        </div>
+                                                    </div>
+                                                    {request.reviewedAt && (
+                                                        <div className="flex items-center gap-2">
+                                                            <CheckCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                            <div className="min-w-0">
+                                                                <span className="text-muted-foreground">Reviewed: </span>
+                                                                <span className="truncate">{request.reviewedAt?.toDate().toLocaleDateString()}</span>
+                                                                {request.reviewedBy && <span className="ml-1 truncate">by {request.reviewedBy}</span>}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Action buttons container - View Reason, Deny, and Approve buttons matching Farmer Reports design */}
+                                                {!deleteMode && request.status === 'pending' && (
+                                                    <div className="flex gap-2 mt-2 md:mt-0 md:justify-end w-full md:w-auto">
+                                                        {/* Buttons container - all buttons side by side on mobile and desktop */}
+                                                        <div className="flex gap-2 w-full md:w-auto">
+                                                            {/* Show reason button for pending requests */}
+                                                            {request.reason && (
+                                                                <Dialog>
+                                                                    <DialogTrigger asChild>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            className="w-full md:w-auto text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                                                        >
+                                                                            <Info className="h-4 w-4" />
+                                                                            <span className="hidden md:inline ml-1">View Reason</span>
+                                                                        </Button>
+                                                                    </DialogTrigger>
+                                                                    <DialogContent>
+                                                                        <DialogHeader>
+                                                                            <DialogTitle>Deletion Request Reason</DialogTitle>
+                                                                            <DialogDescription>
+                                                                                Reason provided by {request.fullName} for account deletion
+                                                                            </DialogDescription>
+                                                                        </DialogHeader>
+                                                                        <div className="py-4">
+                                                                            <p className="text-sm">{request.reason}</p>
+                                                                        </div>
+                                                                    </DialogContent>
+                                                                </Dialog>
+                                                            )}
+
+                                                            {/* Action Buttons - Only for pending requests and not in delete mode */}
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => onDenyRequest(request.id)}
+                                                                className="w-full md:w-auto text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            >
+                                                                <AlertTriangle className="h-4 w-4" />
+                                                                <span className="hidden md:inline ml-1">Deny</span>
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => onApproveRequest(request.id)}
+                                                                className="w-full md:w-auto text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                            >
+                                                                <CheckCircle className="h-4 w-4" />
+                                                                <span className="hidden md:inline ml-1">Approve</span>
+                                                            </Button>
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
-
-                                            {/* Show reason button for pending requests */}
-                                            {request.status === 'pending' && request.reason && (
-                                                <div className="mt-2">
-                                                    <Dialog>
-                                                        <DialogTrigger asChild>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="text-xs"
-                                                            >
-                                                                <Info className="h-3 w-3 mr-1" />
-                                                                View Reason
-                                                            </Button>
-                                                        </DialogTrigger>
-                                                        <DialogContent>
-                                                            <DialogHeader>
-                                                                <DialogTitle>Deletion Request Reason</DialogTitle>
-                                                                <DialogDescription>
-                                                                    Reason provided by {request.fullName} for account deletion
-                                                                </DialogDescription>
-                                                            </DialogHeader>
-                                                            <div className="py-4">
-                                                                <p className="text-sm">{request.reason}</p>
-                                                            </div>
-                                                        </DialogContent>
-                                                    </Dialog>
-                                                </div>
-                                            )}
                                         </div>
-
-                                        {/* Action Buttons - Only for pending requests and not in delete mode */}
-                                        {!deleteMode && request.status === 'pending' && (
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => onDenyRequest(request.id)}
-                                                    className="flex items-center gap-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                                >
-                                                    <AlertTriangle className="h-4 w-4" />
-                                                    Deny
-                                                </Button>
-                                                <Button
-                                                    variant="default"
-                                                    size="sm"
-                                                    onClick={() => onApproveRequest(request.id)}
-                                                    className="flex items-center gap-2 bg-success hover:bg-success/90"
-                                                >
-                                                    <CheckCircle className="h-4 w-4" />
-                                                    Approve
-                                                </Button>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             ))}
