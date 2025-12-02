@@ -31,7 +31,8 @@ const Login = () => {
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     farmAddress: ""
   });
 
@@ -186,7 +187,7 @@ const Login = () => {
     setSuccessMessage("");
 
     try {
-      if (!credentials.email || !credentials.password || !credentials.fullName || !credentials.farmAddress) {
+      if (!credentials.email || !credentials.password || !credentials.firstName || !credentials.lastName || !credentials.farmAddress) {
         setError("Please fill in all fields");
         setLoading(false);
         return;
@@ -205,10 +206,13 @@ const Login = () => {
         credentials.password
       );
 
+      // Combine first name and last name for full name
+      const fullName = `${credentials.firstName} ${credentials.lastName}`;
+
       // Store user data in Firestore immediately with emailVerified: false
       await setDoc(doc(db, "farmers", userCredential.user.uid), {
         email: credentials.email,
-        fullName: credentials.fullName,
+        fullName: fullName,
         farmAddress: credentials.farmAddress,
         role: "farmer",
         createdAt: new Date().toISOString(),
@@ -234,7 +238,8 @@ const Login = () => {
       setCredentials({
         email: "",
         password: "",
-        fullName: "",
+        firstName: "",
+        lastName: "",
         farmAddress: ""
       });
 
@@ -620,19 +625,37 @@ const Login = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2 group">
-                  <Label htmlFor="fullName" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Full Name
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="fullName"
-                      placeholder="Juan Dela Cruz"
-                      value={credentials.fullName}
-                      onChange={(e) => setCredentials({ ...credentials, fullName: e.target.value })}
-                      className="peer"
-                    />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 group">
+                    <Label htmlFor="firstName" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      First Name
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="firstName"
+                        placeholder="Juan"
+                        value={credentials.firstName}
+                        onChange={(e) => setCredentials({ ...credentials, firstName: e.target.value })}
+                        className="peer"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 group">
+                    <Label htmlFor="lastName" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Last Name
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="lastName"
+                        placeholder="Dela Cruz"
+                        value={credentials.lastName}
+                        onChange={(e) => setCredentials({ ...credentials, lastName: e.target.value })}
+                        className="peer"
+                      />
+                    </div>
                   </div>
                 </div>
 
