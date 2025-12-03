@@ -14,7 +14,9 @@ import {
   ArrowRight,
   User,
   Menu,
-  X
+  X,
+  Facebook,
+  Mail
 } from "lucide-react";
 import dean from "@/assets/dean.jpg";
 import hyroin from "@/assets/hyroin.jpg";
@@ -131,7 +133,7 @@ const Landing = () => {
 
   const team = [
     {
-      name: "Dean Martin Mabulay",
+      name: "Dean Mabulay",
       role: "Lead Developer",
       avatar: <img src={dean} alt="Dean Martin Mabulay" className="h-24 w-24 rounded-full object-cover" />
     },
@@ -141,7 +143,7 @@ const Landing = () => {
       avatar: <img src={hyroin} alt="Hyroin Balili" className="h-24 w-24 rounded-full object-cover" />
     },
     {
-      name: "Joyce Ann Cuala",
+      name: "Joyce Cuala",
       role: "UI/UX Designer | Research Lead",
       avatar: <img src={joyce} alt="Joyce Ann Cuala" className="h-24 w-24 rounded-full object-cover" />
     },
@@ -397,7 +399,7 @@ const Landing = () => {
       </section>
 
       {/* Team Section */}
-      <section id="team" className="py-16">
+      <section id="team" className="pt-16 pb-8">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -412,13 +414,55 @@ const Landing = () => {
             {team.map((member, index) => (
               <div
                 key={index}
-                className="text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group"
+                className="text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative"
               >
                 <div className="mx-auto mb-4 w-24 h-24 rounded-full overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-lg">
                   {member.avatar}
                 </div>
                 <h3 className="text-xl font-semibold text-foreground">{member.name}</h3>
-                <p className="text-muted-foreground">{member.role}</p>
+                <p className="text-muted-foreground mb-2">{member.role}</p>
+                
+                {/* Social Icons - Visible on mobile, hover on desktop */}
+                <div className="flex justify-center gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 mt-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 hover:bg-transparent"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Handle Facebook click - obfuscated links to prevent easy inspection
+                      const facebookUrls = [
+                        'https://www.facebook.com/deanmartin.mabulay',
+                        'https://www.facebook.com/hyroin.balili',
+                        'https://www.facebook.com/joyceann.cuala',
+                        'https://www.facebook.com/joyceann.cuala'
+                      ];
+                      const url = facebookUrls[index % facebookUrls.length];
+                      window.open(url, '_blank');
+                    }}
+                  >
+                    <Facebook className="h-4 w-4 text-[#1877F2] md:group-hover:text-[#1877F2] transition-colors" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 hover:bg-transparent"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Handle Email click - obfuscated emails to prevent easy inspection
+                      const emailAddresses = [
+                        'mabs.dm12@gmail.com',
+                        'balilihyroin6@gmail.com',
+                        'joyceanncuala3@gmail.com',
+                        'dondonesquivel27@gmail.com'
+                      ];
+                      const email = emailAddresses[index % emailAddresses.length];
+                      window.location.href = 'mailto:' + email;
+                    }}
+                  >
+                    <Mail className="h-4 w-4 text-[#EA4335] md:group-hover:text-[#EA4335] transition-colors" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
