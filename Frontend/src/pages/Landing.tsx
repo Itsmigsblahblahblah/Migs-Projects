@@ -273,7 +273,7 @@ const Landing = () => {
               <Button
                 variant="outline"
                 size="lg"
-                className="text-lg px-8 py-6 border-2"
+                className="text-lg px-8 py-6 border-2 hover:bg-[#EAB949] hover:text-[#333333] hover:border-[#EAB949]"
                 onClick={() => {
                   const element = document.getElementById('how-it-works');
                   if (element) {
