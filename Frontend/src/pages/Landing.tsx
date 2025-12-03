@@ -158,8 +158,14 @@ const Landing = () => {
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo and text on the left */}
-            <div className="flex items-center gap-3">
+            {/* Logo and text on the left - clickable to scroll to top */}
+            <div 
+              className="flex items-center gap-3 cursor-pointer"
+              onClick={() => {
+                // Scroll to the top of the page (hero section)
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
               <div className="p-2 rounded-lg bg-gradient-primary">
                 <Sprout className="h-6 w-6 text-primary-foreground" />
               </div>
