@@ -238,6 +238,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
       // Use environment variable for backend URL or default to localhost
       const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      // Add timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       const response = await fetch(`${BACKEND_URL}/enhanced-soil/enhanced-recommend`, {
         method: 'POST',
         headers: {
@@ -272,8 +275,12 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         console.error('Invalid response format:', data);
         setError('Invalid response format from enhanced recommendation server');
       }
-    } catch (err) {
-      setError('Failed to load enhanced crop recommendations. Please try again.');
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setError('Request timed out. Please try again.');
+      } else {
+        setError('Failed to load enhanced crop recommendations. Please try again.');
+      }
       console.error('Error fetching enhanced recommendations:', err);
     } finally {
       setLoading(false);
