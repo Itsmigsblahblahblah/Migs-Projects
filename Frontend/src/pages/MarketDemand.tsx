@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,8 +53,13 @@ const MarketDemand = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [sortBy, setSortBy] = useState<"predicted_price" | "current_avg_price" | "price_change_percent" | "vegetable">("predicted_price");
   const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1); // Default to current month
-  const [selectedYear, setSelectedYear] = useState<number>(2025); // Default to 2025 instead of current year
+  const [selectedMonth, setSelectedMonth] = useState<number>(12); // Default to December
+  const [selectedYear, setSelectedYear] = useState<number>(2025); // Default to 2025
+
+  // Debugging: Log initial state
+  useEffect(() => {
+    console.log('Component mounted with selectedMonth:', selectedMonth, 'selectedYear:', selectedYear);
+  }, []);
   const [yearRangeStart, setYearRangeStart] = useState<number>(2025); // Start from 2025 instead of current year
   const [selectedDemandLevel, setSelectedDemandLevel] = useState<string | null>(null); // New state for demand level filtering
   const [currentPage, setCurrentPage] = useState(1); // Pagination state
@@ -68,22 +73,29 @@ const MarketDemand = () => {
   // Set the minimum forecastable year to 2025 (the first year after our data ends in 2024)
   const minForecastYear = 2025;
 
-  // For the current year, only show months from current month onwards
+  // For the current year, only show current month and future months
   // For future years, show all months
+  // For past years (shouldn't happen with our restrictions), show no months
   const getAvailableMonths = () => {
+    console.log(`getAvailableMonths called with selectedYear: ${selectedYear}, currentYear: ${currentYear}, currentMonth: ${currentMonth}`);
     if (selectedYear === currentYear) {
       // Only show current month and future months
-      return Array.from({ length: 12 - currentMonth + 1 }, (_, i) => currentMonth + i);
+      const result = Array.from({ length: 12 - currentMonth + 1 }, (_, i) => currentMonth + i);
+      console.log(`Returning months for current year:`, result);
+      return result;
     } else if (selectedYear > currentYear) {
       // For future years, show all months
-      return Array.from({ length: 12 }, (_, i) => i + 1);
+      const result = Array.from({ length: 12 }, (_, i) => i + 1);
+      console.log(`Returning months for future year:`, result);
+      return result;
     } else {
-      // For past years (shouldn't happen with our restrictions)
+      // For past years, show no months
+      console.log(`Returning empty array for past year`);
       return [];
     }
   };
 
-  const months = getAvailableMonths();
+  const months = useMemo(() => getAvailableMonths(), [selectedYear, currentYear, currentMonth]);
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -92,11 +104,20 @@ const MarketDemand = () => {
   // Generate year options based on range - start from 2025 (first forecastable year)
   const years = Array.from({ length: 6 }, (_, i) => Math.max(minForecastYear, yearRangeStart) + i);
 
+// Removed validation useEffect to prevent interference with initial load
+
+  // Debugging: Log when marketData changes
   useEffect(() => {
+    console.log('marketData state changed:', marketData.length, 'items');
+  }, [marketData]);
+
+  useEffect(() => {
+    console.log('useEffect triggered - fetching market data');
     fetchMarketData();
   }, [selectedMonth, selectedYear, selectedDemandLevel]);
 
   useEffect(() => {
+    console.log('Filtering useEffect triggered with marketData:', marketData.length, 'items');
     let result = [...marketData];
 
     // Apply search filter
@@ -154,19 +175,22 @@ const MarketDemand = () => {
       }
     });
 
+    console.log('Setting filteredData with', result.length, 'items');
     setFilteredData(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, marketData, sortOrder, sortBy, selectedDemandLevel]);
+  }, [searchTerm, marketData, sortOrder, sortBy, selectedDemandLevel, selectedMonth]);
 
   const fetchMarketData = async () => {
     try {
       setLoading(true);
+      console.log(`Fetching market data for ${selectedMonth}/${selectedYear}`);
 
       // Check if we have cached data for the current parameters
       const cacheKey = `market-demand-${selectedMonth}-${selectedYear}-${selectedDemandLevel || 'all'}`;
       const cachedData = getCachedMarketDemandData(cacheKey);
 
       if (cachedData) {
+        console.log('Using cached data');
         // Use cached data
         setMarketData(cachedData.data);
         setLoading(false);
@@ -175,20 +199,23 @@ const MarketDemand = () => {
 
       // Include month, year, and demand_level parameters in the API call
       // Request all crops instead of just 20
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-      let url = `${BACKEND_URL}/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
+      // Use relative URL to leverage Vite proxy
+      let url = `/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
       if (selectedDemandLevel) {
         url += `&demand_level=${selectedDemandLevel}`;
       }
 
+      console.log(`Making request to: ${url}`);
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error("Failed to fetch market demand data");
+        throw new Error(`Failed to fetch market demand data: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('Received data:', data);
       const marketData = data.recommended_crops || [];
+      console.log('Processed marketData:', marketData);
 
       // Cache the data with the current parameters
       setCachedMarketDemandData({
@@ -196,6 +223,7 @@ const MarketDemand = () => {
       }, cacheKey);
 
       setMarketData(marketData);
+      console.log('Set marketData state with', marketData.length, 'items');
     } catch (err) {
       setError("Failed to load market demand data. Please try again later.");
       console.error("Error fetching market data:", err);
@@ -218,7 +246,7 @@ const MarketDemand = () => {
   };
 
   const handleYearChange = (year: number) => {
-    // Only allow selection of years from 2025 onwards (forecastable future dates)
+    // Allow selection of the current year (2025) and future years
     if (year >= 2025) {
       setSelectedYear(year);
     }

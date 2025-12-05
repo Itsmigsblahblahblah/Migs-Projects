@@ -149,7 +149,6 @@ async def enhanced_recommend_crops(data: dict):
             status_code=500, detail=f"Prediction error: {str(e)}")
 
 
-
 @app.post("/fair-recommend")
 async def fair_recommend_crops(data: dict):
     """
@@ -239,7 +238,7 @@ async def fair_recommend_crops(data: dict):
             # Get predictions with data with a 5-second timeout
             predictions = await asyncio.wait_for(
                 asyncio.get_event_loop().run_in_executor(None, model.predict,
-                                                     soil_data, weather_data, market_context),
+                                                         soil_data, weather_data, market_context),
                 timeout=5.0
             )
         except asyncio.TimeoutError:

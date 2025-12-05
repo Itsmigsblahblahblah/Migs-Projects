@@ -326,7 +326,7 @@ class VegetableDemandTransformer:
                 historical_prices = historical_data['Price'].tolist()
                 historical_annual_prices = historical_data['Annual_Price'].tolist(
                 )
-                historical_months = historical_data['MonthNum'].tolist
+                historical_months = historical_data['MonthNum'].tolist()
 
                 # Make prediction
                 prediction = self.predict_demand(vegetable, historical_prices,
