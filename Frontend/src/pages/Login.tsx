@@ -413,8 +413,8 @@ const Login = () => {
               <Sprout className="h-8 w-8 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-primary">Majayjay Farm</h1>
-              <p className="text-sm text-muted-foreground">Resource Management System</p>
+              <h1 className="text-3xl font-bold text-primary">Harvestify</h1>
+              <p className="text-sm text-muted-foreground">Smart Farming Solution</p>
             </div>
           </div>
 
@@ -431,13 +431,13 @@ const Login = () => {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-muted-foreground justify-center sm:justify-start">
               <Sprout className="h-4 w-4 text-success" />
-              Crop Recommendations
+              <span className="text-center sm:text-left">Crop Recommendations</span>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-muted-foreground justify-center sm:justify-start">
               <Users className="h-4 w-4 text-success" />
-              Expert Guidance
+              <span className="text-center sm:text-left">Expert Guidance</span>
             </div>
           </div>
         </div>
