@@ -172,8 +172,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     try {
       console.log('Fetching soil data for barangay:', barangay);
       // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-      const response = await fetch(`${BACKEND_URL}/soil-data/${encodeURIComponent(barangay)}`);
+      const response = await fetch(`/soil-data/${encodeURIComponent(barangay)}`);
 
       console.log('Soil data response status:', response.status);
       console.log('Soil data response ok:', response.ok);
@@ -237,11 +236,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       console.log('Fetching enhanced recommendations with request body:', requestBody);
 
       // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-      // Add timeout to the fetch request
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      const response = await fetch(`${BACKEND_URL}/enhanced-soil/enhanced-recommend`, {
+      // Use relative URL to leverage Vite proxy
+      const response = await fetch('/enhanced-soil/fair-recommend', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -267,7 +263,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         // Transform the data to match our interface
         const transformedRecommendations = data.recommended_crops.map((item: any) => ({
           crop: item.crop,
-          confidence: item.final_score !== undefined ? item.final_score : item.confidence,
+          confidence: item.final_score !== undefined ? item.final_score : (item.confidence || 0),
           market_demand_score: item.market_demand_score
         }));
         setRecommendations(transformedRecommendations);
@@ -292,8 +288,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     try {
       console.log('Fetching market demand for crop:', cropName);
       // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-      const response = await fetch(`${BACKEND_URL}/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
+      const response = await fetch(`/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
 
       console.log('Market demand response status:', response.status);
       console.log('Market demand response ok:', response.ok);
@@ -317,8 +312,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
         // Make demand prediction
         // Use environment variable for backend URL or default to localhost
-        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-        const predictionResponse = await fetch(`${BACKEND_URL}/vegetables/predict-demand`, {
+        const predictionResponse = await fetch(`/vegetables/predict-demand`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

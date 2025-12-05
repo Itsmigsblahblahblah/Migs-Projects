@@ -545,11 +545,6 @@ class EnhancedSoilCropTransformer:
                 float(top_market_scores[i])
             ))
 
-        # Cache the results
-        if not hasattr(self, '_predict_cache'):
-            self._predict_cache = {}
-        self._predict_cache[cache_key] = (result.copy(), time.time())
-
         # Limit to top 10 results to match frontend expectations
         return result[:10]
 

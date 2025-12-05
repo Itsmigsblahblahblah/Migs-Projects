@@ -34,7 +34,7 @@ except Exception as e:
 @app.get("/")
 async def root():
     return {"message": "Soil Crop Recommendation API",
-            "description": "POST /enhanced-recommend to get crop recommendations based on soil, weather, and market data"}
+            "description": "POST /enhanced-recommend or /fair-recommend to get crop recommendations based on soil, weather and market data"}
 
 
 @app.post("/enhanced-recommend")
@@ -147,6 +147,121 @@ async def enhanced_recommend_crops(data: dict):
         logger.error(f"Error in prediction: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Prediction error: {str(e)}")
+
+
+
+@app.post("/fair-recommend")
+async def fair_recommend_crops(data: dict):
+    """
+    Get FAIR and UNBIASED crop recommendations based on soil, weather, and market data
+
+    This endpoint uses the fair model that treats all crops equally without any boosting.
+
+    Expected input format:
+    {
+        "soil_data": {
+            "pH": 6.5,
+            "Nitrogen": "M",  # L, M, or H
+            "Phosphorus": "L",  # L, M, or H
+            "Potassium": "H"   # L, M, or H
+        },
+        "weather_data": {
+            "temperature": 28.5,
+            "humidity": 65,
+            "precipitation_probability": 20,
+            "wind_speed": 10,
+            "uv_index": 7
+        },
+        "market_context": {
+            "season": "dry",  # or "wet"
+            "month": 6  # 1-12
+        }
+    }
+
+    Returns:
+    {
+        "recommended_crops": [
+            {
+                "crop": "Rice", 
+                "final_score": 0.85,
+                "market_demand_score": 0.75
+            },
+            {
+                "crop": "Corn", 
+                "final_score": 0.12,
+                "market_demand_score": 0.60
+            },
+            {
+                "crop": "Vegetable Legumes", 
+                "final_score": 0.03,
+                "market_demand_score": 0.45
+            }
+        ]
+    }
+    """
+    try:
+        # Check if model is loaded
+        if model is None:
+            raise HTTPException(status_code=500, detail="Model not loaded")
+
+        # Validate input
+        if 'soil_data' not in data:
+            raise HTTPException(
+                status_code=400, detail="Missing soil_data in request")
+
+        soil_data = data['soil_data']
+        weather_data = data.get('weather_data', {})
+        market_context = data.get('market_context', {})
+
+        # Validate soil data
+        required_soil_fields = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
+        for field in required_soil_fields:
+            if field not in soil_data:
+                raise HTTPException(
+                    status_code=400, detail=f"Missing required soil field: {field}")
+
+        # Validate categorical values
+        valid_levels = ['L', 'M', 'H']
+        for field in ['Nitrogen', 'Phosphorus', 'Potassium']:
+            if soil_data[field] not in valid_levels:
+                raise HTTPException(
+                    status_code=400, detail=f"Invalid value for soil {field}. Must be L, M, or H")
+
+        # Validate pH range
+        if not (0 <= soil_data['pH'] <= 14):
+
+            raise HTTPException(
+                status_code=400, detail="pH must be between 0 and 14")
+
+        # Add a timeout to prevent hanging requests
+        import asyncio
+        try:
+            # Get predictions with data with a 5-second timeout
+            predictions = await asyncio.wait_for(
+                asyncio.get_event_loop().run_in_executor(None, model.predict,
+                                                     soil_data, weather_data, market_context),
+                timeout=5.0
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(
+                status_code=500, detail="Prediction took too long. Please try again.")
+
+        # Format response with final_score instead of confidence
+        recommended_crops = [
+            {
+                "crop": crop,
+                "final_score": float(final_score),
+                "market_demand_score": float(market_score)
+            }
+            for crop, final_score, market_score in predictions
+        ]
+
+        return {"recommended_crops": recommended_crops}
+
+    except Exception as e:
+        logger.error(f"Error in fair prediction: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Fair prediction error: {str(e)}")
 
 
 @app.get("/health")
