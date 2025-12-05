@@ -342,7 +342,8 @@ class VegetableDemandTransformer:
                         if target_year > last_available_year:
                             # Apply a small increasing trend factor for each year into the future
                             # This ensures different results for different future years
-                            year_difference = target_year - last_available_year
+                            # Limit year difference to prevent unrealistic predictions for very distant years
+                            year_difference = min(target_year - last_available_year, 5)  # Max 5 years into future
                             year_trend_factor = 1.0 + \
                                 (year_difference * 0.02)  # 2% increase per year
                 else:
