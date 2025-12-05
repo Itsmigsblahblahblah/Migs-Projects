@@ -38,7 +38,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Hyperparameters
@@ -56,36 +57,39 @@ HYPERPARAMETERS = {
 np.random.seed(HYPERPARAMETERS['random_seed'])
 tf.random.set_seed(HYPERPARAMETERS['random_seed'])
 
+
 class EnhancedSoilCropTransformer:
     """Enhanced model for crop recommendation based on soil, weather, and market data"""
-    
+
     def __init__(self, hyperparams=None):
         self.hyperparams = hyperparams or HYPERPARAMETERS
         self.model = None
         self.soil_label_encoder = LabelEncoder()
         self.crop_label_encoder = LabelEncoder()
         self.scaler = StandardScaler()
-        self.feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium', 
-                               'temperature', 'humidity', 'precipitation_probability', 
-                               'wind_speed', 'uv_index', 'market_demand_score']
+        self.feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium',
+                                'temperature', 'humidity', 'precipitation_probability',
+                                'wind_speed', 'uv_index', 'market_demand_score']
         # For backward compatibility with soil-only data
-        self.soil_feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
+        self.soil_feature_columns = [
+            'pH', 'Nitrogen', 'Phosphorus', 'Potassium']
         self.preprocessor = None
-        
-    def load_and_preprocess_data(self, soil_file='Data/brgy_soil_dataset.csv', 
-                                vegetable_file='Data/vegetable_prices.csv'):
+
+    def load_and_preprocess_data(self, soil_file='Data/brgy_soil_dataset.csv',
+                                 vegetable_file='Data/vegetable_prices.csv'):
         """
         Load and preprocess the soil analysis data and vegetable price data with balanced representation
-        
+
         Args:
             soil_file (str): Path to brgy_soil_dataset.csv
             vegetable_file (str): Path to vegetable_prices.csv
-            
+
         Returns:
             tuple: (X, y) preprocessed features and labels with balanced crop representation
         """
-        logger.info("Loading and preprocessing combined data with balanced crop representation...")
-        
+        logger.info(
+            "Loading and preprocessing combined data with balanced crop representation...")
+
         # Load soil analysis data
         try:
             soil_df = pd.read_csv(soil_file)
@@ -93,131 +97,151 @@ class EnhancedSoilCropTransformer:
             logger.warning(f"Could not load soil data from {soil_file}: {e}")
             logger.info("Generating synthetic soil data for demonstration...")
             soil_df = self._generate_synthetic_soil_data()
-        
+
         # Clean the soil data
         soil_df = soil_df.dropna()
-        
+
         # Convert categorical soil properties to numerical values (L=0, M=1, H=2)
         nitrogen_map = {'L': 0, 'M': 1, 'H': 2}
         phosphorus_map = {'L': 0, 'M': 1, 'H': 2}
         potassium_map = {'L': 0, 'M': 1, 'H': 2}
-        
+
         soil_df['Nitrogen'] = soil_df['Nitrogen(N)'].map(nitrogen_map)
         soil_df['Phosphorus'] = soil_df['Phosphorus(P)'].map(phosphorus_map)
         soil_df['Potassium'] = soil_df['Potassium(K)'].map(potassium_map)
-        
+
         # Fill NaN values
         soil_df['Nitrogen'] = soil_df['Nitrogen'].fillna(1)
         soil_df['Phosphorus'] = soil_df['Phosphorus'].fillna(1)
         soil_df['Potassium'] = soil_df['Potassium'].fillna(1)
-        
+
         # Load vegetable price data
         try:
             veg_df = pd.read_csv(vegetable_file)
             # Skip the first row which contains the header description
             veg_df = veg_df.iloc[1:]
-            veg_df.columns = ['Vegetable', 'Year', 'Month', 'Price', 'Annual_Price', 'MonthNum', 'Date']
-            
+            veg_df.columns = ['Vegetable', 'Year', 'Month',
+                              'Price', 'Annual_Price', 'MonthNum', 'Date']
+
             # Convert data types
             veg_df['Price'] = pd.to_numeric(veg_df['Price'], errors='coerce')
-            veg_df['Annual_Price'] = pd.to_numeric(veg_df['Annual_Price'], errors='coerce')
-            veg_df['MonthNum'] = pd.to_numeric(veg_df['MonthNum'], errors='coerce')
+            veg_df['Annual_Price'] = pd.to_numeric(
+                veg_df['Annual_Price'], errors='coerce')
+            veg_df['MonthNum'] = pd.to_numeric(
+                veg_df['MonthNum'], errors='coerce')
             veg_df['Year'] = pd.to_numeric(veg_df['Year'], errors='coerce')
-            
+
             # Clean the data
             veg_df = veg_df.dropna()
         except Exception as e:
-            logger.warning(f"Could not load vegetable data from {vegetable_file}: {e}")
+            logger.warning(
+                f"Could not load vegetable data from {vegetable_file}: {e}")
             veg_df = self._generate_synthetic_vegetable_data()
-        
+
         # Generate synthetic weather data to match soil data
         np.random.seed(42)
         n_samples = len(soil_df)
-        
+
         # Add weather features to the dataframe
-        soil_df['temperature'] = np.random.uniform(20, 35, n_samples)  # Temperature in Celsius
-        soil_df['humidity'] = np.random.uniform(40, 80, n_samples)    # Humidity percentage
-        soil_df['precipitation_probability'] = np.random.uniform(0, 100, n_samples)  # Precipitation probability %
-        soil_df['wind_speed'] = np.random.uniform(0, 20, n_samples)   # Wind speed in km/h
-        soil_df['uv_index'] = np.random.uniform(0, 10, n_samples)     # UV index
-        
+        soil_df['temperature'] = np.random.uniform(
+            20, 35, n_samples)  # Temperature in Celsius
+        soil_df['humidity'] = np.random.uniform(
+            40, 80, n_samples)    # Humidity percentage
+        soil_df['precipitation_probability'] = np.random.uniform(
+            0, 100, n_samples)  # Precipitation probability %
+        soil_df['wind_speed'] = np.random.uniform(
+            0, 20, n_samples)   # Wind speed in km/h
+        soil_df['uv_index'] = np.random.uniform(
+            0, 10, n_samples)     # UV index
+
         # Add market demand scores based on vegetable price trends
         # Calculate a more sensitive demand score for each crop
         market_scores = {}
         unique_crops = soil_df['Crop'].unique()
         for vegetable in unique_crops:
             # Find matching vegetable in price data (fuzzy matching)
-            matching_veg = veg_df[veg_df['Vegetable'].str.contains(str(vegetable).split('(')[0].strip(), case=False, na=False)]
+            matching_veg = veg_df[veg_df['Vegetable'].str.contains(
+                str(vegetable).split('(')[0].strip(), case=False, na=False)]
             if not matching_veg.empty:
                 # Calculate price trend as a demand indicator
-                recent_prices = matching_veg.tail(12)['Price'].values  # Last 12 months for better trend analysis
+                # Last 12 months for better trend analysis
+                recent_prices = matching_veg.tail(12)['Price'].values
                 if len(recent_prices) > 1:
                     # Calculate price change percentage
-                    price_change_pct = ((recent_prices[-1] - recent_prices[0]) / recent_prices[0]) * 100 if recent_prices[0] != 0 else 0
-                    
+                    price_change_pct = (
+                        (recent_prices[-1] - recent_prices[0]) / recent_prices[0]) * 100 if recent_prices[0] != 0 else 0
+
                     # Calculate price volatility (standard deviation)
-                    price_volatility = np.std(recent_prices) / np.mean(recent_prices) if np.mean(recent_prices) != 0 else 0
-                    
+                    price_volatility = np.std(
+                        recent_prices) / np.mean(recent_prices) if np.mean(recent_prices) != 0 else 0
+
                     # Calculate demand score: positive trend = higher demand, but high volatility = lower demand
                     # Scale to 0-1 range where higher means higher demand
-                    demand_score = (price_change_pct - (price_volatility * 50))  # Adjust volatility impact
-                    
+                    # Adjust volatility impact
+                    demand_score = (price_change_pct - (price_volatility * 50))
+
                     # Normalize to 0-1 range
-                    market_scores[vegetable] = max(0, min(1, (demand_score + 100) / 200))
+                    market_scores[vegetable] = max(
+                        0, min(1, (demand_score + 100) / 200))
                 else:
                     market_scores[vegetable] = 0.5  # Neutral demand
             else:
                 market_scores[vegetable] = 0.5  # Default neutral demand
-        
+
         # Add market demand scores to soil data
-        soil_df['market_demand_score'] = soil_df['Crop'].map(market_scores).fillna(0.5)
-        
+        soil_df['market_demand_score'] = soil_df['Crop'].map(
+            market_scores).fillna(0.5)
+
         # Balance the dataset to ensure equal representation of all crops
         # Count occurrences of each crop
         crop_counts = soil_df['Crop'].value_counts()
-        target_count = int(crop_counts.median())  # Use median as target count for balance
-        
+        # Use median as target count for balance
+        target_count = int(crop_counts.median())
+
         # Adjust target count to ensure we have enough samples
         if target_count < 50:  # Minimum samples per crop
             target_count = 50
-        
+
         balanced_data = []
-        
+
         # For each crop, balance the representation
         for crop in soil_df['Crop'].unique():
             crop_data = soil_df[soil_df['Crop'] == crop]
             current_count = len(crop_data)
-            
+
             if current_count > target_count:
                 # Undersample - randomly select target_count samples
-                balanced_data.append(crop_data.sample(n=target_count, random_state=42))
+                balanced_data.append(crop_data.sample(
+                    n=target_count, random_state=42))
             elif current_count < target_count:
                 # Oversample - duplicate samples to reach target_count
                 # First, add all existing samples
                 balanced_data.append(crop_data)
                 # Then, randomly sample additional samples to reach target_count
                 additional_samples = target_count - current_count
-                balanced_data.append(crop_data.sample(n=additional_samples, replace=True, random_state=42))
+                balanced_data.append(crop_data.sample(
+                    n=additional_samples, replace=True, random_state=42))
             else:
                 # Equal to target count, just add as is
                 balanced_data.append(crop_data)
-        
+
         # Combine all balanced data
         soil_df = pd.concat(balanced_data, ignore_index=True)
-        
+
         # Shuffle the balanced dataset
-        soil_df = soil_df.sample(frac=1, random_state=42).reset_index(drop=True)
-        
+        soil_df = soil_df.sample(
+            frac=1, random_state=42).reset_index(drop=True)
+
         # Features and labels
         X = soil_df[self.feature_columns].values
         y = soil_df['Crop'].values
-        
+
         # Encode labels
         y_encoded = self.crop_label_encoder.fit_transform(y)
-        
+
         # Scale features
         X_scaled = self.scaler.fit_transform(X)
-        
+
         # Save preprocessing pipeline
         self.preprocessor = {
             'soil_label_encoder': self.soil_label_encoder,
@@ -226,27 +250,29 @@ class EnhancedSoilCropTransformer:
             'feature_columns': self.feature_columns,
             'market_scores': market_scores
         }
-        
-        logger.info(f"Balanced data preprocessing complete. Shape: {X_scaled.shape}")
-        unique_count = len(np.unique(y_encoded)) if y_encoded is not None and len(y_encoded) > 0 else 0
+
+        logger.info(
+            f"Balanced data preprocessing complete. Shape: {X_scaled.shape}")
+        unique_count = len(np.unique(y_encoded)) if y_encoded is not None and len(
+            y_encoded) > 0 else 0
         logger.info(f"Number of unique crops: {unique_count}")
-        
+
         return X_scaled, y_encoded
-    
+
     def _generate_synthetic_soil_data(self):
         """Generate synthetic soil data for demonstration purposes"""
         logger.info("Generating synthetic soil data...")
-        
+
         # Sample crops
         crops = [
-            "Rice", "Corn", "Vegetable Legumes", "Eggplant", "Okra", 
+            "Rice", "Corn", "Vegetable Legumes", "Eggplant", "Okra",
             "String Beans", "Broccoli", "Bitter Gourd", "Carrot", "Tomatoes"
         ]
-        
+
         # Generate synthetic data
         np.random.seed(42)
         n_samples = 200
-        
+
         data = {
             'Address': [f"Brgy. Area{i}" for i in range(n_samples)],
             'Crop': np.random.choice(crops, n_samples),
@@ -255,53 +281,54 @@ class EnhancedSoilCropTransformer:
             'Phosphorus(P)': np.random.choice(['L', 'M', 'H'], n_samples),
             'Potassium(K)': np.random.choice(['L', 'M', 'H'], n_samples)
         }
-        
+
         return pd.DataFrame(data)
-    
+
     def _generate_synthetic_vegetable_data(self):
         """Generate synthetic vegetable price data for demonstration purposes"""
         logger.info("Generating synthetic vegetable data...")
-        
+
         # Sample vegetables
         vegetables = [
-            "REPOLYO (CABBAGE), 1 KG", "KOLIFLOWER (CAULIFLOWER), 1 KG", 
+            "REPOLYO (CABBAGE), 1 KG", "KOLIFLOWER (CAULIFLOWER), 1 KG",
             "AMPALAYA (BITTER GOURD), 1 KG", "TALONG (EGGPLANT), (NATIVE), 1 KG",
             "OKRA, 1 KG", "SITAW (STRING BEAN), 1 KG", "BROKOLI (BROCCOLI), 1 KG"
         ]
-        
+
         # Generate synthetic data
         np.random.seed(42)
         n_samples = 100
-        
+
         data = {
             'Vegetable': np.random.choice(vegetables, n_samples),
             'Year': np.random.randint(2018, 2023, n_samples),
-            'Month': np.random.choice(['January', 'February', 'March', 'April', 'May', 'June', 
-                                     'July', 'August', 'September', 'October', 'November', 'December'], n_samples),
+            'Month': np.random.choice(['January', 'February', 'March', 'April', 'May', 'June',
+                                       'July', 'August', 'September', 'October', 'November', 'December'], n_samples),
             'Price': np.random.uniform(20, 200, n_samples),
             'Annual_Price': np.random.uniform(20, 200, n_samples),
             'MonthNum': np.random.randint(1, 13, n_samples),
             'Date': pd.date_range('2018-01-01', periods=n_samples, freq='M').strftime('%m/%d/%Y')
         }
-        
+
         return pd.DataFrame(data)
-    
+
     def build_model(self, input_shape, num_classes):
         """
         Build a neural network model for crop recommendation with fairness constraints
-        
+
         Args:
             input_shape (tuple): Shape of input features
             num_classes (int): Number of output classes (crop types)
-            
+
         Returns:
             Model: Compiled Keras model
         """
-        logger.info("Building enhanced neural network model with fairness constraints...")
-        
+        logger.info(
+            "Building enhanced neural network model with fairness constraints...")
+
         # Input layer
         inputs = layers.Input(shape=input_shape)
-        
+
         # Enhanced architecture with more layers to capture soil variations
         x = layers.Dense(256, activation='relu')(inputs)
         x = layers.BatchNormalization()(x)
@@ -314,72 +341,77 @@ class EnhancedSoilCropTransformer:
         x = layers.Dropout(self.hyperparams['dropout_rate'])(x)
         x = layers.Dense(32, activation='relu')(x)
         x = layers.Dropout(self.hyperparams['dropout_rate'])(x)
-        
+
         # Output layer
         outputs = layers.Dense(num_classes, activation='softmax')(x)
-        
+
         # Create model
         model = Model(inputs=inputs, outputs=outputs)
-        
+
         # Compile model with a lower learning rate for better convergence
-        optimizer = tf.keras.optimizers.Adam(learning_rate=self.hyperparams['learning_rate'])
+        optimizer = tf.keras.optimizers.Adam(
+            learning_rate=self.hyperparams['learning_rate'])
         model.compile(
             optimizer=optimizer,
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy']
         )
-        
+
         self.model = model
-        logger.info("Enhanced model with fairness constraints built successfully")
+        logger.info(
+            "Enhanced model with fairness constraints built successfully")
         return model
-    
+
     def train(self, X, y):
         """
         Train the model with balanced dataset and fairness constraints
-        
+
         Args:
             X (np.array): Input features
             y (np.array): Target labels
         """
         logger.info("Starting model training with fairness constraints...")
-        
+
         # Split data
         X_temp, X_test, y_temp, y_test = train_test_split(
             X, y, test_size=self.hyperparams['test_size'], random_state=self.hyperparams['random_seed']
         )
-        
+
         X_train, X_val, y_train, y_val = train_test_split(
-            X_temp, y_temp, test_size=self.hyperparams['validation_size'], random_state=self.hyperparams['random_seed']
+            X_temp, y_temp, test_size=self.hyperparams[
+                'validation_size'], random_state=self.hyperparams['random_seed']
         )
-        
+
         logger.info(f"Training samples: {len(X_train)}")
         logger.info(f"Validation samples: {len(X_val)}")
         logger.info(f"Test samples: {len(X_test)}")
-        
+
         # Build model
-        unique_classes = np.unique(y) if y is not None and len(y) > 0 else np.array([0])
+        unique_classes = np.unique(y) if y is not None and len(
+            y) > 0 else np.array([0])
         num_classes = len(unique_classes) if len(unique_classes) > 0 else 1
         self.build_model((X_train.shape[1],), num_classes)
-        
+
         # Calculate class weights for balanced training
         from sklearn.utils.class_weight import compute_class_weight
-        class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+        class_weights = compute_class_weight(
+            'balanced', classes=np.unique(y_train), y=y_train)
         class_weight_dict = dict(enumerate(class_weights))
-        
+
         # Callbacks
         early_stopping = EarlyStopping(
             monitor='val_loss',
             patience=20,
             restore_best_weights=True
         )
-        
+
         reduce_lr = ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.5,
             patience=10,
             min_lr=1e-7
         )
-        
+
         # Train model with class weights for fairness
         history = self.model.fit(
             X_train, y_train,
@@ -390,35 +422,38 @@ class EnhancedSoilCropTransformer:
             class_weight=class_weight_dict,  # Add class weights for balanced training
             verbose=1
         )
-        
+
         # Evaluate on test set
-        test_loss, test_accuracy = self.model.evaluate(X_test, y_test, verbose=0)
+        test_loss, test_accuracy = self.model.evaluate(
+            X_test, y_test, verbose=0)
         logger.info(f"Test Accuracy: {test_accuracy:.4f}")
-        
+
         # Generate classification report
         y_pred = np.argmax(self.model.predict(X_test, verbose=0), axis=1)
         # Get unique labels in test set
         unique_labels = np.unique(np.concatenate([y_test, y_pred]))
-        
+
         # Create classification report
         target_names = self.crop_label_encoder.inverse_transform(unique_labels)
-        report = classification_report(y_test, y_pred, target_names=target_names, output_dict=True, zero_division="warn")
-        
+        report = classification_report(
+            y_test, y_pred, target_names=target_names, output_dict=True, zero_division="warn")
+
         # Log fairness metrics
         logger.info("Computing fairness metrics...")
         # Calculate per-class accuracy to check for bias
         for i, class_name in enumerate(target_names):
             class_indices = y_test == i
             if np.sum(class_indices) > 0:
-                class_accuracy = np.mean(y_pred[class_indices] == y_test[class_indices])
+                class_accuracy = np.mean(
+                    y_pred[class_indices] == y_test[class_indices])
                 logger.info(f"{class_name} Accuracy: {class_accuracy:.4f}")
-        
+
         return history, report
-    
+
     def predict(self, soil_data, weather_data=None, market_context=None):
         """
         Predict suitable crops based on soil data, weather data, and market context using fair scoring
-        
+
         Args:
             soil_data (dict): Dictionary containing soil properties
                 {
@@ -440,18 +475,29 @@ class EnhancedSoilCropTransformer:
                     "season": "dry",  # or "wet"
                     "month": 6  # 1-12
                 }
-                
+
         Returns:
             list: List of tuples (crop_name, final_score, market_demand_score) sorted by final score
         """
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
-        
+
+        # Check if we have cached results for these inputs
+        cache_key = f"{str(soil_data)}_{str(weather_data)}_{str(market_context)}"
+        if hasattr(self, '_predict_cache') and cache_key in self._predict_cache:
+            cached_result, timestamp = self._predict_cache[cache_key]
+            # Cache for 5 minutes
+            if (time.time() - timestamp) < 300:
+                logger.info(
+                    f"Returning cached prediction for key: {cache_key}")
+                # Limit to top 10 as expected by frontend
+                return cached_result[:10]
+
         # Convert categorical values to numerical
         nitrogen_map = {'L': 0, 'M': 1, 'H': 2}
         phosphorus_map = {'L': 0, 'M': 1, 'H': 2}
         potassium_map = {'L': 0, 'M': 1, 'H': 2}
-        
+
         # Prepare input data with default values
         input_data = np.array([[
             soil_data['pH'],
@@ -460,84 +506,92 @@ class EnhancedSoilCropTransformer:
             potassium_map[soil_data['Potassium']],
             weather_data.get('temperature', 25.0) if weather_data else 25.0,
             weather_data.get('humidity', 60.0) if weather_data else 60.0,
-            weather_data.get('precipitation_probability', 50.0) if weather_data else 50.0,
+            weather_data.get('precipitation_probability',
+                             50.0) if weather_data else 50.0,
             weather_data.get('wind_speed', 10.0) if weather_data else 10.0,
             weather_data.get('uv_index', 5.0) if weather_data else 5.0,
             0.5  # Default market demand score
         ]])
-        
+
         # Scale input data
         input_scaled = self.scaler.transform(input_data)
-        
-        # Make prediction (ML Confidence Score)
+
+        # Make prediction (ML Confidence Score) with reduced verbosity
         ml_confidence_scores = self.model.predict(input_scaled, verbose=0)[0]
-        
+
         # Get all crops
         all_crops = self.crop_label_encoder.classes_
-        
+
         # Get market demand scores for all crops
         market_scores = []
         for crop in all_crops:
             score = self.preprocessor.get('market_scores', {}).get(crop, 0.5)
             market_scores.append(score)
-        
+
         # Convert to numpy array for easier manipulation
         market_scores = np.array(market_scores)
-        
+
         # Calculate Final Combined Score using equal weights
         # FinalScore = (SoilScore + WeatherScore + MarketDemandScore + MLConfidenceScore) / 4
         # For this implementation, we're using the raw model predictions as ML confidence
         # and the precomputed market scores, with equal weighting
-        final_scores = (ml_confidence_scores + market_scores) / 2  # Simplified version using available data
-        
+        final_scores = (ml_confidence_scores + market_scores) / \
+            2  # Simplified version using available data
+
         # Get top predictions based on final scores
-        top_indices = np.argsort(final_scores)[-12:][::-1]  # Get more predictions to ensure variety
+        # Get more predictions to ensure variety
+        top_indices = np.argsort(final_scores)[-12:][::-1]
         top_crops = self.crop_label_encoder.inverse_transform(top_indices)
         top_final_scores = final_scores[top_indices]
         top_ml_confidences = ml_confidence_scores[top_indices]
         top_market_scores = market_scores[top_indices]
-        
+
         # Return as list of tuples with final scores
         result = []
         for i in range(len(top_crops)):
             result.append((
-                top_crops[i], 
-                float(top_final_scores[i]), 
+                top_crops[i],
+                float(top_final_scores[i]),
                 float(top_market_scores[i])
             ))
-        
+
+        # Cache the results
+        if not hasattr(self, '_predict_cache'):
+            self._predict_cache = {}
+        self._predict_cache[cache_key] = (result.copy(), time.time())
+
         # Limit to top 10 results to match frontend expectations
         return result[:10]
-    
-    def save_model(self, model_path='models/enhanced_soil_crop_transformer.keras', 
+
+    def save_model(self, model_path='models/enhanced_soil_crop_transformer.keras',
                    preprocessor_path='models/enhanced_soil_preprocessing_pipeline.pkl'):
         """
         Save the trained model and preprocessing pipeline
-        
+
         Args:
             model_path (str): Path to save the model
             preprocessor_path (str): Path to save the preprocessing pipeline
         """
         if self.model is None:
             raise ValueError("No model to save. Train the model first.")
-        
+
         # Create models directory if it doesn't exist
         os.makedirs(os.path.dirname(model_path), exist_ok=True)
-        
+
         # Save model
         self.model.save(model_path)
         logger.info(f"Model saved to {model_path}")
-        
+
         # Save preprocessing pipeline
         with open(preprocessor_path, 'wb') as f:
             pickle.dump(self.preprocessor, f)
         logger.info(f"Preprocessing pipeline saved to {preprocessor_path}")
-    
-    def load_model(self, model_path='models/enhanced_soil_crop_transformer.keras', 
+
+    def load_model(self, model_path='models/enhanced_soil_crop_transformer.keras',
                    preprocessor_path='models/enhanced_soil_preprocessing_pipeline.pkl'):
         """
         Load a trained model and preprocessing pipeline
-        
+
         Args:
             model_path (str): Path to load the model from
             preprocessor_path (str): Path to load the preprocessing pipeline from
@@ -545,30 +599,31 @@ class EnhancedSoilCropTransformer:
         # Load model
         self.model = tf.keras.models.load_model(model_path)
         logger.info(f"Model loaded from {model_path}")
-        
+
         # Load preprocessing pipeline
         with open(preprocessor_path, 'rb') as f:
             self.preprocessor = pickle.load(f)
-        
+
         # Restore components
         self.soil_label_encoder = self.preprocessor['soil_label_encoder']
         self.crop_label_encoder = self.preprocessor['crop_label_encoder']
         self.scaler = self.preprocessor['scaler']
         self.feature_columns = self.preprocessor['feature_columns']
-        
+
         logger.info(f"Preprocessing pipeline loaded from {preprocessor_path}")
+
 
 def print_evaluation_report(report):
     """Print a formatted evaluation report"""
     print("\n" + "="*50)
     print("MODEL EVALUATION REPORT")
     print("="*50)
-    
+
     # Overall metrics
     print(f"Accuracy: {report['accuracy']:.4f}")
     print("\nPer-class metrics:")
     print("-" * 50)
-    
+
     # Remove 'accuracy' and 'macro avg'/'weighted avg' from report for per-class display
     for class_name, metrics in report.items():
         if class_name not in ['accuracy', 'macro avg', 'weighted avg']:
@@ -579,55 +634,63 @@ def print_evaluation_report(report):
             print(f"  Support: {metrics['support']}")
             print()
 
+
 def main():
     """Main function to handle training and serving"""
-    parser = argparse.ArgumentParser(description='Enhanced Soil Crop Recommendation Model')
-    parser.add_argument('mode', choices=['train', 'serve'], help='Mode: train or serve')
-    parser.add_argument('--soil-file', default='Data/brgy_soil_dataset.csv', help='Path to brgy_soil_dataset.csv')
-    parser.add_argument('--vegetable-file', default='Data/vegetable_prices.csv', help='Path to vegetable_prices.csv')
-    parser.add_argument('--port', type=int, default=8002, help='Port for FastAPI server')
-    
+    parser = argparse.ArgumentParser(
+        description='Enhanced Soil Crop Recommendation Model')
+    parser.add_argument(
+        'mode', choices=['train', 'serve'], help='Mode: train or serve')
+    parser.add_argument('--soil-file', default='Data/brgy_soil_dataset.csv',
+                        help='Path to brgy_soil_dataset.csv')
+    parser.add_argument('--vegetable-file', default='Data/vegetable_prices.csv',
+                        help='Path to vegetable_prices.csv')
+    parser.add_argument('--port', type=int, default=8002,
+                        help='Port for FastAPI server')
+
     args = parser.parse_args()
-    
+
     if args.mode == 'train':
         # Training mode
         logger.info("Starting training mode...")
-        
+
         # Initialize model
         transformer = EnhancedSoilCropTransformer()
-        
+
         # Load and preprocess data
-        X, y = transformer.load_and_preprocess_data(args.soil_file, args.vegetable_file)
-        
+        X, y = transformer.load_and_preprocess_data(
+            args.soil_file, args.vegetable_file)
+
         # Train model
         history, report = transformer.train(X, y)
-        
+
         # Save model
-        transformer.save_model('models/enhanced_soil_crop_transformer.keras', 
-                             'models/enhanced_soil_preprocessing_pipeline.pkl')
-        
+        transformer.save_model('models/enhanced_soil_crop_transformer.keras',
+                               'models/enhanced_soil_preprocessing_pipeline.pkl')
+
         # Print evaluation report
         print_evaluation_report(report)
-        
+
         logger.info("Training completed successfully!")
-        
+
     elif args.mode == 'serve':
         # Serving mode
         logger.info("Starting FastAPI server...")
-        
+
         # Import FastAPI here to avoid dependency issues when just training
         try:
             from fastapi import FastAPI, HTTPException
             from fastapi.middleware.cors import CORSMiddleware
             import uvicorn
         except ImportError:
-            logger.error("FastAPI dependencies not installed. Install with: pip install fastapi uvicorn")
+            logger.error(
+                "FastAPI dependencies not installed. Install with: pip install fastapi uvicorn")
             return
-        
+
         # Initialize FastAPI app
-        app = FastAPI(title="Enhanced Soil Crop Recommendation API", 
-                     description="Enhanced crop recommendation based on soil, weather, and market data")
-        
+        app = FastAPI(title="Enhanced Soil Crop Recommendation API",
+                      description="Enhanced crop recommendation based on soil, weather, and market data")
+
         # Add CORS middleware
         app.add_middleware(
             CORSMiddleware,
@@ -636,38 +699,38 @@ def main():
             allow_methods=["*"],
             allow_headers=["*"],
         )
-        
+
         # Global model instances
         # Load the fair model by default
         model = EnhancedSoilCropTransformer()
         try:
             # Try to load the fair model first
-            model.load_model('models/fair_soil_crop_transformer.keras', 
-                            'models/fair_soil_preprocessing_pipeline.pkl')
+            model.load_model('models/fair_soil_crop_transformer.keras',
+                             'models/fair_soil_preprocessing_pipeline.pkl')
             logger.info("Fair model loaded successfully")
         except Exception as e:
             logger.warning(f"Could not load fair model: {e}")
             # Fallback to the original model
             try:
-                model.load_model('models/enhanced_soil_crop_transformer.keras', 
-                                'models/enhanced_soil_preprocessing_pipeline.pkl')
+                model.load_model('models/enhanced_soil_crop_transformer.keras',
+                                 'models/enhanced_soil_preprocessing_pipeline.pkl')
                 logger.info("Original model loaded as fallback")
             except Exception as e2:
                 logger.error(f"Could not load original model either: {e2}")
                 raise e2
-        
+
         @app.get("/")
         async def root():
-            return {"message": "Fully Unbiased Fair Soil Crop Recommendation API", 
-                   "description": "POST /fair-recommend to get completely fair and unbiased crop recommendations"}
-        
+            return {"message": "Fully Unbiased Fair Soil Crop Recommendation API",
+                    "description": "POST /fair-recommend to get completely fair and unbiased crop recommendations"}
+
         @app.post("/fair-recommend")
         async def fair_recommend_crops(data: dict):
             """
             Get FAIR and UNBIASED crop recommendations based on soil, weather, and market data
-            
+
             This endpoint uses the fair model that treats all crops equally without any boosting.
-            
+
             Expected input format:
             {
                 "soil_data": {
@@ -688,7 +751,7 @@ def main():
                     "month": 6  # 1-12
                 }
             }
-            
+
             Returns:
             {
                 "recommended_crops": [
@@ -713,64 +776,72 @@ def main():
             try:
                 # Validate input
                 if 'soil_data' not in data:
-                    raise HTTPException(status_code=400, detail="Missing soil_data in request")
-                
+                    raise HTTPException(
+                        status_code=400, detail="Missing soil_data in request")
+
                 soil_data = data['soil_data']
                 weather_data = data.get('weather_data', {})
                 market_context = data.get('market_context', {})
-                
+
                 # Validate soil data
-                required_soil_fields = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
+                required_soil_fields = [
+                    'pH', 'Nitrogen', 'Phosphorus', 'Potassium']
                 for field in required_soil_fields:
                     if field not in soil_data:
-                        raise HTTPException(status_code=400, detail=f"Missing required soil field: {field}")
-                
+                        raise HTTPException(
+                            status_code=400, detail=f"Missing required soil field: {field}")
+
                 # Validate categorical values
                 valid_levels = ['L', 'M', 'H']
                 for field in ['Nitrogen', 'Phosphorus', 'Potassium']:
                     if soil_data[field] not in valid_levels:
-                        raise HTTPException(status_code=400, detail=f"Invalid value for soil {field}. Must be L, M, or H")
-                
+                        raise HTTPException(
+                            status_code=400, detail=f"Invalid value for soil {field}. Must be L, M, or H")
+
                 # Validate pH range
                 if not (0 <= soil_data['pH'] <= 14):
-                    raise HTTPException(status_code=400, detail="pH must be between 0 and 14")
-                
+                    raise HTTPException(
+                        status_code=400, detail="pH must be between 0 and 14")
+
                 # Get predictions with data using fair model
-                predictions = model.predict(soil_data, weather_data, market_context)
-                
+                predictions = model.predict(
+                    soil_data, weather_data, market_context)
+
                 # Format response
                 recommended_crops = [
                     {
-                        "crop": crop, 
+                        "crop": crop,
                         "final_score": float(final_score),
                         "market_demand_score": float(market_score)
                     }
                     for crop, final_score, market_score in predictions
                 ]
-                
+
                 return {"recommended_crops": recommended_crops}
-                
+
             except Exception as e:
                 logger.error(f"Error in fair prediction: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"Fair prediction error: {str(e)}")
-        
+                raise HTTPException(
+                    status_code=500, detail=f"Fair prediction error: {str(e)}")
+
         # Keep the old endpoint for backward compatibility but using the fair model
         @app.post("/enhanced-recommend")
         async def enhanced_recommend_crops(data: dict):
             """
             Get crop recommendations based on soil, weather, and market data (FAIR VERSION)
-            
+
             This endpoint now uses the fair model that treats all crops equally without any boosting.
             """
             return await fair_recommend_crops(data)
-        
+
         @app.get("/health")
         async def health_check():
             return {"status": "healthy", "model_loaded": model.model is not None, "model_type": "fair"}
-        
+
         # Start server
         logger.info(f"Server starting on http://localhost:{args.port}")
         uvicorn.run(app, host="0.0.0.0", port=args.port)
+
 
 if __name__ == "__main__":
     main()

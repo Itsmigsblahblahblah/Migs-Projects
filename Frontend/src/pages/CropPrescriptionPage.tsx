@@ -238,13 +238,21 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
       // Use environment variable for backend URL or default to localhost
       const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      
+      // Add timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch(`${BACKEND_URL}/enhanced-soil/enhanced-recommend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
       console.log('Enhanced recommendation response status:', response.status);
       console.log('Enhanced recommendation response ok:', response.ok);
@@ -272,8 +280,12 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         console.error('Invalid response format:', data);
         setError('Invalid response format from enhanced recommendation server');
       }
-    } catch (err) {
-      setError('Failed to load enhanced crop recommendations. Please try again.');
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setError('Request timed out. Please try again.');
+      } else {
+        setError('Failed to load enhanced crop recommendations. Please try again.');
+      }
       console.error('Error fetching enhanced recommendations:', err);
     } finally {
       setLoading(false);
@@ -887,8 +899,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
                   {loading && (
                     <div className="flex justify-center items-center h-32">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      <span className="ml-2">Analyzing soil, weather, and market data...</span>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+                      <span>Analyzing soil, weather, and market data... (This may take a few seconds)</span>
                     </div>
                   )}
 
