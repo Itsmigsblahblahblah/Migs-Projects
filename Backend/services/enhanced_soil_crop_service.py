@@ -25,7 +25,6 @@ import json
 import pickle
 import logging
 import argparse
-import time
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -480,27 +479,6 @@ class EnhancedSoilCropTransformer:
         Returns:
             list: List of tuples (crop_name, final_score, market_demand_score) sorted by final score
         """
-        logger.info(
-            f"Predict method called with soil_data: {soil_data}, weather_data: {weather_data}, market_context: {market_context}")
-
-        # Handle edge cases where data might be None or missing
-        if soil_data is None:
-            soil_data = {}
-        if weather_data is None:
-            weather_data = {}
-        if market_context is None:
-            market_context = {}
-
-        # Ensure required soil data fields exist with default values
-        required_soil_fields = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
-        for field in required_soil_fields:
-            if field not in soil_data:
-                if field == 'pH':
-                    soil_data[field] = 6.5  # Default neutral pH
-                else:
-                    # Default medium level for nutrients
-                    soil_data[field] = 'M'
-
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
 
@@ -578,15 +556,9 @@ class EnhancedSoilCropTransformer:
             ))
 
         # Cache the results
-        try:
-            if not hasattr(self, '_predict_cache'):
-                self._predict_cache = {}
-            current_time = time.time()
-            logger.info(f"Caching results with timestamp: {current_time}")
-            self._predict_cache[cache_key] = (result.copy(), current_time)
-            logger.info("Results cached successfully")
-        except Exception as e:
-            logger.error(f"Error caching results: {e}")
+        if not hasattr(self, '_predict_cache'):
+            self._predict_cache = {}
+        self._predict_cache[cache_key] = (result.copy(), time.time())
 
         # Limit to top 10 results to match frontend expectations
         return result[:10]

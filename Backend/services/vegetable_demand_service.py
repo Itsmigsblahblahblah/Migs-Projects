@@ -213,10 +213,6 @@ class VegetableDemandTransformer:
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
 
-        # Limit top_n to prevent excessive computation (max 50 for better performance)
-        if top_n > 50:
-            top_n = 50
-
         # Check if we have cached results for these parameters
         cache_key = f"{target_month}_{target_year}_{demand_level}_{top_n}"
         if hasattr(self, '_recommend_cache') and cache_key in self._recommend_cache:
@@ -277,13 +273,7 @@ class VegetableDemandTransformer:
             grouped_data = veg_df.groupby('Vegetable')
 
         # For each available vegetable, get historical data and make prediction
-        # Limit to first 50 vegetables to prevent excessive computation and improve performance
-        # Also add early termination if we've already collected enough results
-        processed_count = 0
-        for vegetable in available_vegetables[:50]:
-            # Early termination if we've already collected more than needed
-            if len(recommendations) >= top_n + 20:  # Collect a few extra for sorting
-                break
+        for vegetable in available_vegetables:
             try:
                 # Filter data for this vegetable
                 veg_data = veg_df[veg_df['Vegetable'] ==
@@ -361,7 +351,7 @@ class VegetableDemandTransformer:
                 )
                 historical_months = historical_data['MonthNum'].tolist()
 
-                # Make prediction with reduced verbosity
+                # Make prediction
                 prediction = self.predict_demand(vegetable, historical_prices,
                                                  historical_annual_prices, historical_months)
 
@@ -418,9 +408,6 @@ class VegetableDemandTransformer:
                         recommendations.append(prediction)
                 else:
                     recommendations.append(prediction)
-
-                # Increment processed counter
-                processed_count += 1
             except Exception as e:
                 logger.warning(
                     f"Could not generate prediction for {vegetable}: {e}")

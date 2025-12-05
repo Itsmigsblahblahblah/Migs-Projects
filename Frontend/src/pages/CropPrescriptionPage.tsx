@@ -236,8 +236,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
       console.log('Fetching enhanced recommendations with request body:', requestBody);
 
-      // Use environment variable for backend URL, or use proxy for local development
-      const BACKEND_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com');
+      // Use environment variable for backend URL or default to localhost
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
       
       // Add timeout to the fetch request
       const controller = new AbortController();
@@ -281,19 +281,12 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         setError('Invalid response format from enhanced recommendation server');
       }
     } catch (err: any) {
-      console.error('Error fetching enhanced recommendations:', err);
-      
-      // Provide more specific error messages
       if (err.name === 'AbortError') {
         setError('Request timed out. Please try again.');
-      } else if (err instanceof TypeError) {
-        // Network errors, DNS errors, etc.
-        setError(`Network error: ${err.message}. Please check your connection and try again.`);
-      } else if (err.message) {
-        setError(err.message);
       } else {
         setError('Failed to load enhanced crop recommendations. Please try again.');
       }
+      console.error('Error fetching enhanced recommendations:', err);
     } finally {
       setLoading(false);
     }
@@ -303,8 +296,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   const fetchMarketDemand = async (cropName: string) => {
     try {
       console.log('Fetching market demand for crop:', cropName);
-      // Use environment variable for backend URL, or use proxy for local development
-      const BACKEND_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com');
+      // Use environment variable for backend URL or default to localhost
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
       const response = await fetch(`${BACKEND_URL}/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
 
       console.log('Market demand response status:', response.status);
@@ -328,8 +321,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         const historicalMonths = historicalData.map((item: any) => parseInt(item.MonthNum));
 
         // Make demand prediction
-        // Use environment variable for backend URL, or use proxy for local development
-        const BACKEND_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com');
+        // Use environment variable for backend URL or default to localhost
+        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
         const predictionResponse = await fetch(`${BACKEND_URL}/vegetables/predict-demand`, {
           method: 'POST',
           headers: {
@@ -360,11 +353,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   // Fetch soil data when component mounts and farmer profile is available
   useEffect(() => {
     console.log('useEffect triggered - farmerProfile:', effectiveFarmerProfile);
-    console.log('useEffect triggered - inputSoilData:', inputSoilData);
-    
     const loadSoilData = async () => {
-      console.log('loadSoilData function called');
-      
       if (effectiveFarmerProfile?.farmAddress) {
         console.log('Fetching soil data for farm address:', effectiveFarmerProfile.farmAddress);
         const barangay = extractBarangay(effectiveFarmerProfile.farmAddress);
@@ -461,14 +450,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       console.log('Prepared weather data for enhanced recommendation:', weatherDataForRecommendation);
     }
 
-    fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation).catch(err => {
-      console.error('Error in handleGetRecommendations:', err);
-      if (err.message) {
-        setError(err.message);
-      } else {
-        setError('Failed to load enhanced crop recommendations. Please try again.');
-      }
-    });
+    fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
   };
 
   // Function to handle saving prescription

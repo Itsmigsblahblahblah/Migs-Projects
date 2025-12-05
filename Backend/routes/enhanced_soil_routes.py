@@ -24,7 +24,6 @@ try:
     logger.info("Enhanced model loaded successfully")
     logger.info(f"Model object: {model}")
     logger.info(f"Model.model object: {model.model}")
-    logger.info(f"Model type: {type(model)}")
 except Exception as e:
     logger.error(f"Failed to load enhanced model: {e}")
     import traceback
@@ -85,7 +84,6 @@ async def enhanced_recommend_crops(data: dict):
         ]
     }
     """
-    logger.info(f"Received request data: {data}")
     try:
         # Check if model is loaded
         if model is None:
@@ -96,7 +94,7 @@ async def enhanced_recommend_crops(data: dict):
             raise HTTPException(
                 status_code=400, detail="Missing soil_data in request")
 
-        soil_data = data.get('soil_data', {})
+        soil_data = data['soil_data']
         weather_data = data.get('weather_data', {})
         market_context = data.get('market_context', {})
 
@@ -122,15 +120,12 @@ async def enhanced_recommend_crops(data: dict):
         # Add a timeout to prevent hanging requests
         import asyncio
         try:
-            logger.info(
-                f"Calling model.predict with soil_data: {soil_data}, weather_data: {weather_data}, market_context: {market_context}")
             # Get predictions with data with a 5-second timeout
             predictions = await asyncio.wait_for(
                 asyncio.get_event_loop().run_in_executor(None, model.predict,
                                                          soil_data, weather_data, market_context),
                 timeout=5.0
             )
-            logger.info(f"Predictions received: {predictions}")
         except asyncio.TimeoutError:
             raise HTTPException(
                 status_code=500, detail="Prediction took too long. Please try again.")
