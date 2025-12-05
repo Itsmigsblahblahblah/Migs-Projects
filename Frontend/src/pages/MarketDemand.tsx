@@ -174,22 +174,14 @@ const MarketDemand = () => {
       }
 
       // Include month, year, and demand_level parameters in the API call
-      // Request fewer crops to improve performance (was 1000, now 100)
-      const BACKEND_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com');
-      let url = `${BACKEND_URL}/vegetables/recommend-crops?top_n=50&month=${selectedMonth}&year=${selectedYear}`;
+      // Request all crops instead of just 20
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      let url = `${BACKEND_URL}/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
       if (selectedDemandLevel) {
         url += `&demand_level=${selectedDemandLevel}`;
       }
 
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-
-      const response = await fetch(url, {
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error("Failed to fetch market demand data");
@@ -204,12 +196,8 @@ const MarketDemand = () => {
       }, cacheKey);
 
       setMarketData(marketData);
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
-        setError("Request timed out. Please try again.");
-      } else {
-        setError("Failed to load market demand data. Please try again later.");
-      }
+    } catch (err) {
+      setError("Failed to load market demand data. Please try again later.");
       console.error("Error fetching market data:", err);
     } finally {
       setLoading(false);
@@ -308,8 +296,7 @@ const MarketDemand = () => {
             </CardHeader>
             <CardContent>
               <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mr-3"></div>
-                <span>Loading market demand forecast...</span>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             </CardContent>
           </Card>
