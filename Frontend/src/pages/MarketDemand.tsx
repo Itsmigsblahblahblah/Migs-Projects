@@ -59,6 +59,8 @@ const MarketDemand = () => {
   // Debugging: Log initial state
   useEffect(() => {
     console.log('Component mounted with selectedMonth:', selectedMonth, 'selectedYear:', selectedYear);
+    // Manually trigger fetch on mount to ensure it's called
+    fetchMarketData();
   }, []);
   const [yearRangeStart, setYearRangeStart] = useState<number>(2025); // Start from 2025 instead of current year
   const [selectedDemandLevel, setSelectedDemandLevel] = useState<string | null>(null); // New state for demand level filtering
@@ -69,6 +71,7 @@ const MarketDemand = () => {
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
+  console.log(`Date info - currentMonth: ${currentMonth}, currentYear: ${currentYear}, currentDate: ${currentDate}`);
 
   // Set the minimum forecastable year to 2025 (the first year after our data ends in 2024)
   const minForecastYear = 2025;
@@ -96,6 +99,7 @@ const MarketDemand = () => {
   };
 
   const months = useMemo(() => getAvailableMonths(), [selectedYear, currentYear, currentMonth]);
+  console.log('months array:', months);
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -178,25 +182,15 @@ const MarketDemand = () => {
     console.log('Setting filteredData with', result.length, 'items');
     setFilteredData(result);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, marketData, sortOrder, sortBy, selectedDemandLevel, selectedMonth]);
+  }, [searchTerm, marketData, sortOrder, sortBy, selectedDemandLevel]);
 
   const fetchMarketData = async () => {
     try {
       setLoading(true);
       console.log(`Fetching market data for ${selectedMonth}/${selectedYear}`);
+      console.log(`Current state - selectedMonth: ${selectedMonth}, selectedYear: ${selectedYear}, selectedDemandLevel: ${selectedDemandLevel}`);
 
-      // Check if we have cached data for the current parameters
-      const cacheKey = `market-demand-${selectedMonth}-${selectedYear}-${selectedDemandLevel || 'all'}`;
-      const cachedData = getCachedMarketDemandData(cacheKey);
-
-      if (cachedData) {
-        console.log('Using cached data');
-        // Use cached data
-        setMarketData(cachedData.data);
-        setLoading(false);
-        return;
-      }
-
+      // Simplified approach - always fetch fresh data for current month
       // Include month, year, and demand_level parameters in the API call
       // Request all crops instead of just 20
       // Use relative URL to leverage Vite proxy
@@ -207,6 +201,8 @@ const MarketDemand = () => {
 
       console.log(`Making request to: ${url}`);
       const response = await fetch(url);
+      
+      console.log(`Response status: ${response.status}, ok: ${response.ok}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch market demand data: ${response.status} ${response.statusText}`);
@@ -216,14 +212,11 @@ const MarketDemand = () => {
       console.log('Received data:', data);
       const marketData = data.recommended_crops || [];
       console.log('Processed marketData:', marketData);
+      console.log('Processed marketData length:', marketData.length);
 
-      // Cache the data with the current parameters
-      setCachedMarketDemandData({
-        data: marketData
-      }, cacheKey);
-
-      setMarketData(marketData);
-      console.log('Set marketData state with', marketData.length, 'items');
+      console.log('About to set marketData state with', marketData.length, 'items');
+      setMarketData([...marketData]); // Force a new array reference
+      console.log('Set marketData state completed');
     } catch (err) {
       setError("Failed to load market demand data. Please try again later.");
       console.error("Error fetching market data:", err);
@@ -597,6 +590,7 @@ const MarketDemand = () => {
               </CardHeader>
               <div className="flex-grow flex flex-col">
                 <CardContent className="flex-grow overflow-y-auto" style={{ maxHeight: 'calc(100vh - 150px)' }}>
+                  <div>DEBUG: filteredData.length = {filteredData.length}, marketData.length = {marketData.length}</div>
                   {filteredData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground">
                       <TrendingUp className="h-12 w-12 mb-4" />
