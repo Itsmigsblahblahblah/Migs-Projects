@@ -113,7 +113,8 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
     try {
       console.log('Fetching soil data for barangay:', barangay);
       // Use environment variable for backend URL or default to localhost
-      const response = await fetch(`/soil-data/${encodeURIComponent(barangay)}`);
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${BACKEND_URL}/soil-data/${encodeURIComponent(barangay)}`);
 
       console.log('Soil data response status:', response.status);
       console.log('Soil data response ok:', response.ok);
@@ -158,16 +159,36 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
 
     try {
       // Use the weather-enhanced endpoint if weather data is available
-      const endpoint = weatherDataForRecommendation ? '/api/recommend-with-weather' : '/api/recommend';
+      const endpoint = weatherDataForRecommendation ? '/enhanced-soil/fair-recommend' : '/enhanced-soil/recommend';
       const requestBody = weatherDataForRecommendation
-        ? { soil_data: soilData, weather_data: weatherDataForRecommendation }
-        : soilData;
+        ? { 
+            soil_data: soilData, 
+            weather_data: {
+              temperature: weatherDataForRecommendation.temperature,
+              humidity: weatherDataForRecommendation.humidity,
+              precipitation_probability: weatherDataForRecommendation.precipitation_probability,
+              wind_speed: weatherDataForRecommendation.wind_speed,
+              uv_index: weatherDataForRecommendation.uv_index
+            },
+            market_context: {
+              season: weatherDataForRecommendation.temperature > 30 ? "dry" : "wet",
+              month: new Date().getMonth() + 1
+            }
+          }
+        : {
+            soil_data: soilData,
+            market_context: {
+              season: "dry",
+              month: new Date().getMonth() + 1
+            }
+          };
 
       console.log('Fetching recommendations from:', endpoint);
       console.log('Request body:', requestBody);
 
       // Use environment variable for backend URL or default to localhost
-      const response = await fetch(endpoint, {
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +229,8 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
     try {
       console.log('Fetching market demand for crop:', cropName);
       // Use environment variable for backend URL or default to localhost
-      const response = await fetch(`/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${BACKEND_URL}/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
 
       console.log('Market demand response status:', response.status);
       console.log('Market demand response ok:', response.ok);
@@ -232,7 +254,8 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
 
         // Make demand prediction
         // Use environment variable for backend URL or default to localhost
-        const predictionResponse = await fetch(`/vegetables/predict-demand`, {
+        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+        const predictionResponse = await fetch(`${BACKEND_URL}/vegetables/predict-demand`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

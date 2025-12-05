@@ -172,7 +172,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     try {
       console.log('Fetching soil data for barangay:', barangay);
       // Use environment variable for backend URL or default to localhost
-      const response = await fetch(`/soil-data/${encodeURIComponent(barangay)}`);
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${BACKEND_URL}/soil-data/${encodeURIComponent(barangay)}`);
 
       console.log('Soil data response status:', response.status);
       console.log('Soil data response ok:', response.ok);
@@ -236,8 +237,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       console.log('Fetching enhanced recommendations with request body:', requestBody);
 
       // Use environment variable for backend URL or default to localhost
-      // Use relative URL to leverage Vite proxy
-      const response = await fetch('/enhanced-soil/fair-recommend', {
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${BACKEND_URL}/enhanced-soil/fair-recommend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -288,7 +289,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     try {
       console.log('Fetching market demand for crop:', cropName);
       // Use environment variable for backend URL or default to localhost
-      const response = await fetch(`/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const response = await fetch(`${BACKEND_URL}/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
 
       console.log('Market demand response status:', response.status);
       console.log('Market demand response ok:', response.ok);
@@ -312,7 +314,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
         // Make demand prediction
         // Use environment variable for backend URL or default to localhost
-        const predictionResponse = await fetch(`/vegetables/predict-demand`, {
+        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+        const predictionResponse = await fetch(`${BACKEND_URL}/vegetables/predict-demand`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
