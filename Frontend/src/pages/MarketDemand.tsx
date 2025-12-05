@@ -190,11 +190,12 @@ const MarketDemand = () => {
       console.log(`Fetching market data for ${selectedMonth}/${selectedYear}`);
       console.log(`Current state - selectedMonth: ${selectedMonth}, selectedYear: ${selectedYear}, selectedDemandLevel: ${selectedDemandLevel}`);
 
+      // Use environment variable for backend URL or default to localhost
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
       // Simplified approach - always fetch fresh data for current month
       // Include month, year, and demand_level parameters in the API call
       // Request all crops instead of just 20
-      // Use relative URL to leverage Vite proxy
-      let url = `/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
+      let url = `${BACKEND_URL}/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
       if (selectedDemandLevel) {
         url += `&demand_level=${selectedDemandLevel}`;
       }
