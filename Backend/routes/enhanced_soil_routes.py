@@ -122,7 +122,8 @@ async def enhanced_recommend_crops(data: dict):
         # Add a timeout to prevent hanging requests
         import asyncio
         try:
-            logger.info(f"Calling model.predict with soil_data: {soil_data}, weather_data: {weather_data}, market_context: {market_context}")
+            logger.info(
+                f"Calling model.predict with soil_data: {soil_data}, weather_data: {weather_data}, market_context: {market_context}")
             # Get predictions with data with a 5-second timeout
             predictions = await asyncio.wait_for(
                 asyncio.get_event_loop().run_in_executor(None, model.predict,

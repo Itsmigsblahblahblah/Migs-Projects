@@ -480,8 +480,9 @@ class EnhancedSoilCropTransformer:
         Returns:
             list: List of tuples (crop_name, final_score, market_demand_score) sorted by final score
         """
-        logger.info(f"Predict method called with soil_data: {soil_data}, weather_data: {weather_data}, market_context: {market_context}")
-        
+        logger.info(
+            f"Predict method called with soil_data: {soil_data}, weather_data: {weather_data}, market_context: {market_context}")
+
         # Handle edge cases where data might be None or missing
         if soil_data is None:
             soil_data = {}
@@ -489,7 +490,7 @@ class EnhancedSoilCropTransformer:
             weather_data = {}
         if market_context is None:
             market_context = {}
-        
+
         # Ensure required soil data fields exist with default values
         required_soil_fields = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium']
         for field in required_soil_fields:
@@ -497,8 +498,9 @@ class EnhancedSoilCropTransformer:
                 if field == 'pH':
                     soil_data[field] = 6.5  # Default neutral pH
                 else:
-                    soil_data[field] = 'M'  # Default medium level for nutrients
-        
+                    # Default medium level for nutrients
+                    soil_data[field] = 'M'
+
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
 

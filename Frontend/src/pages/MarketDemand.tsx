@@ -175,7 +175,7 @@ const MarketDemand = () => {
 
       // Include month, year, and demand_level parameters in the API call
       // Request fewer crops to improve performance (was 1000, now 100)
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      const BACKEND_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com');
       let url = `${BACKEND_URL}/vegetables/recommend-crops?top_n=50&month=${selectedMonth}&year=${selectedYear}`;
       if (selectedDemandLevel) {
         url += `&demand_level=${selectedDemandLevel}`;

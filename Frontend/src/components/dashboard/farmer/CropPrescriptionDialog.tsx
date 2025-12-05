@@ -112,8 +112,8 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
 
     try {
       console.log('Fetching soil data for barangay:', barangay);
-      // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      // Use environment variable for backend URL, or use proxy for local development
+      const BACKEND_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com');
       const response = await fetch(`${BACKEND_URL}/soil-data/${encodeURIComponent(barangay)}`);
 
       console.log('Soil data response status:', response.status);
@@ -167,8 +167,8 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
       console.log('Fetching recommendations from:', endpoint);
       console.log('Request body:', requestBody);
 
-      // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      // Use environment variable for backend URL, or use proxy for local development
+      const BACKEND_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com');
       const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: 'POST',
         headers: {
@@ -209,8 +209,8 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
   const fetchMarketDemand = async (cropName: string) => {
     try {
       console.log('Fetching market demand for crop:', cropName);
-      // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      // Use environment variable for backend URL, or use proxy for local development
+      const BACKEND_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com');
       const response = await fetch(`${BACKEND_URL}/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
 
       console.log('Market demand response status:', response.status);
@@ -234,8 +234,8 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
         const historicalMonths = historicalData.map((item: any) => parseInt(item.MonthNum));
 
         // Make demand prediction
-        // Use environment variable for backend URL or default to localhost
-        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+        // Use environment variable for backend URL, or use proxy for local development
+        const BACKEND_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com');
         const predictionResponse = await fetch(`${BACKEND_URL}/vegetables/predict-demand`, {
           method: 'POST',
           headers: {

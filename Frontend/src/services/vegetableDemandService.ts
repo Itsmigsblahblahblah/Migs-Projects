@@ -2,8 +2,8 @@
  * Service for interacting with the vegetable demand prediction API
  */
 
-// API base URL - use environment variable or default to localhost
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+// API base URL - use environment variable, or use proxy for local development
+const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com');
 
 /**
  * Get vegetable demand prediction for a specific crop
