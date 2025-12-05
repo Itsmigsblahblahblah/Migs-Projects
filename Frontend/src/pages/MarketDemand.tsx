@@ -655,7 +655,8 @@ const MarketDemand = () => {
                           disabled={currentPage === 1}
                           className="h-8 px-3 text-sm flex-shrink-0"
                         >
-                          Previous
+                          <span className="hidden sm:inline">Previous</span>
+                          <ChevronLeft className="h-4 w-4 sm:hidden" />
                         </Button>
 
                         {/* Page Number Buttons */}
@@ -741,7 +742,8 @@ const MarketDemand = () => {
                           disabled={currentPage === Math.ceil(filteredData.length / cropsPerPage)}
                           className="h-8 px-3 text-sm flex-shrink-0"
                         >
-                          Next
+                          <span className="hidden sm:inline">Next</span>
+                          <ChevronRight className="h-4 w-4 sm:hidden" />
                         </Button>
                       </div>
                     </div>
