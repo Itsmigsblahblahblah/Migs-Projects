@@ -435,7 +435,7 @@ const Landing = () => {
                         'https://www.facebook.com/deanmartin.mabulay',
                         'https://www.facebook.com/hyroin.balili',
                         'https://www.facebook.com/joyceann.cuala',
-                        'https://www.facebook.com/joyceann.cuala'
+                        'https://www.facebook.com/dondon.esquivel.1'
                       ];
                       const url = facebookUrls[index % facebookUrls.length];
                       window.open(url, '_blank');
