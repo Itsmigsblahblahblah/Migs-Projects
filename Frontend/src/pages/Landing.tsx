@@ -3,6 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Sprout,
   Users,
   Shield,
@@ -16,7 +22,8 @@ import {
   Menu,
   X,
   Facebook,
-  Mail
+  Mail,
+  ChevronDown
 } from "lucide-react";
 import dean from "@/assets/dean.jpg";
 import hyroin from "@/assets/hyroin.jpg";
@@ -41,7 +48,7 @@ const Landing = () => {
   // Track scroll position to update active section
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['features', 'testimonials', 'team'];
+      const sections = ['features', 'faq', 'testimonials', 'team'];
       const scrollPosition = window.scrollY + 100;
 
       for (const sectionId of sections) {
@@ -193,6 +200,13 @@ const Landing = () => {
                 <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'testimonials' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
               </button>
               <button
+                onClick={() => scrollToSection('faq')}
+                className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'faq' ? 'text-yellow-500' : ''}`}
+              >
+                <span className="relative z-10">FAQ</span>
+                <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'faq' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+              </button>
+              <button
                 onClick={() => scrollToSection('team')}
                 className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'team' ? 'text-yellow-500' : ''}`}
               >
@@ -234,6 +248,12 @@ const Landing = () => {
                 className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${activeSection === 'testimonials' ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
               >
                 Reviews
+              </button>
+              <button
+                onClick={() => scrollToSection('faq')}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${activeSection === 'faq' ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+              >
+                FAQ
               </button>
               <button
                 onClick={() => scrollToSection('team')}
@@ -364,8 +384,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-16 bg-card/50">
+      {/* Testimonials Section */}      <section id="testimonials" className="py-16 bg-card/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -402,8 +421,80 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Team Section */}
-      <section id="team" className="pt-16 pb-8">
+      {/* FAQ Section */}
+      <section id="faq" className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Find answers to common questions about Harvestify and our services
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <Accordion type="single" collapsible className="w-full space-y-4">
+              <AccordionItem value="item-1" className="border rounded-lg px-4 bg-background">
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="flex items-center gap-2 text-left">
+                    <span className="font-medium">What is Harvestify and how does it work?</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 text-muted-foreground text-base">
+                  Harvestify is a smart farming platform that provides AI-powered crop recommendations based on soil conditions, weather patterns, and market data. Our system analyzes multiple factors to suggest the best crops for your farm and connects you with agricultural experts for personalized guidance.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-2" className="border rounded-lg px-4 bg-background">
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="flex items-center gap-2 text-left">
+                    <span className="font-medium">Do I need technical expertise to use Harvestify?</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 text-muted-foreground text-base">
+                  Not at all! Harvestify is designed to be user-friendly for farmers of all technical levels. Our intuitive interface guides you through the process, and our expert support team is always available to help you get the most out of our platform.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-3" className="border rounded-lg px-4 bg-background">
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="flex items-center gap-2 text-left">
+                    <span className="font-medium">How accurate are the crop recommendations?</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 text-muted-foreground text-base">
+                  Our recommendations are based on advanced machine learning algorithms trained on extensive agricultural data. While we strive for the highest accuracy, we always recommend discussing recommendations with local agricultural experts and considering your specific farm conditions.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-4" className="border rounded-lg px-4 bg-background">
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="flex items-center gap-2 text-left">
+                    <span className="font-medium">Can I use Harvestify if I'm not in Majayjay?</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 text-muted-foreground text-base">
+                  While Harvestify was initially developed for Majayjay farmers, our platform can be adapted for use in other regions. Contact our team to discuss how we can customize our services for your specific location and farming conditions.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-5" className="border rounded-lg px-4 bg-background">
+                <AccordionTrigger className="py-4 hover:no-underline">
+                  <div className="flex items-center gap-2 text-left">
+                    <span className="font-medium">Is there a cost to use Harvestify?</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 text-muted-foreground text-base">
+                  Harvestify is completely free to use for all farmers. All features, including crop recommendations, analytics, and expert consultations, are available at no cost. We believe in making smart farming accessible to everyone in Majayjay.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        </div>
+      </section>
+
+      {/* Team Section */}      <section id="team" className="pt-16 pb-8 bg-card/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
