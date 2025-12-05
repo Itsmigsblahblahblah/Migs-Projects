@@ -1,0 +1,19 @@
+{
+  "soil_data": {
+    "pH": 6.5,
+    "Nitrogen": "M",
+    "Phosphorus": "L",
+    "Potassium": "H"
+  },
+  "weather_data": {
+    "temperature": 28.5,
+    "humidity": 65,
+    "precipitation_probability": 20,
+    "wind_speed": 10,
+    "uv_index": 7
+  },
+  "market_context": {
+    "season": "dry",
+    "month": 6
+  }
+}
