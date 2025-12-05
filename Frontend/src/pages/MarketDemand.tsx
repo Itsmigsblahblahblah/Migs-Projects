@@ -260,7 +260,7 @@ const MarketDemand = () => {
   const getDemandLevelColor = (level: string) => {
     switch (level.toLowerCase()) {
       case "high": return "bg-green-100 text-green-800 hover:bg-green-200";
-      case "moderate": return "bg-green-100 text-green-800 hover:bg-green-200";
+      case "moderate": return "bg-blue-100 text-blue-800 hover:bg-blue-200";
       case "stable": return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
       case "low": return "bg-red-100 text-red-800 hover:bg-red-200";
       default: return "bg-gray-100 text-gray-800 hover:bg-gray-200";
@@ -591,7 +591,6 @@ const MarketDemand = () => {
               </CardHeader>
               <div className="flex-grow flex flex-col">
                 <CardContent className="flex-grow overflow-y-auto" style={{ maxHeight: 'calc(100vh - 150px)' }}>
-                  <div>DEBUG: filteredData.length = {filteredData.length}, marketData.length = {marketData.length}</div>
                   {filteredData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground">
                       <TrendingUp className="h-12 w-12 mb-4" />
@@ -790,10 +789,10 @@ const MarketDemand = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                       <span>Moderate Demand</span>
                     </div>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
                       {filteredData.filter(crop => crop.demand_level.toLowerCase() === 'moderate').length}
                     </Badge>
                   </div>
