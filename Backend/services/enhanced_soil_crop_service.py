@@ -36,6 +36,10 @@ from tensorflow.keras import layers
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import warnings
+import functools
+import hashlib
+import threading
+from collections import OrderedDict
 warnings.filterwarnings('ignore')
 
 # Configure logging
@@ -75,6 +79,14 @@ class EnhancedSoilCropTransformer:
         self.soil_feature_columns = [
             'pH', 'Nitrogen', 'Phosphorus', 'Potassium']
         self.preprocessor = None
+        # Add cache for predictions with LRU eviction policy
+        self.prediction_cache = OrderedDict()
+        self.cache_ttl = 60  # 1 minute cache for better responsiveness
+        self.max_cache_size = 100  # Limit cache size to prevent memory issues
+        # Add cache warming flag
+        self.cache_warming_complete = False
+        # Add lock for thread safety
+        self.cache_lock = threading.Lock()
 
     def load_and_preprocess_data(self, soil_file='Data/brgy_soil_dataset.csv',
                                  vegetable_file='Data/vegetable_prices.csv'):
@@ -451,6 +463,112 @@ class EnhancedSoilCropTransformer:
 
         return history, report
 
+    def _generate_cache_key(self, soil_data, weather_data, market_context):
+        # Generate a unique cache key based on input parameters
+        cache_data = {
+            'soil_data': soil_data,
+            'weather_data': weather_data,
+            'market_context': market_context
+        }
+        cache_string = json.dumps(cache_data, sort_keys=True)
+        return hashlib.md5(cache_string.encode()).hexdigest()
+
+    def _is_cache_valid(self, timestamp):
+        # Check if cache entry is still valid
+        return time.time() - timestamp < self.cache_ttl
+
+    # Add cache warming method
+    def warm_cache(self):
+        import time as time_module  # Import time module to avoid conflicts
+        warm_cache_start = time_module.time()
+        if self.cache_warming_complete or self.model is None:
+            return
+
+        logger.info("Warming up prediction cache...")
+        try:
+            # Generate common soil data combinations for cache warming
+            common_ph_values = [5.5, 6.0, 6.5, 7.0, 7.5]
+            common_nitrogen_levels = ['L', 'M', 'H']
+            common_phosphorus_levels = ['L', 'M', 'H']
+            common_potassium_levels = ['L', 'M', 'H']
+
+            # Generate common weather data combinations
+            common_temperatures = [20, 25, 30]
+            common_humidities = [40, 60, 80]
+
+            warmed_count = 0
+            total_combinations = len(common_ph_values) * len(common_nitrogen_levels) * len(
+                common_phosphorus_levels) * len(common_potassium_levels) * len(common_temperatures) * len(common_humidities)
+            logger.info(
+                f"Generating predictions for {total_combinations} combinations, will limit to 20")
+
+            for ph in common_ph_values:
+                for nitrogen in common_nitrogen_levels:
+                    for phosphorus in common_phosphorus_levels:
+                        for potassium in common_potassium_levels:
+                            for temp in common_temperatures:
+                                for humidity in common_humidities:
+                                    if warmed_count >= 20:  # Limit warming to prevent overload
+                                        break
+
+                                    soil_data = {
+                                        'pH': ph,
+                                        'Nitrogen': nitrogen,
+                                        'Phosphorus': phosphorus,
+                                        'Potassium': potassium
+                                    }
+
+                                    weather_data = {
+                                        'temperature': temp,
+                                        'humidity': humidity,
+                                        'precipitation_probability': 50,
+                                        'wind_speed': 10,
+                                        'uv_index': 5
+                                    }
+
+                                    market_context = {
+                                        'season': 'dry' if temp > 25 else 'wet',
+                                        'month': 6
+                                    }
+
+                                    # Generate prediction to warm cache
+                                    try:
+                                        self.predict(
+                                            soil_data, weather_data, market_context)
+                                        warmed_count += 1
+                                        if warmed_count % 5 == 0:  # Log progress every 5 predictions
+                                            logger.info(
+                                                f"Warmed {warmed_count} predictions so far...")
+                                    except Exception as e:
+                                        logger.debug(
+                                            f"Cache warming prediction failed: {e}")
+                                        continue
+
+            self.cache_warming_complete = True
+            warm_cache_time = time_module.time() - warm_cache_start
+            logger.info(
+                f"Cache warming complete. Warmed {warmed_count} predictions in {warm_cache_time:.4f} seconds.")
+        except Exception as e:
+            logger.warning(f"Cache warming failed: {e}")
+            self.cache_warming_complete = True  # Mark as complete to prevent retries
+
+    # Add method to clean up expired cache entries
+    def _cleanup_expired_cache(self):
+        current_time = time.time()
+        expired_keys = []
+
+        with self.cache_lock:
+            for key, (_, timestamp) in self.prediction_cache.items():
+                if current_time - timestamp >= self.cache_ttl:
+                    expired_keys.append(key)
+
+            for key in expired_keys:
+                del self.prediction_cache[key]
+
+            # Enforce maximum cache size using LRU eviction
+            while len(self.prediction_cache) > self.max_cache_size:
+                self.prediction_cache.popitem(last=False)
+
     def predict(self, soil_data, weather_data=None, market_context=None):
         """
         Predict suitable crops based on soil data, weather data, and market context using fair scoring
@@ -480,8 +598,34 @@ class EnhancedSoilCropTransformer:
         Returns:
             list: List of tuples (crop_name, final_score, market_demand_score) sorted by final score
         """
+        import time as time_module  # Import time module to avoid conflicts
+        start_time = time_module.time()
+        logger.info(
+            f"Starting prediction for soil_data: {soil_data}, weather_data: {weather_data}, market_context: {market_context}")
+
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
+
+        # Generate cache key
+        cache_key = self._generate_cache_key(
+            soil_data, weather_data, market_context)
+
+        # Thread-safe cache access
+        with self.cache_lock:
+            # Check if we have a cached result
+            if cache_key in self.prediction_cache:
+                cached_result, timestamp = self.prediction_cache[cache_key]
+                if self._is_cache_valid(timestamp):
+                    logger.info("Returning cached prediction result")
+                    # Move to end for LRU eviction policy
+                    self.prediction_cache.move_to_end(cache_key)
+                    return cached_result
+                else:
+                    # Remove expired cache entry
+                    del self.prediction_cache[cache_key]
+
+        logger.info("Cache miss - performing prediction")
+        preprocessing_start = time_module.time()
 
         # Convert categorical values to numerical
         nitrogen_map = {'L': 0, 'M': 1, 'H': 2}
@@ -489,30 +633,42 @@ class EnhancedSoilCropTransformer:
         potassium_map = {'L': 0, 'M': 1, 'H': 2}
 
         # Prepare input data with default values
-        input_data = np.array([[
-            soil_data['pH'],
-            nitrogen_map[soil_data['Nitrogen']],
-            phosphorus_map[soil_data['Phosphorus']],
-            potassium_map[soil_data['Potassium']],
-            weather_data.get('temperature', 25.0) if weather_data else 25.0,
-            weather_data.get('humidity', 60.0) if weather_data else 60.0,
-            weather_data.get('precipitation_probability',
-                             50.0) if weather_data else 50.0,
-            weather_data.get('wind_speed', 10.0) if weather_data else 10.0,
-            weather_data.get('uv_index', 5.0) if weather_data else 5.0,
-            0.5  # Default market demand score
-        ]])
+        input_data = np.array([
+            [
+                soil_data['pH'],
+                nitrogen_map[soil_data['Nitrogen']],
+                phosphorus_map[soil_data['Phosphorus']],
+                potassium_map[soil_data['Potassium']],
+                weather_data.get(
+                    'temperature', 25.0) if weather_data else 25.0,
+                weather_data.get('humidity', 60.0) if weather_data else 60.0,
+                weather_data.get('precipitation_probability',
+                                 50.0) if weather_data else 50.0,
+                weather_data.get('wind_speed', 10.0) if weather_data else 10.0,
+                weather_data.get('uv_index', 5.0) if weather_data else 5.0,
+                0.5  # Default market demand score
+            ]
+        ])
 
         # Scale input data
         input_scaled = self.scaler.transform(input_data)
+        preprocessing_time = time_module.time() - preprocessing_start
+        logger.info(f"Preprocessing time: {preprocessing_time:.4f} seconds")
 
         # Make prediction (ML Confidence Score)
-        ml_confidence_scores = self.model.predict(input_scaled, verbose=0)[0]
+        # Use batch prediction for better performance
+        model_prediction_start = time_module.time()
+        ml_confidence_scores = self.model.predict(
+            input_scaled, verbose=0, batch_size=1)[0]
+        model_prediction_time = time_module.time() - model_prediction_start
+        logger.info(
+            f"Model prediction time: {model_prediction_time:.4f} seconds")
 
         # Get all crops
         all_crops = self.crop_label_encoder.classes_
 
         # Get market demand scores for all crops
+        market_scores_start = time_module.time()
         market_scores = []
         for crop in all_crops:
             score = self.preprocessor.get('market_scores', {}).get(crop, 0.5)
@@ -520,23 +676,35 @@ class EnhancedSoilCropTransformer:
 
         # Convert to numpy array for easier manipulation
         market_scores = np.array(market_scores)
+        market_scores_time = time_module.time() - market_scores_start
+        logger.info(
+            f"Market scores calculation time: {market_scores_time:.4f} seconds")
 
         # Calculate Final Combined Score using equal weights
         # FinalScore = (SoilScore + WeatherScore + MarketDemandScore + MLConfidenceScore) / 4
         # For this implementation, we're using the raw model predictions as ML confidence
         # and the precomputed market scores, with equal weighting
+        final_scores_calc_start = time_module.time()
         final_scores = (ml_confidence_scores + market_scores) / \
             2  # Simplified version using available data
+        final_scores_calc_time = time_module.time() - final_scores_calc_start
+        logger.info(
+            f"Final scores calculation time: {final_scores_calc_time:.4f} seconds")
 
         # Get top predictions based on final scores
         # Get more predictions to ensure variety
+        sorting_start = time_module.time()
         top_indices = np.argsort(final_scores)[-12:][::-1]
         top_crops = self.crop_label_encoder.inverse_transform(top_indices)
         top_final_scores = final_scores[top_indices]
         top_ml_confidences = ml_confidence_scores[top_indices]
         top_market_scores = market_scores[top_indices]
+        sorting_time = time_module.time() - sorting_start
+        logger.info(
+            f"Sorting and transformation time: {sorting_time:.4f} seconds")
 
         # Return as list of tuples with final scores
+        result_building_start = time_module.time()
         result = []
         for i in range(len(top_crops)):
             result.append((
@@ -546,7 +714,34 @@ class EnhancedSoilCropTransformer:
             ))
 
         # Limit to top 10 results to match frontend expectations
-        return result[:10]
+        final_result = result[:10]
+        result_building_time = time_module.time() - result_building_start
+        logger.info(
+            f"Result building time: {result_building_time:.4f} seconds")
+
+        # Thread-safe cache storage
+        cache_storage_start = time_module.time()
+        with self.cache_lock:
+            # Clean up expired entries periodically
+            if len(self.prediction_cache) > self.max_cache_size * 0.8:
+                self._cleanup_expired_cache()
+
+            # Store in cache with LRU ordering
+            self.prediction_cache[cache_key] = (
+                final_result, time_module.time())
+            self.prediction_cache.move_to_end(cache_key)
+
+            # Enforce maximum cache size
+            if len(self.prediction_cache) > self.max_cache_size:
+                self.prediction_cache.popitem(last=False)
+
+        cache_storage_time = time_module.time() - cache_storage_start
+        logger.info(f"Cache storage time: {cache_storage_time:.4f} seconds")
+
+        total_time = time_module.time() - start_time
+        logger.info(f"Total prediction time: {total_time:.4f} seconds")
+
+        return final_result
 
     def save_model(self, model_path='models/enhanced_soil_crop_transformer.keras',
                    preprocessor_path='models/enhanced_soil_preprocessing_pipeline.pkl'):
@@ -581,13 +776,33 @@ class EnhancedSoilCropTransformer:
             model_path (str): Path to load the model from
             preprocessor_path (str): Path to load the preprocessing pipeline from
         """
+        import time as time_module  # Import time module to avoid conflicts
+        load_start = time_module.time()
+        logger.info(
+            f"Starting to load model from {model_path} and preprocessor from {preprocessor_path}")
+
         # Load model
+        import tensorflow as tf
+        logger.info("TensorFlow version: %s", tf.__version__)
+
+        model_load_start = time_module.time()
         self.model = tf.keras.models.load_model(model_path)
-        logger.info(f"Model loaded from {model_path}")
+        model_load_time = time_module.time() - model_load_start
+        logger.info(
+            f"Model loaded successfully in {model_load_time:.4f} seconds")
+        logger.info(f"Model object type: {type(self.model)}")
+        logger.info(
+            f"Model input shape: {self.model.input_shape if hasattr(self.model, 'input_shape') else 'Unknown'}")
+        logger.info(
+            f"Model output shape: {self.model.output_shape if hasattr(self.model, 'output_shape') else 'Unknown'}")
 
         # Load preprocessing pipeline
+        preprocessor_load_start = time_module.time()
         with open(preprocessor_path, 'rb') as f:
             self.preprocessor = pickle.load(f)
+        preprocessor_load_time = time_module.time() - preprocessor_load_start
+        logger.info(
+            f"Preprocessing pipeline loaded successfully in {preprocessor_load_time:.4f} seconds")
 
         # Restore components
         self.soil_label_encoder = self.preprocessor['soil_label_encoder']
@@ -595,6 +810,8 @@ class EnhancedSoilCropTransformer:
         self.scaler = self.preprocessor['scaler']
         self.feature_columns = self.preprocessor['feature_columns']
 
+        total_load_time = time_module.time() - load_start
+        logger.info(f"Total model loading time: {total_load_time:.4f} seconds")
         logger.info(f"Preprocessing pipeline loaded from {preprocessor_path}")
 
 

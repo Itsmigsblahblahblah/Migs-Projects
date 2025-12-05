@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Sprout, User, LogOut, Bell, Sprout as SproutIcon, Leaf, TrendingUp, History, Menu, X } from "lucide-react";
 import { clearMarketDemandCache } from "@/services/marketDemandMultiCacheService";
+import { clearRecommendationCache } from "@/services/recommendationSessionCache";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -180,6 +181,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
     // Clear market demand cache
     clearMarketDemandCache();
+  
+    // Clear recommendation cache
+    clearRecommendationCache();
 
     // Close dialog
     setIsLogoutDialogOpen(false);

@@ -7,6 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from services.enhanced_soil_crop_service import EnhancedSoilCropTransformer
 import pandas as pd
 import logging
+import asyncio
+import threading
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
@@ -19,11 +21,33 @@ app = APIRouter(prefix="/enhanced-soil", tags=["enhanced-soil"])
 # Global model instance
 model = EnhancedSoilCropTransformer()
 try:
+    import time as time_module  # Import time module to avoid conflicts
+    model_loading_start = time_module.time()
+    logger.info("Starting to load enhanced model...")
     model.load_model('models/enhanced_soil_crop_transformer.keras',
                      'models/enhanced_soil_preprocessing_pipeline.pkl')
-    logger.info("Enhanced model loaded successfully")
+    model_loading_time = time_module.time() - model_loading_start
+    logger.info(
+        f"Enhanced model loaded successfully in {model_loading_time:.4f} seconds")
     logger.info(f"Model object: {model}")
     logger.info(f"Model.model object: {model.model}")
+
+    # Start cache warming in background thread
+    def warm_cache_background():
+        try:
+            cache_warming_start = time_module.time()
+            logger.info("Starting cache warming...")
+            model.warm_cache()
+            cache_warming_time = time_module.time() - cache_warming_start
+            logger.info(
+                f"Cache warming completed in {cache_warming_time:.4f} seconds")
+        except Exception as e:
+            logger.warning(f"Background cache warming failed: {e}")
+
+    cache_warming_thread = threading.Thread(
+        target=warm_cache_background, daemon=True)
+    cache_warming_thread.start()
+
 except Exception as e:
     logger.error(f"Failed to load enhanced model: {e}")
     import traceback
@@ -121,11 +145,11 @@ async def enhanced_recommend_crops(data: dict):
         # Add a timeout to prevent hanging requests
         import asyncio
         try:
-            # Get predictions with data with a 5-second timeout
+            # Get predictions with data with a 15-second timeout to prevent timeouts
             predictions = await asyncio.wait_for(
                 asyncio.get_event_loop().run_in_executor(None, model.predict,
                                                          soil_data, weather_data, market_context),
-                timeout=5.0
+                timeout=15.0
             )
         except asyncio.TimeoutError:
             raise HTTPException(
@@ -198,6 +222,10 @@ async def fair_recommend_crops(data: dict):
         ]
     }
     """
+    import time as time_module  # Import time module to avoid conflicts
+    start_time = time_module.time()
+    logger.info(f"Received fair-recommend request with data: {data}")
+
     try:
         # Check if model is loaded
         if model is None:
@@ -228,24 +256,54 @@ async def fair_recommend_crops(data: dict):
 
         # Validate pH range
         if not (0 <= soil_data['pH'] <= 14):
-
             raise HTTPException(
                 status_code=400, detail="pH must be between 0 and 14")
 
-        # Add a timeout to prevent hanging requests
-        import asyncio
+        # Get predictions with data using fair model with optimized timeout
         try:
-            # Get predictions with data with a 5-second timeout
+            # Use a more reasonable timeout for better user experience
+            logger.info("Starting model prediction with timeout")
+            prediction_start = time_module.time()
+
+            # Log the thread information
+            import threading
+            logger.info(f"Current thread: {threading.current_thread().name}")
+            logger.info(f"Current thread ID: {threading.get_ident()}")
+
+            # Run the prediction in a separate thread with proper error handling
+            def run_prediction():
+                try:
+                    logger.info("Running prediction in executor thread")
+                    result = model.predict(
+                        soil_data, weather_data, market_context)
+                    logger.info(
+                        "Prediction completed successfully in executor thread")
+                    return result
+                except Exception as pred_error:
+                    logger.error(
+                        f"Error in prediction function: {str(pred_error)}")
+                    raise
+
             predictions = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(None, model.predict,
-                                                         soil_data, weather_data, market_context),
-                timeout=5.0
+                asyncio.get_event_loop().run_in_executor(None, run_prediction),
+                timeout=20.0  # Increase timeout to 20 seconds for better reliability
             )
+            prediction_time = time_module.time() - prediction_start
+            logger.info(
+                f"Model prediction completed in {prediction_time:.4f} seconds")
         except asyncio.TimeoutError:
+            logger.error("Prediction timed out after 20 seconds")
             raise HTTPException(
-                status_code=500, detail="Prediction took too long. Please try again.")
+                status_code=500, detail="Request is taking longer than expected. This might be due to high server load. Please try again in a moment.")
+        except Exception as e:
+            logger.error(f"Error during model prediction: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise HTTPException(
+                status_code=500, detail=f"Error during prediction: {str(e)}")
 
         # Format response with final_score instead of confidence
+        response_formatting_start = time_module.time()
         recommended_crops = [
             {
                 "crop": crop,
@@ -254,9 +312,18 @@ async def fair_recommend_crops(data: dict):
             }
             for crop, final_score, market_score in predictions
         ]
+        response_formatting_time = time_module.time() - response_formatting_start
+        logger.info(
+            f"Response formatting time: {response_formatting_time:.4f} seconds")
+
+        total_time = time_module.time() - start_time
+        logger.info(f"Total request processing time: {total_time:.4f} seconds")
 
         return {"recommended_crops": recommended_crops}
 
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f"Error in fair prediction: {str(e)}")
         raise HTTPException(
@@ -265,6 +332,42 @@ async def fair_recommend_crops(data: dict):
 
 @app.get("/health")
 async def health_check():
-    logger.info(
-        f"Health check - model: {model}, model.model: {getattr(model, 'model', None)}")
-    return {"status": "healthy", "model_loaded": model is not None and model.model is not None}
+    import time as time_module  # Import time module to avoid conflicts
+    health_check_start = time_module.time()
+    logger.info("Health check initiated")
+
+    # Check if model is loaded
+    model_loaded = model is not None and model.model is not None
+    logger.info(f"Model loaded status: {model_loaded}")
+
+    if model_loaded:
+        # Test a simple prediction to verify the model is working
+        try:
+            logger.info("Testing model with sample prediction")
+            test_soil_data = {'pH': 6.5, 'Nitrogen': 'M',
+                              'Phosphorus': 'L', 'Potassium': 'H'}
+            test_weather_data = {'temperature': 25.0, 'humidity': 60.0,
+                                 'precipitation_probability': 50, 'wind_speed': 10, 'uv_index': 5}
+            test_market_context = {'season': 'dry', 'month': 6}
+
+            test_start = time_module.time()
+            test_result = model.predict(
+                test_soil_data, test_weather_data, test_market_context)
+            test_time = time_module.time() - test_start
+            logger.info(
+                f"Sample prediction completed in {test_time:.4f} seconds")
+            logger.info(f"Sample prediction result length: {len(test_result)}")
+        except Exception as e:
+            logger.error(f"Error during sample prediction: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            model_loaded = False
+
+    health_check_time = time_module.time() - health_check_start
+    logger.info(f"Health check completed in {health_check_time:.4f} seconds")
+
+    return {
+        "status": "healthy" if model_loaded else "unhealthy",
+        "model_loaded": model_loaded,
+        "health_check_time": health_check_time
+    }
