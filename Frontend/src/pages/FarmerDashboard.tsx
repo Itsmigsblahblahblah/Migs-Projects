@@ -537,7 +537,7 @@ const FarmerDashboard = () => {
         <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
           <div className="flex items-center gap-3 mb-2">
             <Sprout className="h-6 w-6" />
-            <h1 className="text-2xl font-bold">Mabuhay, {username.split(' ')[0]}!</h1>
+            <h1 className="text-2xl font-bold">Mabuhay, {username}!</h1>
           </div>
           <p className="text-primary-foreground/90">
             I-type ang inyong problema sa sakahan para makakuha ng crop recommendations.

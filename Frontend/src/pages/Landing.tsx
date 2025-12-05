@@ -272,16 +272,19 @@ const Landing = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
-                className="bg-gradient-primary hover:opacity-90 transition-opacity text-lg px-8 py-6"
+                className="bg-gradient-primary hover:opacity-90 transition-opacity text-lg px-8 py-6 relative group"
                 onClick={() => navigate('/login')}
               >
-                Get Started
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <span className="relative z-10 flex items-center">
+                  Get Started
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </span>
+                <span className="absolute inset-0 rounded-md bg-gradient-primary opacity-0 group-hover:opacity-100 blur-md transition-opacity"></span>
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                className="text-lg px-8 py-6 border-2 hover:bg-[#EAB949] hover:text-[#333333] hover:border-[#EAB949]"
+                className="text-lg px-8 py-6 border-2 hover:bg-[#EAB949] hover:text-[#333333] hover:border-[#EAB949] relative group"
                 onClick={() => {
                   const element = document.getElementById('how-it-works');
                   if (element) {
@@ -289,7 +292,8 @@ const Landing = () => {
                   }
                 }}
               >
-                Learn More
+                <span className="relative z-10">Learn More</span>
+                <span className="absolute inset-0 rounded-md bg-[#EAB949] opacity-0 group-hover:opacity-100 blur-md transition-opacity"></span>
               </Button>
             </div>
           </div>
@@ -482,11 +486,14 @@ const Landing = () => {
             <Button
               size="lg"
               variant="secondary"
-              className="text-lg px-8 py-6"
+              className="text-lg px-8 py-6 relative group"
               onClick={() => navigate('/login')}
             >
-              Start Your Journey
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <span className="relative z-10 flex items-center">
+                Start Your Journey
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </span>
+              <span className="absolute inset-0 rounded-md bg-secondary opacity-0 group-hover:opacity-100 blur-md transition-opacity"></span>
             </Button>
           </div>
         </div>
