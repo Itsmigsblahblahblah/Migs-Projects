@@ -200,19 +200,23 @@ class VegetableDemandTransformer:
     def recommend_crops(self, top_n=10, target_month=None, target_year=None, demand_level=None):
         """
         Recommend crops based on predicted demand for a specific month and year
-
+            
         Args:
             top_n (int): Number of top recommendations to return
             target_month (int): Target month for predictions (1-12)
             target_year (int): Target year for predictions
             demand_level (str): Filter by demand level (High, Moderate, Stable, Low)
-
+                
         Returns:
             list: List of recommended vegetables with demand predictions
         """
         if self.model is None:
             raise ValueError("Model not loaded. Call load_model() first.")
-
+            
+        # Limit top_n to prevent excessive computation (max 50 for better performance)
+        if top_n > 50:
+            top_n = 50
+            
         # Check if we have cached results for these parameters
         cache_key = f"{target_month}_{target_year}_{demand_level}_{top_n}"
         if hasattr(self, '_recommend_cache') and cache_key in self._recommend_cache:
@@ -222,7 +226,7 @@ class VegetableDemandTransformer:
                 logger.info(
                     f"Returning cached recommendations for key: {cache_key}")
                 return cached_result[:top_n]
-
+            
         # Load current vegetable data
         try:
             # Use cached DataFrame if available
@@ -233,7 +237,7 @@ class VegetableDemandTransformer:
                 veg_df = veg_df.iloc[1:]
                 veg_df.columns = ['Vegetable', 'Year', 'Month',
                                   'Price', 'Annual_Price', 'MonthNum', 'Date']
-
+                    
                 # Convert data types
                 veg_df['Price'] = pd.to_numeric(
                     veg_df['Price'], errors='coerce')
@@ -242,10 +246,10 @@ class VegetableDemandTransformer:
                 veg_df['MonthNum'] = pd.to_numeric(
                     veg_df['MonthNum'], errors='coerce')
                 veg_df['Year'] = pd.to_numeric(veg_df['Year'], errors='coerce')
-
+                    
                 # Clean the data
                 veg_df = veg_df.dropna()
-
+                    
                 # Cache the DataFrame
                 self._veg_df_cache = veg_df
                 self._veg_df_timestamp = time.time()
@@ -256,29 +260,35 @@ class VegetableDemandTransformer:
         except Exception as e:
             logger.error(f"Could not load vegetable data: {e}")
             return []
-
+            
         # Get unique vegetables from current dataset
         current_vegetables = list(veg_df['Vegetable'].unique())
-
+            
         # Filter to only include vegetables that were in the training data
         # (to avoid errors with the label encoder)
         available_vegetables = [
             v for v in current_vegetables if v in self.label_encoder.classes_]
-
+            
         recommendations = []
-
+            
         # Precompute grouped data for seasonal factors to avoid repeated computations
         grouped_data = None
         if target_month is not None and target_year is not None:
             grouped_data = veg_df.groupby('Vegetable')
-
+            
         # For each available vegetable, get historical data and make prediction
-        for vegetable in available_vegetables:
+        # Limit to first 50 vegetables to prevent excessive computation and improve performance
+        # Also add early termination if we've already collected enough results
+        processed_count = 0
+        for vegetable in available_vegetables[:50]:
+            # Early termination if we've already collected more than needed
+            if len(recommendations) >= top_n + 20:  # Collect a few extra for sorting
+                break
             try:
                 # Filter data for this vegetable
                 veg_data = veg_df[veg_df['Vegetable'] ==
                                   vegetable].sort_values(['Year', 'MonthNum'])
-
+                    
                 # If target month/year specified, we'll use data leading up to that timeframe
                 if target_month is not None and target_year is not None:
                     # Filter to only include data before the target date
@@ -287,21 +297,21 @@ class VegetableDemandTransformer:
                         ((veg_data['Year'] == target_year) &
                          (veg_data['MonthNum'] < target_month))
                     filtered_data = veg_data[condition]
-
+                        
                     # If we have data after filtering, take the last 12 months
                     if not filtered_data.empty:
                         historical_data = filtered_data.tail(12)
                     else:
                         # If no data before target date, use all available data (last 12 records)
                         historical_data = veg_data.tail(12)
-
+                        
                     # Enhancement: Add seasonal adjustment factor based on target month
                     # This will make predictions vary more based on the target month
                     seasonal_factor = 1.0
                     # Enhancement: Add year-based trend factor to make predictions vary based on target year
                     # This creates a small variation based on how far in the future the prediction is
                     year_trend_factor = 1.0
-
+                        
                     if len(historical_data) >= 12:
                         # Calculate seasonal trends based on historical data for the target month
                         # Use pre-grouped data if available for better performance
@@ -309,7 +319,7 @@ class VegetableDemandTransformer:
                             veg_group = grouped_data.get_group(vegetable)
                         else:
                             veg_group = veg_data
-
+                            
                         monthly_avg = veg_group.groupby(
                             'MonthNum')['Price'].mean()
                         if target_month in monthly_avg.index:
@@ -326,7 +336,7 @@ class VegetableDemandTransformer:
                             if available_neighbors:
                                 seasonal_factor = monthly_avg[available_neighbors].mean(
                                 ) / monthly_avg.mean()
-
+                            
                         # Calculate year trend factor based on the difference between target year and last available year
                         last_available_year = historical_data['Year'].max()
                         if target_year > last_available_year:
@@ -340,21 +350,21 @@ class VegetableDemandTransformer:
                     historical_data = veg_data.tail(12)
                     seasonal_factor = 1.0
                     year_trend_factor = 1.0
-
+                    
                 # If we don't have enough data, skip this vegetable
                 if len(historical_data) < 3:  # Need at least 3 data points
                     continue
-
+                    
                 # Extract historical data for prediction
                 historical_prices = historical_data['Price'].tolist()
                 historical_annual_prices = historical_data['Annual_Price'].tolist(
                 )
                 historical_months = historical_data['MonthNum'].tolist()
-
-                # Make prediction
+                    
+                # Make prediction with reduced verbosity
                 prediction = self.predict_demand(vegetable, historical_prices,
                                                  historical_annual_prices, historical_months)
-
+                    
                 # Apply seasonal adjustment to make predictions more varied based on target month
                 # Apply year trend factor to make predictions vary based on target year
                 if target_month is not None and target_year is not None:
@@ -364,7 +374,7 @@ class VegetableDemandTransformer:
                         combined_factor
                     prediction['current_avg_price'] = prediction['current_avg_price'] * \
                         combined_factor
-
+                        
                     # Apply realistic price capping to prevent unrealistic predictions
                     # Instead of hard capping, we'll compress extreme values to maintain variation
                     # Set maximum increase based on realistic price ranges in dataset
@@ -374,23 +384,23 @@ class VegetableDemandTransformer:
                     min_decrease_factor = 0.95  # Maximum 5% decrease below average
                     min_predicted_price = prediction['current_avg_price'] * \
                         min_decrease_factor
-
+                        
                     # Cap the prediction to realistic ranges
                     prediction['predicted_price'] = max(min_predicted_price, min(
                         max_predicted_price, prediction['predicted_price']))
-
+                        
                     # Add small random noise to create variation in predictions while keeping them realistic
                     import random
                     # Add up to ±0.5 PHP noise
                     noise = random.uniform(-0.5, 0.5)
                     prediction['predicted_price'] = max(prediction['current_avg_price'] * 0.95, min(
                         prediction['current_avg_price'] * 1.05, prediction['predicted_price'] + noise))  # Keep within ±5% of average price
-
+                        
                     prediction['price_change'] = prediction['predicted_price'] - \
                         prediction['current_avg_price']
                     prediction['price_change_percent'] = (
                         prediction['price_change'] / prediction['current_avg_price']) * 100 if prediction['current_avg_price'] != 0 else 0
-
+                        
                     # Recalculate demand level based on realistic price change percentage
                     # Using thresholds that reflect realistic market changes
                     if prediction['price_change_percent'] > 3:
@@ -401,28 +411,31 @@ class VegetableDemandTransformer:
                         prediction['demand_level'] = "Stable"
                     else:
                         prediction['demand_level'] = "Low"
-
+                    
                 # Filter by demand level if specified
                 if demand_level is not None:
                     if prediction['demand_level'].lower() == demand_level.lower():
                         recommendations.append(prediction)
                 else:
                     recommendations.append(prediction)
+                
+                # Increment processed counter
+                processed_count += 1
             except Exception as e:
                 logger.warning(
                     f"Could not generate prediction for {vegetable}: {e}")
                 continue
-
+            
         # Sort by predicted price change (higher change = higher potential demand)
         recommendations.sort(
             key=lambda x: x['price_change_percent'], reverse=True)
-
+            
         # Cache the results
         if not hasattr(self, '_recommend_cache'):
             self._recommend_cache = {}
         self._recommend_cache[cache_key] = (
             recommendations.copy(), time.time())
-
+            
         return recommendations[:top_n]
 
     def load_and_preprocess_data(self, vegetable_file='Data/vegetable_prices.csv'):

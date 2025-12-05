@@ -127,12 +127,19 @@ async def recommend_crops(top_n: int = 10, month: int | None = None, year: int |
                 status_code=400, detail="Demand level must be one of: High, Moderate, Stable, Low")
 
         # Limit top_n to prevent excessive computation
-        if top_n > 100:
-            top_n = 100
+        if top_n > 50:
+            top_n = 50
 
-        # Get recommendations with time-specific filtering
-        recommendations = model.recommend_crops(
-            top_n, month, year, demand_level)
+        # Add a timeout to prevent hanging requests
+        import asyncio
+        try:
+            # Get recommendations with time-specific filtering with a 6-second timeout
+            recommendations = await asyncio.wait_for(
+                asyncio.get_event_loop().run_in_executor(None, model.recommend_crops, top_n, month, year, demand_level),
+                timeout=6.0
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=500, detail="Recommendation generation took too long. Please try again.")
 
         return {"recommended_crops": recommendations}
 
