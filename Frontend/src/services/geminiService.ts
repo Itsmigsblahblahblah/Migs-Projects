@@ -2,8 +2,8 @@
  * Service for interacting with Gemini API for crop management insights
  */
 
-// Use the existing API key from the project
-const GEMINI_API_KEY = "AIzaSyBH392sx2Gy-D8DBz3MrDZ_Ou88h4IDtog";
+// Use the API key from environment variables
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 /**
  * Get estimated harvest date for a specific crop using Gemini AI

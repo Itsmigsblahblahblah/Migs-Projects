@@ -5,8 +5,8 @@ import { db } from "@/firebaseConfig";
 
 // Gemini API integration
 const getGeminiRecommendation = async (reportText: string) => {
-  // Use the provided API key
-  const API_KEY = "AIzaSyBH392sx2Gy-D8DBz3MrDZ_Ou88h4IDtog";
+  // Use the API key from environment variables
+  const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
   
   // Detect language (simple approach)
   const isTagalog = /[áàâéèêíìîóòôúùûñÁÀÂÉÈÊÍÌÎÓÒÔÚÙÛÑ]/.test(reportText) || 
