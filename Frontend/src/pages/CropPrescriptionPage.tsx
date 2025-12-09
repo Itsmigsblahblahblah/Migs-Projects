@@ -211,77 +211,78 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     }
   };
 
-  // Add function to fetch recommendations using enhanced model
-  const fetchEnhancedRecommendations = async (soilData: SoilData, weatherDataForRecommendation?: WeatherData) => {
-    setLoading(true); // Always set loading to true at the start
+  // Add function to fetch recommendations with caching
+  const fetchEnhancedRecommendations = async (soilData: SoilData, weatherData?: WeatherData) => {
+    setLoading(true);
     setError(null);
-    setRecommendations([]); // Clear previous recommendations
-
+    
     try {
-      // Prepare request body with all data sources
-      const requestBody = {
-        soil_data: soilData,
-        weather_data: weatherDataForRecommendation || {
-          temperature: 25,
-          humidity: 60,
-          precipitation_probability: 50,
-          wind_speed: 10,
-          uv_index: 5
-        },
-        market_context: {
-          season: weatherDataForRecommendation ?
-            (weatherDataForRecommendation.temperature > 30 ? "dry" : "wet") : "dry",
-          month: new Date().getMonth() + 1
-        }
-      };
-
-      // Generate cache key from request data
-      const cacheKey = JSON.stringify(requestBody);
+      // Create cache key based on soil and weather data
+      const cacheKey = `enhanced_rec_${JSON.stringify(soilData)}_${JSON.stringify(weatherData || {})}`;
       
-      // Check session cache first
+      // Check cache first
       const cachedData = getCachedRecommendationData(cacheKey);
       if (cachedData) {
-        console.log('Returning recommendations from session cache');
-        // Even with cached data, show loading briefly so user sees feedback
-        await new Promise(resolve => setTimeout(resolve, 300)); // Brief delay for UX
+        console.log('Using cached enhanced recommendations');
         setRecommendations(cachedData);
         setLoading(false);
         return;
       }
-
-      console.log('Fetching enhanced recommendations with request body:', requestBody);
-
+      
+      console.log('Fetching enhanced crop recommendations with soil data:', soilData);
+      console.log('And weather data:', weatherData);
+      
+      // Prepare data for API call
+      const requestData: any = {
+        soil_data: soilData
+      };
+      
+      // Add weather data if available
+      if (weatherData) {
+        requestData.weather_data = {
+          temperature: weatherData.temperature,
+          humidity: weatherData.humidity,
+          precipitation_probability: weatherData.precipitation_probability,
+          wind_speed: weatherData.wind_speed,
+          uv_index: weatherData.uv_index
+        };
+      }
+      
+      // Add market context
+      const currentMonth = new Date().getMonth() + 1;
+      requestData.market_context = {
+        season: currentMonth >= 6 && currentMonth <= 11 ? 'wet' : 'dry',
+        month: currentMonth
+      };
+      
       // Use environment variable for backend URL or default to localhost
       const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-      
-      // Create AbortController for timeout handling
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000); // Increase to 20 seconds timeout
-
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
       const response = await fetch(`${BACKEND_URL}/enhanced-soil/fair-recommend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal // Add timeout signal
+        body: JSON.stringify(requestData),
+        signal: controller.signal
       });
-
-      clearTimeout(timeoutId); // Clear timeout if request completes
-
-      console.log('Enhanced recommendation response status:', response.status);
-      console.log('Enhanced recommendation response ok:', response.ok);
-
+      
+      clearTimeout(timeoutId);
+      
+      console.log('Enhanced recommendations response status:', response.status);
+      console.log('Enhanced recommendations response ok:', response.ok);
+      
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Error response:', errorText);
+        console.error('Enhanced recommendations error response:', errorText);
         throw new Error(`Failed to fetch enhanced recommendations: ${response.status} ${response.statusText}`);
       }
-
+      
       const data = await response.json();
-      console.log('Enhanced recommendation response data:', data);
-
-      // Check if recommended_crops exists and is an array
+      console.log('Enhanced recommendations response:', data);
+      
       if (data.recommended_crops && Array.isArray(data.recommended_crops)) {
         console.log('Setting enhanced recommendations:', data.recommended_crops);
         // Transform the data to match our interface
@@ -313,7 +314,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     }
   };
 
-  // Add function to fetch market demand data for a specific crop
+  // Add function to fetch market demand data for a specific crop with progressive loading
   const fetchMarketDemand = async (cropName: string) => {
     try {
       console.log('Fetching market demand for crop:', cropName);
@@ -335,32 +336,49 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
       // If we have vegetable data, we can make a demand prediction
       if (data.vegetable_data && data.vegetable_data.length > 0) {
-        // Extract historical data for prediction
-        const historicalData = data.vegetable_data.slice(-6); // Last 6 data points
+        // Extract historical data for prediction (last 6 data points for performance)
+        const historicalData = data.vegetable_data.slice(-6);
         const historicalPrices = historicalData.map((item: any) => parseFloat(item.Price));
         const historicalAnnualPrices = historicalData.map((item: any) => parseFloat(item.Annual_Price));
         const historicalMonths = historicalData.map((item: any) => parseInt(item.MonthNum));
 
-        // Make demand prediction
-        // Use environment variable for backend URL or default to localhost
-        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-        const predictionResponse = await fetch(`${BACKEND_URL}/vegetables/predict-demand`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            vegetable_name: cropName,
-            historical_prices: historicalPrices,
-            historical_annual_prices: historicalAnnualPrices,
-            historical_months: historicalMonths
-          }),
-        });
-
-        if (predictionResponse.ok) {
-          const predictionData = await predictionResponse.json();
-          console.log('Prediction data:', predictionData);
-          return predictionData;
+        // Make demand prediction with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        try {
+          const predictionResponse = await fetch(`${BACKEND_URL}/vegetables/predict-demand`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              vegetable_name: cropName,
+              historical_prices: historicalPrices,
+              historical_annual_prices: historicalAnnualPrices,
+              historical_months: historicalMonths
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (predictionResponse.ok) {
+            const predictionData = await predictionResponse.json();
+            console.log('Prediction data:', predictionData);
+            return predictionData;
+          }
+        } catch (timeoutErr) {
+          if (timeoutErr.name === 'AbortError') {
+            console.warn('Market demand prediction timed out for crop:', cropName);
+            // Return partial data without prediction
+            return {
+              vegetable: cropName,
+              current_avg_price: historicalPrices[historicalPrices.length - 1] || 0,
+              demand_level: 'unknown'
+            };
+          }
+          throw timeoutErr;
         }
       }
 
@@ -771,6 +789,25 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     }
   };
 
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  // Add effect to handle loading timeout
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    if (loading) {
+      timeoutId = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 8000); // Show timeout warning after 8 seconds
+    } else {
+      setLoadingTimeout(false);
+    }
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [loading]);
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -967,6 +1004,13 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                     <div className="flex justify-center items-center h-32">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       <span className="ml-2">Analyzing soil, weather, and market data...</span>
+                    </div>
+                  )}
+
+                  {loadingTimeout && (
+                    <div className="p-4 bg-warning/10 rounded-lg border border-warning/20 text-warning">
+                      <p className="font-medium">This is taking longer than usual</p>
+                      <p className="text-sm mt-1">The system is still processing your data. You can continue waiting or try again later.</p>
                     </div>
                   )}
 

@@ -108,7 +108,24 @@ const MarketDemand = () => {
   // Generate year options based on range - start from 2025 (first forecastable year)
   const years = Array.from({ length: 6 }, (_, i) => Math.max(minForecastYear, yearRangeStart) + i);
 
-// Removed validation useEffect to prevent interference with initial load
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  // Add effect to handle loading timeout
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    if (loading) {
+      timeoutId = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 8000); // Show timeout warning after 8 seconds
+    } else {
+      setLoadingTimeout(false);
+    }
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [loading]);
 
   // Debugging: Log when marketData changes
   useEffect(() => {
@@ -190,6 +207,18 @@ const MarketDemand = () => {
       console.log(`Fetching market data for ${selectedMonth}/${selectedYear}`);
       console.log(`Current state - selectedMonth: ${selectedMonth}, selectedYear: ${selectedYear}, selectedDemandLevel: ${selectedDemandLevel}`);
 
+      // Create a unique cache key based on parameters
+      const cacheKey = `marketData_${selectedMonth}_${selectedYear}_${selectedDemandLevel || 'all'}`;
+
+      // Check if we have cached data for these parameters
+      const cachedData = getCachedMarketDemandData(cacheKey);
+      if (cachedData) {
+        console.log('Using cached market data');
+        setMarketData(cachedData.data);
+        setLoading(false);
+        return;
+      }
+
       // Use environment variable for backend URL or default to localhost
       const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
       // Simplified approach - always fetch fresh data for current month
@@ -214,6 +243,9 @@ const MarketDemand = () => {
       const marketData = data.recommended_crops || [];
       console.log('Processed marketData:', marketData);
       console.log('Processed marketData length:', marketData.length);
+
+      // Cache the data with the specific parameters
+      setCachedMarketDemandData({ data: marketData }, cacheKey);
 
       console.log('About to set marketData state with', marketData.length, 'items');
       setMarketData([...marketData]); // Force a new array reference
@@ -319,9 +351,24 @@ const MarketDemand = () => {
             <CardContent>
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <span className="ml-4">Loading market demand data...</span>
               </div>
             </CardContent>
           </Card>
+          
+          {loadingTimeout && (
+            <Card className="shadow-card border-warning">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 text-warning">
+                  <AlertTriangle className="h-5 w-5" />
+                  <span className="font-medium">This is taking longer than usual</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  The system is still processing market data. You can continue waiting or try again later.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </Layout>
     );
