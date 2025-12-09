@@ -238,8 +238,8 @@ const History = () => {
       'Problem Type': report.problem,
       'Affected Crop': report.affectedCrop,
       'Report': report.reportText,
-      'Recommended Crops': report.recommendedCrops?.join('; '),
-      'Crops to Avoid': report.cropsToAvoid?.join('; '),
+      'Best Practices': report.recommendedCrops?.join('; '),
+      'Caution / Things to Avoid': report.cropsToAvoid?.join('; '),
       'Advice': report.advice,
       'Status': report.status
     }));
@@ -531,7 +531,7 @@ const History = () => {
                                 <div className="p-3 bg-success/10 rounded-lg border border-success/20">
                                   <h4 className="text-sm font-medium text-success mb-2 flex items-center gap-2">
                                     <CheckCircle className="h-4 w-4" />
-                                    Recommended Crops
+                                    Best Practices
                                   </h4>
                                   <div className="flex flex-wrap gap-1">
                                     {report.recommendedCrops.map((crop: string, index: number) => (
@@ -547,7 +547,7 @@ const History = () => {
                                 <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
                                   <h4 className="text-sm font-medium text-destructive mb-2 flex items-center gap-2">
                                     <AlertTriangle className="h-4 w-4" />
-                                    Crops to Avoid
+                                    Caution / Things to Avoid
                                   </h4>
                                   <div className="flex flex-wrap gap-1">
                                     {report.cropsToAvoid.map((crop: string, index: number) => (

@@ -2,8 +2,7 @@
  * Service for interacting with Gemini API for crop management insights
  */
 
-// Use the API key from environment variables
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+import { getNextApiKey } from "./apiKeyRotationService";
 
 /**
  * Get estimated harvest date for a specific crop using Gemini AI
@@ -47,8 +46,16 @@ export const getHarvestEstimate = async (
   `;
 
   try {
+    // Get the next API key in rotation
+    const apiKey = getNextApiKey();
+    
+    // Check if we have a valid API key
+    if (!apiKey) {
+      throw new Error("No valid Gemini API key available");
+    }
+    
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {
@@ -75,20 +82,40 @@ export const getHarvestEstimate = async (
     // Clean up the response to extract valid JSON
     const jsonStart = textResponse.indexOf('{');
     const jsonEnd = textResponse.lastIndexOf('}') + 1;
-    const jsonString = textResponse.substring(jsonStart, jsonEnd);
+    let jsonString = textResponse.substring(jsonStart, jsonEnd);
     
-    const result = JSON.parse(jsonString);
+    // Sanitize JSON string to remove bad control characters
+    // Remove any control characters except for \n, \r, \t
+    jsonString = jsonString.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
     
-    // Convert estimatedHarvestDate to a proper Date object for display
-    if (result.estimatedHarvestDate) {
-      result.formattedHarvestDate = new Date(result.estimatedHarvestDate).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+    // Handle escaped quotes that might break parsing
+    jsonString = jsonString.replace(/\\"/g, '"');
+    
+    // Try to parse the sanitized JSON
+    try {
+      const result = JSON.parse(jsonString);
+      return result;
+    } catch (parseError) {
+      console.error("JSON parsing failed after sanitization:", parseError);
+      console.error("Raw response:", textResponse);
+      console.error("Sanitized JSON string:", jsonString);
+      
+      // Try to extract JSON with more robust cleaning
+      const cleanedJsonString = jsonString
+        .replace(/\\n/g, '')  // Remove newlines
+        .replace(/\\r/g, '')  // Remove carriage returns
+        .replace(/\\t/g, '')  // Remove tabs
+        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+        .trim();
+        
+      try {
+        const result = JSON.parse(cleanedJsonString);
+        return result;
+      } catch (secondParseError) {
+        console.error("Second JSON parsing attempt failed:", secondParseError);
+        throw new Error("Failed to parse Gemini API response as valid JSON");
+      }
     }
-    
-    return result;
   } catch (error) {
     console.error("Error with Gemini API:", error);
     // Fallback to default response if API fails
@@ -165,8 +192,16 @@ export const getCropPriceEstimate = async (
   `;
 
   try {
+    // Get the next API key in rotation
+    const apiKey = getNextApiKey();
+    
+    // Check if we have a valid API key
+    if (!apiKey) {
+      throw new Error("No valid Gemini API key available");
+    }
+    
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {
@@ -285,8 +320,16 @@ export const getStepByStepInstructions = async (
   `;
 
   try {
+    // Get the next API key in rotation
+    const apiKey = getNextApiKey();
+    
+    // Check if we have a valid API key
+    if (!apiKey) {
+      throw new Error("No valid Gemini API key available");
+    }
+    
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {
@@ -313,11 +356,40 @@ export const getStepByStepInstructions = async (
     // Clean up the response to extract valid JSON
     const jsonStart = textResponse.indexOf('{');
     const jsonEnd = textResponse.lastIndexOf('}') + 1;
-    const jsonString = textResponse.substring(jsonStart, jsonEnd);
+    let jsonString = textResponse.substring(jsonStart, jsonEnd);
     
-    const result = JSON.parse(jsonString);
+    // Sanitize JSON string to remove bad control characters
+    // Remove any control characters except for \n, \r, \t
+    jsonString = jsonString.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
     
-    return result.steps || [];
+    // Handle escaped quotes that might break parsing
+    jsonString = jsonString.replace(/\\"/g, '"');
+    
+    // Try to parse the sanitized JSON
+    try {
+      const result = JSON.parse(jsonString);
+      return result.steps || [];
+    } catch (parseError) {
+      console.error("JSON parsing failed after sanitization:", parseError);
+      console.error("Raw response:", textResponse);
+      console.error("Sanitized JSON string:", jsonString);
+      
+      // Try to extract JSON with more robust cleaning
+      const cleanedJsonString = jsonString
+        .replace(/\\n/g, '')  // Remove newlines
+        .replace(/\\r/g, '')  // Remove carriage returns
+        .replace(/\\t/g, '')  // Remove tabs
+        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+        .trim();
+        
+      try {
+        const result = JSON.parse(cleanedJsonString);
+        return result.steps || [];
+      } catch (secondParseError) {
+        console.error("Second JSON parsing attempt failed:", secondParseError);
+        throw new Error("Failed to parse Gemini API response as valid JSON");
+      }
+    }
   } catch (error) {
     console.error("Error with Gemini API for step-by-step instructions:", error);
     // Fallback to default steps if API fails

@@ -2,11 +2,18 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
+import { getNextApiKey } from "@/services/apiKeyRotationService";
 
 // Gemini API integration
 const getGeminiRecommendation = async (reportText: string) => {
-  // Use the API key from environment variables
-  const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+  // Use the API key from environment variables with round-robin rotation
+  const API_KEY = getNextApiKey();
+  
+  // Check if we have a valid API key
+  if (!API_KEY) {
+    console.error("No valid Gemini API key available");
+    throw new Error("No valid Gemini API key available");
+  }
   
   // Detect language (simple approach)
   const isTagalog = /[áàâéèêíìîóòôúùûñÁÀÂÉÈÊÍÌÎÓÒÔÚÙÛÑ]/.test(reportText) || 
@@ -65,11 +72,42 @@ const getGeminiRecommendation = async (reportText: string) => {
     
     // Extract JSON from the response
     const textResponse = data.candidates[0].content.parts[0].text;
+    
     // Clean up the response to extract valid JSON
     const jsonStart = textResponse.indexOf('{');
     const jsonEnd = textResponse.lastIndexOf('}') + 1;
-    const jsonString = textResponse.substring(jsonStart, jsonEnd);
-    return JSON.parse(jsonString);
+    let jsonString = textResponse.substring(jsonStart, jsonEnd);
+    
+    // Sanitize JSON string to remove bad control characters
+    // Remove any control characters except for \n, \r, \t
+    jsonString = jsonString.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+    
+    // Handle escaped quotes that might break parsing
+    jsonString = jsonString.replace(/\\"/g, '"');
+    
+    // Try to parse the sanitized JSON
+    try {
+      return JSON.parse(jsonString);
+    } catch (parseError) {
+      console.error("JSON parsing failed after sanitization:", parseError);
+      console.error("Raw response:", textResponse);
+      console.error("Sanitized JSON string:", jsonString);
+      
+      // Try to extract JSON with more robust cleaning
+      const cleanedJsonString = jsonString
+        .replace(/\\n/g, '')  // Remove newlines
+        .replace(/\\r/g, '')  // Remove carriage returns
+        .replace(/\\t/g, '')  // Remove tabs
+        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+        .trim();
+        
+      try {
+        return JSON.parse(cleanedJsonString);
+      } catch (secondParseError) {
+        console.error("Second JSON parsing attempt failed:", secondParseError);
+        throw new Error("Failed to parse Gemini API response as valid JSON");
+      }
+    }
   } catch (error) {
     console.error("Error with Gemini API:", error);
     // Fallback to default response if API fails
@@ -139,13 +177,65 @@ export const useReportManagement = (userId: string, username: string, setMonthly
             setReportText("");
             setSelectedImage(null);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error getting recommendation:", error);
-            toast({
-                title: "Error",
-                description: "May problema sa pagkuha ng recommendation. Subukan ulit.",
-                variant: "destructive",
-            });
+            
+            // Check if it's a JSON parsing error
+            if (error.message && error.message.includes("JSON")) {
+                toast({
+                    title: "Format Error",
+                    description: "The AI response had formatting issues. We've provided a default recommendation instead.",
+                    variant: "destructive",
+                });
+                
+                // Provide a fallback recommendation
+                const fallbackRecommendation = {
+                    problem: "general",
+                    crop: "unknown",
+                    recommend: ["Consult with local agricultural officer for specific recommendations"],
+                    avoid: [],
+                    advice: "We're experiencing technical difficulties with the AI service. Please try again later or consult with a local agricultural expert."
+                };
+                
+                setRecommendation(fallbackRecommendation);
+                
+                // Still save to Firestore with fallback data
+                const reportData = {
+                    userId: userId,
+                    username: username,
+                    reportText: reportText,
+                    problem: fallbackRecommendation.problem,
+                    affectedCrop: fallbackRecommendation.crop,
+                    recommendedCrops: fallbackRecommendation.recommend,
+                    cropsToAvoid: fallbackRecommendation.avoid,
+                    advice: fallbackRecommendation.advice,
+                    hasImage: selectedImage !== null,
+                    imageName: selectedImage?.name || null,
+                    createdAt: Timestamp.now(),
+                    status: 'processed'
+                };
+
+                const reportsRef = collection(db, "farmReports");
+                await addDoc(reportsRef, reportData);
+
+                toast({
+                    title: "Fallback Recommendation Saved",
+                    description: "We saved a default recommendation while we work on fixing the AI service.",
+                });
+
+                // Update monthly count
+                setMonthlyReports(monthlyReports + 1);
+
+                // Clear form
+                setReportText("");
+                setSelectedImage(null);
+            } else {
+                toast({
+                    title: "Error",
+                    description: "May problema sa pagkuha ng recommendation. Subukan ulit.",
+                    variant: "destructive",
+                });
+            }
         } finally {
             setIsProcessing(false);
         }

@@ -202,7 +202,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
 
                         <div className="space-y-4">
                             <div>
-                                <h4 className="font-medium text-muted-foreground mb-1">Recommended Crops</h4>
+                                <h4 className="font-medium text-muted-foreground mb-1">Best Practices</h4>
                                 {report.recommendedCrops && report.recommendedCrops.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                         {report.recommendedCrops.map((crop, index) => (
@@ -217,7 +217,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                             </div>
 
                             <div>
-                                <h4 className="font-medium text-muted-foreground mb-1">Crops to Avoid</h4>
+                                <h4 className="font-medium text-muted-foreground mb-1">Caution / Things to Avoid</h4>
                                 {report.cropsToAvoid && report.cropsToAvoid.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                         {report.cropsToAvoid.map((crop, index) => (
