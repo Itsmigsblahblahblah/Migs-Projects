@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
+import { formatAiGuidance } from "@/utils/aiGuidanceFormatter";
 import {
   Calendar,
   Search,
@@ -66,8 +67,40 @@ const History = () => {
   const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  useEffect(() => {
-    if (!userRole) {
+  // Normalize problem categories to only use the 5 standard ones
+  const normalizeProblemCategory = (problem: string): string => {
+    const standardCategories = ['flood', 'pest', 'drought', 'disease', 'general'];
+    const normalized = problem.toLowerCase().trim();
+    
+    // If it's already a standard category, return as is
+    if (standardCategories.includes(normalized)) {
+      return normalized;
+    }
+    
+    // Map common variations to standard categories
+    const categoryMap: Record<string, string> = {
+      'floods': 'flood',
+      'flooding': 'flood',
+      'waterlogging': 'flood',
+      'pests': 'pest',
+      'insects': 'pest',
+      'bugs': 'pest',
+      'diseases': 'disease',
+      'illness': 'disease',
+      'sickness': 'disease',
+      'dry': 'drought',
+      'dryness': 'drought',
+      'water shortage': 'drought',
+      'seedling failure': 'general',
+      'unclear': 'general',
+      'unclear report': 'general',
+      'vague': 'general'
+    };
+    
+    return categoryMap[normalized] || 'general';
+  };
+
+  useEffect(() => {    if (!userRole) {
       navigate('/');
       return;
     }
@@ -190,8 +223,8 @@ const History = () => {
     return matchesStatusFilter && matchesProblemFilter;
   });
 
-  // Get unique problem types for dropdown
-  const uniqueProblems = [...new Set(reportHistory.map(report => report.problem))];
+  // Get unique problem types for dropdown (normalized)
+  const uniqueProblems = [...new Set(reportHistory.map(report => normalizeProblemCategory(report.problem)))];
 
   // Pagination calculations
   const indexOfLastReport = currentPage * reportsPerPage;
@@ -223,8 +256,7 @@ const History = () => {
   };
 
   const exportToCSV = () => {
-    if (filteredHistory.length === 0) {
-      toast({
+    if (filteredHistory.length === 0) {      toast({
         title: "No Data to Export",
         description: "There are no reports to export.",
         variant: "destructive",
@@ -235,7 +267,7 @@ const History = () => {
     const csvData = filteredHistory.map(report => ({
       'Date': report.createdAt?.toDate().toLocaleDateString(),
       'Farmer': report.username,
-      'Problem Type': report.problem,
+      'Problem Type': normalizeProblemCategory(report.problem),
       'Affected Crop': report.affectedCrop,
       'Report': report.reportText,
       'Best Practices': report.recommendedCrops?.join('; '),
@@ -477,9 +509,9 @@ const History = () => {
                               </Badge>
                             )}
                             <Badge
-                              className={`${getProblemColor(report.problem)} border capitalize`}
+                              className={`${getProblemColor(normalizeProblemCategory(report.problem))} border capitalize`}
                             >
-                              {report.problem.replace('_', ' ')}
+                              {normalizeProblemCategory(report.problem).replace('_', ' ')}
                             </Badge>
                             {report.affectedCrop !== 'unknown' && report.affectedCrop !== 'general' && (
                               <Badge variant="outline" className="capitalize">
@@ -564,7 +596,7 @@ const History = () => {
                             {report.advice && (
                               <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
                                 <h4 className="text-sm font-medium text-primary mb-2">AI Recommendations:</h4>
-                                <p className="text-sm">{report.advice}</p>
+                                <p className="text-sm">{formatAiGuidance(report.advice)}</p>
                               </div>
                             )}
                           </>

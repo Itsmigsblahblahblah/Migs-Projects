@@ -33,16 +33,27 @@ const getGeminiRecommendation = async (reportText: string) => {
     
     The report is in ${language}. Please respond in the same language.
     
+    IMPORTANT INSTRUCTIONS:
+    1. If the report is vague, unclear, or just a few words like "try nga", provide EMPTY arrays for "recommend" and "avoid"
+    2. Only provide specific crop recommendations when the farmer describes a clear problem or situation
+    3. If the report doesn't contain enough information to make meaningful recommendations, keep "recommend" and "avoid" as empty arrays
+    4. Focus your advice on the specific issue mentioned in the report
+    5. FOR THE "problem" FIELD, YOU MUST USE ONLY ONE OF THESE FIVE CATEGORIES: "general", "flood", "pest", "disease", or "drought"
+    6. DO NOT CREATE NEW PROBLEM CATEGORIES LIKE "Seedling failure" or "Unclear report"
+    7. If the problem doesn't fit exactly into one of these categories, use "general"
+    
     Please respond in the following JSON format:
     {
-      "problem": "identified problem category (flood, pest, drought, disease, or general)",
+      "problem": "identified problem category (MUST BE ONE OF: flood, pest, drought, disease, or general)",
       "crop": "affected crop if mentioned (or 'unknown' if not specified)",
-      "recommend": ["recommended crops or solutions as an array of strings"],
-      "avoid": ["crops to avoid as an array of strings"],
+      "recommend": ["recommended crops or solutions as an array of strings - KEEP EMPTY if report is too vague"],
+      "avoid": ["crops to avoid as an array of strings - KEEP EMPTY if report is too vague"],
       "advice": "detailed expert advice as a single string"
     }
     
     Ensure your response is valid JSON and nothing else. Keep your response focused on practical farming advice.
+    If the report is too vague or generic, provide general farming advice but keep the recommendation arrays EMPTY.
+    STRICTLY FOLLOW THE PROBLEM CATEGORIZATION RULES ABOVE.
   `;
 
   try {
@@ -114,9 +125,9 @@ const getGeminiRecommendation = async (reportText: string) => {
     return {
       problem: "general",
       crop: "unknown",
-      recommend: ["Consult with local agricultural officer for specific recommendations"],
-      avoid: [],
-      advice: "We're experiencing technical difficulties. Please try again later or consult with a local agricultural expert."
+      recommend: [], // Empty array instead of generic recommendation
+      avoid: [], // Empty array
+      advice: "Please provide more specific details about your farming situation or problem. For example, mention specific crops, issues you're facing, or conditions in your farm."
     };
   }
 };
@@ -192,9 +203,9 @@ export const useReportManagement = (userId: string, username: string, setMonthly
                 const fallbackRecommendation = {
                     problem: "general",
                     crop: "unknown",
-                    recommend: ["Consult with local agricultural officer for specific recommendations"],
-                    avoid: [],
-                    advice: "We're experiencing technical difficulties with the AI service. Please try again later or consult with a local agricultural expert."
+                    recommend: [], // Empty array instead of generic recommendation
+                    avoid: [], // Empty array
+                    advice: "Please provide more specific details about your farming situation or problem. For example, mention specific crops, issues you're facing, or conditions in your farm."
                 };
                 
                 setRecommendation(fallbackRecommendation);

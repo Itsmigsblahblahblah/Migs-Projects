@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Sprout, AlertTriangle, CheckCircle, TrendingUp, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-
+import { formatAiGuidance } from "@/utils/aiGuidanceFormatter";
 interface Recommendation {
     problem: string;
     crop: string;
@@ -65,7 +65,7 @@ const RecommendationResults = ({ recommendation }: RecommendationResultsProps) =
 
                         {/* Best Practices */}
                         <div className="space-y-4">
-                            {recommendation.recommend.length > 0 && (
+                            {recommendation.recommend && recommendation.recommend.length > 0 && (
                                 <div className="p-4 bg-success/10 rounded-lg border border-success/10">
                                     <div className="flex items-center gap-2 mb-3">
                                         <CheckCircle className="h-4 w-4 text-success" />
@@ -104,7 +104,7 @@ const RecommendationResults = ({ recommendation }: RecommendationResultsProps) =
                             )}
 
                             {/* Caution / Things to Avoid */}
-                            {recommendation.avoid.length > 0 && (
+                            {recommendation.avoid && recommendation.avoid.length > 0 && (
                                 <div className="p-4 bg-destructive/10 rounded-[10px] border border-destructive/20">
                                     <div className="flex items-center gap-2 mb-3">
                                         <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -149,10 +149,9 @@ const RecommendationResults = ({ recommendation }: RecommendationResultsProps) =
                                     <span className="font-medium">AI Guidance</span>
                                 </div>
                                 <p className="text-sm text-foreground/80">
-                                    {recommendation.advice}
+                                    {formatAiGuidance(recommendation.advice)}
                                 </p>
-                            </div>
-                        </div>
+                            </div>                        </div>
                     </div>
                 )}
             </CardContent>

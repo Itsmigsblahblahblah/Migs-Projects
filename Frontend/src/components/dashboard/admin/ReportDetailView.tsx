@@ -9,6 +9,40 @@ import { useToast } from "@/hooks/use-toast";
 import { db } from "@/firebaseConfig";
 import { collection, addDoc, query, where, orderBy, onSnapshot, Timestamp } from "firebase/firestore";
 import { createPortal } from "react-dom";
+import { formatAiGuidance } from "@/utils/aiGuidanceFormatter";
+
+// Normalize problem categories to only use the 5 standard ones
+const normalizeProblemCategory = (problem: string): string => {
+    const standardCategories = ['flood', 'pest', 'drought', 'disease', 'general'];
+    const normalized = problem.toLowerCase().trim();
+    
+    // If it's already a standard category, return as is
+    if (standardCategories.includes(normalized)) {
+        return normalized;
+    }
+    
+    // Map common variations to standard categories
+    const categoryMap: Record<string, string> = {
+        'floods': 'flood',
+        'flooding': 'flood',
+        'waterlogging': 'flood',
+        'pests': 'pest',
+        'insects': 'pest',
+        'bugs': 'pest',
+        'diseases': 'disease',
+        'illness': 'disease',
+        'sickness': 'disease',
+        'dry': 'drought',
+        'dryness': 'drought',
+        'water shortage': 'drought',
+        'seedling failure': 'general',
+        'unclear': 'general',
+        'unclear report': 'general',
+        'vague': 'general'
+    };
+    
+    return categoryMap[normalized] || 'general';
+};
 
 interface Report {
     id: string;
@@ -158,7 +192,7 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                             <h3 className="font-semibold text-sm text-muted-foreground">Problem Type</h3>
                             <div className="flex items-center gap-2 mt-1">
                                 <AlertTriangle className="h-4 w-4 text-red-500" />
-                                <span className="capitalize">{report.problem || 'General'}</span>
+                                <span className="capitalize">{normalizeProblemCategory(report.problem) || 'General'}</span>
                             </div>
                         </div>
 
@@ -201,9 +235,9 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                         </h3>
 
                         <div className="space-y-4">
-                            <div>
-                                <h4 className="font-medium text-muted-foreground mb-1">Best Practices</h4>
-                                {report.recommendedCrops && report.recommendedCrops.length > 0 ? (
+                            {report.recommendedCrops && report.recommendedCrops.length > 0 && (
+                                <div>
+                                    <h4 className="font-medium text-muted-foreground mb-1">Best Practices</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {report.recommendedCrops.map((crop, index) => (
                                             <span key={index} className="border px-2 py-1 text-sm">
@@ -211,14 +245,12 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                             </span>
                                         ))}
                                     </div>
-                                ) : (
-                                    <p className="text-muted-foreground text-sm">No specific crop recommendations provided.</p>
-                                )}
-                            </div>
+                                </div>
+                            )}
 
-                            <div>
-                                <h4 className="font-medium text-muted-foreground mb-1">Caution / Things to Avoid</h4>
-                                {report.cropsToAvoid && report.cropsToAvoid.length > 0 ? (
+                            {report.cropsToAvoid && report.cropsToAvoid.length > 0 && (
+                                <div>
+                                    <h4 className="font-medium text-muted-foreground mb-1">Caution / Things to Avoid</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {report.cropsToAvoid.map((crop, index) => (
                                             <span key={index} className="border px-2 py-1 text-sm">
@@ -226,15 +258,13 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                             </span>
                                         ))}
                                     </div>
-                                ) : (
-                                    <p className="text-muted-foreground text-sm">No crops to avoid specified.</p>
-                                )}
-                            </div>
+                                </div>
+                            )}
 
                             <div>
                                 <h4 className="font-medium text-muted-foreground mb-1">Additional Advice</h4>
                                 <div className="border p-4">
-                                    <p className="whitespace-pre-wrap">{report.advice || 'No additional advice provided.'}</p>
+                                    <p className="whitespace-pre-wrap">{formatAiGuidance(report.advice) || 'No additional advice provided.'}</p>
                                 </div>
                             </div>
                         </div>

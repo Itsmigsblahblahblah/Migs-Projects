@@ -81,11 +81,44 @@ const AnalyticsCharts = ({
     const [currentPage, setCurrentPage] = useState(1);
     const reportsPerPage = 10;
 
+    // Normalize problem categories to only use the 5 standard ones
+    const normalizeProblemCategory = (problem: string): string => {
+        const standardCategories = ['flood', 'pest', 'drought', 'disease', 'general'];
+        const normalized = problem.toLowerCase().trim();
+        
+        // If it's already a standard category, return as is
+        if (standardCategories.includes(normalized)) {
+            return normalized;
+        }
+        
+        // Map common variations to standard categories
+        const categoryMap: Record<string, string> = {
+            'floods': 'flood',
+            'flooding': 'flood',
+            'waterlogging': 'flood',
+            'pests': 'pest',
+            'insects': 'pest',
+            'bugs': 'pest',
+            'diseases': 'disease',
+            'illness': 'disease',
+            'sickness': 'disease',
+            'dry': 'drought',
+            'dryness': 'drought',
+            'water shortage': 'drought',
+            'seedling failure': 'general',
+            'unclear': 'general',
+            'unclear report': 'general',
+            'vague': 'general'
+        };
+        
+        return categoryMap[normalized] || 'general';
+    };
+
     // Filter reports by selected category
     const filteredReports = useMemo(() => {
         if (!selectedCategory || !reports) return [];
         return reports.filter(report =>
-            report.problem.toLowerCase() === selectedCategory.toLowerCase()
+            normalizeProblemCategory(report.problem) === selectedCategory.toLowerCase()
         );
     }, [selectedCategory, reports]);
 
@@ -426,7 +459,7 @@ const AnalyticsCharts = ({
                                             <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
                                                 <div>
                                                     <span className="text-muted-foreground">Problem: </span>
-                                                    <span className="capitalize">{report.problem}</span>
+                                                    <span className="capitalize">{normalizeProblemCategory(report.problem)}</span>
                                                 </div>
                                                 <div>
                                                     <span className="text-muted-foreground">Affected Crop: </span>

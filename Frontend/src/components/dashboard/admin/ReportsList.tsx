@@ -57,7 +57,6 @@ interface Farmer {
     createdAt: string;
     photoURL?: string | null;
     homeAddress?: string;
-    farmAddress?: string;
 }
 
 interface ReportsListProps {
@@ -72,142 +71,130 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
     const [sortOption, setSortOption] = useState<'newest' | 'oldest' | 'barangay'>('newest');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // For dropdown sorting
-    const [sortBy, setSortBy] = useState<'date' | 'status'>('date'); // For dropdown sorting
+    const [sortBy, setSortBy] = useState<'date' | 'status' | 'problem'>('date'); // For dropdown sorting
     const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined); // For dropdown accordion
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedBarangay, setSelectedBarangay] = useState<string>('all'); // For barangay filtering
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [problemFilter, setProblemFilter] = useState('all');
+    const [barangayFilter, setBarangayFilter] = useState('all');
+    const [selectedBarangay, setSelectedBarangay] = useState('all');
+    const contentRef = useRef<HTMLDivElement>(null);
     const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
-    const reportsPerPage = 10; // Show 10 reports per page
-    const contentRef = useRef<HTMLDivElement>(null); // Ref for scrollable content area
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const { toast } = useToast();
+    const reportsPerPage = 10;
 
-    // Create a map of userId to homeAddress for quick lookup
+    // Normalize problem categories to only use the 5 standard ones
+    const normalizeProblemCategory = (problem: string): string => {
+        const standardCategories = ['flood', 'pest', 'drought', 'disease', 'general'];
+        const normalized = problem.toLowerCase().trim();
+        
+        // If it's already a standard category, return as is
+        if (standardCategories.includes(normalized)) {
+            return normalized;
+        }
+        
+        // Map common variations to standard categories
+        const categoryMap: Record<string, string> = {
+            'floods': 'flood',
+            'flooding': 'flood',
+            'waterlogging': 'flood',
+            'pests': 'pest',
+            'insects': 'pest',
+            'bugs': 'pest',
+            'diseases': 'disease',
+            'illness': 'disease',
+            'sickness': 'disease',
+            'dry': 'drought',
+            'dryness': 'drought',
+            'water shortage': 'drought',
+            'seedling failure': 'general',
+            'unclear': 'general',
+            'unclear report': 'general',
+            'vague': 'general'
+        };
+        
+        return categoryMap[normalized] || 'general';
+    };
+
+    // Get unique barangays from farmers
+    const uniqueBarangays = useMemo(() => {
+        const barangays = farmers.map(farmer => farmer.homeAddress || 'Unknown').filter(Boolean);
+        return [...new Set(barangays)];
+    }, [farmers]);
+
+    // Create a map of farmer IDs to their addresses
     const farmerAddressMap = useMemo(() => {
         const map: Record<string, string> = {};
         farmers.forEach(farmer => {
-            if (farmer.uid && farmer.homeAddress) {
-                map[farmer.uid] = farmer.homeAddress;
-            }
+            map[farmer.uid] = farmer.homeAddress || 'Unknown Barangay';
         });
         return map;
     }, [farmers]);
 
-    // Get unique barangays for dropdown
-    const uniqueBarangays = useMemo(() => {
-        const barangays = new Set<string>();
-        localReports.forEach(report => {
-            const barangay = farmerAddressMap[report.userId] || 'Unknown Barangay';
-            barangays.add(barangay);
+    // Filter and sort reports
+    const { sortedReports, stats } = useMemo(() => {
+        // Apply filters
+        let filteredReports = localReports.filter(report => {
+            const matchesSearch = searchQuery === '' || 
+                report.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                report.reportText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (report.affectedCrop && report.affectedCrop.toLowerCase().includes(searchQuery.toLowerCase()));
+            
+            const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
+            const matchesProblem = problemFilter === 'all' || normalizeProblemCategory(report.problem) === problemFilter;
+            const matchesBarangay = barangayFilter === 'all' || report.username.includes(barangayFilter);
+            
+            return matchesSearch && matchesStatus && matchesProblem && matchesBarangay;
         });
-        return Array.from(barangays).sort();
-    }, [localReports, farmerAddressMap]);
 
-    // Update local reports when props change
-    useEffect(() => {
-        setLocalReports(reports);
-    }, [reports]);
-
-    // Sort and filter reports based on selected option
-    const sortedReports = useMemo(() => {
-        let sorted = [...localReports];
-
-        // Apply sorting based on dropdown selection
-        if (sortBy === 'date') {
-            sorted.sort((a, b) => {
-                const dateA = a.createdAt?.toDate?.() || new Date(0);
-                const dateB = b.createdAt?.toDate?.() || new Date(0);
-                if (sortOrder === 'desc') {
-                    return dateB.getTime() - dateA.getTime();
-                } else {
-                    return dateA.getTime() - dateB.getTime();
-                }
-            });
-        } else if (sortBy === 'status') {
-            sorted.sort((a, b) => {
-                const statusA = a.status || '';
-                const statusB = b.status || '';
-                if (sortOrder === 'desc') {
-                    return statusB.localeCompare(statusA);
-                } else {
-                    return statusA.localeCompare(statusB);
-                }
-            });
-        } else if (sortOption === 'barangay') {
-            sorted.sort((a, b) => {
-                const barangayA = farmerAddressMap[a.userId] || '';
-                const barangayB = farmerAddressMap[b.userId] || '';
-                return barangayA.localeCompare(barangayB);
-            });
-        }
-
-        // Filter by selected barangay if not 'all'
-        if (sortOption === 'barangay' && selectedBarangay !== 'all') {
-            sorted = sorted.filter(report => {
-                const barangay = farmerAddressMap[report.userId] || 'Unknown Barangay';
-                return barangay === selectedBarangay;
-            });
-        }
-
-        return sorted;
-    }, [localReports, sortOption, sortBy, sortOrder, farmerAddressMap, selectedBarangay]);
-
-    // Get unique barangays for grouping display
-    const groupedByBarangay = useMemo(() => {
-        const groups: Record<string, Report[]> = {};
-        sortedReports.forEach(report => {
-            const barangay = farmerAddressMap[report.userId] || 'Unknown Barangay';
-            if (!groups[barangay]) {
-                groups[barangay] = [];
+        // Apply sorting
+        filteredReports.sort((a, b) => {
+            let comparison = 0;
+            
+            switch (sortBy) {
+                case 'date':
+                    const dateA = a.createdAt?.toDate?.() || new Date(0);
+                    const dateB = b.createdAt?.toDate?.() || new Date(0);
+                    comparison = dateA.getTime() - dateB.getTime();
+                    break;
+                case 'status':
+                    comparison = a.status.localeCompare(b.status);
+                    break;
+                default:
+                    const defaultDateA = a.createdAt?.toDate?.() || new Date(0);
+                    const defaultDateB = b.createdAt?.toDate?.() || new Date(0);
+                    comparison = defaultDateA.getTime() - defaultDateB.getTime();
             }
-            groups[barangay].push(report);
+            
+            return sortOrder === 'desc' ? -comparison : comparison;
         });
-        return groups;
-    }, [sortedReports, farmerAddressMap]);
 
-    // Calculate statistics for the selected barangay
-    const barangayStats = useMemo(() => {
-        if (sortOption !== 'barangay' || selectedBarangay === 'all') return null;
-
-        const reportsInBarangay = sortedReports;
-        const totalReports = reportsInBarangay.length;
-
-        // Count problems by type
+        // Calculate stats
+        const totalReports = filteredReports.length;
+        
+        // Count problems by type (normalized)
         const problemCounts: Record<string, number> = {};
-        reportsInBarangay.forEach(report => {
-            const problem = report.problem || 'general';
+        filteredReports.forEach(report => {
+            const problem = normalizeProblemCategory(report.problem) || 'general';
             problemCounts[problem] = (problemCounts[problem] || 0) + 1;
         });
 
         return {
-            totalReports,
-            problemCounts
+            sortedReports: filteredReports,
+            stats: {
+                totalReports,
+                problemCounts
+            }
         };
-    }, [sortedReports, sortOption, selectedBarangay]);
+    }, [localReports, searchQuery, statusFilter, problemFilter, barangayFilter, sortBy, sortOrder]);
 
     // Pagination calculations
     const totalPages = Math.ceil(sortedReports.length / reportsPerPage);
     const startIndex = (currentPage - 1) * reportsPerPage;
     const endIndex = startIndex + reportsPerPage;
     const visibleReports = sortedReports.slice(startIndex, endIndex);
-
-    // Pagination calculations for grouped view
-    const groupedReports = Object.entries(groupedByBarangay).flatMap(([barangay, reports]) =>
-        reports.map(report => ({ ...report, barangay }))
-    );
-
-    const totalGroupedPages = Math.ceil(groupedReports.length / reportsPerPage);
-    const startGroupedIndex = (currentPage - 1) * reportsPerPage;
-    const visibleGroupedReports = groupedReports.slice(startGroupedIndex, startGroupedIndex + reportsPerPage);
-
-    // Group the visible reports by barangay for display
-    const visibleGroupedByBarangay = visibleGroupedReports.reduce((acc, report) => {
-        if (!acc[report.barangay]) {
-            acc[report.barangay] = [];
-        }
-        acc[report.barangay].push(report);
-        return acc;
-    }, {} as Record<string, (Report & { barangay: string })[]>);
 
     const openReportDetail = (report: Report) => {
         setSelectedReport(report);
@@ -218,13 +205,12 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     };
 
     // Handle sort change from dropdown
-    const handleSortChange = (criteria: 'date' | 'status', order: 'asc' | 'desc') => {
+    const handleSortChange = (criteria: 'date' | 'status' | 'problem', order: 'asc' | 'desc') => {
         setSortBy(criteria);
         setSortOrder(order);
         // Reset to first page when sorting changes
         setCurrentPage(1);
     };
-
     // Handle accordion change in dropdown
     const handleAccordionChange = (value: string | undefined) => {
         setOpenAccordion(value);
@@ -235,11 +221,10 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         switch (sortBy) {
             case 'date': return 'Date';
             case 'status': return 'Status';
+            case 'problem': return 'Problem Category';
             default: return 'Date';
         }
-    };
-
-    // Get label for current sort order
+    };    // Get label for current sort order
     const getOrderLabel = () => {
         return sortOrder === 'asc' ? 'Ascending' : 'Descending';
     };
@@ -249,12 +234,12 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         if (contentRef.current) {
             contentRef.current.scrollTop = 0;
         }
-    }, [currentPage, sortOption, selectedBarangay]);
+    }, [currentPage]);
 
     // Reset to first page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [sortOption, selectedBarangay, localReports]);
+    }, [searchQuery, statusFilter, problemFilter, barangayFilter, sortBy, sortOrder]);
 
     // Handle page change with scroll to top
     const handlePageChange = (newPage: number) => {
@@ -386,6 +371,38 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                             </DropdownMenuItem>
                                         </AccordionContent>
                                     </AccordionItem>
+
+                                    {/* Add Problem Category as dropdown like Date and Group by */}
+                                    <DropdownMenuSeparator />
+                                    
+                                    <AccordionItem value="problem" className="border-b-0">
+                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
+                                            <span className="flex items-center">
+                                                <ChevronRight className="h-4 w-4 mr-2" />
+                                                Problem Category
+                                            </span>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pb-0">
+                                            <DropdownMenuItem onClick={() => setProblemFilter('general')} className="hover:bg-blue-50 hover:text-blue-700">
+                                                General
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setProblemFilter('flood')} className="hover:bg-blue-50 hover:text-blue-700">
+                                                Flood
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setProblemFilter('pest')} className="hover:bg-blue-50 hover:text-blue-700">
+                                                Pest
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setProblemFilter('disease')} className="hover:bg-blue-50 hover:text-blue-700">
+                                                Disease
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setProblemFilter('drought')} className="hover:bg-blue-50 hover:text-blue-700">
+                                                Drought
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setProblemFilter('all')} className="hover:bg-blue-50 hover:text-blue-700">
+                                                All Problems
+                                            </DropdownMenuItem>
+                                        </AccordionContent>
+                                    </AccordionItem>
                                 </Accordion>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -456,14 +473,14 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     </div>
 
                     {/* Stats display for selected barangay - shown below */}
-                    {sortOption === 'barangay' && selectedBarangay !== 'all' && barangayStats && (
+                    {sortOption === 'barangay' && selectedBarangay !== 'all' && (
                         <div className="pt-4">
                             <div className="bg-muted p-3 rounded-md">
                                 <h3 className="font-semibold">
-                                    {selectedBarangay} has {barangayStats.totalReports} report{barangayStats.totalReports !== 1 ? 's' : ''}
+                                    {selectedBarangay} has {stats.totalReports} report{stats.totalReports !== 1 ? 's' : ''}
                                 </h3>
                                 <div className="flex flex-wrap gap-4 mt-2">
-                                    {Object.entries(barangayStats.problemCounts).map(([problem, count]) => (
+                                    {Object.entries(stats.problemCounts).map(([problem, count]) => (
                                         <div key={problem} className="flex items-center gap-1 cursor-pointer hover:bg-muted rounded px-2 py-1 transition-colors" style={{ cursor: 'pointer' }}>
                                             <span className="text-sm capitalize">{problem}:</span>
                                             <Badge variant="secondary">{count}</Badge>
@@ -481,99 +498,93 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                 {sortOption === 'barangay' && selectedBarangay === 'all' ? (
                                     // Grouped by barangay view with pagination
                                     <>
-                                        {Object.entries(visibleGroupedByBarangay).map(([barangay, reports]) => (
-                                            <div key={barangay} className="border-b pb-4 last:border-b-0">
-                                                <h3 className="font-semibold text-lg mb-2">{barangay}</h3>
-                                                <div className="space-y-3">
-                                                    {reports.map((report) => (
-                                                        <div
-                                                            key={report.id}
-                                                            className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                                        {/* Since this is simplified, showing regular list for now */}
+                                        {visibleReports.map((report) => (
+                                            <div
+                                                key={report.id}
+                                                className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex flex-col">
+                                                        <div className="font-medium">{report.username}</div>
+                                                        {/* Display home address below user name */}
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {farmerAddressMap[report.userId] || 'Unknown Barangay'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <Badge
+                                                            variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                                                            className={
+                                                                report.status === 'resolved' ? 'bg-success text-success-foreground' :
+                                                                    report.status === 'processed' ? 'bg-yellow-500 text-yellow-foreground' :
+                                                                        ''
+                                                            }
                                                         >
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="font-medium">{report.username}</div>
-                                                                    <Badge
-                                                                        variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                                                                        className={report.status === 'resolved' ? 'bg-success text-success-foreground' : ''}
-                                                                    >
-                                                                        {report.status}
-                                                                    </Badge>
-                                                                </div>
-                                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                                    <Calendar className="h-4 w-4" />
-                                                                    {report.createdAt?.toDate().toLocaleDateString()}
-                                                                </div>
-                                                            </div>
+                                                            {report.status}
+                                                        </Badge>
+                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                            <Calendar className="h-4 w-4" />
+                                                            {report.createdAt?.toDate().toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
 
-                                                            <div className="grid md:grid-cols-3 gap-4 text-sm mb-3">
-                                                                <div>
-                                                                    <span className="text-muted-foreground">Problem: </span>
-                                                                    <span className="capitalize">{report.problem}</span>
-                                                                </div>
-                                                                <div>
-                                                                    <span className="text-muted-foreground">Affected Crop: </span>
-                                                                    <span className="capitalize">{report.affectedCrop}</span>
-                                                                </div>
-                                                                <div>
-                                                                    <span className="text-muted-foreground">Recommended: </span>
-                                                                    <span className="truncate max-w-[150px] inline-block align-top" title={report.recommendedCrops?.slice(0, 2).join(', ')}>
-                                                                        {report.recommendedCrops?.slice(0, 2).join(', ') || 'None'}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="flex flex-col">
-                                                                <div className="flex justify-between items-center">
-                                                                    <p className="text-sm text-muted-foreground line-clamp-1">
-                                                                        {report.reportText}
-                                                                    </p>
-                                                                </div>
-                                                                <div className="flex gap-2 mt-2 md:mt-0 md:justify-end w-full md:w-auto">
-                                                                    {report.status !== 'resolved' && (
-                                                                        <Button
-                                                                            variant="outline"
-                                                                            size="sm"
-                                                                            onClick={() => onUpdateStatus(report.id, 'resolved')}
-                                                                            className="text-green-600 hover:text-green-700 hover:bg-green-50 w-full md:w-auto"
-                                                                        >
-                                                                            <CheckCircle className="h-4 w-4 mr-1" />
-                                                                            Mark Resolved
-                                                                        </Button>
-                                                                    )}
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={() => openReportDetail(report)}
-                                                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-full md:w-auto"
-                                                                    >
-                                                                        <Eye className="h-4 w-4 mr-1" />
-                                                                        View Details
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={() => handleDeleteRequest(report)}
-                                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full md:w-auto"
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4 mr-1" />
-                                                                        Delete
-                                                                    </Button>
-                                                                </div>
+                                                <div className="flex flex-col gap-1 text-sm mb-3">
+                                                    <div>
+                                                        <span className="text-muted-foreground">Problem: </span>
+                                                        <span className="capitalize">{normalizeProblemCategory(report.problem)}</span>
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <span className="text-muted-foreground">Affected Crop: </span>
+                                                                <span className="capitalize">{report.affectedCrop}</span>
                                                             </div>
                                                         </div>
-                                                    ))}
+                                                        <div className="flex gap-2 mt-2 md:mt-0 md:justify-end w-full md:w-auto">
+                                                            {report.status !== 'resolved' && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                                    className="text-green-600 hover:text-green-700 hover:bg-green-50 w-full md:w-auto"
+                                                                >
+                                                                    <CheckCircle className="h-4 w-4" />
+                                                                    <span className="hidden md:inline ml-1">Mark Resolved</span>
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => openReportDetail(report)}
+                                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-full md:w-auto"
+                                                            >
+                                                                <Eye className="h-4 w-4" />
+                                                                <span className="hidden md:inline ml-1">View Details</span>
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleDeleteRequest(report)}
+                                                                className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full md:w-auto"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                                <span className="hidden md:inline ml-1">Delete</span>
+                                                            </Button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
 
                                         {/* Pagination Controls - Match FarmersList design */}
-                                        {totalGroupedPages > 0 && (
+                                        {(sortOption !== 'barangay' || selectedBarangay !== 'all') && (
                                             <div className="border-t pt-4 mt-auto">
                                                 {/* Desktop layout - text on left, pagination on right */}
                                                 <div className="hidden md:flex items-center justify-between">
                                                     <div className="text-sm text-muted-foreground">
-                                                        Showing {startGroupedIndex + 1} to {Math.min(startGroupedIndex + reportsPerPage, groupedReports.length)} of {groupedReports.length} reports
+                                                        Showing {startIndex + 1} to {Math.min(endIndex, sortedReports.length)} of {sortedReports.length} reports
                                                     </div>
                                                     <div className="flex space-x-1">
                                                         <Button
@@ -591,7 +602,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             const pageButtons = [];
                                                             // Show more pages (7 instead of 5) to reduce ellipsis
                                                             let startPage = Math.max(1, currentPage - 3);
-                                                            let endPage = Math.min(totalGroupedPages, startPage + 6);
+                                                            let endPage = Math.min(totalPages, startPage + 6);
 
                                                             // Adjust startPage if we're near the end
                                                             if (endPage - startPage < 6) {
@@ -635,22 +646,22 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             }
 
                                                             // Last page button
-                                                            if (endPage < totalGroupedPages) {
+                                                            if (endPage < totalPages) {
                                                                 // Only show ellipsis if there's a significant gap
-                                                                if (endPage < totalGroupedPages - 1) {
+                                                                if (endPage < totalPages - 1) {
                                                                     pageButtons.push(
                                                                         <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm">⋯</span>
                                                                     );
                                                                 }
                                                                 pageButtons.push(
                                                                     <Button
-                                                                        key={totalGroupedPages}
+                                                                        key={totalPages}
                                                                         variant="outline"
                                                                         size="sm"
-                                                                        onClick={() => handlePageChange(totalGroupedPages)}
+                                                                        onClick={() => handlePageChange(totalPages)}
                                                                         className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                     >
-                                                                        {totalGroupedPages}
+                                                                        {totalPages}
                                                                     </Button>
                                                                 );
                                                             }
@@ -661,8 +672,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => handlePageChange(Math.min(currentPage + 1, totalGroupedPages))}
-                                                            disabled={currentPage === totalGroupedPages}
+                                                            onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                                                            disabled={currentPage === totalPages}
                                                             className="h-8 px-3 text-sm hover:bg-blue-50"
                                                         >
                                                             Next
@@ -673,7 +684,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                 {/* Mobile layout - text and pagination both centered, pagination below text */}
                                                 <div className="md:hidden space-y-4">
                                                     <div className="text-sm text-muted-foreground text-center">
-                                                        Showing {startGroupedIndex + 1} to {Math.min(startGroupedIndex + reportsPerPage, groupedReports.length)} of {groupedReports.length} reports
+                                                        Showing {startIndex + 1} to {Math.min(endIndex, sortedReports.length)} of {sortedReports.length} reports
                                                     </div>
                                                     <div className="flex justify-center space-x-1">
                                                         <Button
@@ -691,7 +702,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             const pageButtons = [];
                                                             // Show fewer pages on mobile to prevent overflow
                                                             let startPage = Math.max(1, currentPage - 1);
-                                                            let endPage = Math.min(totalGroupedPages, startPage + 2);
+                                                            let endPage = Math.min(totalPages, startPage + 2);
 
                                                             // Adjust startPage if we're near the end
                                                             if (endPage - startPage < 2) {
@@ -735,22 +746,22 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             }
 
                                                             // Last page button
-                                                            if (endPage < totalGroupedPages) {
+                                                            if (endPage < totalPages) {
                                                                 // Only show ellipsis if there's a significant gap
-                                                                if (endPage < totalGroupedPages - 1) {
+                                                                if (endPage < totalPages - 1) {
                                                                     pageButtons.push(
                                                                         <span key="end-ellipsis" className="px-1 py-0 text-muted-foreground text-sm hidden sm:inline">⋯</span>
                                                                     );
                                                                 }
                                                                 pageButtons.push(
                                                                     <Button
-                                                                        key={totalGroupedPages}
+                                                                        key={totalPages}
                                                                         variant="outline"
                                                                         size="sm"
-                                                                        onClick={() => handlePageChange(totalGroupedPages)}
+                                                                        onClick={() => handlePageChange(totalPages)}
                                                                         className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
                                                                     >
-                                                                        {totalGroupedPages}
+                                                                        {totalPages}
                                                                     </Button>
                                                                 );
                                                             }
@@ -761,8 +772,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => handlePageChange(Math.min(currentPage + 1, totalGroupedPages))}
-                                                            disabled={currentPage === totalGroupedPages}
+                                                            onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
+                                                            disabled={currentPage === totalPages}
                                                             className="h-8 px-3 text-sm hover:bg-blue-50"
                                                         >
                                                             Next
@@ -809,7 +820,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                 <div className="flex flex-col gap-1 text-sm mb-3">
                                                     <div>
                                                         <span className="text-muted-foreground">Problem: </span>
-                                                        <span className="capitalize">{report.problem}</span>
+                                                        <span className="capitalize">{normalizeProblemCategory(report.problem)}</span>
                                                     </div>
                                                     <div className="flex flex-col">
                                                         <div className="flex items-center justify-between">

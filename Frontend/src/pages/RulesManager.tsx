@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import { formatAiGuidance } from "@/utils/aiGuidanceFormatter";
 import { 
   Settings, 
   Plus, 
@@ -437,7 +438,7 @@ const RulesManager = () => {
                       <Lightbulb className="h-4 w-4 text-accent" />
                       <span className="text-sm font-medium">Advice:</span>
                     </div>
-                    <p className="text-sm text-foreground/80">{rule.advice}</p>
+                    <p className="text-sm text-foreground/80">{formatAiGuidance(rule.advice)}</p>
                   </div>
                 </div>
               ))}
