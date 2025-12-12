@@ -523,9 +523,10 @@ const Landing = () => {
                 key={index}
                 className="text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative"
               >
-                <div className="mx-auto mb-4 w-24 h-24 rounded-full overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-lg">
+                <div className="mx-auto mb-4 w-24 h-24 rounded-full overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-lg relative">
                   {member.avatar}
                 </div>
+                <span className="absolute inset-0 mx-auto w-24 h-24 rounded-full bg-gradient-primary opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300 -z-10"></span>
                 <h3 className="text-xl font-semibold text-foreground">{member.name}</h3>
                 <p className="text-muted-foreground mb-2">{member.role}</p>
                 
