@@ -29,6 +29,7 @@ import dean from "@/assets/dean.jpg";
 import hyroin from "@/assets/hyroin.jpg";
 import joyce from "@/assets/joyce.jpg";
 import dondon from "@/assets/don2.jpg";
+import herobg from "@/assets/herobg.jpg";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -267,24 +268,35 @@ const Landing = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
+      <section className="py-16 md:py-24 relative">
+        {/* Background image with gradient overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center z-0"
+          style={{ 
+            backgroundImage: `url(${herobg})`,
+            backgroundPosition: 'center',
+            backgroundSize: 'cover'
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-green-900 to-black opacity-80 z-0"></div>
+        
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center justify-center gap-3 mb-6">
               <div className="p-3 rounded-full bg-gradient-primary">
                 <Sprout className="h-8 w-8 text-primary-foreground" />
               </div>
-              <h1 className="text-2xl font-bold text-primary">Harvestify</h1>
+              <h1 className="text-2xl font-bold text-white">Harvestify</h1>
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
               Smart Farming for a{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-primary">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-teal-500">
                 Better Tomorrow
               </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-white mb-10 max-w-2xl mx-auto">
               Empowering Majayjay farmers with expert crop recommendations, real-time analytics,
               and direct access to agricultural specialists for optimized farm productivity.
             </p>
