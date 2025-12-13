@@ -81,7 +81,8 @@ class EnhancedSoilCropTransformer:
         self.preprocessor = None
         # Add cache for predictions with LRU eviction policy
         self.prediction_cache = OrderedDict()
-        self.cache_ttl = 60  # 1 minute cache for better responsiveness
+        # Reduced cache TTL for more responsive updates - 30 seconds instead of 60
+        self.cache_ttl = 30
         self.max_cache_size = 100  # Limit cache size to prevent memory issues
         # Add cache warming flag
         self.cache_warming_complete = False
@@ -497,10 +498,11 @@ class EnhancedSoilCropTransformer:
             common_humidities = [40, 60, 80]
 
             warmed_count = 0
-            total_combinations = len(common_ph_values) * len(common_nitrogen_levels) * len(
-                common_phosphorus_levels) * len(common_potassium_levels) * len(common_temperatures) * len(common_humidities)
+            # Reduce the number of combinations to warm for faster startup
+            max_warm_combinations = 10  # Reduced from 20 to 10 for faster warming
+
             logger.info(
-                f"Generating predictions for {total_combinations} combinations, will limit to 20")
+                f"Generating predictions for combinations, will limit to {max_warm_combinations}")
 
             for ph in common_ph_values:
                 for nitrogen in common_nitrogen_levels:
@@ -508,7 +510,7 @@ class EnhancedSoilCropTransformer:
                         for potassium in common_potassium_levels:
                             for temp in common_temperatures:
                                 for humidity in common_humidities:
-                                    if warmed_count >= 20:  # Limit warming to prevent overload
+                                    if warmed_count >= max_warm_combinations:  # Limit warming to prevent overload
                                         break
 
                                     soil_data = {
@@ -543,6 +545,16 @@ class EnhancedSoilCropTransformer:
                                         logger.debug(
                                             f"Cache warming prediction failed: {e}")
                                         continue
+                                if warmed_count >= max_warm_combinations:
+                                    break
+                            if warmed_count >= max_warm_combinations:
+                                break
+                        if warmed_count >= max_warm_combinations:
+                            break
+                    if warmed_count >= max_warm_combinations:
+                        break
+                if warmed_count >= max_warm_combinations:
+                    break
 
             self.cache_warming_complete = True
             warm_cache_time = time_module.time() - warm_cache_start

@@ -131,6 +131,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     handleAddCrop
   } = useCropManagement();
 
+  // Add state for quick loading - for immediate feedback
+  const [quickLoading, setQuickLoading] = useState(false);
+
   // Wrapper function for handleAddCrop that returns a boolean and captures the crop ID
   const handleAddCropWrapper = async (): Promise<boolean> => {
     const result = await handleAddCrop();
@@ -211,9 +214,15 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     }
   };
 
-  // Add function to fetch recommendations with caching
+  // Add function to fetch recommendations with caching and optimized performance
   const fetchEnhancedRecommendations = async (soilData: SoilData, weatherData?: WeatherData) => {
-    setLoading(true);
+    // For manual triggers, we already set loading=true in handleGetRecommendations
+    // For initial loads, we want to show loading
+    const wasAlreadyLoading = loading;
+    if (!wasAlreadyLoading) {
+      setLoading(true);
+    }
+    
     setError(null);
     
     try {
@@ -224,8 +233,12 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       const cachedData = getCachedRecommendationData(cacheKey);
       if (cachedData) {
         console.log('Using cached enhanced recommendations');
+        // Even for cached data, show loading for a brief moment to indicate activity
+        await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay for UX
         setRecommendations(cachedData);
-        setLoading(false);
+        if (!wasAlreadyLoading) {
+          setLoading(false);
+        }
         return;
       }
       
@@ -258,7 +271,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       // Use environment variable for backend URL or default to localhost
       const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      // Reduced timeout for faster feedback - 8 seconds instead of 15
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       
       const response = await fetch(`${BACKEND_URL}/enhanced-soil/fair-recommend`, {
         method: 'POST',
@@ -301,16 +315,27 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       }
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        setError('Request is taking longer than expected. This might be due to high server load or network issues. Please try again in a moment.');
+        // Even on timeout, we shouldn't show an error - just continue with whatever we have
+        console.warn('Request timed out, but continuing with available data');
+        if (recommendations.length === 0) {
+          setError('Request is taking longer than expected. This might be due to high server load or network issues. Please try again in a moment.');
+        }
       } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        setError('Network error. Please check your connection and try again. If the problem persists, the server might be temporarily unavailable.');
+        if (recommendations.length === 0) {
+          setError('Network error. Please check your connection and try again. If the problem persists, the server might be temporarily unavailable.');
+        }
       } else {
         console.error('Error fetching enhanced recommendations:', err);
-        setError(`Failed to load enhanced crop recommendations. Error: ${err.message || 'Unknown error occurred'}. Please try again.`);
+        // Only show error if we don't have any recommendations
+        if (recommendations.length === 0) {
+          setError(`Failed to load enhanced crop recommendations. Error: ${err.message || 'Unknown error occurred'}. Please try again.`);
+        }
       }
       console.error('Error fetching enhanced recommendations:', err);
     } finally {
-      setLoading(false);
+      if (!wasAlreadyLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -395,6 +420,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     const loadSoilData = async () => {
       // Always show loading when fetching new data
       setSoilDataLoading(true);
+      // For initial load, we want to show the main loading spinner
       setLoading(true);
       setError(null);
       
@@ -441,12 +467,49 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         setError('Failed to load soil data. Please try again.');
       } finally {
         setSoilDataLoading(false);
-        setLoading(false);
+        // Keep loading true until recommendations are fully loaded
+        // setLoading(false); // This will be set to false in fetchEnhancedRecommendations
       }
     };
 
     loadSoilData();
   }, [effectiveFarmerProfile]);
+
+  // Add prefetching effect to load recommendations in background
+  useEffect(() => {
+    // Prefetch recommendations with default values when component mounts
+    // This helps with faster loading on subsequent visits
+    const prefetchRecommendations = async () => {
+      try {
+        // Use default soil data for prefetching
+        const defaultSoilData = {
+          pH: 6.5,
+          Nitrogen: 'M',
+          Phosphorus: 'M',
+          Potassium: 'M'
+        };
+        
+        // Create cache key for default data
+        const cacheKey = `enhanced_rec_${JSON.stringify(defaultSoilData)}_${JSON.stringify({})}`;
+        
+        // Check if we already have cached data
+        const cachedData = getCachedRecommendationData(cacheKey);
+        if (!cachedData) {
+          // If no cached data, prefetch in background without showing loading state
+          console.log('Prefetching default recommendations in background');
+          // For background prefetching, we don't want to show loading UI
+          await fetchEnhancedRecommendations(defaultSoilData);
+        }
+      } catch (err) {
+        console.log('Background prefetch failed (non-critical):', err);
+      }
+    };
+    
+    // Only prefetch if we don't already have recommendations
+    if (recommendations.length === 0) {
+      prefetchRecommendations();
+    }
+  }, []);
 
   const handleCropSelect = async (crop: PrescriptionDetails) => {
     // Fetch market demand data for the selected crop
@@ -490,22 +553,27 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     setError(null);
 
     // Always show loading when user manually triggers recommendations
+    // This ensures users see that something is happening even for cached data
     setLoading(true);
+    
+    // Add a small delay to ensure the loading animation is visible
+    // This improves UX by showing that the system is working even for cached data
+    setTimeout(() => {
+      // Prepare weather data if available
+      let weatherDataForRecommendation: WeatherData | undefined;
+      if (effectiveWeatherData) {
+        weatherDataForRecommendation = {
+          temperature: effectiveWeatherData.temperature || 25,
+          humidity: effectiveWeatherData.humidity || 50,
+          precipitation_probability: effectiveWeatherData.extendedForecast?.[0]?.precipitationProbability || 0,
+          wind_speed: effectiveWeatherData.extendedForecast?.[0]?.windSpeed || 5,
+          uv_index: effectiveWeatherData.extendedForecast?.[0]?.uvIndex || 5
+        };
+        console.log('Prepared weather data for enhanced recommendation:', weatherDataForRecommendation);
+      }
 
-    // Prepare weather data if available
-    let weatherDataForRecommendation: WeatherData | undefined;
-    if (effectiveWeatherData) {
-      weatherDataForRecommendation = {
-        temperature: effectiveWeatherData.temperature || 25,
-        humidity: effectiveWeatherData.humidity || 50,
-        precipitation_probability: effectiveWeatherData.extendedForecast?.[0]?.precipitationProbability || 0,
-        wind_speed: effectiveWeatherData.extendedForecast?.[0]?.windSpeed || 5,
-        uv_index: effectiveWeatherData.extendedForecast?.[0]?.uvIndex || 5
-      };
-      console.log('Prepared weather data for enhanced recommendation:', weatherDataForRecommendation);
-    }
-
-    fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
+      fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
+    }, 300); // 300ms delay to ensure loading animation is visible
   };
 
   // Function to handle saving prescription
@@ -796,9 +864,10 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     let timeoutId: NodeJS.Timeout;
     
     if (loading) {
+      // Reduced timeout to 5 seconds for better user experience
       timeoutId = setTimeout(() => {
         setLoadingTimeout(true);
-      }, 8000); // Show timeout warning after 8 seconds
+      }, 5000); // Show timeout warning after 5 seconds instead of 8
     } else {
       setLoadingTimeout(false);
     }
@@ -1002,8 +1071,11 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
                   {loading && (
                     <div className="flex justify-center items-center h-32">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      <span className="ml-2">Analyzing soil, weather, and market data...</span>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+                      <div>
+                        <p className="font-medium">Analyzing soil, weather, and market data...</p>
+                        <p className="text-sm text-muted-foreground mt-1">This usually takes just a few seconds</p>
+                      </div>
                     </div>
                   )}
 
@@ -1098,8 +1170,14 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                           </div>
                         </>
                       ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                          No crop recommendations available
+                        <div className="text-center py-8">
+                          <div className="animate-pulse flex flex-col items-center">
+                            <Sprout className="h-12 w-12 text-primary mb-4" />
+                            <h3 className="text-lg font-medium mb-2">Analyzing your farm data</h3>
+                            <p className="text-muted-foreground max-w-md">
+                              Our AI is processing your soil conditions, weather patterns, and market trends to provide personalized crop recommendations.
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
