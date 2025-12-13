@@ -9,6 +9,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Sprout,
   Users,
   Shield,
@@ -23,7 +29,8 @@ import {
   X,
   Facebook,
   Mail,
-  ChevronDown
+  ChevronDown,
+  XCircle
 } from "lucide-react";
 import dean from "@/assets/dean.jpg";
 import hyroin from "@/assets/hyroin.jpg";
@@ -34,6 +41,7 @@ const Landing = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<{name: string, role: string, src: string} | null>(null);
 
   // Function to scroll to a section
   const scrollToSection = (sectionId: string) => {
@@ -141,22 +149,26 @@ const Landing = () => {
   const team = [
     {
       name: "Dean Mabulay",
-      role: "Lead Developer",
+      role: "Lead Developer | AI Specialist",
+      src: dean,
       avatar: <img src={dean} alt="Dean Martin Mabulay" className="h-24 w-24 rounded-full object-cover" />
     },
     {
       name: "Hyroin Balili",
       role: "Backend Developer",
+      src: hyroin,
       avatar: <img src={hyroin} alt="Hyroin Balili" className="h-24 w-24 rounded-full object-cover" />
     },
     {
       name: "Joyce Cuala",
       role: "UI/UX Designer | Research Lead",
+      src: joyce,
       avatar: <img src={joyce} alt="Joyce Ann Cuala" className="h-24 w-24 rounded-full object-cover" />
     },
     {
       name: "Dondon Esquivel",
       role: "Project Manager",
+      src: dondon,
       avatar: <img src={dondon} alt="Dondon Esquivel" className="h-24 w-24 rounded-full object-cover" />
     }
   ];
@@ -511,7 +523,8 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Team Section */}      <section id="team" className="pt-16 pb-8 bg-card/50">
+      {/* Team Section */}
+      <section id="team" className="pt-16 pb-8 bg-card/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -528,7 +541,10 @@ const Landing = () => {
                 key={index}
                 className="text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative"
               >
-                <div className="mx-auto mb-4 w-24 h-24 rounded-full overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-lg relative">
+                <div 
+                  className="mx-auto mb-4 w-24 h-24 rounded-full overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-lg relative"
+                  onClick={() => setSelectedMember(member)}
+                >
                   {member.avatar}
                 </div>
                 <span className="absolute inset-0 mx-auto w-24 h-24 rounded-full bg-gradient-primary opacity-0 group-hover:opacity-100 blur-md transition-opacity duration-300 -z-10"></span>
@@ -581,6 +597,37 @@ const Landing = () => {
           </div>
         </div>
       </section>
+
+      {/* Image Popup Dialog */}
+      <Dialog open={!!selectedMember} onOpenChange={() => setSelectedMember(null)}>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden border-0 bg-transparent shadow-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Team Member Profile</DialogTitle>
+          </DialogHeader>
+          {selectedMember && (
+            <div className="relative">
+              <button 
+                onClick={() => setSelectedMember(null)}
+                className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors"
+                aria-label="Close"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+              <div className="flex flex-col items-center">
+                <img 
+                  src={selectedMember.src} 
+                  alt={selectedMember.name} 
+                  className="w-full max-h-[80vh] object-contain"
+                />
+                <div className="mt-4 text-center bg-background/90 backdrop-blur-sm p-4 rounded-b-lg w-full">
+                  <h3 className="text-2xl font-bold text-foreground">{selectedMember.name}</h3>
+                  <p className="text-muted-foreground">{selectedMember.role}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* CTA Section */}
       <section className="py-16 bg-gradient-hero">
