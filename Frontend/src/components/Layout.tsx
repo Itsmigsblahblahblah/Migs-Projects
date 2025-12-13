@@ -324,7 +324,19 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator className={isAdmin ? 'bg-blue-100' : ''} />
-                    <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={isAdmin ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={isAdmin ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
+                    <DropdownMenuItem 
+                      onClick={() => setIsLogoutDialogOpen(true)} 
+                      className={`cursor-pointer ${isAdmin ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''}`} 
+                      style={isAdmin ? { backgroundColor: '', color: '#2563eb' } : {}} 
+                      onMouseEnter={isAdmin ? (e) => { 
+                        e.currentTarget.style.backgroundColor = '#eff6ff'; 
+                        e.currentTarget.style.color = '#1d4ed8'; 
+                      } : undefined} 
+                      onMouseLeave={isAdmin ? (e) => { 
+                        e.currentTarget.style.backgroundColor = ''; 
+                        e.currentTarget.style.color = '#2563eb'; 
+                      } : undefined}
+                    >
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Logout</span>
                     </DropdownMenuItem>
@@ -352,7 +364,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                         </div>
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator className={isAdmin ? 'bg-blue-100' : ''} />
-                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={isAdmin ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={isAdmin ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
+                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={`cursor-pointer ${isAdmin ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''}`} style={isAdmin ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Logout</span>
                       </DropdownMenuItem>
@@ -394,7 +406,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                         </div>
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator className={isAdmin ? 'bg-blue-100' : ''} />
-                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={isAdmin ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''} style={isAdmin ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
+                      <DropdownMenuItem onClick={() => setIsLogoutDialogOpen(true)} className={`cursor-pointer ${isAdmin ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700' : ''}`} style={isAdmin ? { backgroundColor: '', color: '#2563eb' } : {}} onMouseEnter={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; } : undefined} onMouseLeave={isAdmin ? (e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = '#2563eb'; } : undefined}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Logout</span>
                       </DropdownMenuItem>
