@@ -30,7 +30,6 @@ import hyroin from "@/assets/hyroin.jpg";
 import joyce from "@/assets/joyce.jpg";
 import dondon from "@/assets/don2.jpg";
 import herobg from "@/assets/herobg.jpg";
-
 const Landing = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('');
@@ -290,9 +289,15 @@ const Landing = () => {
             </div>
 
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-              Smart Farming for a{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-teal-500">
-                Better Tomorrow
+              <span 
+                className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-teal-500"
+                style={{
+                  backgroundImage: 'linear-gradient(90deg, #4ade80, #22d3ee, #4ade80)',
+                  backgroundSize: '300% 100%',
+                  animation: 'gradient 6s linear infinite'
+                }}
+              >
+                Smart Farming for a Better Tomorrow
               </span>
             </h1>
 
