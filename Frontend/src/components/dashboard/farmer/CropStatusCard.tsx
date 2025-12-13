@@ -18,14 +18,14 @@ interface CropStatusCardProps {
 
 const CropStatusCard = ({ cropData, onClick }: CropStatusCardProps) => {
     return (
-        <Card className="shadow-card cursor-pointer hover:shadow-md transition-shadow" onClick={onClick}>
+        <Card className="shadow-card cursor-pointer hover:shadow-md transition-shadow h-full flex flex-col" onClick={onClick}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Wheat className="h-5 w-5" />
                     Crop Status
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 flex-grow">
                 <div className="flex items-center gap-3">
                     <div className="bg-success/10 p-2 rounded-full">
                         <Wheat className="h-5 w-5 text-success" />

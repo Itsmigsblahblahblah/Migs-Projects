@@ -532,17 +532,26 @@ const FarmerDashboard = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Welcome Header */}
-        <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
-          <div className="flex items-center gap-3 mb-2">
-            <Sprout className="h-6 w-6" />
-            <h1 className="text-2xl font-bold">Mabuhay, {username}!</h1>
-          </div>
-          <p className="text-primary-foreground/90">
-            I-type ang inyong problema sa sakahan para makakuha ng crop recommendations.
-          </p>
-        </div>
+      <div className="space-y-6 h-full flex flex-col">
+        {/* Welcome Banner - only shown when there are no deletion requests or the notification is visible */}
+        {!deletionRequest && (
+          <Card className="bg-gradient-primary text-primary-foreground shadow-card">
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold">Welcome back, {username}!</h2>
+                  <p className="opacity-90">Here's what's happening with your farm today.</p>
+                </div>
+                <Button 
+                  onClick={() => setIsAddCropDialogOpen(true)}
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                >
+                  Add New Crop
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Deletion Request Status Banner */}
         {deletionRequest && showDeletionNotification && (
@@ -603,36 +612,40 @@ const FarmerDashboard = () => {
         )}
 
         {/* Profile Card and Weather Section */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          <ProfileCard
-            username={username}
-            farmerProfile={farmerProfile}
-            onEditProfile={() => {
-              // Ensure we have the latest data before opening the dialog
-              resetEditProfileData();
-              // Small delay to ensure state propagation
-              setTimeout(() => {
-                setIsEditProfileDialogOpen(true);
-              }, 10);
-            }}
-          />
-          <WeatherCard
-            weatherData={weatherData || {
-              temperature: 0,
-              condition: "Loading...",
-              humidity: 0,
-              rainfall: 0,
-              forecast: [],
-              extendedForecast: []
-            }}
-            forecastView={forecastView}
-            onForecastViewChange={setForecastView}
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            availableDates={getAvailableDates()}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+          <div className="flex flex-col">
+            <ProfileCard
+              username={username}
+              farmerProfile={farmerProfile}
+              onEditProfile={() => {
+                // Ensure we have the latest data before opening the dialog
+                resetEditProfileData();
+                // Small delay to ensure state propagation
+                setTimeout(() => {
+                  setIsEditProfileDialogOpen(true);
+                }, 10);
+              }}
+            />
+          </div>
+          <div className="flex flex-col">
+            <WeatherCard
+              weatherData={weatherData || {
+                temperature: 0,
+                condition: "Loading...",
+                humidity: 0,
+                rainfall: 0,
+                forecast: [],
+                extendedForecast: []
+              }}
+              forecastView={forecastView}
+              onForecastViewChange={setForecastView}
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+              availableDates={getAvailableDates()}
+            />
+          </div>
           {/* Updated CropStatusCard with navigation buttons */}
-          <div className="relative">
+          <div className="flex flex-col relative">
             {cropHistory.length > 1 && (
               <>
                 <Button
@@ -653,7 +666,9 @@ const FarmerDashboard = () => {
                 </Button>
               </>
             )}
-            <CropStatusCard cropData={cropData} onClick={handleCropCardClick} />
+            <div className="flex-grow">
+              <CropStatusCard cropData={cropData} onClick={handleCropCardClick} />
+            </div>
           </div>
         </div>
 

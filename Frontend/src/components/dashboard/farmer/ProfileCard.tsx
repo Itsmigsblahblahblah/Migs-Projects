@@ -32,7 +32,7 @@ const ProfileCard = ({ username, farmerProfile, onEditProfile }: ProfileCardProp
     };
 
     return (
-        <Card className="shadow-card">
+        <Card className="shadow-card h-full flex flex-col">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
@@ -50,7 +50,7 @@ const ProfileCard = ({ username, farmerProfile, onEditProfile }: ProfileCardProp
                     </Button>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 flex-grow">
                 <div className="flex items-center gap-4">
                     {farmerProfile.photoURL ? (
                         <img
