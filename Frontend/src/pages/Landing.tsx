@@ -151,30 +151,62 @@ const Landing = () => {
       name: "Dean Mabulay",
       role: "Lead Developer | AI Specialist",
       src: dean,
-      avatar: <img src={dean} alt="Dean Martin Mabulay" className="h-24 w-24 rounded-full object-cover" />
+      avatar: <img src={dean} alt="Dean Martin Mabulay" className="h-24 w-24 rounded-full object-cover no-select no-drag" draggable="false" />
     },
     {
       name: "Hyroin Balili",
       role: "Backend Developer",
       src: hyroin,
-      avatar: <img src={hyroin} alt="Hyroin Balili" className="h-24 w-24 rounded-full object-cover" />
+      avatar: <img src={hyroin} alt="Hyroin Balili" className="h-24 w-24 rounded-full object-cover no-select no-drag" draggable="false" />
     },
     {
       name: "Joyce Cuala",
       role: "UI/UX Designer | Research Lead",
       src: joyce,
-      avatar: <img src={joyce} alt="Joyce Ann Cuala" className="h-24 w-24 rounded-full object-cover" />
+      avatar: <img src={joyce} alt="Joyce Ann Cuala" className="h-24 w-24 rounded-full object-cover no-select no-drag" draggable="false" />
     },
     {
       name: "Dondon Esquivel",
       role: "Project Manager",
       src: dondon,
-      avatar: <img src={dondon} alt="Dondon Esquivel" className="h-24 w-24 rounded-full object-cover" />
+      avatar: <img src={dondon} alt="Dondon Esquivel" className="h-24 w-24 rounded-full object-cover no-select no-drag" draggable="false" />
     }
   ];
 
   return (
     <div className="min-h-screen bg-gradient-earth">
+      <style>{`
+        .no-select {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+          -webkit-user-drag: none;
+          -khtml-user-drag: none;
+          -moz-user-drag: none;
+          -o-user-drag: none;
+          user-drag: none;
+          -webkit-touch-callout: none;
+        }
+        .no-drag {
+          pointer-events: none;
+        }
+        .team-image-container {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+        .team-image-container img {
+          -webkit-user-drag: none;
+          -khtml-user-drag: none;
+          -moz-user-drag: none;
+          -o-user-drag: none;
+          user-drag: none;
+          -webkit-touch-callout: none;
+        }
+      `}</style>
+      
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border shadow-soft">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -542,8 +574,9 @@ const Landing = () => {
                 className="text-center transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative"
               >
                 <div 
-                  className="mx-auto mb-4 w-24 h-24 rounded-full overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-lg relative"
+                  className="mx-auto mb-4 w-24 h-24 rounded-full overflow-hidden shadow-md transition-all duration-300 group-hover:shadow-lg relative team-image-container"
                   onClick={() => setSelectedMember(member)}
+                  onContextMenu={(e) => e.preventDefault()}
                 >
                   {member.avatar}
                 </div>
@@ -617,7 +650,9 @@ const Landing = () => {
                 <img 
                   src={selectedMember.src} 
                   alt={selectedMember.name} 
-                  className="w-full max-h-[80vh] object-contain"
+                  className="w-full max-h-[80vh] object-contain no-select"
+                  draggable="false"
+                  onContextMenu={(e) => e.preventDefault()}
                 />
                 <div className="mt-4 text-center bg-background/90 backdrop-blur-sm p-4 rounded-b-lg w-full">
                   <h3 className="text-2xl font-bold text-foreground">{selectedMember.name}</h3>
