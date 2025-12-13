@@ -267,7 +267,7 @@ const Landing = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-16 md:py-24 relative">
+      <section className="py-24 md:py-36 relative">
         {/* Background image with gradient overlay */}
         <div 
           className="absolute inset-0 bg-cover bg-center z-0"
