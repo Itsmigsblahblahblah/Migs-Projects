@@ -6,19 +6,6 @@ import { Sprout, Leaf, X, RotateCcw, ChevronLeft, ChevronRight, Lightbulb } from
 import ProfileCard from "@/components/dashboard/farmer/ProfileCard";
 import WeatherCard from "@/components/dashboard/farmer/WeatherCard";
 import CropStatusCard from "@/components/dashboard/farmer/CropStatusCard";
-
-// Function to create a stable ID for weather alerts (copied from Alerts.tsx)
-const createWeatherAlertId = (description: string, date: string) => {
-  // Create a simple hash-based ID to avoid issues with special characters in btoa
-  let hash = 0;
-  const str = description + date;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return `weather-${Math.abs(hash)}`;
-};
 import ReportForm from "@/components/dashboard/farmer/ReportForm";
 import RecommendationResults from "@/components/dashboard/farmer/RecommendationResults";
 import QuickStats from "@/components/dashboard/farmer/QuickStats";
@@ -47,8 +34,20 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import MaintenanceChecklistCard from "@/components/dashboard/farmer/MaintenanceChecklistCard";
+import AdvisoryContainer from "@/components/dashboard/farmer/AdvisoryContainer";
 
-// Removed mock data
+// Function to create a stable ID for weather alerts (copied from Alerts.tsx)
+const createWeatherAlertId = (description: string, date: string) => {
+  // Create a simple hash-based ID to avoid issues with special characters in btoa
+  let hash = 0;
+  const str = description + date;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return `weather-${Math.abs(hash)}`;
+};
 
 // Mock checklist data - copied from CropDetails.tsx
 interface ChecklistItem {
@@ -671,6 +670,9 @@ const FarmerDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Advisory Container - NEW */}
+        <AdvisoryContainer />
 
         {/* Report Input Form - now full width */}
         <div className="w-full">
