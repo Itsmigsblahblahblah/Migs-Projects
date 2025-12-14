@@ -242,7 +242,7 @@ const WeatherCard = ({
                         </div>
                         <Button 
                             variant="outline" 
-                            className="w-full mt-3"
+                            className="w-full mt-3 text-white bg-gradient-primary hover:opacity-90 hover:text-white transition-opacity"
                             onClick={() => setIsWeekModalOpen(true)}
                         >
                             View Detailed Forecast
@@ -292,7 +292,7 @@ const WeatherCard = ({
                         </div>
                         <Button 
                             variant="outline" 
-                            className="w-full mt-3"
+                            className="w-full mt-3 text-white bg-gradient-primary hover:opacity-90 hover:text-white transition-opacity"
                             onClick={() => setIsSixteenModalOpen(true)}
                         >
                             View Detailed Forecast
