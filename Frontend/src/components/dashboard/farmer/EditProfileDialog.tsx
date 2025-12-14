@@ -193,6 +193,40 @@ const EditProfileDialog = ({
         setLastName(e.target.value);
     };
 
+    // Handle input change for contact number
+    const handleContactNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.replace(/\D/g, ''); // Remove non-digit characters
+        handleProfileInputChange({
+            target: { name: "contactNumber", value }
+        } as React.ChangeEvent<HTMLInputElement>);
+    };
+
+    // Format contact number for display
+    const formatContactNumberDisplay = (contactNumber: string) => {
+        if (!contactNumber) return '';
+        
+        // If it already has the +63 prefix, remove it first
+        let cleaned = contactNumber.replace(/\D/g, '');
+        if (contactNumber.startsWith('+63')) {
+            // Remove the first 2 digits (63) if it starts with +63
+            if (cleaned.startsWith('63') && cleaned.length > 2) {
+                cleaned = cleaned.substring(2);
+            }
+        }
+        
+        const limited = cleaned.slice(0, 10);
+        
+        if (limited.length <= 3) {
+            return limited;
+        }
+        
+        if (limited.length <= 6) {
+            return `${limited.slice(0, 3)} ${limited.slice(3)}`;
+        }
+        
+        return `${limited.slice(0, 3)} ${limited.slice(3, 6)} ${limited.slice(6)}`;
+    };
+
     // Handle save changes with combined full name
     const handleSaveChanges = async () => {
         setIsSaving(true);
@@ -263,14 +297,29 @@ const EditProfileDialog = ({
                     {/* Contact Number - Full width */}
                     <div className="space-y-2">
                         <Label htmlFor="profile-contactNumber">Contact Number</Label>
-                        <Input
-                            id="profile-contactNumber"
-                            name="contactNumber"
-                            value={farmerProfile.contactNumber}
-                            onChange={handleProfileInputChange}
-                            placeholder="e.g., 09123456789"
-                            disabled={isSaving}
-                        />
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none bg-gray-100 dark:bg-gray-800 rounded-l-md border-r border-gray-300 dark:border-gray-600">
+                                <span className="text-gray-500 dark:text-gray-400 font-medium">+63</span>
+                            </div>
+                            <Input
+                                id="profile-contactNumber"
+                                name="contactNumber"
+                                value={formatContactNumberDisplay(farmerProfile.contactNumber)}
+                                onChange={handleContactNumberChange}
+                                placeholder="9xx xxx xxxx"
+                                disabled={isSaving}
+                                className="pl-16"
+                                maxLength={12}
+                            />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Enter your 10-digit Philippine mobile number (e.g., 9123456789)
+                        </p>
+                        {farmerProfile.contactNumber && (
+                            <p className="text-xs text-muted-foreground">
+                                Will be stored as: <span className="font-medium">+63{farmerProfile.contactNumber.replace(/\s/g, '').replace('+63', '')}</span>
+                            </p>
+                        )}
                     </div>
 
                     {/* Email (Disabled) - Full width */}

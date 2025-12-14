@@ -11,6 +11,7 @@ interface ProfileCardProps {
         farmArea: string;
         farmAddress: string;
         homeAddress: string;
+        contactNumber: string;
         createdAt?: string;
     };
     onEditProfile: () => void;
@@ -29,6 +30,25 @@ const ProfileCard = ({ username, farmerProfile, onEditProfile }: ProfileCardProp
         } catch {
             return 'Unknown';
         }
+    };
+
+    // Format contact number for display
+    const formatContactNumber = (contactNumber: string) => {
+        if (!contactNumber) return 'Not provided';
+        
+        // If it already has the +63 prefix, return as is
+        if (contactNumber.startsWith('+63')) {
+            return contactNumber;
+        }
+        
+        // Otherwise format with +63 prefix
+        const cleaned = contactNumber.replace(/\D/g, '');
+        if (cleaned.length === 10 && cleaned.startsWith('9')) {
+            return `+63 ${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+        }
+        
+        // Fallback for any other format
+        return `+63 ${contactNumber}`;
     };
 
     return (
@@ -74,6 +94,10 @@ const ProfileCard = ({ username, farmerProfile, onEditProfile }: ProfileCardProp
                 </div>
                 <Separator />
                 <div className="space-y-2">
+                    <div className="flex justify-between">
+                        <span className="text-muted-foreground">Contact:</span>
+                        <span>{formatContactNumber(farmerProfile.contactNumber)}</span>
+                    </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Farm Area:</span>
                         <span>{farmerProfile.farmArea || '2.5 hectares'}</span>

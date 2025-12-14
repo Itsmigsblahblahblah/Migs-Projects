@@ -33,7 +33,8 @@ const Login = () => {
     password: "",
     firstName: "",
     lastName: "",
-    farmAddress: ""
+    farmAddress: "",
+    contactNumber: ""
   });
 
   // Barangay options
@@ -94,6 +95,38 @@ const Login = () => {
     setSearchTerm("");
   };
 
+  // Handle input change for contact number
+  const handleContactNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, ''); // Remove non-digit characters
+    setCredentials({ ...credentials, contactNumber: value });
+  };
+
+  // Format contact number for display
+  const formatContactNumberDisplay = (contactNumber: string) => {
+    if (!contactNumber) return '';
+    
+    // If it already has the +63 prefix, remove it first
+    let cleaned = contactNumber.replace(/\D/g, '');
+    if (contactNumber.startsWith('+63')) {
+      // Remove the first 2 digits (63) if it starts with +63
+      if (cleaned.startsWith('63') && cleaned.length > 2) {
+        cleaned = cleaned.substring(2);
+      }
+    }
+    
+    const limited = cleaned.slice(0, 10);
+    
+    if (limited.length <= 3) {
+      return limited;
+    }
+    
+    if (limited.length <= 6) {
+      return `${limited.slice(0, 3)} ${limited.slice(3)}`;
+    }
+    
+    return `${limited.slice(0, 3)} ${limited.slice(3, 6)} ${limited.slice(6)}`;
+  };
+
   // Check if user is already authenticated on component mount
   useEffect(() => {
     const userRole = localStorage.getItem('userRole');
@@ -136,6 +169,13 @@ const Login = () => {
       if (farmerDoc.exists()) {
         // Existing farmer - login
         const farmerData = farmerDoc.data();
+        
+        // Clean the contact number by removing the +63 prefix if present
+        const rawContactNumber = farmerData.contactNumber || "";
+        const cleanContactNumber = rawContactNumber.startsWith("+63 ") 
+            ? rawContactNumber.substring(4).replace(/\s/g, '') 
+            : rawContactNumber.replace("+63", "").replace(/\s/g, '');
+        
         localStorage.setItem('userRole', 'farmer');
         localStorage.setItem('userId', user.uid);
         localStorage.setItem('username', farmerData.fullName);
@@ -155,6 +195,7 @@ const Login = () => {
           email: user.email,
           fullName: displayName,
           farmAddress: `${displayName}'s Farm`,
+          contactNumber: "", // Will be added later by user in profile settings
           role: "farmer",
           createdAt: new Date().toISOString(),
           uid: user.uid,
@@ -187,8 +228,17 @@ const Login = () => {
     setSuccessMessage("");
 
     try {
-      if (!credentials.email || !credentials.password || !credentials.firstName || !credentials.lastName || !credentials.farmAddress) {
+      if (!credentials.email || !credentials.password || !credentials.firstName || !credentials.lastName || !credentials.farmAddress || !credentials.contactNumber) {
         setError("Please fill in all fields");
+        setLoading(false);
+        return;
+      }
+
+      // Validate contact number format (Philippines format: 9 followed by 9 digits)
+      const cleanContactNumber = credentials.contactNumber.replace(/\s/g, '');
+      const mobileRegex = /^9\d{9}$/;
+      if (!mobileRegex.test(cleanContactNumber)) {
+        setError("Please enter a valid Philippine mobile number starting with 9 followed by 9 digits (e.g., 9123456789)");
         setLoading(false);
         return;
       }
@@ -213,6 +263,7 @@ const Login = () => {
       await setDoc(doc(db, "farmers", userCredential.user.uid), {
         email: credentials.email,
         fullName: fullName,
+        contactNumber: `+63${cleanContactNumber}`, // Add +63 prefix
         farmAddress: credentials.farmAddress,
         role: "farmer",
         createdAt: new Date().toISOString(),
@@ -240,7 +291,8 @@ const Login = () => {
         password: "",
         firstName: "",
         lastName: "",
-        farmAddress: ""
+        farmAddress: "",
+        contactNumber: ""
       });
 
     } catch (err: any) {
@@ -308,6 +360,7 @@ const Login = () => {
           email: userCredential.user.email,
           fullName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer',
           farmAddress: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
+          contactNumber: "", // Will be added later by user in profile settings
           role: "farmer",
           createdAt: new Date().toISOString(),
           uid: userCredential.user.uid,
@@ -318,6 +371,7 @@ const Login = () => {
           email: userCredential.user.email,
           fullName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer',
           farmAddress: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
+          contactNumber: "", // Will be added later by user in profile settings
           role: "farmer",
           createdAt: new Date().toISOString(),
           uid: userCredential.user.uid,
@@ -335,6 +389,12 @@ const Login = () => {
         await updateDoc(doc(db, "farmers", userCredential.user.uid), {
           emailVerified: true
         });
+        
+        // Clean the contact number by removing the +63 prefix if present
+        const rawContactNumber = farmerData.contactNumber || "";
+        const cleanContactNumber = rawContactNumber.startsWith("+63 ") 
+            ? rawContactNumber.substring(4).replace(/\s/g, '') 
+            : rawContactNumber.replace("+63", "").replace(/\s/g, '');
         
         // Store user info using the original data from signup
         localStorage.setItem('userRole', 'farmer');
@@ -708,6 +768,38 @@ const Login = () => {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* Contact Number Field */}
+                <div className="space-y-2 group mt-10">
+                  <Label htmlFor="contactNumber" className="flex items-center gap-2">
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                    Contact Number
+                  </Label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none bg-gray-100 dark:bg-gray-800 rounded-l-md border-r border-gray-300 dark:border-gray-600">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium">+63</span>
+                    </div>
+                    <Input
+                      id="contactNumber"
+                      type="tel"
+                      placeholder="9xx xxx xxxx"
+                      value={formatContactNumberDisplay(credentials.contactNumber)}
+                      onChange={handleContactNumberChange}
+                      className="peer pl-16"
+                      maxLength={12}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Enter your 10-digit Philippine mobile number (e.g., 9123456789)
+                  </p>
+                  {credentials.contactNumber && (
+                    <p className="text-xs text-muted-foreground">
+                      Will be stored as: <span className="font-medium">+63{credentials.contactNumber.replace(/\s/g, '').replace('+63', '')}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2 group mt-10">
