@@ -6,7 +6,6 @@ import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, upda
 import { db, auth } from "@/firebaseConfig";
 import { deleteUser, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { generateDeletionRequestId } from "@/lib/idUtils"; // Added import for ID generation
-import { sendWeatherAlertSMS } from "@/services/smsService";
 
 // Weather data interface
 interface WeatherData {
@@ -319,186 +318,90 @@ export const useFarmerDashboard = () => {
         return forecast;
     };
 
-    // Helper function to detect alerts for current conditions
+    // Helper function to detect weather alerts based on conditions
     const detectWeatherAlerts = (weatherCode: number, weatherData: any): WeatherAlert[] => {
         const alerts: WeatherAlert[] = [];
         
         // Thunderstorm alerts (codes 95, 96, 99)
         if ([95, 96, 99].includes(weatherCode)) {
-            const alertDescription = weatherCode === 99 ? 'Thunderstorm with heavy hail' : 
-                                   weatherCode === 96 ? 'Thunderstorm with slight hail' : 'Thunderstorm';
-            const alertKey = generateAlertKey(alertDescription, 'thunderstorm');
-            
             alerts.push({
                 type: 'thunderstorm',
                 severity: weatherCode === 99 ? 'severe' : weatherCode === 96 ? 'high' : 'moderate',
-                description: alertDescription,
+                description: weatherCode === 99 ? 'Thunderstorm with heavy hail' : 
+                            weatherCode === 96 ? 'Thunderstorm with slight hail' : 'Thunderstorm',
                 icon: '⚡'
             });
-            
-            // Send SMS for thunderstorm alerts (non-blocking) if not already sent
-            if (!hasAlertSMSSent(alertKey)) {
-              sendWeatherAlertSMS(alertDescription)
-                .then(() => markAlertSMSSent(alertKey))
-                .catch(error => {
-                    console.error("Failed to send thunderstorm alert SMS:", error);
-                });
-            }
         }
         
         // Heavy rain alerts (codes 65, 82)
         if ([65, 82].includes(weatherCode)) {
-            const alertDescription = weatherCode === 65 ? 'Heavy rain' : 'Heavy showers';
-            const alertKey = generateAlertKey(alertDescription, 'heavyRain');
-            
             alerts.push({
                 type: 'heavyRain',
                 severity: 'high',
-                description: alertDescription,
+                description: weatherCode === 65 ? 'Heavy rain' : 'Heavy showers',
                 icon: '🌧️'
             });
-            
-            // Send SMS for heavy rain alerts (non-blocking) if not already sent
-            if (!hasAlertSMSSent(alertKey)) {
-              sendWeatherAlertSMS(alertDescription)
-                .then(() => markAlertSMSSent(alertKey))
-                .catch(error => {
-                    console.error("Failed to send heavy rain alert SMS:", error);
-                });
-            }
         }
         
         // High wind alerts (wind speed > 40 km/h)
         if (weatherData?.wind_speed_10m > 40) {
             // Typhoon alerts for very high winds (> 118 km/h)
             if (weatherData.wind_speed_10m > 118) {
-                const alertDescription = `Typhoon conditions (${Math.round(weatherData.wind_speed_10m)} km/h winds)`;
-                const alertKey = generateAlertKey(alertDescription, 'typhoon');
-                
                 alerts.push({
                     type: 'typhoon',
                     severity: 'severe',
-                    description: alertDescription,
+                    description: `Typhoon conditions (${Math.round(weatherData.wind_speed_10m)} km/h winds)`,
                     icon: '🌪️'
                 });
-                
-                // Send SMS for typhoon alerts (non-blocking) if not already sent
-                if (!hasAlertSMSSent(alertKey)) {
-                  sendWeatherAlertSMS(alertDescription)
-                    .then(() => markAlertSMSSent(alertKey))
-                    .catch(error => {
-                        console.error("Failed to send typhoon alert SMS:", error);
-                    });
-                }
             } 
             // Cyclone alerts for high winds (> 63 km/h)
             else if (weatherData.wind_speed_10m > 63) {
-                const alertDescription = `Cyclone conditions (${Math.round(weatherData.wind_speed_10m)} km/h winds)`;
-                const alertKey = generateAlertKey(alertDescription, 'cyclone');
-                
                 alerts.push({
                     type: 'cyclone',
                     severity: weatherData.wind_speed_10m > 89 ? 'severe' : 'high',
-                    description: alertDescription,
+                    description: `Cyclone conditions (${Math.round(weatherData.wind_speed_10m)} km/h winds)`,
                     icon: '🌀'
                 });
-                
-                // Send SMS for cyclone alerts (non-blocking) if not already sent
-                if (!hasAlertSMSSent(alertKey)) {
-                  sendWeatherAlertSMS(alertDescription)
-                    .then(() => markAlertSMSSent(alertKey))
-                    .catch(error => {
-                        console.error("Failed to send cyclone alert SMS:", error);
-                    });
-                }
             }
             // General high wind alert
             else {
-                const alertDescription = `High winds (${Math.round(weatherData.wind_speed_10m)} km/h)`;
-                const alertKey = generateAlertKey(alertDescription, 'highWind');
-                
                 alerts.push({
                     type: 'highWind',
                     severity: weatherData.wind_speed_10m > 60 ? 'severe' : 'high',
-                    description: alertDescription,
+                    description: `High winds (${Math.round(weatherData.wind_speed_10m)} km/h)`,
                     icon: '💨'
                 });
-                
-                // Send SMS for high wind alerts (non-blocking) if not already sent
-                if (!hasAlertSMSSent(alertKey)) {
-                  sendWeatherAlertSMS(alertDescription)
-                    .then(() => markAlertSMSSent(alertKey))
-                    .catch(error => {
-                        console.error("Failed to send high wind alert SMS:", error);
-                    });
-                }
             }
         }
         
         // Extreme heat alerts (temperature > 35°C)
         if (weatherData?.temperature_2m > 35) {
-            const alertDescription = `Extreme heat (${Math.round(weatherData.temperature_2m)}°C)`;
-            const alertKey = generateAlertKey(alertDescription, 'extremeHeat');
-            
             alerts.push({
                 type: 'extremeHeat',
                 severity: weatherData.temperature_2m > 40 ? 'severe' : 'moderate',
-                description: alertDescription,
+                description: `Extreme heat (${Math.round(weatherData.temperature_2m)}°C)`,
                 icon: '🌡️'
             });
-            
-            // Send SMS for extreme heat alerts (non-blocking) if not already sent
-            if (!hasAlertSMSSent(alertKey)) {
-              sendWeatherAlertSMS(alertDescription)
-                .then(() => markAlertSMSSent(alertKey))
-                .catch(error => {
-                    console.error("Failed to send extreme heat alert SMS:", error);
-                });
-            }
         }
         
         // Heavy precipitation probability alerts (> 80%)
         if (weatherData?.precipitation_probability > 80) {
-            const alertDescription = `High chance of rain (${weatherData.precipitation_probability}%)`;
-            const alertKey = generateAlertKey(alertDescription, 'heavyRain');
-            
             alerts.push({
                 type: 'heavyRain',
                 severity: 'moderate',
-                description: alertDescription,
+                description: `High chance of rain (${weatherData.precipitation_probability}%)`,
                 icon: '☔'
             });
-            
-            // Send SMS for heavy rain probability alerts (non-blocking) if not already sent
-            if (!hasAlertSMSSent(alertKey)) {
-              sendWeatherAlertSMS(alertDescription)
-                .then(() => markAlertSMSSent(alertKey))
-                .catch(error => {
-                    console.error("Failed to send heavy rain probability alert SMS:", error);
-                });
-            }
         }
         
         // Monsoon alerts based on sustained high humidity and rain
         if (weatherData?.relative_humidity_2m > 80 && weatherData?.rain > 5) {
-            const alertDescription = 'Monsoon conditions detected';
-            const alertKey = generateAlertKey(alertDescription, 'monsoon');
-            
             alerts.push({
                 type: 'monsoon',
                 severity: 'moderate',
-                description: alertDescription,
+                description: 'Monsoon conditions detected',
                 icon: '🌊'
             });
-            
-            // Send SMS for monsoon alerts (non-blocking) if not already sent
-            if (!hasAlertSMSSent(alertKey)) {
-              sendWeatherAlertSMS(alertDescription)
-                .then(() => markAlertSMSSent(alertKey))
-                .catch(error => {
-                    console.error("Failed to send monsoon alert SMS:", error);
-                });
-            }
         }
         
         return alerts;
@@ -510,158 +413,74 @@ export const useFarmerDashboard = () => {
         
         // Thunderstorm alerts (codes 95, 96, 99)
         if ([95, 96, 99].includes(weatherCode)) {
-            const alertDescription = weatherCode === 99 ? 'Thunderstorm with heavy hail' : 
-                                   weatherCode === 96 ? 'Thunderstorm with slight hail' : 'Thunderstorm';
-            const alertKey = generateAlertKey(alertDescription, 'thunderstorm', dailyData?.time?.[index]);
-            
             alerts.push({
                 type: 'thunderstorm',
                 severity: weatherCode === 99 ? 'severe' : weatherCode === 96 ? 'high' : 'moderate',
-                description: alertDescription,
+                description: weatherCode === 99 ? 'Thunderstorm with heavy hail' : 
+                            weatherCode === 96 ? 'Thunderstorm with slight hail' : 'Thunderstorm',
                 icon: '⚡'
             });
-            
-            // Send SMS for thunderstorm alerts (non-blocking) if not already sent
-            if (!hasAlertSMSSent(alertKey)) {
-              sendWeatherAlertSMS(alertDescription)
-                .then(() => markAlertSMSSent(alertKey))
-                .catch(error => {
-                    console.error("Failed to send thunderstorm forecast alert SMS:", error);
-                });
-            }
         }
         
         // Heavy rain alerts based on precipitation sum
         if (dailyData?.precipitation_sum?.[index] > 20) {
-            const alertDescription = `Heavy rain expected (${Math.round(dailyData.precipitation_sum[index])}mm)`;
-            const alertKey = generateAlertKey(alertDescription, 'heavyRain', dailyData?.time?.[index]);
-            
             alerts.push({
                 type: 'heavyRain',
                 severity: dailyData.precipitation_sum[index] > 50 ? 'severe' : 'high',
-                description: alertDescription,
+                description: `Heavy rain expected (${Math.round(dailyData.precipitation_sum[index])}mm)`,
                 icon: '🌧️'
             });
-            
-            // Send SMS for heavy rain forecast alerts (non-blocking) if not already sent
-            if (!hasAlertSMSSent(alertKey)) {
-              sendWeatherAlertSMS(alertDescription)
-                .then(() => markAlertSMSSent(alertKey))
-                .catch(error => {
-                    console.error("Failed to send heavy rain forecast alert SMS:", error);
-                });
-            }
         }
         
         // High wind alerts
         if (dailyData?.wind_speed_10m_max?.[index] > 40) {
             // Typhoon alerts for very high winds (> 118 km/h)
             if (dailyData.wind_speed_10m_max[index] > 118) {
-                const alertDescription = `Typhoon expected (${Math.round(dailyData.wind_speed_10m_max[index])} km/h winds)`;
-                const alertKey = generateAlertKey(alertDescription, 'typhoon', dailyData?.time?.[index]);
-                
                 alerts.push({
                     type: 'typhoon',
                     severity: 'severe',
-                    description: alertDescription,
+                    description: `Typhoon expected (${Math.round(dailyData.wind_speed_10m_max[index])} km/h winds)`,
                     icon: '🌪️'
                 });
-                
-                // Send SMS for typhoon forecast alerts (non-blocking) if not already sent
-                if (!hasAlertSMSSent(alertKey)) {
-                  sendWeatherAlertSMS(alertDescription)
-                    .then(() => markAlertSMSSent(alertKey))
-                    .catch(error => {
-                        console.error("Failed to send typhoon forecast alert SMS:", error);
-                    });
-                }
             } 
             // Cyclone alerts for high winds (> 63 km/h)
             else if (dailyData.wind_speed_10m_max[index] > 63) {
-                const alertDescription = `Cyclone expected (${Math.round(dailyData.wind_speed_10m_max[index])} km/h winds)`;
-                const alertKey = generateAlertKey(alertDescription, 'cyclone', dailyData?.time?.[index]);
-                
                 alerts.push({
                     type: 'cyclone',
                     severity: dailyData.wind_speed_10m_max[index] > 89 ? 'severe' : 'high',
-                    description: alertDescription,
+                    description: `Cyclone expected (${Math.round(dailyData.wind_speed_10m_max[index])} km/h winds)`,
                     icon: '🌀'
                 });
-                
-                // Send SMS for cyclone forecast alerts (non-blocking) if not already sent
-                if (!hasAlertSMSSent(alertKey)) {
-                  sendWeatherAlertSMS(alertDescription)
-                    .then(() => markAlertSMSSent(alertKey))
-                    .catch(error => {
-                        console.error("Failed to send cyclone forecast alert SMS:", error);
-                    });
-                }
             }
             // General high wind alert
             else {
-                const alertDescription = `High winds expected (${Math.round(dailyData.wind_speed_10m_max[index])} km/h)`;
-                const alertKey = generateAlertKey(alertDescription, 'highWind', dailyData?.time?.[index]);
-                
                 alerts.push({
                     type: 'highWind',
                     severity: dailyData.wind_speed_10m_max[index] > 60 ? 'severe' : 'high',
-                    description: alertDescription,
+                    description: `High winds expected (${Math.round(dailyData.wind_speed_10m_max[index])} km/h)`,
                     icon: '💨'
                 });
-                
-                // Send SMS for high wind forecast alerts (non-blocking) if not already sent
-                if (!hasAlertSMSSent(alertKey)) {
-                  sendWeatherAlertSMS(alertDescription)
-                    .then(() => markAlertSMSSent(alertKey))
-                    .catch(error => {
-                        console.error("Failed to send high wind forecast alert SMS:", error);
-                    });
-                }
             }
         }
         
         // High precipitation probability alerts
         if (dailyData?.precipitation_probability_max?.[index] > 80) {
-            const alertDescription = `High chance of rain (${dailyData.precipitation_probability_max[index]}%)`;
-            const alertKey = generateAlertKey(alertDescription, 'heavyRain', dailyData?.time?.[index]);
-            
             alerts.push({
                 type: 'heavyRain',
                 severity: 'moderate',
-                description: alertDescription,
+                description: `High chance of rain (${dailyData.precipitation_probability_max[index]}%)`,
                 icon: '☔'
             });
-            
-            // Send SMS for heavy rain probability forecast alerts (non-blocking) if not already sent
-            if (!hasAlertSMSSent(alertKey)) {
-              sendWeatherAlertSMS(alertDescription)
-                .then(() => markAlertSMSSent(alertKey))
-                .catch(error => {
-                    console.error("Failed to send heavy rain probability forecast alert SMS:", error);
-                });
-            }
         }
         
         // Monsoon alerts based on high precipitation and wind patterns
         if (dailyData?.precipitation_sum?.[index] > 15 && dailyData?.wind_speed_10m_max?.[index] > 30) {
-            const alertDescription = 'Monsoon conditions expected';
-            const alertKey = generateAlertKey(alertDescription, 'monsoon', dailyData?.time?.[index]);
-            
             alerts.push({
                 type: 'monsoon',
                 severity: 'moderate',
-                description: alertDescription,
+                description: 'Monsoon conditions expected',
                 icon: '🌊'
             });
-            
-            // Send SMS for monsoon forecast alerts (non-blocking) if not already sent
-            if (!hasAlertSMSSent(alertKey)) {
-              sendWeatherAlertSMS(alertDescription)
-                .then(() => markAlertSMSSent(alertKey))
-                .catch(error => {
-                    console.error("Failed to send monsoon forecast alert SMS:", error);
-                });
-            }
         }
         
         return alerts;
@@ -1032,49 +851,4 @@ export const useFarmerDashboard = () => {
         editProfileData,
         resetEditProfileData
     };
-};
-
-// Helper function to generate a unique key for an alert
-const generateAlertKey = (description: string, type: string, date?: string): string => {
-  // Create a simple hash of the description and type
-  let hash = 0;
-  const str = description + type + (date || '');
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return `alert_${Math.abs(hash)}`;
-};
-
-// Helper function to check if an alert SMS has already been sent
-const hasAlertSMSSent = (alertKey: string): boolean => {
-  try {
-    const sentAlerts = JSON.parse(localStorage.getItem('sentWeatherAlerts') || '{}');
-    return !!sentAlerts[alertKey];
-  } catch (error) {
-    console.error('Error checking if alert SMS was sent:', error);
-    return false;
-  }
-};
-
-// Helper function to mark an alert SMS as sent
-const markAlertSMSSent = (alertKey: string): void => {
-  try {
-    const sentAlerts = JSON.parse(localStorage.getItem('sentWeatherAlerts') || '{}');
-    sentAlerts[alertKey] = Date.now();
-    localStorage.setItem('sentWeatherAlerts', JSON.stringify(sentAlerts));
-    
-    // Clean up old entries (older than 7 days)
-    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-    const cleanedAlerts: Record<string, number> = {};
-    for (const [key, timestamp] of Object.entries(sentAlerts)) {
-      if (typeof timestamp === 'number' && timestamp > sevenDaysAgo) {
-        cleanedAlerts[key] = timestamp;
-      }
-    }
-    localStorage.setItem('sentWeatherAlerts', JSON.stringify(cleanedAlerts));
-  } catch (error) {
-    console.error('Error marking alert SMS as sent:', error);
-  }
 };
