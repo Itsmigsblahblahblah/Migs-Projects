@@ -117,7 +117,7 @@ const MarketDemand = () => {
     if (loading) {
       timeoutId = setTimeout(() => {
         setLoadingTimeout(true);
-      }, 8000); // Show timeout warning after 8 seconds
+      }, 15000); // Show timeout warning after 15 seconds (increased from 8 seconds)
     } else {
       setLoadingTimeout(false);
     }

@@ -62,6 +62,28 @@ HYPERPARAMETERS = {
 np.random.seed(HYPERPARAMETERS['random_seed'])
 tf.random.set_seed(HYPERPARAMETERS['random_seed'])
 
+# Warm-up configuration
+WARMUP_ENABLED = True
+WARMUP_DATA = {
+    'soil_data': {
+        'pH': 6.5,
+        'Nitrogen': 'M',
+        'Phosphorus': 'M',
+        'Potassium': 'M'
+    },
+    'weather_data': {
+        'temperature': 25.0,
+        'humidity': 60.0,
+        'precipitation_probability': 50.0,
+        'wind_speed': 10.0,
+        'uv_index': 5.0
+    },
+    'market_context': {
+        'season': 'dry',
+        'month': 6
+    }
+}
+
 
 class EnhancedSoilCropTransformer:
     """Enhanced model for crop recommendation based on soil, weather, and market data"""
@@ -922,6 +944,15 @@ def main():
             model.load_model('models/fair_soil_crop_transformer.keras',
                              'models/fair_soil_preprocessing_pipeline.pkl')
             logger.info("Fair model loaded successfully")
+            # Perform warm-up after model loading
+            if WARMUP_ENABLED:
+                logger.info("Performing model warm-up...")
+                try:
+                    model.predict(
+                        WARMUP_DATA['soil_data'], WARMUP_DATA['weather_data'], WARMUP_DATA['market_context'])
+                    logger.info("Model warm-up completed successfully")
+                except Exception as warmup_error:
+                    logger.warning(f"Model warm-up failed: {warmup_error}")
         except Exception as e:
             logger.warning(f"Could not load fair model: {e}")
             # Fallback to the original model
@@ -929,6 +960,15 @@ def main():
                 model.load_model('models/enhanced_soil_crop_transformer.keras',
                                  'models/enhanced_soil_preprocessing_pipeline.pkl')
                 logger.info("Original model loaded as fallback")
+                # Perform warm-up after model loading
+                if WARMUP_ENABLED:
+                    logger.info("Performing model warm-up...")
+                    try:
+                        model.predict(
+                            WARMUP_DATA['soil_data'], WARMUP_DATA['weather_data'], WARMUP_DATA['market_context'])
+                        logger.info("Model warm-up completed successfully")
+                    except Exception as warmup_error:
+                        logger.warning(f"Model warm-up failed: {warmup_error}")
             except Exception as e2:
                 logger.error(f"Could not load original model either: {e2}")
                 raise e2

@@ -22,6 +22,19 @@ try:
     model.load_model('models/vegetable_demand_transformer.keras',
                      'models/vegetable_preprocessing_pipeline.pkl')
     logger.info("Vegetable demand model loaded successfully")
+    # Perform warm-up after model loading
+    if WARMUP_ENABLED:
+        logger.info("Performing model warm-up...")
+        try:
+            model.predict_demand(
+                WARMUP_DATA['vegetable_name'],
+                WARMUP_DATA['historical_prices'],
+                WARMUP_DATA['historical_annual_prices'],
+                WARMUP_DATA['historical_months']
+            )
+            logger.info("Model warm-up completed successfully")
+        except Exception as warmup_error:
+            logger.warning(f"Model warm-up failed: {warmup_error}")
 except Exception as e:
     logger.error(f"Failed to load vegetable demand model: {e}")
     model = None

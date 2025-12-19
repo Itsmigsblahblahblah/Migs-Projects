@@ -864,10 +864,10 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     let timeoutId: NodeJS.Timeout;
     
     if (loading) {
-      // Reduced timeout to 5 seconds for better user experience
+      // Increased timeout to 15 seconds for better user experience
       timeoutId = setTimeout(() => {
         setLoadingTimeout(true);
-      }, 5000); // Show timeout warning after 5 seconds instead of 8
+      }, 15000); // Show timeout warning after 15 seconds instead of 5
     } else {
       setLoadingTimeout(false);
     }

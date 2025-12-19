@@ -5,8 +5,8 @@
 
 // Cache key for localStorage
 const MARKET_DEMAND_CACHE_KEY = 'marketDemandMultiCache';
-// Cache duration - 1 hour (in milliseconds)
-const CACHE_DURATION = 60 * 60 * 1000;
+// Cache duration - 2 hours (in milliseconds) for better performance
+const CACHE_DURATION = 2 * 60 * 60 * 1000;
 
 /**
  * Get cached market demand data from localStorage if available and valid

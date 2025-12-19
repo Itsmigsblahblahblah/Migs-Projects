@@ -4,8 +4,8 @@
 
 // Cache key for localStorage (for persistent cache across sessions)
 const RECOMMENDATION_CACHE_KEY = 'recommendationSessionCache';
-// Cache duration - 5 minutes (in milliseconds) for faster refresh
-const CACHE_DURATION = 5 * 60 * 1000;
+// Cache duration - 15 minutes (in milliseconds) for better performance
+const CACHE_DURATION = 15 * 60 * 1000;
 
 /**
  * Get cached recommendation data from localStorage if available and valid

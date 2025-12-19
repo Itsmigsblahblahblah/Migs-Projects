@@ -21,6 +21,15 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Warm-up configuration
+WARMUP_ENABLED = True
+WARMUP_DATA = {
+    'vegetable_name': 'CABBAGE (REPOLYO), 1 KG',
+    'historical_prices': [70.0, 72.0, 68.0, 71.0, 73.0, 69.0, 74.0, 75.0, 72.0, 70.0, 71.0, 73.0],
+    'historical_annual_prices': [80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0],
+    'historical_months': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+}
+
 
 class VegetableDemandTransformer:
     """Transformer-based model for vegetable demand prediction"""
