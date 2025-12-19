@@ -144,6 +144,7 @@ async def recommend_crops(top_n: int = 10, month: int | None = None, year: int |
             top_n = 100
 
         # Get recommendations with time-specific filtering
+        # Removed timeout for better reliability
         recommendations = model.recommend_crops(
             top_n, month, year, demand_level)
         return {"recommended_crops": recommendations}

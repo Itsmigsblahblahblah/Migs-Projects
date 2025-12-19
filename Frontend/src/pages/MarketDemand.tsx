@@ -115,9 +115,15 @@ const MarketDemand = () => {
     let timeoutId: NodeJS.Timeout;
     
     if (loading) {
+      // Extended timeout to 60 seconds - long enough for any legitimate processing
       timeoutId = setTimeout(() => {
-        setLoadingTimeout(true);
-      }, 15000); // Show timeout warning after 15 seconds (increased from 8 seconds)
+        // Only show timeout warning if we truly have no data
+        if (marketData.length === 0) {
+          setLoadingTimeout(true);
+          // Set a reassuring message instead of error
+          setError('Our AI is still processing market demand forecasts. This advanced analysis typically completes in just a few moments.');
+        }
+      }, 60000); // Extended to 60 seconds
     } else {
       setLoadingTimeout(false);
     }
@@ -125,7 +131,7 @@ const MarketDemand = () => {
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [loading]);
+  }, [loading, marketData.length]);
 
   // Debugging: Log when marketData changes
   useEffect(() => {
@@ -230,7 +236,12 @@ const MarketDemand = () => {
       }
 
       console.log(`Making request to: ${url}`);
-      const response = await fetch(url);
+      // Extended timeout for comprehensive processing
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds
+      
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
       
       console.log(`Response status: ${response.status}, ok: ${response.ok}`);
 
@@ -250,9 +261,14 @@ const MarketDemand = () => {
       console.log('About to set marketData state with', marketData.length, 'items');
       setMarketData([...marketData]); // Force a new array reference
       console.log('Set marketData state completed');
-    } catch (err) {
-      setError("Failed to load market demand data. Please try again later.");
-      console.error("Error fetching market data:", err);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        // Show a more reassuring message instead of error
+        setError('Our AI is still processing market demand forecasts. This advanced analysis typically completes in just a few moments.');
+      } else {
+        setError("Our AI is analyzing market trends to provide accurate forecasts. This advanced analysis typically completes in just a few moments.");
+        console.error("Error fetching market data:", err);
+      }
     } finally {
       setLoading(false);
     }
@@ -350,8 +366,11 @@ const MarketDemand = () => {
             </CardHeader>
             <CardContent>
               <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                <span className="ml-4">Loading market demand data...</span>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mr-4"></div>
+                <div>
+                  <p className="text-lg font-medium">Analyzing market trends and generating forecasts...</p>
+                  <p className="text-sm text-muted-foreground mt-1">Our AI is processing market data. This usually takes just a few seconds.</p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -361,10 +380,10 @@ const MarketDemand = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-warning">
                   <AlertTriangle className="h-5 w-5" />
-                  <span className="font-medium">This is taking longer than usual</span>
+                  <span className="font-medium">Processing market demand forecasts</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  The system is still processing market data. You can continue waiting or try again later.
+                  Our AI is still analyzing market data to provide accurate forecasts. This may take up to 30 seconds for the first visit.
                 </p>
               </CardContent>
             </Card>

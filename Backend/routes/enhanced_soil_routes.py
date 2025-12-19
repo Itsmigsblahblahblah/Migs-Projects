@@ -263,44 +263,18 @@ async def fair_recommend_crops(data: dict):
             raise HTTPException(
                 status_code=400, detail="pH must be between 0 and 14")
 
-        # Get predictions with data using fair model with optimized timeout
+        # Get predictions with data using fair model - removed timeout for better reliability
         try:
-            # Use a more reasonable timeout for better user experience
-            logger.info("Starting model prediction with timeout")
+            logger.info("Starting model prediction")
             prediction_start = time_module.time()
 
-            # Log the thread information
-            import threading
-            logger.info(f"Current thread: {threading.current_thread().name}")
-            logger.info(f"Current thread ID: {threading.get_ident()}")
+            # Run the prediction directly without timeout
+            predictions = model.predict(
+                soil_data, weather_data, market_context)
 
-            # Run the prediction in a separate thread with proper error handling
-            def run_prediction():
-                try:
-                    logger.info("Running prediction in executor thread")
-                    result = model.predict(
-                        soil_data, weather_data, market_context)
-                    logger.info(
-                        "Prediction completed successfully in executor thread")
-                    return result
-                except Exception as pred_error:
-                    logger.error(
-                        f"Error in prediction function: {str(pred_error)}")
-                    raise
-
-            # Reduced timeout for faster response - 10 seconds instead of 20
-            predictions = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(None, run_prediction),
-                timeout=10.0  # Reduced timeout to 10 seconds for better responsiveness
-            )
             prediction_time = time_module.time() - prediction_start
             logger.info(
                 f"Model prediction completed in {prediction_time:.4f} seconds")
-        except asyncio.TimeoutError:
-            logger.error("Prediction timed out after 10 seconds")
-            # Even on timeout, return what we have if anything
-            raise HTTPException(
-                status_code=500, detail="Request is taking longer than expected. This might be due to high server load. Please try again in a moment.")
         except Exception as e:
             logger.error(f"Error during model prediction: {str(e)}")
             import traceback

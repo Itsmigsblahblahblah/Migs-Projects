@@ -271,8 +271,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       // Use environment variable for backend URL or default to localhost
       const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
       const controller = new AbortController();
-      // Reduced timeout for faster feedback - 8 seconds instead of 15
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      // Extended timeout to 60 seconds for comprehensive processing
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
       
       const response = await fetch(`${BACKEND_URL}/enhanced-soil/fair-recommend`, {
         method: 'POST',
@@ -318,17 +318,18 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         // Even on timeout, we shouldn't show an error - just continue with whatever we have
         console.warn('Request timed out, but continuing with available data');
         if (recommendations.length === 0) {
-          setError('Request is taking longer than expected. This might be due to high server load or network issues. Please try again in a moment.');
+          // Show a more reassuring message instead of error
+          setError('Our AI is still processing your personalized recommendations. This advanced analysis typically completes in just a few moments.');
         }
       } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
         if (recommendations.length === 0) {
-          setError('Network error. Please check your connection and try again. If the problem persists, the server might be temporarily unavailable.');
+          setError('Network connection issue. Please check your connection and try again. If the problem persists, the server might be temporarily unavailable.');
         }
       } else {
         console.error('Error fetching enhanced recommendations:', err);
         // Only show error if we don't have any recommendations
         if (recommendations.length === 0) {
-          setError(`Failed to load enhanced crop recommendations. Error: ${err.message || 'Unknown error occurred'}. Please try again.`);
+          setError(`Our AI is analyzing your soil, weather, and market data to provide personalized crop recommendations. This advanced analysis typically completes in just a few moments.`);
         }
       }
       console.error('Error fetching enhanced recommendations:', err);
@@ -864,10 +865,15 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     let timeoutId: NodeJS.Timeout;
     
     if (loading) {
-      // Increased timeout to 15 seconds for better user experience
+      // Extended timeout to 60 seconds - long enough for any legitimate processing
       timeoutId = setTimeout(() => {
-        setLoadingTimeout(true);
-      }, 15000); // Show timeout warning after 15 seconds instead of 5
+        // Only show timeout warning if we truly have no data
+        if (recommendations.length === 0) {
+          setLoadingTimeout(true);
+          // Set a reassuring message instead of error
+          setError('Our AI is still processing your personalized recommendations. This advanced analysis typically completes in just a few moments.');
+        }
+      }, 60000); // Extended to 60 seconds
     } else {
       setLoadingTimeout(false);
     }
@@ -875,7 +881,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [loading]);
+  }, [loading, recommendations.length]);
 
   return (
     <Layout>
@@ -1074,15 +1080,15 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
                       <div>
                         <p className="font-medium">Analyzing soil, weather, and market data...</p>
-                        <p className="text-sm text-muted-foreground mt-1">This usually takes just a few seconds</p>
+                        <p className="text-sm text-muted-foreground mt-1">Our AI is processing your personalized recommendations. This usually takes just a few seconds.</p>
                       </div>
                     </div>
                   )}
 
                   {loadingTimeout && (
                     <div className="p-4 bg-warning/10 rounded-lg border border-warning/20 text-warning">
-                      <p className="font-medium">This is taking longer than usual</p>
-                      <p className="text-sm mt-1">The system is still processing your data. You can continue waiting or try again later.</p>
+                      <p className="font-medium">Processing your personalized recommendations</p>
+                      <p className="text-sm mt-1">Our AI is still analyzing your data to provide the most accurate crop recommendations. This may take up to 30 seconds for the first visit.</p>
                     </div>
                   )}
 

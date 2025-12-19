@@ -44,9 +44,10 @@ async def startup_event():
         # Trigger model loading for enhanced soil routes
         if hasattr(routes.enhanced_soil_routes, 'model') and routes.enhanced_soil_routes.model:
             print("Enhanced soil model loaded successfully")
-            # Perform warm-up prediction
+            # Perform comprehensive warm-up prediction with multiple scenarios
             try:
-                warmup_data = {
+                # Standard scenario
+                warmup_data_standard = {
                     "soil_data": {
                         "pH": 6.5,
                         "Nitrogen": "M",
@@ -65,33 +66,115 @@ async def startup_event():
                         "month": 6
                     }
                 }
+
+                # Additional scenarios for better cache warming
+                warmup_data_acidic = {
+                    "soil_data": {
+                        "pH": 5.5,
+                        "Nitrogen": "L",
+                        "Phosphorus": "L",
+                        "Potassium": "L"
+                    },
+                    "weather_data": {
+                        "temperature": 28.0,
+                        "humidity": 70.0,
+                        "precipitation_probability": 30.0,
+                        "wind_speed": 5.0,
+                        "uv_index": 7.0
+                    },
+                    "market_context": {
+                        "season": "wet",
+                        "month": 12
+                    }
+                }
+
+                warmup_data_alkaline = {
+                    "soil_data": {
+                        "pH": 7.5,
+                        "Nitrogen": "H",
+                        "Phosphorus": "H",
+                        "Potassium": "H"
+                    },
+                    "weather_data": {
+                        "temperature": 30.0,
+                        "humidity": 50.0,
+                        "precipitation_probability": 20.0,
+                        "wind_speed": 15.0,
+                        "uv_index": 8.0
+                    },
+                    "market_context": {
+                        "season": "dry",
+                        "month": 3
+                    }
+                }
+
+                # Execute warm-up predictions
                 routes.enhanced_soil_routes.model.predict(
-                    warmup_data["soil_data"],
-                    warmup_data["weather_data"],
-                    warmup_data["market_context"]
+                    warmup_data_standard["soil_data"],
+                    warmup_data_standard["weather_data"],
+                    warmup_data_standard["market_context"]
                 )
-                print("Enhanced soil model warm-up completed")
+                print("Enhanced soil model standard warm-up completed")
+
+                routes.enhanced_soil_routes.model.predict(
+                    warmup_data_acidic["soil_data"],
+                    warmup_data_acidic["weather_data"],
+                    warmup_data_acidic["market_context"]
+                )
+                print("Enhanced soil model acidic warm-up completed")
+
+                routes.enhanced_soil_routes.model.predict(
+                    warmup_data_alkaline["soil_data"],
+                    warmup_data_alkaline["weather_data"],
+                    warmup_data_alkaline["market_context"]
+                )
+                print("Enhanced soil model alkaline warm-up completed")
+
+                print("Enhanced soil model comprehensive warm-up completed")
             except Exception as e:
                 print(f"Enhanced soil model warm-up failed: {e}")
+        else:
+            print("Enhanced soil model not available")
 
         # Trigger model loading for vegetable routes
         if hasattr(routes.vegetable_routes, 'model') and routes.vegetable_routes.model:
             print("Vegetable demand model loaded successfully")
-            # Perform warm-up prediction
+            # Perform comprehensive warm-up prediction with multiple vegetables
             try:
-                routes.vegetable_routes.model.predict_demand(
-                    'CABBAGE (REPOLYO), 1 KG',
-                    [70.0, 72.0, 68.0, 71.0, 73.0, 69.0,
-                        74.0, 75.0, 72.0, 70.0, 71.0, 73.0],
-                    [80.0, 80.0, 80.0, 80.0, 80.0, 80.0,
-                        80.0, 80.0, 80.0, 80.0, 80.0, 80.0],
-                    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-                )
-                print("Vegetable demand model warm-up completed")
+                # Common vegetables for warm-up
+                warmup_vegetables = [
+                    ('CABBAGE (REPOLYO), 1 KG', [
+                     70.0, 72.0, 68.0, 71.0, 73.0, 69.0, 74.0, 75.0, 72.0, 70.0, 71.0, 73.0]),
+                    ('CARROTS (KAROT), 1 KG', [
+                     65.0, 67.0, 63.0, 66.0, 68.0, 64.0, 69.0, 70.0, 67.0, 65.0, 66.0, 68.0]),
+                    ('TOMATO (KAMATIS), 1 KG', [
+                     80.0, 82.0, 78.0, 81.0, 83.0, 79.0, 84.0, 85.0, 82.0, 80.0, 81.0, 83.0]),
+                    ('EGGPLANT (TALONG), 1 KG', [
+                     55.0, 57.0, 53.0, 56.0, 58.0, 54.0, 59.0, 60.0, 57.0, 55.0, 56.0, 58.0])
+                ]
+
+                annual_prices = [80.0, 80.0, 80.0, 80.0, 80.0,
+                                 80.0, 80.0, 80.0, 80.0, 80.0, 80.0, 80.0]
+                months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+                # Execute warm-up predictions for each vegetable
+                for i, (vegetable_name, historical_prices) in enumerate(warmup_vegetables):
+                    routes.vegetable_routes.model.predict_demand(
+                        vegetable_name,
+                        historical_prices,
+                        annual_prices,
+                        months
+                    )
+                    print(
+                        f"Vegetable demand model warm-up completed for {vegetable_name} ({i+1}/{len(warmup_vegetables)})")
+
+                print("Vegetable demand model comprehensive warm-up completed")
             except Exception as e:
                 print(f"Vegetable demand model warm-up failed: {e}")
+        else:
+            print("Vegetable demand model not available")
 
-        print("Model preloading and warm-up completed")
+        print("Model preloading and comprehensive warm-up completed successfully")
     except Exception as e:
         print(f"Error during model preloading: {e}")
 

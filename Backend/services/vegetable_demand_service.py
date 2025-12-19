@@ -39,6 +39,13 @@ class VegetableDemandTransformer:
         self.label_encoder = LabelEncoder()
         self.scaler = StandardScaler()
         self.preprocessor = None
+        # Add cache for recommendations with LRU eviction policy
+        self._recommend_cache = OrderedDict()
+        # Extended cache TTL for better performance - 5 minutes
+        self._cache_ttl = 300
+        self._max_cache_size = 200
+        # Pre-warmed flag
+        self.prewarmed = False
 
     def load_model(self, model_path='models/vegetable_demand_transformer.keras',
                    preprocessor_path='models/vegetable_preprocessing_pipeline.pkl'):
@@ -66,9 +73,57 @@ class VegetableDemandTransformer:
                 f"Preprocessing pipeline loaded from {preprocessor_path}")
             logger.info("Model loaded successfully")
 
+            # Pre-warm the cache after model loading
+            try:
+                self._prewarm_cache()
+            except Exception as e:
+                logger.warning(
+                    f"Failed to pre-warm cache after model loading: {e}")
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
             raise e
+
+    def _prewarm_cache(self):
+        """Pre-warm the cache with common scenarios to ensure fast first responses"""
+        if self.prewarmed or not self.model:
+            return
+
+        try:
+            logger.info(
+                "Pre-warming vegetable demand cache with common scenarios...")
+
+            # Common vegetable demand scenarios
+            common_vegetables = [
+                'CABBAGE (REPOLYO), 1 KG',
+                'CARROTS (KAROT), 1 KG',
+                'TOMATO (KAMATIS), 1 KG',
+                'EGGPLANT (TALONG), 1 KG',
+                'OKRA, 1 KG',
+                'SITAW (STRING BEAN), 1 KG'
+            ]
+
+            # Sample historical data for pre-warming
+            sample_prices = [70.0, 72.0, 68.0, 71.0, 73.0,
+                             69.0, 74.0, 75.0, 72.0, 70.0, 71.0, 73.0]
+            sample_annual_prices = [80.0] * 12
+            sample_months = list(range(1, 13))
+
+            # Pre-warm cache with these vegetables
+            for i, vegetable in enumerate(common_vegetables):
+                try:
+                    self.predict_demand(
+                        vegetable, sample_prices, sample_annual_prices, sample_months)
+                    logger.info(
+                        f"Pre-warmed vegetable {i+1}/{len(common_vegetables)}: {vegetable}")
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to pre-warm vegetable {i+1} ({vegetable}): {e}")
+
+            self.prewarmed = True
+            logger.info(
+                "Vegetable demand cache pre-warming completed successfully")
+        except Exception as e:
+            logger.error(f"Vegetable demand cache pre-warming failed: {e}")
 
     def predict_demand(self, vegetable_name, historical_prices, historical_annual_prices, historical_months):
         """

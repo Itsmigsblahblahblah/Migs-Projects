@@ -103,13 +103,15 @@ class EnhancedSoilCropTransformer:
         self.preprocessor = None
         # Add cache for predictions with LRU eviction policy
         self.prediction_cache = OrderedDict()
-        # Reduced cache TTL for more responsive updates - 30 seconds instead of 60
-        self.cache_ttl = 30
-        self.max_cache_size = 100  # Limit cache size to prevent memory issues
+        # Extended cache TTL for better performance - 5 minutes instead of 30 seconds
+        self.cache_ttl = 300
+        self.max_cache_size = 200  # Increased cache size to prevent memory issues
         # Add cache warming flag
         self.cache_warming_complete = False
         # Add lock for thread safety
         self.cache_lock = threading.Lock()
+        # Pre-warm cache with common scenarios
+        self.prewarmed = False
 
     def load_and_preprocess_data(self, soil_file='Data/brgy_soil_dataset.csv',
                                  vegetable_file='Data/vegetable_prices.csv'):
@@ -521,7 +523,7 @@ class EnhancedSoilCropTransformer:
 
             warmed_count = 0
             # Reduce the number of combinations to warm for faster startup
-            max_warm_combinations = 10  # Reduced from 20 to 10 for faster warming
+            max_warm_combinations = 15  # Increased from 10 to 15 for better coverage
 
             logger.info(
                 f"Generating predictions for combinations, will limit to {max_warm_combinations}")
@@ -847,6 +849,59 @@ class EnhancedSoilCropTransformer:
         total_load_time = time_module.time() - load_start
         logger.info(f"Total model loading time: {total_load_time:.4f} seconds")
         logger.info(f"Preprocessing pipeline loaded from {preprocessor_path}")
+
+        # Pre-warm the cache after model loading
+        try:
+            self._prewarm_cache()
+        except Exception as e:
+            logger.warning(
+                f"Failed to pre-warm cache after model loading: {e}")
+
+    def _prewarm_cache(self):
+        """Pre-warm the cache with common scenarios to ensure fast first responses"""
+        if self.prewarmed or not self.model:
+            return
+
+        try:
+            logger.info(
+                "Pre-warming prediction cache with common scenarios...")
+
+            # Common soil conditions
+            common_scenarios = [
+                # Standard conditions
+                {
+                    'soil_data': {'pH': 6.5, 'Nitrogen': 'M', 'Phosphorus': 'M', 'Potassium': 'M'},
+                    'weather_data': {'temperature': 25.0, 'humidity': 60.0, 'precipitation_probability': 50.0, 'wind_speed': 10.0, 'uv_index': 5.0},
+                    'market_context': {'season': 'dry', 'month': 6}
+                },
+                # Acidic soil
+                {
+                    'soil_data': {'pH': 5.5, 'Nitrogen': 'L', 'Phosphorus': 'L', 'Potassium': 'L'},
+                    'weather_data': {'temperature': 28.0, 'humidity': 70.0, 'precipitation_probability': 30.0, 'wind_speed': 5.0, 'uv_index': 7.0},
+                    'market_context': {'season': 'wet', 'month': 12}
+                },
+                # Alkaline soil
+                {
+                    'soil_data': {'pH': 7.5, 'Nitrogen': 'H', 'Phosphorus': 'H', 'Potassium': 'H'},
+                    'weather_data': {'temperature': 30.0, 'humidity': 50.0, 'precipitation_probability': 20.0, 'wind_speed': 15.0, 'uv_index': 8.0},
+                    'market_context': {'season': 'dry', 'month': 3}
+                }
+            ]
+
+            # Pre-warm cache with these scenarios
+            for i, scenario in enumerate(common_scenarios):
+                try:
+                    self.predict(
+                        scenario['soil_data'], scenario['weather_data'], scenario['market_context'])
+                    logger.info(
+                        f"Pre-warmed scenario {i+1}/{len(common_scenarios)}")
+                except Exception as e:
+                    logger.warning(f"Failed to pre-warm scenario {i+1}: {e}")
+
+            self.prewarmed = True
+            logger.info("Cache pre-warming completed successfully")
+        except Exception as e:
+            logger.error(f"Cache pre-warming failed: {e}")
 
 
 def print_evaluation_report(report):
