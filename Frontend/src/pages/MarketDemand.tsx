@@ -236,6 +236,8 @@ const MarketDemand = () => {
       const cachedData = getCachedMarketDemandData(cacheKey);
       if (cachedData) {
         console.log('Using cached market data');
+        // Even for cached data, show loading animation for a short time to maintain consistent UX
+        await new Promise(resolve => setTimeout(resolve, 300)); // 300ms loading animation
         setMarketData(cachedData.data);
         setLoading(false);
         return;
