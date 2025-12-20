@@ -41,9 +41,9 @@ class VegetableDemandTransformer:
         self.preprocessor = None
         # Add cache for recommendations with LRU eviction policy
         self._recommend_cache = OrderedDict()
-        # Extended cache TTL for better performance - 5 minutes
-        self._cache_ttl = 300
-        self._max_cache_size = 200
+        # Extended cache TTL for better performance - 10 minutes (increased from 5 minutes)
+        self._cache_ttl = 600
+        self._max_cache_size = 300  # Increased cache size
         # Pre-warmed flag
         self.prewarmed = False
 
@@ -79,6 +79,9 @@ class VegetableDemandTransformer:
             except Exception as e:
                 logger.warning(
                     f"Failed to pre-warm cache after model loading: {e}")
+
+            # Mark as pre-warmed to prevent redundant warming
+            self.prewarmed = True
         except Exception as e:
             logger.error(f"Failed to load model: {e}")
             raise e
@@ -99,7 +102,9 @@ class VegetableDemandTransformer:
                 'TOMATO (KAMATIS), 1 KG',
                 'EGGPLANT (TALONG), 1 KG',
                 'OKRA, 1 KG',
-                'SITAW (STRING BEAN), 1 KG'
+                'SITAW (STRING BEAN), 1 KG',
+                'RADISH (LABANOS), 1 BUNDLE',
+                'ONION (SIBUYAS), 1 KG'
             ]
 
             # Sample historical data for pre-warming
@@ -118,6 +123,25 @@ class VegetableDemandTransformer:
                 except Exception as e:
                     logger.warning(
                         f"Failed to pre-warm vegetable {i+1} ({vegetable}): {e}")
+
+            # Also pre-warm the recommend_crops cache with common scenarios
+            try:
+                # Pre-warm for different months and years
+                for month in [1, 3, 6, 9, 12]:
+                    for year in [2025, 2026]:
+                        self.recommend_crops(
+                            top_n=20, target_month=month, target_year=year)
+                        logger.info(
+                            f"Pre-warmed recommend_crops for {month}/{year}")
+
+                # Pre-warm for different demand levels
+                for demand_level in ["High", "Moderate", "Stable", "Low"]:
+                    self.recommend_crops(top_n=20, demand_level=demand_level)
+                    logger.info(
+                        f"Pre-warmed recommend_crops for {demand_level} demand")
+            except Exception as e:
+                logger.warning(
+                    f"Failed to pre-warm recommend_crops cache: {e}")
 
             self.prewarmed = True
             logger.info(
@@ -281,8 +305,8 @@ class VegetableDemandTransformer:
         cache_key = f"{target_month}_{target_year}_{demand_level}_{top_n}"
         if hasattr(self, '_recommend_cache') and cache_key in self._recommend_cache:
             cached_result, timestamp = self._recommend_cache[cache_key]
-            # Cache for 5 minutes
-            if (time.time() - timestamp) < 300:
+            # Use the class-level cache TTL
+            if (time.time() - timestamp) < self._cache_ttl:
                 logger.info(
                     f"Returning cached recommendations for key: {cache_key}")
                 return cached_result[:top_n]
@@ -457,6 +481,28 @@ class VegetableDemandTransformer:
         # Sort by predicted price change (higher change = higher potential demand)
         recommendations.sort(
             key=lambda x: x['price_change_percent'], reverse=True)
+
+        # Store results in cache
+        try:
+            if hasattr(self, '_recommend_cache'):
+                # Clean up expired entries
+                current_time = time.time()
+                expired_keys = []
+                for key, (_, timestamp) in self._recommend_cache.items():
+                    if current_time - timestamp >= self._cache_ttl:
+                        expired_keys.append(key)
+                for key in expired_keys:
+                    del self._recommend_cache[key]
+
+                # Add new entry
+                self._recommend_cache[cache_key] = (
+                    recommendations[:top_n], current_time)
+
+                # Enforce maximum cache size using LRU eviction
+                while len(self._recommend_cache) > self._max_cache_size:
+                    self._recommend_cache.popitem(last=False)
+        except Exception as e:
+            logger.warning(f"Failed to cache recommendations: {e}")
 
         return recommendations[:top_n]
 

@@ -130,6 +130,90 @@ async def startup_event():
                 )
                 print("Enhanced soil model alkaline warm-up completed")
 
+                # Additional warm-up scenarios
+                warmup_data_dry_season = {
+                    "soil_data": {
+                        "pH": 6.0,
+                        "Nitrogen": "H",
+                        "Phosphorus": "M",
+                        "Potassium": "L"
+                    },
+                    "weather_data": {
+                        "temperature": 32.0,
+                        "humidity": 40.0,
+                        "precipitation_probability": 10.0,
+                        "wind_speed": 20.0,
+                        "uv_index": 9.0
+                    },
+                    "market_context": {
+                        "season": "dry",
+                        "month": 4
+                    }
+                }
+
+                warmup_data_wet_season = {
+                    "soil_data": {
+                        "pH": 7.0,
+                        "Nitrogen": "L",
+                        "Phosphorus": "H",
+                        "Potassium": "M"
+                    },
+                    "weather_data": {
+                        "temperature": 22.0,
+                        "humidity": 85.0,
+                        "precipitation_probability": 80.0,
+                        "wind_speed": 8.0,
+                        "uv_index": 4.0
+                    },
+                    "market_context": {
+                        "season": "wet",
+                        "month": 8
+                    }
+                }
+
+                routes.enhanced_soil_routes.model.predict(
+                    warmup_data_dry_season["soil_data"],
+                    warmup_data_dry_season["weather_data"],
+                    warmup_data_dry_season["market_context"]
+                )
+                print("Enhanced soil model dry season warm-up completed")
+
+                routes.enhanced_soil_routes.model.predict(
+                    warmup_data_wet_season["soil_data"],
+                    warmup_data_wet_season["weather_data"],
+                    warmup_data_wet_season["market_context"]
+                )
+                print("Enhanced soil model wet season warm-up completed")
+
+                # Additional warm-up scenarios for different months
+                for month in [1, 3, 6, 9, 12]:
+                    warmup_data_monthly = {
+                        "soil_data": {
+                            "pH": 6.5,
+                            "Nitrogen": "M",
+                            "Phosphorus": "M",
+                            "Potassium": "M"
+                        },
+                        "weather_data": {
+                            "temperature": 25.0,
+                            "humidity": 60.0,
+                            "precipitation_probability": 50.0,
+                            "wind_speed": 10.0,
+                            "uv_index": 5.0
+                        },
+                        "market_context": {
+                            "season": month >= 6 and month <= 11 and "wet" or "dry",
+                            "month": month
+                        }
+                    }
+                    routes.enhanced_soil_routes.model.predict(
+                        warmup_data_monthly["soil_data"],
+                        warmup_data_monthly["weather_data"],
+                        warmup_data_monthly["market_context"]
+                    )
+                    print(
+                        f"Enhanced soil model warm-up for month {month} completed")
+
                 print("Enhanced soil model comprehensive warm-up completed")
             except Exception as e:
                 print(f"Enhanced soil model warm-up failed: {e}")
@@ -150,7 +234,15 @@ async def startup_event():
                     ('TOMATO (KAMATIS), 1 KG', [
                      80.0, 82.0, 78.0, 81.0, 83.0, 79.0, 84.0, 85.0, 82.0, 80.0, 81.0, 83.0]),
                     ('EGGPLANT (TALONG), 1 KG', [
-                     55.0, 57.0, 53.0, 56.0, 58.0, 54.0, 59.0, 60.0, 57.0, 55.0, 56.0, 58.0])
+                     55.0, 57.0, 53.0, 56.0, 58.0, 54.0, 59.0, 60.0, 57.0, 55.0, 56.0, 58.0]),
+                    ('OKRA, 1 KG', [
+                     45.0, 47.0, 43.0, 46.0, 48.0, 44.0, 49.0, 50.0, 47.0, 45.0, 46.0, 48.0]),
+                    ('SITAW (STRING BEAN), 1 KG', [
+                     50.0, 52.0, 48.0, 51.0, 53.0, 49.0, 54.0, 55.0, 52.0, 50.0, 51.0, 53.0]),
+                    ('RADISH (LABANOS), 1 BUNDLE', [
+                     35.0, 37.0, 33.0, 36.0, 38.0, 34.0, 39.0, 40.0, 37.0, 35.0, 36.0, 38.0]),
+                    ('ONION (SIBUYAS), 1 KG', [
+                     60.0, 62.0, 58.0, 61.0, 63.0, 59.0, 64.0, 65.0, 62.0, 60.0, 61.0, 63.0])
                 ]
 
                 annual_prices = [80.0, 80.0, 80.0, 80.0, 80.0,
@@ -167,6 +259,42 @@ async def startup_event():
                     )
                     print(
                         f"Vegetable demand model warm-up completed for {vegetable_name} ({i+1}/{len(warmup_vegetables)})")
+
+                # Warm up with different months/years for variety
+                routes.vegetable_routes.model.recommend_crops(
+                    top_n=20, month=6, year=2025)
+                print("Vegetable demand model warm-up for June 2025 completed")
+
+                routes.vegetable_routes.model.recommend_crops(
+                    top_n=20, month=12, year=2025)
+                print("Vegetable demand model warm-up for December 2025 completed")
+
+                # Additional warm-up for other months and years
+                routes.vegetable_routes.model.recommend_crops(
+                    top_n=20, month=3, year=2025)
+                print("Vegetable demand model warm-up for March 2025 completed")
+
+                routes.vegetable_routes.model.recommend_crops(
+                    top_n=20, month=9, year=2025)
+                print("Vegetable demand model warm-up for September 2025 completed")
+
+                # Warm up for different demand levels
+                routes.vegetable_routes.model.recommend_crops(
+                    top_n=20, demand_level="High")
+                print("Vegetable demand model warm-up for High demand completed")
+
+                routes.vegetable_routes.model.recommend_crops(
+                    top_n=20, demand_level="Low")
+                print("Vegetable demand model warm-up for Low demand completed")
+
+                # Additional warm-up for 2026
+                routes.vegetable_routes.model.recommend_crops(
+                    top_n=20, month=6, year=2026)
+                print("Vegetable demand model warm-up for June 2026 completed")
+
+                routes.vegetable_routes.model.recommend_crops(
+                    top_n=20, month=12, year=2026)
+                print("Vegetable demand model warm-up for December 2026 completed")
 
                 print("Vegetable demand model comprehensive warm-up completed")
             except Exception as e:

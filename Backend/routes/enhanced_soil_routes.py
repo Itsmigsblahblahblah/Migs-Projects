@@ -65,8 +65,8 @@ async def root():
             "description": "POST /enhanced-recommend or /fair-recommend to get crop recommendations based on soil, weather and market data"}
 
 
-@app.post("/enhanced-recommend")
-async def enhanced_recommend_crops(data: dict):
+@app.post("/recommend")
+async def recommend_crops(data: dict):
     """
     Get crop recommendations based on soil, weather, and market data
 
@@ -142,22 +142,11 @@ async def enhanced_recommend_crops(data: dict):
 
         # Validate pH range
         if not (0 <= soil_data['pH'] <= 14):
-
             raise HTTPException(
                 status_code=400, detail="pH must be between 0 and 14")
 
-        # Add a timeout to prevent hanging requests
-        import asyncio
-        try:
-            # Get predictions with data with a 15-second timeout to prevent timeouts
-            predictions = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(None, model.predict,
-                                                         soil_data, weather_data, market_context),
-                timeout=15.0
-            )
-        except asyncio.TimeoutError:
-            raise HTTPException(
-                status_code=500, detail="Prediction took too long. Please try again.")
+        # Get predictions with data - removed timeout for better reliability
+        predictions = model.predict(soil_data, weather_data, market_context)
 
         # Format response
         recommended_crops = [

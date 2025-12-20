@@ -86,32 +86,29 @@ WARMUP_DATA = {
 
 
 class EnhancedSoilCropTransformer:
-    """Enhanced model for crop recommendation based on soil, weather, and market data"""
+    """Enhanced Transformer-based model for crop recommendation based on soil, weather, and market data"""
 
     def __init__(self, hyperparams=None):
         self.hyperparams = hyperparams or HYPERPARAMETERS
         self.model = None
-        self.soil_label_encoder = LabelEncoder()
-        self.crop_label_encoder = LabelEncoder()
+        self.label_encoder = LabelEncoder()
         self.scaler = StandardScaler()
         self.feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium',
                                 'temperature', 'humidity', 'precipitation_probability',
-                                'wind_speed', 'uv_index', 'market_demand_score']
+                                'wind_speed', 'uv_index', 'season_encoded', 'month']
         # For backward compatibility with soil-only data
         self.soil_feature_columns = [
             'pH', 'Nitrogen', 'Phosphorus', 'Potassium']
         self.preprocessor = None
         # Add cache for predictions with LRU eviction policy
-        self.prediction_cache = OrderedDict()
-        # Extended cache TTL for better performance - 5 minutes instead of 30 seconds
-        self.cache_ttl = 300
-        self.max_cache_size = 200  # Increased cache size to prevent memory issues
-        # Add cache warming flag
+        self._prediction_cache = OrderedDict()
+        # Extended cache TTL for better performance - 10 minutes (increased from 5 minutes)
+        self.cache_ttl = 600
+        self.max_cache_size = 300  # Increased cache size
+        # Cache warming status
         self.cache_warming_complete = False
-        # Add lock for thread safety
-        self.cache_lock = threading.Lock()
-        # Pre-warm cache with common scenarios
-        self.prewarmed = False
+        # Add threading lock for cache operations
+        self._cache_lock = threading.Lock()
 
     def load_and_preprocess_data(self, soil_file='Data/brgy_soil_dataset.csv',
                                  vegetable_file='Data/vegetable_prices.csv'):
@@ -275,15 +272,14 @@ class EnhancedSoilCropTransformer:
         y = soil_df['Crop'].values
 
         # Encode labels
-        y_encoded = self.crop_label_encoder.fit_transform(y)
+        y_encoded = self.label_encoder.fit_transform(y)
 
         # Scale features
         X_scaled = self.scaler.fit_transform(X)
 
         # Save preprocessing pipeline
         self.preprocessor = {
-            'soil_label_encoder': self.soil_label_encoder,
-            'crop_label_encoder': self.crop_label_encoder,
+            'label_encoder': self.label_encoder,
             'scaler': self.scaler,
             'feature_columns': self.feature_columns,
             'market_scores': market_scores
@@ -472,7 +468,7 @@ class EnhancedSoilCropTransformer:
         unique_labels = np.unique(np.concatenate([y_test, y_pred]))
 
         # Create classification report
-        target_names = self.crop_label_encoder.inverse_transform(unique_labels)
+        target_names = self.label_encoder.inverse_transform(unique_labels)
         report = classification_report(
             y_test, y_pred, target_names=target_names, output_dict=True, zero_division="warn")
 
@@ -522,8 +518,8 @@ class EnhancedSoilCropTransformer:
             common_humidities = [40, 60, 80]
 
             warmed_count = 0
-            # Reduce the number of combinations to warm for faster startup
-            max_warm_combinations = 15  # Increased from 10 to 15 for better coverage
+            # Increase the number of combinations to warm for better coverage
+            max_warm_combinations = 30  # Increased from 15 to 30 for better coverage
 
             logger.info(
                 f"Generating predictions for combinations, will limit to {max_warm_combinations}")
@@ -552,23 +548,30 @@ class EnhancedSoilCropTransformer:
                                         'uv_index': 5
                                     }
 
-                                    market_context = {
-                                        'season': 'dry' if temp > 25 else 'wet',
-                                        'month': 6
-                                    }
+                                    # Add market context variations for better coverage
+                                    market_contexts = [
+                                        {'season': 'dry', 'month': 6},
+                                        {'season': 'wet', 'month': 12},
+                                        {'season': 'dry', 'month': 3},
+                                        {'season': 'wet', 'month': 9}
+                                    ]
 
-                                    # Generate prediction to warm cache
-                                    try:
-                                        self.predict(
-                                            soil_data, weather_data, market_context)
-                                        warmed_count += 1
-                                        if warmed_count % 5 == 0:  # Log progress every 5 predictions
-                                            logger.info(
-                                                f"Warmed {warmed_count} predictions so far...")
-                                    except Exception as e:
-                                        logger.debug(
-                                            f"Cache warming prediction failed: {e}")
-                                        continue
+                                    for market_context in market_contexts:
+                                        if warmed_count >= max_warm_combinations:
+                                            break
+
+                                        # Generate prediction to warm cache
+                                        try:
+                                            self.predict(
+                                                soil_data, weather_data, market_context)
+                                            warmed_count += 1
+                                            if warmed_count % 5 == 0:  # Log progress every 5 predictions
+                                                logger.info(
+                                                    f"Warmed {warmed_count} predictions so far...")
+                                        except Exception as e:
+                                            logger.debug(
+                                                f"Cache warming prediction failed: {e}")
+                                            continue
                                 if warmed_count >= max_warm_combinations:
                                     break
                             if warmed_count >= max_warm_combinations:
@@ -593,17 +596,17 @@ class EnhancedSoilCropTransformer:
         current_time = time.time()
         expired_keys = []
 
-        with self.cache_lock:
-            for key, (_, timestamp) in self.prediction_cache.items():
+        with self._cache_lock:
+            for key, (_, timestamp) in self._prediction_cache.items():
                 if current_time - timestamp >= self.cache_ttl:
                     expired_keys.append(key)
 
             for key in expired_keys:
-                del self.prediction_cache[key]
+                del self._prediction_cache[key]
 
             # Enforce maximum cache size using LRU eviction
-            while len(self.prediction_cache) > self.max_cache_size:
-                self.prediction_cache.popitem(last=False)
+            while len(self._prediction_cache) > self.max_cache_size:
+                self._prediction_cache.popitem(last=False)
 
     def predict(self, soil_data, weather_data=None, market_context=None):
         """
@@ -647,18 +650,18 @@ class EnhancedSoilCropTransformer:
             soil_data, weather_data, market_context)
 
         # Thread-safe cache access
-        with self.cache_lock:
+        with self._cache_lock:
             # Check if we have a cached result
-            if cache_key in self.prediction_cache:
-                cached_result, timestamp = self.prediction_cache[cache_key]
+            if cache_key in self._prediction_cache:
+                cached_result, timestamp = self._prediction_cache[cache_key]
                 if self._is_cache_valid(timestamp):
                     logger.info("Returning cached prediction result")
                     # Move to end for LRU eviction policy
-                    self.prediction_cache.move_to_end(cache_key)
+                    self._prediction_cache.move_to_end(cache_key)
                     return cached_result
                 else:
                     # Remove expired cache entry
-                    del self.prediction_cache[cache_key]
+                    del self._prediction_cache[cache_key]
 
         logger.info("Cache miss - performing prediction")
         preprocessing_start = time_module.time()
@@ -701,7 +704,7 @@ class EnhancedSoilCropTransformer:
             f"Model prediction time: {model_prediction_time:.4f} seconds")
 
         # Get all crops
-        all_crops = self.crop_label_encoder.classes_
+        all_crops = self.label_encoder.classes_
 
         # Get market demand scores for all crops
         market_scores_start = time_module.time()
@@ -731,7 +734,7 @@ class EnhancedSoilCropTransformer:
         # Get more predictions to ensure variety
         sorting_start = time_module.time()
         top_indices = np.argsort(final_scores)[-12:][::-1]
-        top_crops = self.crop_label_encoder.inverse_transform(top_indices)
+        top_crops = self.label_encoder.inverse_transform(top_indices)
         top_final_scores = final_scores[top_indices]
         top_ml_confidences = ml_confidence_scores[top_indices]
         top_market_scores = market_scores[top_indices]
@@ -757,19 +760,19 @@ class EnhancedSoilCropTransformer:
 
         # Thread-safe cache storage
         cache_storage_start = time_module.time()
-        with self.cache_lock:
+        with self._cache_lock:
             # Clean up expired entries periodically
-            if len(self.prediction_cache) > self.max_cache_size * 0.8:
+            if len(self._prediction_cache) > self.max_cache_size * 0.8:
                 self._cleanup_expired_cache()
 
             # Store in cache with LRU ordering
-            self.prediction_cache[cache_key] = (
+            self._prediction_cache[cache_key] = (
                 final_result, time_module.time())
-            self.prediction_cache.move_to_end(cache_key)
+            self._prediction_cache.move_to_end(cache_key)
 
             # Enforce maximum cache size
-            if len(self.prediction_cache) > self.max_cache_size:
-                self.prediction_cache.popitem(last=False)
+            if len(self._prediction_cache) > self.max_cache_size:
+                self._prediction_cache.popitem(last=False)
 
         cache_storage_time = time_module.time() - cache_storage_start
         logger.info(f"Cache storage time: {cache_storage_time:.4f} seconds")
@@ -841,8 +844,7 @@ class EnhancedSoilCropTransformer:
             f"Preprocessing pipeline loaded successfully in {preprocessor_load_time:.4f} seconds")
 
         # Restore components
-        self.soil_label_encoder = self.preprocessor['soil_label_encoder']
-        self.crop_label_encoder = self.preprocessor['crop_label_encoder']
+        self.label_encoder = self.preprocessor['label_encoder']
         self.scaler = self.preprocessor['scaler']
         self.feature_columns = self.preprocessor['feature_columns']
 
@@ -856,6 +858,9 @@ class EnhancedSoilCropTransformer:
         except Exception as e:
             logger.warning(
                 f"Failed to pre-warm cache after model loading: {e}")
+
+        # Mark as pre-warmed to prevent redundant warming
+        self.cache_warming_complete = True
 
     def _prewarm_cache(self):
         """Pre-warm the cache with common scenarios to ensure fast first responses"""
@@ -885,6 +890,17 @@ class EnhancedSoilCropTransformer:
                     'soil_data': {'pH': 7.5, 'Nitrogen': 'H', 'Phosphorus': 'H', 'Potassium': 'H'},
                     'weather_data': {'temperature': 30.0, 'humidity': 50.0, 'precipitation_probability': 20.0, 'wind_speed': 15.0, 'uv_index': 8.0},
                     'market_context': {'season': 'dry', 'month': 3}
+                },
+                # Different months
+                {
+                    'soil_data': {'pH': 6.0, 'Nitrogen': 'H', 'Phosphorus': 'M', 'Potassium': 'L'},
+                    'weather_data': {'temperature': 32.0, 'humidity': 40.0, 'precipitation_probability': 10.0, 'wind_speed': 20.0, 'uv_index': 9.0},
+                    'market_context': {'season': 'dry', 'month': 4}
+                },
+                {
+                    'soil_data': {'pH': 7.0, 'Nitrogen': 'L', 'Phosphorus': 'H', 'Potassium': 'M'},
+                    'weather_data': {'temperature': 22.0, 'humidity': 85.0, 'precipitation_probability': 80.0, 'wind_speed': 8.0, 'uv_index': 4.0},
+                    'market_context': {'season': 'wet', 'month': 8}
                 }
             ]
 

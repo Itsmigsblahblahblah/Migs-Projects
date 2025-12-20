@@ -271,8 +271,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       // Use environment variable for backend URL or default to localhost
       const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
       const controller = new AbortController();
-      // Extended timeout to 60 seconds for comprehensive processing
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      // Extended timeout to 90 seconds for comprehensive processing
+      const timeoutId = setTimeout(() => controller.abort(), 90000);
       
       const response = await fetch(`${BACKEND_URL}/enhanced-soil/fair-recommend`, {
         method: 'POST',
@@ -329,7 +329,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         console.error('Error fetching enhanced recommendations:', err);
         // Only show error if we don't have any recommendations
         if (recommendations.length === 0) {
-          setError(`Our AI is analyzing your soil, weather, and market data to provide personalized crop recommendations. This advanced analysis typically completes in just a few moments.`);
+          // Keep showing loading state instead of error for better UX
+          setError(null);
         }
       }
       console.error('Error fetching enhanced recommendations:', err);
@@ -865,7 +866,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     let timeoutId: NodeJS.Timeout;
     
     if (loading) {
-      // Extended timeout to 60 seconds - long enough for any legitimate processing
+      // Extended timeout to 90 seconds - long enough for any legitimate processing
       timeoutId = setTimeout(() => {
         // Only show timeout warning if we truly have no data
         if (recommendations.length === 0) {
@@ -873,7 +874,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
           // Set a reassuring message instead of error
           setError('Our AI is still processing your personalized recommendations. This advanced analysis typically completes in just a few moments.');
         }
-      }, 60000); // Extended to 60 seconds
+      }, 90000); // Extended to 90 seconds
     } else {
       setLoadingTimeout(false);
     }

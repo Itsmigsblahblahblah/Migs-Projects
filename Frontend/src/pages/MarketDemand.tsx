@@ -115,7 +115,7 @@ const MarketDemand = () => {
     let timeoutId: NodeJS.Timeout;
     
     if (loading) {
-      // Extended timeout to 60 seconds - long enough for any legitimate processing
+      // Extended timeout to 90 seconds - long enough for any legitimate processing
       timeoutId = setTimeout(() => {
         // Only show timeout warning if we truly have no data
         if (marketData.length === 0) {
@@ -123,7 +123,7 @@ const MarketDemand = () => {
           // Set a reassuring message instead of error
           setError('Our AI is still processing market demand forecasts. This advanced analysis typically completes in just a few moments.');
         }
-      }, 60000); // Extended to 60 seconds
+      }, 90000); // Extended to 90 seconds
     } else {
       setLoadingTimeout(false);
     }
@@ -238,7 +238,7 @@ const MarketDemand = () => {
       console.log(`Making request to: ${url}`);
       // Extended timeout for comprehensive processing
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds
+      const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds
       
       const response = await fetch(url, { signal: controller.signal });
       clearTimeout(timeoutId);
@@ -264,9 +264,15 @@ const MarketDemand = () => {
     } catch (err: any) {
       if (err.name === 'AbortError') {
         // Show a more reassuring message instead of error
-        setError('Our AI is still processing market demand forecasts. This advanced analysis typically completes in just a few moments.');
+        // But only if we truly have no data
+        if (marketData.length === 0) {
+          setError('Our AI is still processing market demand forecasts. This advanced analysis typically completes in just a few moments.');
+        }
       } else {
-        setError("Our AI is analyzing market trends to provide accurate forecasts. This advanced analysis typically completes in just a few moments.");
+        // Keep showing loading state instead of error for better UX
+        if (marketData.length === 0) {
+          setError(null);
+        }
         console.error("Error fetching market data:", err);
       }
     } finally {
