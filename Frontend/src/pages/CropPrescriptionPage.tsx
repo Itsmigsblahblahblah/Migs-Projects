@@ -233,8 +233,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       const cachedData = getCachedRecommendationData(cacheKey);
       if (cachedData) {
         console.log('Using cached enhanced recommendations');
-        // Even for cached data, show loading for a brief moment to indicate activity
-        await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay for UX
+        // Even for cached data, show loading for a consistent moment to indicate activity
+        await new Promise(resolve => setTimeout(resolve, 800)); // 800ms delay for UX
         setRecommendations(cachedData);
         if (!wasAlreadyLoading) {
           setLoading(false);
@@ -308,18 +308,22 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       
         // Store in session cache
         setCachedRecommendationData(cacheKey, transformedRecommendations);
+        // Show loading animation for a consistent moment even for fresh data
+        await new Promise(resolve => setTimeout(resolve, 800)); // 800ms delay for UX
         setRecommendations(transformedRecommendations);
+        setLoading(false);
       } else {
         console.error('Invalid response format:', data);
         setError('Invalid response format from enhanced recommendation server');
+        setLoading(false);
       }
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        // Even on timeout, we shouldn't show an error - just continue with whatever we have
-        console.warn('Request timed out, but continuing with available data');
+        // Even on timeout, we shouldn't show an error - just continue loading until data is available
+        console.warn('Request timed out, but continuing to load until data is available');
+        // Don't set error message, keep loading
         if (recommendations.length === 0) {
-          // Show a more reassuring message instead of error
-          setError('Our AI is still processing your personalized recommendations. This advanced analysis typically completes in just a few moments.');
+          setError(null);
         }
       } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
         if (recommendations.length === 0) {
@@ -334,10 +338,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         }
       }
       console.error('Error fetching enhanced recommendations:', err);
-    } finally {
-      if (!wasAlreadyLoading) {
-        setLoading(false);
-      }
+      // Always stop loading on error
+      setLoading(false);
     }
   };
 
@@ -448,7 +450,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
           // If we got soil data, use it for recommendations
           if (soilData) {
             console.log('Using fetched soil data for enhanced recommendations:', soilData);
-            fetchEnhancedRecommendations({
+            await fetchEnhancedRecommendations({
               pH: soilData.pH,
               Nitrogen: soilData.Nitrogen,
               Phosphorus: soilData.Phosphorus,
@@ -457,20 +459,23 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
           } else {
             // If no soil data found, use current input values
             console.log('No soil data found, using input soil data:', inputSoilData);
-            fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
+            await fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
           }
         } else {
           // If no farm address, use default values
           console.log('No farm address, using default input soil data:', inputSoilData);
-          fetchEnhancedRecommendations(inputSoilData);
+          await fetchEnhancedRecommendations(inputSoilData);
         }
       } catch (err) {
         console.error('Error in loadSoilData:', err);
         setError('Failed to load soil data. Please try again.');
       } finally {
         setSoilDataLoading(false);
-        // Keep loading true until recommendations are fully loaded
-        // setLoading(false); // This will be set to false in fetchEnhancedRecommendations
+        // setLoading will be set to false in fetchEnhancedRecommendations
+        // But if we already have recommendations, make sure loading stops
+        if (recommendations.length > 0) {
+          setLoading(false);
+        }
       }
     };
 
@@ -501,16 +506,22 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
           console.log('Prefetching default recommendations in background');
           // For background prefetching, we don't want to show loading UI
           await fetchEnhancedRecommendations(defaultSoilData);
+        } else {
+          // If we have cached data, set it immediately
+          console.log('Using cached recommendations for immediate display');
+          setRecommendations(cachedData);
+          // If we were loading, stop loading now that we have data
+          if (loading) {
+            setLoading(false);
+          }
         }
       } catch (err) {
         console.log('Background prefetch failed (non-critical):', err);
       }
     };
     
-    // Only prefetch if we don't already have recommendations
-    if (recommendations.length === 0) {
-      prefetchRecommendations();
-    }
+    // Always prefetch on component mount to ensure data is available
+    prefetchRecommendations();
   }, []);
 
   const handleCropSelect = async (crop: PrescriptionDetails) => {
@@ -558,24 +569,21 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     // This ensures users see that something is happening even for cached data
     setLoading(true);
     
-    // Add a small delay to ensure the loading animation is visible
-    // This improves UX by showing that the system is working even for cached data
-    setTimeout(() => {
-      // Prepare weather data if available
-      let weatherDataForRecommendation: WeatherData | undefined;
-      if (effectiveWeatherData) {
-        weatherDataForRecommendation = {
-          temperature: effectiveWeatherData.temperature || 25,
-          humidity: effectiveWeatherData.humidity || 50,
-          precipitation_probability: effectiveWeatherData.extendedForecast?.[0]?.precipitationProbability || 0,
-          wind_speed: effectiveWeatherData.extendedForecast?.[0]?.windSpeed || 5,
-          uv_index: effectiveWeatherData.extendedForecast?.[0]?.uvIndex || 5
-        };
-        console.log('Prepared weather data for enhanced recommendation:', weatherDataForRecommendation);
-      }
+    // Prepare weather data if available
+    let weatherDataForRecommendation: WeatherData | undefined;
+    if (effectiveWeatherData) {
+      weatherDataForRecommendation = {
+        temperature: effectiveWeatherData.temperature || 25,
+        humidity: effectiveWeatherData.humidity || 50,
+        precipitation_probability: effectiveWeatherData.extendedForecast?.[0]?.precipitationProbability || 0,
+        wind_speed: effectiveWeatherData.extendedForecast?.[0]?.windSpeed || 5,
+        uv_index: effectiveWeatherData.extendedForecast?.[0]?.uvIndex || 5
+      };
+      console.log('Prepared weather data for enhanced recommendation:', weatherDataForRecommendation);
+    }
 
-      fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
-    }, 300); // 300ms delay to ensure loading animation is visible
+    // Fetch recommendations with a consistent loading duration
+    fetchEnhancedRecommendations(inputSoilData, weatherDataForRecommendation);
   };
 
   // Function to handle saving prescription
@@ -871,8 +879,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         // Only show timeout warning if we truly have no data
         if (recommendations.length === 0) {
           setLoadingTimeout(true);
-          // Set a reassuring message instead of error
-          setError('Our AI is still processing your personalized recommendations. This advanced analysis typically completes in just a few moments.');
+          // Continue loading instead of showing static error message
+          // Keep error as null to maintain loading state
+          setError(null);
         }
       }, 90000); // Extended to 90 seconds
     } else {
@@ -1076,20 +1085,24 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                     Based on your soil conditions, current weather patterns, and market demand predictions
                   </p>
 
-                  {loading && (
-                    <div className="flex justify-center items-center h-32">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
-                      <div>
-                        <p className="font-medium">Analyzing soil, weather, and market data...</p>
-                        <p className="text-sm text-muted-foreground mt-1">Our AI is processing your personalized recommendations. This usually takes just a few seconds.</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {loadingTimeout && (
-                    <div className="p-4 bg-warning/10 rounded-lg border border-warning/20 text-warning">
-                      <p className="font-medium">Processing your personalized recommendations</p>
-                      <p className="text-sm mt-1">Our AI is still analyzing your data to provide the most accurate crop recommendations. This may take up to 30 seconds for the first visit.</p>
+                  {(loading || (loadingTimeout && recommendations.length === 0)) && !error && (
+                    <div className="flex flex-col gap-4">
+                      {loading && (
+                        <div className="flex justify-center items-center h-32">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+                          <div>
+                            <p className="font-medium">Analyzing soil, weather, and market data...</p>
+                            <p className="text-sm text-muted-foreground mt-1">Our AI is processing your personalized recommendations. This usually takes just a few seconds.</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {loadingTimeout && recommendations.length === 0 && (
+                        <div className="p-4 bg-warning/10 rounded-lg border border-warning/20 text-warning">
+                          <p className="font-medium">Processing your personalized recommendations</p>
+                          <p className="text-sm mt-1">Our AI is still analyzing your data to provide the most accurate crop recommendations. This may take up to 30 seconds for the first visit.</p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1099,94 +1112,80 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                     </div>
                   )}
 
-                  {!loading && !error && (
+                  {!loading && !error && recommendations.length > 0 && (
                     <div className="space-y-4">
-                      {recommendations.length > 0 ? (
-                        <>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {/* Show all 6 recommendations in a 3x2 grid, but filter out duplicates */}
-                            {recommendations
-                              .filter((recommendation, index, self) =>
-                                index === self.findIndex(r => r.crop.trim() === recommendation.crop.trim())
-                              )
-                              .slice(0, 6)
-                              .map((recommendation, index) => (
-                                <Card
-                                  key={index}
-                                  className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
-                                  onClick={() => handleCropSelect({
-                                    id: index.toString(),
-                                    crop: recommendation.crop,
-                                    reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
-                                    confidence: Math.round(recommendation.confidence * 100),
-                                    plantingSeason: getPlantingSeason(recommendation.crop, inputSoilData, effectiveWeatherData),
-                                    expectedYield: "Varies by conditions",
-                                    marketTrend: getMarketTrend(null), // Will be updated when market data is fetched
-                                    soilType: getSoilType(inputSoilData),
-                                    weatherCondition: getWeatherCondition(effectiveWeatherData),
-                                    recommendations: getCropRecommendations(
-                                      recommendation.crop,
-                                      inputSoilData,
-                                      effectiveWeatherData,
-                                      null
-                                    ),
-                                    avoid: getThingsToAvoid(
-                                      recommendation.crop,
-                                      inputSoilData,
-                                      effectiveWeatherData
-                                    )
-                                  })}
-                                >
-                                  <CardHeader>
-                                    <CardTitle className="flex items-center justify-between">
-                                      <span>{recommendation.crop}</span>
-                                      <div className="flex flex-col gap-1">
-                                        <Badge variant={getConfidenceVariant(recommendation.confidence)}>
-                                          {Math.round(recommendation.confidence * 100)}%
-                                        </Badge>
-                                        {recommendation.market_demand_score !== undefined && (
-                                          <Badge variant={getMarketDemandVariant(recommendation.market_demand_score)} className="text-xs">
-                                            <TrendingUp className="h-3 w-3 mr-1" />
-                                            {Math.round(recommendation.market_demand_score * 100)}%
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </CardTitle>
-                                  </CardHeader>
-                                  <CardContent>
-                                    <p className="text-sm text-muted-foreground mb-3">
-                                      Recommended based on your soil analysis, weather conditions, and market demand with {Math.round(recommendation.confidence * 100)}% confidence.
-                                    </p>
-                                    <div className="flex items-center gap-2 text-xs">
-                                      <Calendar className="h-3 w-3" />
-                                      <span>Planting season varies</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs mt-1">
-                                      <TrendingUp className="h-3 w-3" />
-                                      <span>Check local market trends</span>
-                                    </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Show all 6 recommendations in a 3x2 grid, but filter out duplicates */}
+                        {recommendations
+                          .filter((recommendation, index, self) =>
+                            index === self.findIndex(r => r.crop.trim() === recommendation.crop.trim())
+                          )
+                          .slice(0, 6)
+                          .map((recommendation, index) => (
+                            <Card
+                              key={index}
+                              className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
+                              onClick={() => handleCropSelect({
+                                id: index.toString(),
+                                crop: recommendation.crop,
+                                reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
+                                confidence: Math.round(recommendation.confidence * 100),
+                                plantingSeason: getPlantingSeason(recommendation.crop, inputSoilData, effectiveWeatherData),
+                                expectedYield: "Varies by conditions",
+                                marketTrend: getMarketTrend(null), // Will be updated when market data is fetched
+                                soilType: getSoilType(inputSoilData),
+                                weatherCondition: getWeatherCondition(effectiveWeatherData),
+                                recommendations: getCropRecommendations(
+                                  recommendation.crop,
+                                  inputSoilData,
+                                  effectiveWeatherData,
+                                  null
+                                ),
+                                avoid: getThingsToAvoid(
+                                  recommendation.crop,
+                                  inputSoilData,
+                                  effectiveWeatherData
+                                )
+                              })}
+                            >
+                              <CardHeader>
+                                <CardTitle className="flex items-center justify-between">
+                                  <span>{recommendation.crop}</span>
+                                  <div className="flex flex-col gap-1">
+                                    <Badge variant={getConfidenceVariant(recommendation.confidence)}>
+                                      {Math.round(recommendation.confidence * 100)}%
+                                    </Badge>
                                     {recommendation.market_demand_score !== undefined && (
-                                      <div className="flex items-center gap-2 text-xs mt-1">
-                                        <BarChart3 className="h-3 w-3" />
-                                        <span>Market demand: {Math.round(recommendation.market_demand_score * 100)}%</span>
-                                      </div>
+                                      <Badge variant={getMarketDemandVariant(recommendation.market_demand_score)} className="text-xs">
+                                        <TrendingUp className="h-3 w-3 mr-1" />
+                                        {Math.round(recommendation.market_demand_score * 100)}%
+                                      </Badge>
                                     )}
-                                  </CardContent>
-                                </Card>
-                              ))}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-8">
-                          <div className="animate-pulse flex flex-col items-center">
-                            <Sprout className="h-12 w-12 text-primary mb-4" />
-                            <h3 className="text-lg font-medium mb-2">Analyzing your farm data</h3>
-                            <p className="text-muted-foreground max-w-md">
-                              Our AI is processing your soil conditions, weather patterns, and market trends to provide personalized crop recommendations.
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                                  </div>
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                <p className="text-sm text-muted-foreground mb-3">
+                                  Recommended based on your soil analysis, weather conditions, and market demand with {Math.round(recommendation.confidence * 100)}% confidence.
+                                </p>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>Planting season varies</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs mt-1">
+                                  <TrendingUp className="h-3 w-3" />
+                                  <span>Check local market trends</span>
+                                </div>
+                                {recommendation.market_demand_score !== undefined && (
+                                  <div className="flex items-center gap-2 text-xs mt-1">
+                                    <BarChart3 className="h-3 w-3" />
+                                    <span>Market demand: {Math.round(recommendation.market_demand_score * 100)}%</span>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                      </div>
                     </div>
                   )}
                 </div>

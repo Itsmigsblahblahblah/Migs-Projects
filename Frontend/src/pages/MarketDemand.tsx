@@ -136,8 +136,9 @@ const MarketDemand = () => {
         // Only show timeout warning if we truly have no data
         if (marketData.length === 0) {
           setLoadingTimeout(true);
-          // Set a reassuring message instead of error
-          setError('Our AI is still processing market demand forecasts. This advanced analysis typically completes in just a few moments.');
+          // Continue loading instead of showing static error message
+          // Keep error as null to maintain loading state
+          setError(null);
         }
       }, 90000); // Extended to 90 seconds
     } else {
@@ -281,10 +282,10 @@ const MarketDemand = () => {
       console.log('Set marketData state completed');
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        // Show a more reassuring message instead of error
+        // Continue loading instead of showing static error message
         // But only if we truly have no data
         if (marketData.length === 0) {
-          setError('Our AI is still processing market demand forecasts. This advanced analysis typically completes in just a few moments.');
+          setError(null);
         }
       } else {
         // Keep showing loading state instead of error for better UX
