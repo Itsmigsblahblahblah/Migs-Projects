@@ -63,7 +63,7 @@ const ProfileCard = ({ username, farmerProfile, onEditProfile }: ProfileCardProp
                         variant="ghost"
                         size="sm"
                         onClick={onEditProfile}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 hover:bg-primary hover:text-primary-foreground"
                     >
                         <Edit2 className="h-4 w-4" />
                         Edit

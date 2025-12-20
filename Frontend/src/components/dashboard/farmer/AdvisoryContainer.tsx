@@ -219,18 +219,8 @@ const AdvisoryContainer = () => {
   // Function to get alert color based on severity
   const getAlertColor = (severity: string | undefined, category: string) => {
     if (category === 'weather') {
-      switch (severity) {
-        case 'low':
-          return 'text-green-500 bg-green-50 border-green-200';
-        case 'moderate':
-          return 'text-yellow-500 bg-yellow-50 border-yellow-200';
-        case 'high':
-          return 'text-orange-500 bg-orange-50 border-orange-200';
-        case 'severe':
-          return 'text-red-500 bg-red-50 border-red-200';
-        default:
-          return 'text-gray-500 bg-gray-50 border-gray-200';
-      }
+      // Use the same color scheme as the Alerts page for weather alerts
+      return 'bg-red-50 border-red-200 text-red-800';
     } else {
       return 'text-blue-500 bg-blue-50 border-blue-200';
     }
@@ -378,10 +368,10 @@ const AdvisoryContainer = () => {
                               e.stopPropagation();
                               markAsRead(item);
                             }}
-                            className="h-6 w-6 p-0"
+                            className="h-6 w-6 p-0 hover:bg-green-100"
                             title="Mark as read"
                           >
-                            <Check className="h-4 w-4" />
+                            <Check className="h-4 w-4 text-green-600 stroke-[2.5]" />
                           </Button>
                         )}
                         <Button
@@ -391,10 +381,10 @@ const AdvisoryContainer = () => {
                             e.stopPropagation();
                             deleteItem(item);
                           }}
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 hover:bg-red-100"
                           title={item.type === 'weather' ? 'Clear weather alert' : 'Delete announcement'}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
                       </div>
                     </div>
@@ -447,10 +437,10 @@ const AdvisoryContainer = () => {
                               e.stopPropagation();
                               markAsRead(item);
                             }}
-                            className="h-6 w-6 p-0"
+                            className="h-6 w-6 p-0 hover:bg-green-100"
                             title="Mark as read"
                           >
-                            <Check className="h-4 w-4" />
+                            <Check className="h-4 w-4 text-green-600 stroke-[2.5]" />
                           </Button>
                         )}
                         <Button
@@ -460,10 +450,10 @@ const AdvisoryContainer = () => {
                             e.stopPropagation();
                             deleteItem(item);
                           }}
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 hover:bg-red-100"
                           title={item.type === 'weather' ? 'Clear weather alert' : 'Delete announcement'}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
                       </div>
                     </div>

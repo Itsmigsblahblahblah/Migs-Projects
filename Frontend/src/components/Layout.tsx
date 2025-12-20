@@ -255,7 +255,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <nav className="hidden md:flex items-center space-x-4">
                 <button
                   onClick={() => navigate('/prescribe-crop')}
-                  className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/prescribe-crop') ? 'text-yellow-500' : ''}`}
+                  className={`group text-foreground hover:text-yellow-500 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/prescribe-crop') ? 'text-yellow-500' : ''}`}
                 >
                   <span className="relative z-10">Prescribe</span>
                   <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${isActive('/prescribe-crop') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
@@ -263,7 +263,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
                 <button
                   onClick={() => navigate('/crop-history')}
-                  className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/crop-history') ? 'text-yellow-500' : ''}`}
+                  className={`group text-foreground hover:text-yellow-500 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/crop-history') ? 'text-yellow-500' : ''}`}
                 >
                   <span className="relative z-10">Manage Crop</span>
                   <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${isActive('/crop-history') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
@@ -271,7 +271,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
                 <button
                   onClick={() => navigate('/market-demand')}
-                  className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/market-demand') ? 'text-yellow-500' : ''}`}
+                  className={`group text-foreground hover:text-yellow-500 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/market-demand') ? 'text-yellow-500' : ''}`}
                 >
                   <span className="relative z-10">Market Demand</span>
                   <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${isActive('/market-demand') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
@@ -279,7 +279,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
                 <button
                   onClick={() => navigate('/history')}
-                  className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/history') ? 'text-yellow-500' : ''}`}
+                  className={`group text-foreground hover:text-yellow-500 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${isActive('/history') ? 'text-yellow-500' : ''}`}
                 >
                   <span className="relative z-10">Reports</span>
                   <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${isActive('/history') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
@@ -295,7 +295,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   variant="ghost"
                   size="icon"
                   onClick={() => navigate('/alerts')}
-                  className="relative"
+                  className="relative rounded-full hover:bg-yellow-500/20 hover:text-yellow-500 transition-colors duration-200"
                 >
                   <Bell className="h-5 w-5" />
                   {totalUnreadAlerts() > 0 && (
@@ -310,7 +310,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <div className="hidden md:block">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className={`rounded-full ${isAdmin ? 'hover:bg-blue-50' : ''}`}>
+                    <Button variant="ghost" size="icon" className={`rounded-full ${isAdmin ? 'hover:bg-blue-50' : 'hover:bg-yellow-500/20 hover:text-yellow-500'} transition-colors duration-200`}>
                       <User className={`h-5 w-5 ${isAdmin ? 'text-blue-600' : ''}`} />
                     </Button>
                   </DropdownMenuTrigger>
@@ -350,7 +350,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   {/* Mobile profile dropdown - between alert icon and hamburger menu */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className={`rounded-full ${isAdmin ? 'hover:bg-blue-50' : ''}`}>
+                      <Button variant="ghost" size="icon" className={`rounded-full ${isAdmin ? 'hover:bg-blue-50' : 'hover:bg-yellow-500/20 hover:text-yellow-500'} transition-colors duration-200`}>
                         <User className={`h-5 w-5 ${isAdmin ? 'text-blue-600' : ''}`} />
                       </Button>
                     </DropdownMenuTrigger>
@@ -392,7 +392,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <div className="md:hidden">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className={`rounded-full ${isAdmin ? 'hover:bg-blue-50' : ''}`}>
+                      <Button variant="ghost" size="icon" className={`rounded-full ${isAdmin ? 'hover:bg-blue-50' : 'hover:bg-yellow-500/20 hover:text-yellow-500'} transition-colors duration-200`}>
                         <User className={`h-5 w-5 ${isAdmin ? 'text-blue-600' : ''}`} />
                       </Button>
                     </DropdownMenuTrigger>
@@ -427,7 +427,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   navigate('/prescribe-crop');
                   setIsMobileMenuOpen(false);
                 }}
-                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${isActive('/prescribe-crop') ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-yellow-500 ${isActive('/prescribe-crop') ? 'text-yellow-500' : 'text-foreground'}`}
               >
                 Prescribe
               </button>
@@ -436,7 +436,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   navigate('/crop-history');
                   setIsMobileMenuOpen(false);
                 }}
-                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${isActive('/crop-history') ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-yellow-500 ${isActive('/crop-history') ? 'text-yellow-500' : 'text-foreground'}`}
               >
                 Manage Crop
               </button>
@@ -445,7 +445,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   navigate('/market-demand');
                   setIsMobileMenuOpen(false);
                 }}
-                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${isActive('/market-demand') ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-yellow-500 ${isActive('/market-demand') ? 'text-yellow-500' : 'text-foreground'}`}
               >
                 Market Demand
               </button>
@@ -454,7 +454,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   navigate('/history');
                   setIsMobileMenuOpen(false);
                 }}
-                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative ${isActive('/history') ? 'text-yellow-500' : 'text-foreground hover:text-accent-foreground'}`}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-yellow-500 ${isActive('/history') ? 'text-yellow-500' : 'text-foreground'}`}
               >
                 Reports
               </button>

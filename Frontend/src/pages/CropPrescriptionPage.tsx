@@ -1362,7 +1362,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
               <Button className="flex-1" onClick={handleSavePrescription}>
                 Save Prescription
               </Button>
-              <Button variant="outline" className="flex-1" onClick={handleResetSelection}>
+              <Button variant="outline" className="flex-1 hover:bg-yellow-500 hover:text-white" onClick={handleResetSelection}>
                 Explore Other Crops
               </Button>
             </div>

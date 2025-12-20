@@ -33,6 +33,7 @@ interface ExtendedWeatherData extends WeatherData {
         condition: string;
         high: number;
         low: number;
+        humidity?: number;
         alerts?: WeatherAlert[];
     }[];
     currentAlerts?: WeatherAlert[];
@@ -162,7 +163,7 @@ const WeatherCard = ({
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm text-muted-foreground">Humidity</p>
-                                    <p>N/A</p>
+                                    <p>{Math.round(tomorrow.humidity || 0)}%</p>
                                 </div>
                             </div>
                             {renderAlerts(tomorrow.alerts)}
@@ -190,7 +191,7 @@ const WeatherCard = ({
                                     </div>
                                     <div className="text-right">
                                         <p className="text-sm text-muted-foreground">Humidity</p>
-                                        <p>N/A</p>
+                                        <p>{Math.round(specificDay.humidity || 0)}%</p>
                                     </div>
                                 </div>
                                 {renderAlerts(specificDay.alerts)}
