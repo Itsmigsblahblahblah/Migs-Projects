@@ -98,6 +98,22 @@ const MarketDemand = () => {
     }
   };
 
+  // Effect to handle automatic month adjustment when year changes
+  // Ensures that when switching to current year, past months are not retained
+  useEffect(() => {
+    const availableMonths = getAvailableMonths();
+    
+    // If we're on the current year and the selected month is not in available months
+    // (meaning it's a past month), select the first available month (current or next month)
+    if (selectedYear === currentYear && !availableMonths.includes(selectedMonth)) {
+      // Select the first available month or current month if available
+      const newMonth = availableMonths.length > 0 ? availableMonths[0] : currentMonth;
+      setSelectedMonth(newMonth);
+    }
+    // For future years, we keep the selected month as all months are available
+    // For past years (shouldn't happen), we don't need to adjust
+  }, [selectedYear, currentYear, currentMonth, selectedMonth]);
+
   const months = useMemo(() => getAvailableMonths(), [selectedYear, currentYear, currentMonth]);
   console.log('months array:', months);
   const monthNames = [
