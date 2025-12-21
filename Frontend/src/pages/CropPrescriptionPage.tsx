@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -111,6 +111,10 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     Phosphorus: 'M',
     Potassium: 'M'
   });
+  
+  // Add ref for the crop recommendations section
+  const recommendationsRef = useRef<HTMLDivElement>(null);
+
   const [soilDataLoading, setSoilDataLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("recommendations");
   // Add state for showing more recommendations
@@ -555,6 +559,13 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   const handleResetSelection = () => {
     setSelectedCrop(null);
     setActiveTab("recommendations");
+    
+    // Scroll to the crop recommendations section
+    setTimeout(() => {
+      if (recommendationsRef.current) {
+        recommendationsRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
   };
 
   const handleGetRecommendations = () => {
@@ -893,6 +904,14 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     };
   }, [loading, recommendations.length]);
 
+  // Add effect to scroll to top when selectedCrop changes
+  useEffect(() => {
+    if (selectedCrop) {
+      // Scroll to top of the page when a crop is selected
+      window.scrollTo(0, 0);
+    }
+  }, [selectedCrop]);
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -1079,7 +1098,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                 </Card>
 
                 {/* Prescribed Crops */}
-                <div>
+                <div ref={recommendationsRef}>
                   <h3 className="text-lg font-semibold mb-4">Crop Recommendations</h3>
                   <p className="text-sm text-muted-foreground mb-4">
                     Based on your soil conditions, current weather patterns, and market demand predictions
