@@ -1114,77 +1114,114 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
                   {!loading && !error && recommendations.length > 0 && (
                     <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Show all 6 recommendations in a 3x2 grid, but filter out duplicates */}
-                        {recommendations
-                          .filter((recommendation, index, self) =>
-                            index === self.findIndex(r => r.crop.trim() === recommendation.crop.trim())
-                          )
-                          .slice(0, 6)
-                          .map((recommendation, index) => (
-                            <Card
-                              key={index}
-                              className="hover:shadow-md transition-shadow cursor-pointer border-primary/20"
-                              onClick={() => handleCropSelect({
-                                id: index.toString(),
-                                crop: recommendation.crop,
-                                reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
-                                confidence: Math.round(recommendation.confidence * 100),
-                                plantingSeason: getPlantingSeason(recommendation.crop, inputSoilData, effectiveWeatherData),
-                                expectedYield: "Varies by conditions",
-                                marketTrend: getMarketTrend(null), // Will be updated when market data is fetched
-                                soilType: getSoilType(inputSoilData),
-                                weatherCondition: getWeatherCondition(effectiveWeatherData),
-                                recommendations: getCropRecommendations(
-                                  recommendation.crop,
-                                  inputSoilData,
-                                  effectiveWeatherData,
-                                  null
-                                ),
-                                avoid: getThingsToAvoid(
-                                  recommendation.crop,
-                                  inputSoilData,
-                                  effectiveWeatherData
+                      {/* Added horizontal scrolling container with explicit width */}
+                      <div className="overflow-x-auto w-full">
+                        <div className="border rounded-lg overflow-hidden inline-block min-w-full">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Crop
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Confidence
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Market Demand
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Action
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {recommendations
+                                .filter((recommendation, index, self) =>
+                                  index === self.findIndex(r => r.crop.trim() === recommendation.crop.trim())
                                 )
-                              })}
-                            >
-                              <CardHeader>
-                                <CardTitle className="flex items-center justify-between">
-                                  <span>{recommendation.crop}</span>
-                                  <div className="flex flex-col gap-1">
+                                .slice(0, 6)
+                                .map((recommendation, index) => (
+                                  <tr 
+                                    key={index}
+                                    className="hover:bg-gray-50 cursor-pointer"
+                                    onClick={() => handleCropSelect({
+                                      id: index.toString(),
+                                      crop: recommendation.crop,
+                                      reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
+                                      confidence: Math.round(recommendation.confidence * 100),
+                                      plantingSeason: getPlantingSeason(recommendation.crop, inputSoilData, effectiveWeatherData),
+                                      expectedYield: "Varies by conditions",
+                                      marketTrend: getMarketTrend(null), // Will be updated when market data is fetched
+                                      soilType: getSoilType(inputSoilData),
+                                      weatherCondition: getWeatherCondition(effectiveWeatherData),
+                                      recommendations: getCropRecommendations(
+                                        recommendation.crop,
+                                        inputSoilData,
+                                        effectiveWeatherData,
+                                        null
+                                      ),
+                                      avoid: getThingsToAvoid(
+                                        recommendation.crop,
+                                        inputSoilData,
+                                        effectiveWeatherData
+                                      )
+                                    })}
+                                >
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm font-medium text-gray-900">{recommendation.crop}</div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
                                     <Badge variant={getConfidenceVariant(recommendation.confidence)}>
                                       {Math.round(recommendation.confidence * 100)}%
                                     </Badge>
-                                    {recommendation.market_demand_score !== undefined && (
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    {recommendation.market_demand_score !== undefined ? (
                                       <Badge variant={getMarketDemandVariant(recommendation.market_demand_score)} className="text-xs">
-                                        <TrendingUp className="h-3 w-3 mr-1" />
+                                        <TrendingUp className="h-3 w-3 mr-1 inline" />
                                         {Math.round(recommendation.market_demand_score * 100)}%
                                       </Badge>
+                                    ) : (
+                                      <span className="text-sm text-gray-500">N/A</span>
                                     )}
-                                  </div>
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                <p className="text-sm text-muted-foreground mb-3">
-                                  Recommended based on your soil analysis, weather conditions, and market demand with {Math.round(recommendation.confidence * 100)}% confidence.
-                                </p>
-                                <div className="flex items-center gap-2 text-xs">
-                                  <Calendar className="h-3 w-3" />
-                                  <span>Planting season varies</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs mt-1">
-                                  <TrendingUp className="h-3 w-3" />
-                                  <span>Check local market trends</span>
-                                </div>
-                                {recommendation.market_demand_score !== undefined && (
-                                  <div className="flex items-center gap-2 text-xs mt-1">
-                                    <BarChart3 className="h-3 w-3" />
-                                    <span>Market demand: {Math.round(recommendation.market_demand_score * 100)}%</span>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          ))}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <Button 
+                                      size="sm" 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCropSelect({
+                                          id: index.toString(),
+                                          crop: recommendation.crop,
+                                          reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
+                                          confidence: Math.round(recommendation.confidence * 100),
+                                          plantingSeason: getPlantingSeason(recommendation.crop, inputSoilData, effectiveWeatherData),
+                                          expectedYield: "Varies by conditions",
+                                          marketTrend: getMarketTrend(null), // Will be updated when market data is fetched
+                                          soilType: getSoilType(inputSoilData),
+                                          weatherCondition: getWeatherCondition(effectiveWeatherData),
+                                          recommendations: getCropRecommendations(
+                                            recommendation.crop,
+                                            inputSoilData,
+                                            effectiveWeatherData,
+                                            null
+                                          ),
+                                          avoid: getThingsToAvoid(
+                                            recommendation.crop,
+                                            inputSoilData,
+                                            effectiveWeatherData
+                                          )
+                                        });
+                                      }}
+                                    >
+                                      View More
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
                   )}
