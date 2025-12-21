@@ -40,11 +40,11 @@ const salesChartConfig = {
         color: "hsl(var(--destructive))", // Changed to red color
     },
     grossSales: {
-        label: "Est. Gross Sales",
-        color: "hsl(var(--chart-2))",
+        label: "Money Earned",
+        color: "#eab308", // Yellow color
     },
     netProfit: {
-        label: "Est. Net Profit",
+        label: "Actual Profit",
         color: "hsl(var(--chart-3))",
     },
 } satisfies ChartConfig;
