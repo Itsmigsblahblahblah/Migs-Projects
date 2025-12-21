@@ -1,5 +1,6 @@
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { HelpCircle } from "lucide-react";
+import { useState } from "react";
 
 interface InfoTooltipProps {
     content: string;
@@ -7,17 +8,30 @@ interface InfoTooltipProps {
 }
 
 const InfoTooltip = ({ content, className = "" }: InfoTooltipProps) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+    };
+
+    const handleOpenChange = (open: boolean) => {
+        setIsOpen(open);
+    };
+
     return (
-        <TooltipProvider>
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <HelpCircle className={`h-4 w-4 text-muted-foreground cursor-help ${className}`} />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                    <p className="whitespace-pre-line">{content}</p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+        <Popover open={isOpen} onOpenChange={handleOpenChange}>
+            <PopoverTrigger asChild>
+                <HelpCircle 
+                    className={`h-4 w-4 text-muted-foreground cursor-pointer ${className}`} 
+                    onClick={handleClick}
+                />
+            </PopoverTrigger>
+            <PopoverContent className="max-w-xs p-3">
+                <p className="whitespace-pre-line text-sm">{content}</p>
+            </PopoverContent>
+        </Popover>
     );
 };
 
