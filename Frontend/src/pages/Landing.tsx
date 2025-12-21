@@ -240,28 +240,28 @@ const Landing = () => {
             <nav className="hidden md:flex items-center space-x-4">
               <button
                 onClick={() => scrollToSection('features')}
-                className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'features' ? 'text-yellow-500' : ''}`}
+                className={`group text-foreground hover:text-yellow-500 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'features' ? 'text-yellow-500' : ''}`}
               >
                 <span className="relative z-10">Overview</span>
                 <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'features' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
               </button>
               <button
                 onClick={() => scrollToSection('testimonials')}
-                className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'testimonials' ? 'text-yellow-500' : ''}`}
+                className={`group text-foreground hover:text-yellow-500 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'testimonials' ? 'text-yellow-500' : ''}`}
               >
                 <span className="relative z-10">Reviews</span>
                 <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'testimonials' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
               </button>
               <button
                 onClick={() => scrollToSection('faq')}
-                className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'faq' ? 'text-yellow-500' : ''}`}
+                className={`group text-foreground hover:text-yellow-500 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'faq' ? 'text-yellow-500' : ''}`}
               >
                 <span className="relative z-10">FAQ</span>
                 <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'faq' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
               </button>
               <button
                 onClick={() => scrollToSection('team')}
-                className={`group text-foreground hover:text-accent-foreground px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'team' ? 'text-yellow-500' : ''}`}
+                className={`group text-foreground hover:text-yellow-500 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${activeSection === 'team' ? 'text-yellow-500' : ''}`}
               >
                 <span className="relative z-10">About Us</span>
                 <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${activeSection === 'team' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
