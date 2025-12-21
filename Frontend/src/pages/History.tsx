@@ -609,7 +609,7 @@ const History = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => setExpandedReportId(isExpanded ? null : report.id)}
-                          className="w-full"
+                          className="w-full text-white bg-gradient-primary hover:opacity-90 hover:text-white transition-opacity"
                         >
                           {isExpanded ? (
                             <>
