@@ -27,6 +27,7 @@ import CropRecommendationVisualization from "@/components/dashboard/farmer/CropR
 import AddCropDialog from "@/components/dashboard/farmer/AddCropDialog";
 import { useCropManagement } from "@/hooks/custom/useCropManagement";
 import { getCachedRecommendationData, setCachedRecommendationData, clearRecommendationCache } from '@/services/recommendationSessionCache';
+import SplashScreen from "@/components/SplashScreen";
 
 // Add this interface for the API response
 interface CropRecommendation {
@@ -111,6 +112,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     Phosphorus: 'M',
     Potassium: 'M'
   });
+  
+  // Add state for splash screen
+  const [showSplash, setShowSplash] = useState(false);
   
   // Add ref for the crop recommendations section
   const recommendationsRef = useRef<HTMLDivElement>(null);
@@ -529,6 +533,12 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   }, []);
 
   const handleCropSelect = async (crop: PrescriptionDetails) => {
+    // Show splash screen
+    setShowSplash(true);
+    
+    // Small delay to ensure splash screen is visible
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // Fetch market demand data for the selected crop
     const marketDemand = await fetchMarketDemand(crop.crop);
 
@@ -554,6 +564,11 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     };
 
     setSelectedCrop(updatedCrop);
+    
+    // Hide splash screen after a short delay
+    setTimeout(() => {
+      setShowSplash(false);
+    }, 500);
   };
 
   const handleResetSelection = () => {
@@ -914,527 +929,531 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {!selectedCrop && (
-          <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <Leaf className="h-6 w-6" />
-                  <h1 className="text-2xl font-bold">Crop Prescription</h1>
-                </div>
-                <p className="text-primary-foreground/90">AI-powered crop recommendations based on soil, weather, and market data</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!selectedCrop ? (
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="recommendations" className="flex items-center gap-2">
-                <Sprout className="h-4 w-4" />
-                Recommendations
-              </TabsTrigger>
-              <TabsTrigger value="visualization" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Visualization
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="recommendations">
-              <div className="space-y-6">
-                {/* Soil Data Input */}
-                <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FlaskConical className="h-5 w-5" />
-                      Soil Analysis
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {(soilDataLoading || loading) && (
-                      <div className="flex justify-center items-center h-8">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                        <span>Loading soil data...</span>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="ph" className="block text-sm font-medium mb-1">pH Level</label>
-                        <input
-                          id="ph"
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max="14"
-                          value={inputSoilData.pH}
-                          onChange={(e) => setInputSoilData({ ...inputSoilData, pH: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                          disabled={soilDataLoading || loading}
-                        />
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Nitrogen</label>
-                          <select
-                            value={inputSoilData.Nitrogen}
-                            onChange={(e) => setInputSoilData({ ...inputSoilData, Nitrogen: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                            disabled={soilDataLoading || loading}
-                          >
-                            <option value="L">Low (L)</option>
-                            <option value="M">Medium (M)</option>
-                            <option value="H">High (H)</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Phosphorus</label>
-                          <select
-                            value={inputSoilData.Phosphorus}
-                            onChange={(e) => setInputSoilData({ ...inputSoilData, Phosphorus: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                            disabled={soilDataLoading || loading}
-                          >
-                            <option value="L">Low (L)</option>
-                            <option value="M">Medium (M)</option>
-                            <option value="H">High (H)</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Potassium</label>
-                          <select
-                            value={inputSoilData.Potassium}
-                            onChange={(e) => setInputSoilData({ ...inputSoilData, Potassium: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                            disabled={soilDataLoading || loading}
-                          >
-                            <option value="L">Low (L)</option>
-                            <option value="M">Medium (M)</option>
-                            <option value="H">High (H)</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={handleGetRecommendations}
-                      disabled={loading || soilDataLoading}
-                      className="w-full"
-                    >
-                      {loading ? "Analyzing..." : "Get Recommendations"}
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Environmental Factors */}
-                <Card className="shadow-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Thermometer className="h-5 w-5 text-primary" />
-                      Current Conditions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-accent/10 rounded-lg border">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Thermometer className="h-4 w-4 text-accent" />
-                        <span className="font-medium">Temperature</span>
-                      </div>
-                      <p className="text-2xl font-bold">{effectiveWeatherData?.temperature ? `${Math.round(effectiveWeatherData.temperature)}°C` : '28°C'}</p>
-                      <p className="text-sm text-muted-foreground">Current temperature</p>
-                    </div>
-
-                    <div className="p-4 bg-accent/10 rounded-lg border">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Droplets className="h-4 w-4 text-accent" />
-                        <span className="font-medium">Humidity</span>
-                      </div>
-                      <p className="text-2xl font-bold">{effectiveWeatherData?.humidity ? `${Math.round(effectiveWeatherData.humidity)}%` : '65%'}</p>
-                      <p className="text-sm text-muted-foreground">Relative humidity</p>
-                    </div>
-
-                    <div className="p-4 bg-accent/10 rounded-lg border">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Sun className="h-4 w-4 text-accent" />
-                        <span className="font-medium">Weather</span>
-                      </div>
-                      <p className="text-2xl font-bold">{effectiveWeatherData?.condition || 'Sunny'}</p>
-                      <p className="text-sm text-muted-foreground">Current conditions</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* 7-Day Forecast */}
-                <Card className="shadow-card">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Calendar className="h-5 w-5 text-primary" />
-                      7-Day Forecast
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {effectiveWeatherData?.extendedForecast && effectiveWeatherData.extendedForecast.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
-                        {effectiveWeatherData.extendedForecast.slice(0, 7).map((day: any, index: number) => (
-                          <div key={index} className="p-2 bg-accent/5 rounded-lg border text-center">
-                            <p className="text-xs font-medium">{day.dayOfWeek}</p>
-                            <p className="text-xs text-muted-foreground">{new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                            <p className="text-sm mt-1">{day.condition}</p>
-                            <div className="flex justify-center gap-1 mt-1">
-                              <span className="text-sm font-bold">{Math.round(day.high)}°</span>
-                              <span className="text-sm text-muted-foreground">/</span>
-                              <span className="text-sm">{Math.round(day.low)}°</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">7-day forecast data not available</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Prescribed Crops */}
-                <div ref={recommendationsRef}>
-                  <h3 className="text-lg font-semibold mb-4">Crop Recommendations</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Based on your soil conditions, current weather patterns, and market demand predictions
-                  </p>
-
-                  {(loading || (loadingTimeout && recommendations.length === 0)) && !error && (
-                    <div className="flex flex-col gap-4">
-                      {loading && (
-                        <div className="flex justify-center items-center h-32">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
-                          <div>
-                            <p className="font-medium">Analyzing soil, weather, and market data...</p>
-                            <p className="text-sm text-muted-foreground mt-1">Our AI is processing your personalized recommendations. This usually takes just a few seconds.</p>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {loadingTimeout && recommendations.length === 0 && (
-                        <div className="p-4 bg-warning/10 rounded-lg border border-warning/20 text-warning">
-                          <p className="font-medium">Processing your personalized recommendations</p>
-                          <p className="text-sm mt-1">Our AI is still analyzing your data to provide the most accurate crop recommendations. This may take up to 30 seconds for the first visit.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {error && (
-                    <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 text-destructive">
-                      {error}
-                    </div>
-                  )}
-
-                  {!loading && !error && recommendations.length > 0 && (
-                    <div className="space-y-4">
-                      {/* Added horizontal scrolling container with explicit width */}
-                      <div className="overflow-x-auto w-full">
-                        <div className="border rounded-lg overflow-hidden inline-block min-w-full">
-                          <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                              <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Crop
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Confidence
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Market Demand
-                                </th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Action
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                              {recommendations
-                                .filter((recommendation, index, self) =>
-                                  index === self.findIndex(r => r.crop.trim() === recommendation.crop.trim())
-                                )
-                                .slice(0, 6)
-                                .map((recommendation, index) => (
-                                  <tr 
-                                    key={index}
-                                    className="hover:bg-gray-50 cursor-pointer"
-                                    onClick={() => handleCropSelect({
-                                      id: index.toString(),
-                                      crop: recommendation.crop,
-                                      reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
-                                      confidence: Math.round(recommendation.confidence * 100),
-                                      plantingSeason: getPlantingSeason(recommendation.crop, inputSoilData, effectiveWeatherData),
-                                      expectedYield: "Varies by conditions",
-                                      marketTrend: getMarketTrend(null), // Will be updated when market data is fetched
-                                      soilType: getSoilType(inputSoilData),
-                                      weatherCondition: getWeatherCondition(effectiveWeatherData),
-                                      recommendations: getCropRecommendations(
-                                        recommendation.crop,
-                                        inputSoilData,
-                                        effectiveWeatherData,
-                                        null
-                                      ),
-                                      avoid: getThingsToAvoid(
-                                        recommendation.crop,
-                                        inputSoilData,
-                                        effectiveWeatherData
-                                      )
-                                    })}
-                                >
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-gray-900">{recommendation.crop}</div>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <Badge variant={getConfidenceVariant(recommendation.confidence)}>
-                                      {Math.round(recommendation.confidence * 100)}%
-                                    </Badge>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    {recommendation.market_demand_score !== undefined ? (
-                                      <Badge variant={getMarketDemandVariant(recommendation.market_demand_score)} className="text-xs">
-                                        <TrendingUp className="h-3 w-3 mr-1 inline" />
-                                        {Math.round(recommendation.market_demand_score * 100)}%
-                                      </Badge>
-                                    ) : (
-                                      <span className="text-sm text-gray-500">N/A</span>
-                                    )}
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <Button 
-                                      size="sm" 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCropSelect({
-                                          id: index.toString(),
-                                          crop: recommendation.crop,
-                                          reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
-                                          confidence: Math.round(recommendation.confidence * 100),
-                                          plantingSeason: getPlantingSeason(recommendation.crop, inputSoilData, effectiveWeatherData),
-                                          expectedYield: "Varies by conditions",
-                                          marketTrend: getMarketTrend(null), // Will be updated when market data is fetched
-                                          soilType: getSoilType(inputSoilData),
-                                          weatherCondition: getWeatherCondition(effectiveWeatherData),
-                                          recommendations: getCropRecommendations(
-                                            recommendation.crop,
-                                            inputSoilData,
-                                            effectiveWeatherData,
-                                            null
-                                          ),
-                                          avoid: getThingsToAvoid(
-                                            recommendation.crop,
-                                            inputSoilData,
-                                            effectiveWeatherData
-                                          )
-                                        });
-                                      }}
-                                    >
-                                      View More
-                                    </Button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Disclaimer */}
-                <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
-                  <p className="text-sm">
-                    <strong>Note:</strong> These recommendations are based on real soil analysis data, weather patterns, and market demand predictions processed by our AI model.
-                  </p>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="visualization">
-              <CropRecommendationVisualization
-                recommendations={recommendations.map(rec => ({
-                  crop: rec.crop,
-                  confidence: rec.confidence,
-                  market_demand_score: rec.market_demand_score
-                }))}
-                soilData={inputSoilData}
-                weatherData={{
-                  temperature: effectiveWeatherData?.temperature || 25,
-                  humidity: effectiveWeatherData?.humidity || 60,
-                  condition: effectiveWeatherData?.condition || 'Sunny'
-                }}
-              />
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <div className="space-y-6">
+      {showSplash && <SplashScreen onLoadingComplete={() => setShowSplash(false)} />}
+      <div className={showSplash ? 'opacity-0' : 'opacity-100'}>
+        <div className="space-y-6">
+          {!selectedCrop && (
             <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
               <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  onClick={handleResetSelection}
-                  className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20"
-                >
+                <Button variant="outline" size="icon" onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <Leaf className="h-6 w-6" />
-                    <h1 className="text-2xl font-bold">{selectedCrop.crop} Prescription</h1>
+                    <h1 className="text-2xl font-bold">Crop Prescription</h1>
                   </div>
-                  <p className="text-primary-foreground/90">Detailed prescription and market analysis</p>
+                  <p className="text-primary-foreground/90">AI-powered crop recommendations based on soil, weather, and market data</p>
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Selected Crop Details */}
-            <Card className="shadow-card">
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <CardTitle className="flex items-center gap-2">
-                    <Leaf className="h-6 w-6 text-primary" />
-                    {selectedCrop.crop} Prescription
-                  </CardTitle>
-                  <Badge variant="secondary" className="w-fit">
-                    Confidence: {selectedCrop.confidence}%
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="p-4 bg-accent/10 rounded-lg border">
-                  <p className="text-lg">{selectedCrop.reason}</p>
-                </div>
+          {!selectedCrop ? (
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="recommendations" className="flex items-center gap-2">
+                  <Sprout className="h-4 w-4" />
+                  Recommendations
+                </TabsTrigger>
+                <TabsTrigger value="visualization" className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Visualization
+                </TabsTrigger>
+              </TabsList>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium mb-2 flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Planting Season
-                    </h4>
-                    <p>{getPlantingSeason(selectedCrop.crop, inputSoilData, effectiveWeatherData)}</p>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-2 flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      Market Trend
-                    </h4>
-                    <p>{getMarketTrend(selectedCrop.marketDemand)}</p>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-2 flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Soil Type
-                    </h4>
-                    <p>{getSoilType(inputSoilData)}</p>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-2 flex items-center gap-2">
-                      <Sun className="h-4 w-4" />
-                      Weather Condition
-                    </h4>
-                    <p>{getWeatherCondition(effectiveWeatherData)}</p>
-                  </div>
-
-                  {/* Market Demand Information */}
-                  {selectedCrop.marketDemand && (
-                    <div className="p-4 bg-primary/5 rounded-lg border md:col-span-2">
-                      <h4 className="font-medium mb-2 flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4" />
-                        Market Demand Forecast
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Current Price</p>
-                          <p className="font-medium">₱{selectedCrop.marketDemand.current_avg_price.toFixed(2)}</p>
+              <TabsContent value="recommendations">
+                <div className="space-y-6">
+                  {/* Soil Data Input */}
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FlaskConical className="h-5 w-5" />
+                        Soil Analysis
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {(soilDataLoading || loading) && (
+                        <div className="flex justify-center items-center h-8">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                          <span>Loading soil data...</span>
                         </div>
+                      )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm text-muted-foreground">Est. Predicted Price</p>
-                          <p className="font-medium">₱{selectedCrop.marketDemand.predicted_price.toFixed(2)}</p>
+                          <label htmlFor="ph" className="block text-sm font-medium mb-1">pH Level</label>
+                          <input
+                            id="ph"
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="14"
+                            value={inputSoilData.pH}
+                            onChange={(e) => setInputSoilData({ ...inputSoilData, pH: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                            disabled={soilDataLoading || loading}
+                          />
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Est. Price Change</p>
-                          <p className={`font-medium ${selectedCrop.marketDemand.price_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {selectedCrop.marketDemand.price_change >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change.toFixed(2)}
-                            ({selectedCrop.marketDemand.price_change_percent >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change_percent.toFixed(2)}%)
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Demand Level</p>
-                          <p className="font-medium">
-                            {selectedCrop.marketDemand.demand_level}
-                          </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Nitrogen</label>
+                            <select
+                              value={inputSoilData.Nitrogen}
+                              onChange={(e) => setInputSoilData({ ...inputSoilData, Nitrogen: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                              disabled={soilDataLoading || loading}
+                            >
+                              <option value="L">Low (L)</option>
+                              <option value="M">Medium (M)</option>
+                              <option value="H">High (H)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Phosphorus</label>
+                            <select
+                              value={inputSoilData.Phosphorus}
+                              onChange={(e) => setInputSoilData({ ...inputSoilData, Phosphorus: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                              disabled={soilDataLoading || loading}
+                            >
+                              <option value="L">Low (L)</option>
+                              <option value="M">Medium (M)</option>
+                              <option value="H">High (H)</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Potassium</label>
+                            <select
+                              value={inputSoilData.Potassium}
+                              onChange={(e) => setInputSoilData({ ...inputSoilData, Potassium: e.target.value })}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                              disabled={soilDataLoading || loading}
+                            >
+                              <option value="L">Low (L)</option>
+                              <option value="M">Medium (M)</option>
+                              <option value="H">High (H)</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
+                      <Button
+                        onClick={handleGetRecommendations}
+                        disabled={loading || soilDataLoading}
+                        className="w-full"
+                      >
+                        {loading ? "Analyzing..." : "Get Recommendations"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Environmental Factors */}
+                  <Card className="shadow-card">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Thermometer className="h-5 w-5 text-primary" />
+                        Current Conditions
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 bg-accent/10 rounded-lg border">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Thermometer className="h-4 w-4 text-accent" />
+                          <span className="font-medium">Temperature</span>
+                        </div>
+                        <p className="text-2xl font-bold">{effectiveWeatherData?.temperature ? `${Math.round(effectiveWeatherData.temperature)}°C` : '28°C'}</p>
+                        <p className="text-sm text-muted-foreground">Current temperature</p>
+                      </div>
+
+                      <div className="p-4 bg-accent/10 rounded-lg border">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Droplets className="h-4 w-4 text-accent" />
+                          <span className="font-medium">Humidity</span>
+                        </div>
+                        <p className="text-2xl font-bold">{effectiveWeatherData?.humidity ? `${Math.round(effectiveWeatherData.humidity)}%` : '65%'}</p>
+                        <p className="text-sm text-muted-foreground">Relative humidity</p>
+                      </div>
+
+                      <div className="p-4 bg-accent/10 rounded-lg border">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Sun className="h-4 w-4 text-accent" />
+                          <span className="font-medium">Weather</span>
+                        </div>
+                        <p className="text-2xl font-bold">{effectiveWeatherData?.condition || 'Sunny'}</p>
+                        <p className="text-sm text-muted-foreground">Current conditions</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* 7-Day Forecast */}
+                  <Card className="shadow-card">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        7-Day Forecast
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {effectiveWeatherData?.extendedForecast && effectiveWeatherData.extendedForecast.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
+                          {effectiveWeatherData.extendedForecast.slice(0, 7).map((day: any, index: number) => (
+                            <div key={index} className="p-2 bg-accent/5 rounded-lg border text-center">
+                              <p className="text-xs font-medium">{day.dayOfWeek}</p>
+                              <p className="text-xs text-muted-foreground">{new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                              <p className="text-sm mt-1">{day.condition}</p>
+                              <div className="flex justify-center gap-1 mt-1">
+                                <span className="text-sm font-bold">{Math.round(day.high)}°</span>
+                                <span className="text-sm text-muted-foreground">/</span>
+                                <span className="text-sm">{Math.round(day.low)}°</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">7-day forecast data not available</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Prescribed Crops */}
+                  <div ref={recommendationsRef}>
+                    <h3 className="text-lg font-semibold mb-4">Crop Recommendations</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Based on your soil conditions, current weather patterns, and market demand predictions
+                    </p>
+
+                    {(loading || (loadingTimeout && recommendations.length === 0)) && !error && (
+                      <div className="flex flex-col gap-4">
+                        {loading && (
+                          <div className="flex justify-center items-center h-32">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+                            <div>
+                              <p className="font-medium">Analyzing soil, weather, and market data...</p>
+                              <p className="text-sm text-muted-foreground mt-1">Our AI is processing your personalized recommendations. This usually takes just a few seconds.</p>
+                            </div>
+                          </div>
+                        )}
+                      
+                        {loadingTimeout && recommendations.length === 0 && (
+                          <div className="p-4 bg-warning/10 rounded-lg border border-warning/20 text-warning">
+                            <p className="font-medium">Processing your personalized recommendations</p>
+                            <p className="text-sm mt-1">Our AI is still analyzing your data to provide the most accurate crop recommendations. This may take up to 30 seconds for the first visit.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {error && (
+                      <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 text-destructive">
+                        {error}
+                      </div>
+                    )}
+
+                    {!loading && !error && recommendations.length > 0 && (
+                      <div className="space-y-4">
+                        {/* Added horizontal scrolling container with explicit width */}
+                        <div className="overflow-x-auto w-full">
+                          <div className="border rounded-lg overflow-hidden inline-block min-w-full">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Crop
+                                  </th>
+                                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Confidence
+                                  </th>
+                                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Market Demand
+                                  </th>
+                                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Action
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {recommendations
+                                  .filter((recommendation, index, self) =>
+                                    index === self.findIndex(r => r.crop.trim() === recommendation.crop.trim())
+                                  )
+                                  .slice(0, 6)
+                                  .map((recommendation, index) => (
+                                    <tr 
+                                      key={index}
+                                      className="hover:bg-gray-50 cursor-pointer"
+                                      onClick={() => handleCropSelect({
+                                        id: index.toString(),
+                                        crop: recommendation.crop,
+                                        reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
+                                        confidence: Math.round(recommendation.confidence * 100),
+                                        plantingSeason: getPlantingSeason(recommendation.crop, inputSoilData, effectiveWeatherData),
+                                        expectedYield: "Varies by conditions",
+                                        marketTrend: getMarketTrend(null), // Will be updated when market data is fetched
+                                        soilType: getSoilType(inputSoilData),
+                                        weatherCondition: getWeatherCondition(effectiveWeatherData),
+                                        recommendations: getCropRecommendations(
+                                          recommendation.crop,
+                                          inputSoilData,
+                                          effectiveWeatherData,
+                                          null
+                                        ),
+                                        avoid: getThingsToAvoid(
+                                          recommendation.crop,
+                                          inputSoilData,
+                                          effectiveWeatherData
+                                        )
+                                      })}
+                                    >
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="text-sm font-medium text-gray-900">{recommendation.crop}</div>
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                                        <Badge variant={getConfidenceVariant(recommendation.confidence)}>
+                                          {Math.round(recommendation.confidence * 100)}%
+                                        </Badge>
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                                        {recommendation.market_demand_score !== undefined ? (
+                                          <Badge variant={getMarketDemandVariant(recommendation.market_demand_score)} className="text-xs">
+                                            <TrendingUp className="h-3 w-3 mr-1 inline" />
+                                            {Math.round(recommendation.market_demand_score * 100)}%
+                                          </Badge>
+                                        ) : (
+                                          <span className="text-sm text-gray-500">N/A</span>
+                                        )}
+                                      </td>
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                                        <Button 
+                                          size="sm" 
+                                          className="bg-yellow-500 text-black hover:bg-yellow-600 hover:text-black"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleCropSelect({
+                                              id: index.toString(),
+                                              crop: recommendation.crop,
+                                              reason: `Recommended based on your soil analysis, weather conditions, and market demand with ${Math.round(recommendation.confidence * 100)}% confidence.`,
+                                              confidence: Math.round(recommendation.confidence * 100),
+                                              plantingSeason: getPlantingSeason(recommendation.crop, inputSoilData, effectiveWeatherData),
+                                              expectedYield: "Varies by conditions",
+                                              marketTrend: getMarketTrend(null), // Will be updated when market data is fetched
+                                              soilType: getSoilType(inputSoilData),
+                                              weatherCondition: getWeatherCondition(effectiveWeatherData),
+                                              recommendations: getCropRecommendations(
+                                                recommendation.crop,
+                                                inputSoilData,
+                                                effectiveWeatherData,
+                                                null
+                                              ),
+                                              avoid: getThingsToAvoid(
+                                                recommendation.crop,
+                                                inputSoilData,
+                                                effectiveWeatherData
+                                              )
+                                            });
+                                          }}
+                                        >
+                                          View More
+                                        </Button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Disclaimer */}
+                  <div className="p-4 bg-warning/10 rounded-lg border border-warning/20">
+                    <p className="text-sm">
+                      <strong>Note:</strong> These recommendations are based on real soil analysis data, weather patterns, and market demand predictions processed by our AI model.
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="visualization">
+                <CropRecommendationVisualization
+                  recommendations={recommendations.map(rec => ({
+                    crop: rec.crop,
+                    confidence: rec.confidence,
+                    market_demand_score: rec.market_demand_score
+                  }))}
+                  soilData={inputSoilData}
+                  weatherData={{
+                    temperature: effectiveWeatherData?.temperature || 25,
+                    humidity: effectiveWeatherData?.humidity || 60,
+                    condition: effectiveWeatherData?.condition || 'Sunny'
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="space-y-6">
+              <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleResetSelection}
+                    className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <Leaf className="h-6 w-6" />
+                      <h1 className="text-2xl font-bold">{selectedCrop.crop} Prescription</h1>
                     </div>
-                  )}
+                    <p className="text-primary-foreground/90">Detailed prescription and market analysis</p>
+                  </div>
                 </div>
+              </div>
 
-                <Separator />
+              {/* Selected Crop Details */}
+              <Card className="shadow-card">
+                <CardHeader>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <CardTitle className="flex items-center gap-2">
+                      <Leaf className="h-6 w-6 text-primary" />
+                      {selectedCrop.crop} Prescription
+                    </CardTitle>
+                    <Badge variant="secondary" className="w-fit">
+                      Confidence: {selectedCrop.confidence}%
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="p-4 bg-accent/10 rounded-lg border">
+                    <p className="text-lg">{selectedCrop.reason}</p>
+                  </div>
 
-                {/* Recommendations */}
-                <div>
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <Sprout className="h-4 w-4 text-success" />
-                    Planting Recommendations
-                  </h4>
-                  <ul className="space-y-2">
-                    {getCropRecommendations(selectedCrop.crop, inputSoilData, effectiveWeatherData, selectedCrop.marketDemand).map((rec, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <span className="mt-1 w-2 h-2 rounded-full bg-success flex-shrink-0"></span>
-                        <span>{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Planting Season
+                      </h4>
+                      <p>{getPlantingSeason(selectedCrop.crop, inputSoilData, effectiveWeatherData)}</p>
+                    </div>
 
-                {/* Things to Avoid */}
-                <div>
-                  <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <span className="text-destructive">⚠️</span>
-                    Things to Avoid
-                  </h4>
-                  <ul className="space-y-2">
-                    {getThingsToAvoid(selectedCrop.crop, inputSoilData, effectiveWeatherData).map((item, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <span className="mt-1 w-2 h-2 rounded-full bg-destructive flex-shrink-0"></span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
+                    <div>
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Market Trend
+                      </h4>
+                      <p>{getMarketTrend(selectedCrop.marketDemand)}</p>
+                    </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button className="flex-1" onClick={handleSavePrescription}>
-                Save Prescription
-              </Button>
-              <Button variant="outline" className="flex-1 hover:bg-yellow-500 hover:text-white" onClick={handleResetSelection}>
-                Explore Other Crops
-              </Button>
+                    <div>
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Soil Type
+                      </h4>
+                      <p>{getSoilType(inputSoilData)}</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <Sun className="h-4 w-4" />
+                        Weather Condition
+                      </h4>
+                      <p>{getWeatherCondition(effectiveWeatherData)}</p>
+                    </div>
+
+                    {/* Market Demand Information */}
+                    {selectedCrop.marketDemand && (
+                      <div className="p-4 bg-primary/5 rounded-lg border md:col-span-2">
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4" />
+                          Market Demand Forecast
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Current Price</p>
+                            <p className="font-medium">₱{selectedCrop.marketDemand.current_avg_price.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Est. Predicted Price</p>
+                            <p className="font-medium">₱{selectedCrop.marketDemand.predicted_price.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Est. Price Change</p>
+                            <p className={`font-medium ${selectedCrop.marketDemand.price_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {selectedCrop.marketDemand.price_change >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change.toFixed(2)}
+                              ({selectedCrop.marketDemand.price_change_percent >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change_percent.toFixed(2)}%)
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Demand Level</p>
+                            <p className="font-medium">
+                              {selectedCrop.marketDemand.demand_level}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Recommendations */}
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <Sprout className="h-4 w-4 text-success" />
+                      Planting Recommendations
+                    </h4>
+                    <ul className="space-y-2">
+                      {getCropRecommendations(selectedCrop.crop, inputSoilData, effectiveWeatherData, selectedCrop.marketDemand).map((rec, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <span className="mt-1 w-2 h-2 rounded-full bg-success flex-shrink-0"></span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Things to Avoid */}
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <span className="text-destructive">⚠️</span>
+                      Things to Avoid
+                    </h4>
+                    <ul className="space-y-2">
+                      {getThingsToAvoid(selectedCrop.crop, inputSoilData, effectiveWeatherData).map((item, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <span className="mt-1 w-2 h-2 rounded-full bg-destructive flex-shrink-0"></span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button className="flex-1" onClick={handleSavePrescription}>
+                  Save Prescription
+                </Button>
+                <Button variant="outline" className="flex-1 hover:bg-yellow-500 hover:text-black" onClick={handleResetSelection}>
+                  Explore Other Crops
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Add Crop Dialog */}
-        <AddCropDialog
-          open={isAddCropDialogOpen}
-          onOpenChange={setIsAddCropDialogOpen}
-          newCrop={newCrop}
-          handleCropInputChange={handleCropInputChange}
-          handleSoilTypeChange={handleSoilTypeChange}
-          handleAddCrop={handleAddCropWrapper}
-          lockedCropName={selectedCrop?.crop} // Pass the selected crop name as locked
-        />
+          {/* Add Crop Dialog */}
+          <AddCropDialog
+            open={isAddCropDialogOpen}
+            onOpenChange={setIsAddCropDialogOpen}
+            newCrop={newCrop}
+            handleCropInputChange={handleCropInputChange}
+            handleSoilTypeChange={handleSoilTypeChange}
+            handleAddCrop={handleAddCropWrapper}
+            lockedCropName={selectedCrop?.crop} // Pass the selected crop name as locked
+          />
+        </div>
       </div>
     </Layout>
   );
