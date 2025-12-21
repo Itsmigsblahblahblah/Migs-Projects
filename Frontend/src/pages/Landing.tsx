@@ -30,7 +30,8 @@ import {
   Facebook,
   Mail,
   ChevronDown,
-  XCircle
+  XCircle,
+  ArrowUp
 } from "lucide-react";
 import dean from "@/assets/dean.jpg";
 import hyroin from "@/assets/hyroin.jpg";
@@ -42,6 +43,7 @@ const Landing = () => {
   const [activeSection, setActiveSection] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<{name: string, role: string, src: string} | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false); // Add state for FAB visibility
 
   // Function to scroll to a section
   const scrollToSection = (sectionId: string) => {
@@ -53,9 +55,16 @@ const Landing = () => {
     }
   };
 
-  // Track scroll position to update active section
+  // Track scroll position to update active section and show/hide FAB
   useEffect(() => {
     const handleScroll = () => {
+      // Show FAB when scrolled down 300px
+      if (window.scrollY > 300) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+
       const sections = ['features', 'faq', 'testimonials', 'team'];
       const scrollPosition = window.scrollY + 100;
 
@@ -708,6 +717,17 @@ const Landing = () => {
           </div>
         </div>
       </footer>
+
+      {/* Floating Action Button for scrolling to top */}
+      {showScrollTop && (
+        <Button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-20 right-6 h-12 w-12 rounded-full bg-primary shadow-lg hover:bg-primary/90 transition-all duration-300 ease-in-out transform hover:scale-110 z-50"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="h-5 w-5 text-primary-foreground" />
+        </Button>
+      )}
     </div>
   );
 };
