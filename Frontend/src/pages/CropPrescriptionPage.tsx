@@ -1373,7 +1373,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
                           <div>
-                            <p className="text-sm text-muted-foreground">Current Price</p>
+                            <p className="text-sm text-muted-foreground">Est. Seasonal Avg. Price</p>
                             <p className="font-medium">₱{selectedCrop.marketDemand.current_avg_price.toFixed(2)}</p>
                           </div>
                           <div>
