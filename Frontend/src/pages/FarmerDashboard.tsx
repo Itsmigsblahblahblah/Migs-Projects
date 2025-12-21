@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Sprout, Leaf, X, RotateCcw, ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
+import { Sprout, Leaf, X, RotateCcw, ChevronLeft, ChevronRight, Lightbulb, Plus } from "lucide-react";
 import ProfileCard from "@/components/dashboard/farmer/ProfileCard";
 import WeatherCard from "@/components/dashboard/farmer/WeatherCard";
 import CropStatusCard from "@/components/dashboard/farmer/CropStatusCard";
@@ -543,8 +543,9 @@ const FarmerDashboard = () => {
                 </div>
                 <Button 
                   onClick={() => setIsAddCropDialogOpen(true)}
-                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 w-full sm:w-auto"
                 >
+                  <Plus className="h-4 w-4 mr-2" />
                   Add New Crop
                 </Button>
               </div>

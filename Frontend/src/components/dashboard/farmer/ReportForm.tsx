@@ -104,7 +104,7 @@ const ReportForm = ({ reportText, onReportTextChange, onSubmitReport, isProcessi
                                 variant="outline"
                                 size="sm"
                                 onClick={toggleSpeechRecognition}
-                                className={`flex items-center gap-1 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : ''}`}
+                                className={`flex items-center gap-1 ${isListening ? 'bg-red-500 hover:bg-red-600 text-white' : 'hover:bg-primary hover:text-primary-foreground'}`}
                             >
                                 {isListening ? (
                                     <>

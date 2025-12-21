@@ -492,7 +492,7 @@ const MarketDemand = () => {
             <div className="flex gap-2 w-full sm:w-auto">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2 w-full">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2 w-full hover:bg-primary hover:text-primary-foreground">
                     <Calendar className="h-4 w-4" />
                     {getMonthName(selectedMonth)}
                     <ChevronDown className="h-4 w-4" />
@@ -504,7 +504,20 @@ const MarketDemand = () => {
                       <DropdownMenuItem
                         key={month}
                         onClick={() => handleMonthChange(month)}
-                        className={month === selectedMonth ? "bg-accent" : ""}
+                        className="cursor-pointer"
+                        style={month === selectedMonth ? { backgroundColor: 'hsl(120 70% 30%)', color: 'hsl(0 0% 98%)' } : {}}
+                        onMouseEnter={(e) => {
+                          if (month !== selectedMonth) {
+                            e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                            e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (month !== selectedMonth) {
+                            e.currentTarget.style.backgroundColor = '';
+                            e.currentTarget.style.color = '';
+                          }
+                        }}
                       >
                         {getMonthName(month).substring(0, 3)}
                       </DropdownMenuItem>
@@ -515,7 +528,7 @@ const MarketDemand = () => {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2 w-full">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2 w-full hover:bg-primary hover:text-primary-foreground">
                     <Calendar className="h-4 w-4" />
                     {selectedYear}
                     <ChevronDown className="h-4 w-4" />
@@ -528,6 +541,7 @@ const MarketDemand = () => {
                       size="sm"
                       onClick={() => navigateYearRange('prev')}
                       disabled={yearRangeStart <= minForecastYear}
+                      className="hover:bg-primary hover:text-primary-foreground"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
@@ -538,6 +552,7 @@ const MarketDemand = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => navigateYearRange('next')}
+                      className="hover:bg-primary hover:text-primary-foreground"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
@@ -548,7 +563,20 @@ const MarketDemand = () => {
                       <DropdownMenuItem
                         key={year}
                         onClick={() => handleYearChange(year)}
-                        className={year === selectedYear ? "bg-accent" : ""}
+                        className="cursor-pointer"
+                        style={year === selectedYear ? { backgroundColor: 'hsl(120 70% 30%)', color: 'hsl(0 0% 98%)' } : {}}
+                        onMouseEnter={(e) => {
+                          if (year !== selectedYear) {
+                            e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                            e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (year !== selectedYear) {
+                            e.currentTarget.style.backgroundColor = '';
+                            e.currentTarget.style.color = '';
+                          }
+                        }}
                         disabled={year < minForecastYear}
                       >
                         {year}
@@ -561,7 +589,7 @@ const MarketDemand = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-2 w-full sm:w-auto">
+                <Button variant="outline" size="sm" className="flex items-center gap-2 w-full sm:w-auto hover:bg-primary hover:text-primary-foreground">
                   Sort: {getSortByLabel()} - {getOrderLabel()}
                   <ChevronDown className="h-4 w-4" />
                 </Button>
@@ -575,18 +603,50 @@ const MarketDemand = () => {
                   className="w-full"
                 >
                   <AccordionItem value="predicted-price" className="border-b-0">
-                    <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                    <AccordionTrigger 
+                      className="py-2 px-4 hover:no-underline rounded-sm"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                        e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '';
+                        e.currentTarget.style.color = '';
+                      }}
+                    >
                       <span className="flex items-center">
                         <ChevronRight className="h-4 w-4 mr-2" />
                         Predicted Price
                       </span>
                     </AccordionTrigger>
                     <AccordionContent className="pb-0">
-                      <DropdownMenuItem onClick={() => handleSortChange("predicted_price", "asc")}>
+                      <DropdownMenuItem 
+                        onClick={() => handleSortChange("predicted_price", "asc")} 
+                        className="cursor-pointer"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                          e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '';
+                          e.currentTarget.style.color = '';
+                        }}
+                      >
                         <ArrowUp className="h-4 w-4 mr-2" />
                         Ascending
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSortChange("predicted_price", "desc")}>
+                      <DropdownMenuItem 
+                        onClick={() => handleSortChange("predicted_price", "desc")} 
+                        className="cursor-pointer"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                          e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '';
+                          e.currentTarget.style.color = '';
+                        }}
+                      >
                         <ArrowDown className="h-4 w-4 mr-2" />
                         Descending
                       </DropdownMenuItem>
@@ -596,18 +656,50 @@ const MarketDemand = () => {
                   <DropdownMenuSeparator />
 
                   <AccordionItem value="current-price" className="border-b-0">
-                    <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                    <AccordionTrigger 
+                      className="py-2 px-4 hover:no-underline rounded-sm"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                        e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '';
+                        e.currentTarget.style.color = '';
+                      }}
+                    >
                       <span className="flex items-center">
                         <ChevronRight className="h-4 w-4 mr-2" />
                         Current Price
                       </span>
                     </AccordionTrigger>
                     <AccordionContent className="pb-0">
-                      <DropdownMenuItem onClick={() => handleSortChange("current_avg_price", "asc")}>
+                      <DropdownMenuItem 
+                        onClick={() => handleSortChange("current_avg_price", "asc")} 
+                        className="cursor-pointer"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                          e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '';
+                          e.currentTarget.style.color = '';
+                        }}
+                      >
                         <ArrowUp className="h-4 w-4 mr-2" />
                         Ascending
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSortChange("current_avg_price", "desc")}>
+                      <DropdownMenuItem 
+                        onClick={() => handleSortChange("current_avg_price", "desc")} 
+                        className="cursor-pointer"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                          e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '';
+                          e.currentTarget.style.color = '';
+                        }}
+                      >
                         <ArrowDown className="h-4 w-4 mr-2" />
                         Descending
                       </DropdownMenuItem>
@@ -617,18 +709,50 @@ const MarketDemand = () => {
                   <DropdownMenuSeparator />
 
                   <AccordionItem value="price-change" className="border-b-0">
-                    <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                    <AccordionTrigger 
+                      className="py-2 px-4 hover:no-underline rounded-sm"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                        e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '';
+                        e.currentTarget.style.color = '';
+                      }}
+                    >
                       <span className="flex items-center">
                         <ChevronRight className="h-4 w-4 mr-2" />
                         Price Change %
                       </span>
                     </AccordionTrigger>
                     <AccordionContent className="pb-0">
-                      <DropdownMenuItem onClick={() => handleSortChange("price_change_percent", "asc")}>
+                      <DropdownMenuItem 
+                        onClick={() => handleSortChange("price_change_percent", "asc")} 
+                        className="cursor-pointer"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                          e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '';
+                          e.currentTarget.style.color = '';
+                        }}
+                      >
                         <ArrowUp className="h-4 w-4 mr-2" />
                         Ascending
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSortChange("price_change_percent", "desc")}>
+                      <DropdownMenuItem 
+                        onClick={() => handleSortChange("price_change_percent", "desc")} 
+                        className="cursor-pointer"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                          e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '';
+                          e.currentTarget.style.color = '';
+                        }}
+                      >
                         <ArrowDown className="h-4 w-4 mr-2" />
                         Descending
                       </DropdownMenuItem>
@@ -638,18 +762,50 @@ const MarketDemand = () => {
                   <DropdownMenuSeparator />
 
                   <AccordionItem value="crop-name" className="border-b-0">
-                    <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-accent rounded-sm">
+                    <AccordionTrigger 
+                      className="py-2 px-4 hover:no-underline rounded-sm"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                        e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '';
+                        e.currentTarget.style.color = '';
+                      }}
+                    >
                       <span className="flex items-center">
                         <ChevronRight className="h-4 w-4 mr-2" />
                         Crop Name
                       </span>
                     </AccordionTrigger>
                     <AccordionContent className="pb-0">
-                      <DropdownMenuItem onClick={() => handleSortChange("vegetable", "asc")}>
+                      <DropdownMenuItem 
+                        onClick={() => handleSortChange("vegetable", "asc")} 
+                        className="cursor-pointer"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                          e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '';
+                          e.currentTarget.style.color = '';
+                        }}
+                      >
                         <ArrowUp className="h-4 w-4 mr-2" />
                         A to Z
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSortChange("vegetable", "desc")}>
+                      <DropdownMenuItem 
+                        onClick={() => handleSortChange("vegetable", "desc")} 
+                        className="cursor-pointer"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'hsl(120 70% 30%)';
+                          e.currentTarget.style.color = 'hsl(0 0% 98%)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = '';
+                          e.currentTarget.style.color = '';
+                        }}
+                      >
                         <ArrowDown className="h-4 w-4 mr-2" />
                         Z to A
                       </DropdownMenuItem>
