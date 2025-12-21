@@ -564,14 +564,13 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     };
 
     setSelectedCrop(updatedCrop);
-    
-    // Hide splash screen after a short delay
-    setTimeout(() => {
-      setShowSplash(false);
-    }, 500);
+    // Splash screen will be hidden by the opacity transition when selectedCrop is set
   };
 
   const handleResetSelection = () => {
+    // Show splash screen when navigating back
+    setShowSplash(true);
+    
     setSelectedCrop(null);
     setActiveTab("recommendations");
     
@@ -580,7 +579,11 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       if (recommendationsRef.current) {
         recommendationsRef.current.scrollIntoView({ behavior: 'smooth' });
       }
-    }, 100);
+      // Hide splash screen after scrolling with a longer delay to prevent glitchy appearance
+      setTimeout(() => {
+        setShowSplash(false);
+      }, 300);
+    }, 300);
   };
 
   const handleGetRecommendations = () => {
@@ -929,8 +932,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
   return (
     <Layout>
-      {showSplash && <SplashScreen onLoadingComplete={() => setShowSplash(false)} />}
-      <div className={showSplash ? 'opacity-0' : 'opacity-100'}>
+      {showSplash && !selectedCrop && <SplashScreen onLoadingComplete={() => setShowSplash(false)} />}
+      <div className={showSplash && !selectedCrop ? 'opacity-0' : 'opacity-100'}>
         <div className="space-y-6">
           {!selectedCrop && (
             <div className="bg-gradient-primary rounded-lg p-6 text-primary-foreground">
