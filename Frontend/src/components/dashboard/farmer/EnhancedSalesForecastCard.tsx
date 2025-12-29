@@ -449,7 +449,7 @@ ${userInvestment === 0 ? 'Note: Profit is 0 because investment is 0.' :
                             Positive bars (green) show profit, while negative bars (red) show losses.
                         </p>
                         <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                            <p className="text-xs text-yellow-500 font-medium break-words">Disclaimer: This forecast is based on historical data and market trends. Actual results may vary due to factors such as weather conditions, market fluctuations, and other unforeseen circumstances. This projection should be used as a guide only and not as a guarantee of income.</p>
+                            <p className="text-xs text-black font-medium break-words">Disclaimer: This forecast is based on historical data and market trends. Actual results may vary due to factors such as weather conditions, market fluctuations, and other unforeseen circumstances. This projection should be used as a guide only and not as a guarantee of income.</p>
                         </div>
                     </div>
                 </div>

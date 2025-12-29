@@ -141,6 +141,7 @@ const CropDetails = () => {
                 }
 
                 const cropData = getCropById(id);
+                console.log('Crop data loaded:', cropData);
                 if (cropData) {
                     setCrop(cropData);
 
@@ -189,6 +190,12 @@ const CropDetails = () => {
                     const [harvestInfo, marketInsights] = await Promise.all([
                         // Fetch harvest estimate from Gemini API only if not already saved or if it was reset
                         (async () => {
+                            console.log('Checking harvest data conditions:', {
+                                hasPlantedDate: !!cropData.plantedDate,
+                                hasHarvestData: !!cropData.harvestData,
+                                harvestDataKeys: cropData.harvestData ? Object.keys(cropData.harvestData) : null
+                            });
+                            
                             if (cropData.plantedDate && (!cropData.harvestData || Object.keys(cropData.harvestData).length === 0)) {
                                 try {
                                     const plantedDate = typeof cropData.plantedDate === 'string'
@@ -197,7 +204,14 @@ const CropDetails = () => {
                                             ? cropData.plantedDate.toDate()
                                             : new Date(cropData.plantedDate);
 
+                                    console.log('Calling getHarvestEstimate with:', {
+                                        cropName: cropData.name,
+                                        plantedDate: plantedDate,
+                                        location: "Majayjay, Laguna"
+                                    });
+
                                     const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
+                                    console.log('Harvest info received:', harvestInfo);
 
                                     // Save harvest data to crop record
                                     if (cropData.id) {
@@ -211,9 +225,11 @@ const CropDetails = () => {
                                 }
                             } else if (cropData.harvestData) {
                                 // Use existing harvest data
+                                console.log('Using existing harvest data:', cropData.harvestData);
                                 return cropData.harvestData;
                             } else {
                                 // Reset harvest data if no conditions are met
+                                console.log('No harvest data conditions met, returning null');
                                 return null;
                             }
                         })(),
@@ -248,6 +264,7 @@ const CropDetails = () => {
                     ]);
 
                     // Update state with fetched data
+                    console.log('Setting harvest data state:', harvestInfo);
                     setHarvestData(harvestInfo);
                     setMarketData(marketInsights);
                 }
@@ -315,125 +332,181 @@ const CropDetails = () => {
     };
 
     const calculateHarvestDate = (plantedDate: any, cropName: string) => {
+        console.log('Calculating harvest date with:', { harvestData, plantedDate, cropName });
+        
         // Use Gemini API data if available, otherwise fall back to original logic
-        if (harvestData && harvestData.formattedHarvestDate) {
-            return harvestData.formattedHarvestDate;
-        }
-
-        if (!plantedDate || !plantedDate.toDate) return 'Unknown date';
-
-        try {
-            const baseDate = plantedDate.toDate();
-            let daysToHarvest = 90; // Default
-
-            if (cropName.toLowerCase().includes("rice")) {
-                daysToHarvest = 120;
-            } else if (cropName.toLowerCase().includes("corn")) {
-                daysToHarvest = 100;
+        if (harvestData && (harvestData.formattedHarvestDate || harvestData.estimatedHarvestDate)) {
+          const harvestDateStr = harvestData.formattedHarvestDate || 
+                                (harvestData.estimatedHarvestDate ? 
+                                  new Date(harvestData.estimatedHarvestDate).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  }) : 
+                                  null);
+          
+          if (harvestDateStr) {
+            console.log('Using harvest date from API:', harvestDateStr);
+            const harvestDate = new Date(harvestDateStr);
+            
+            // Handle invalid date
+            if (!isNaN(harvestDate.getTime())) {
+              return harvestDateStr;
+            } else {
+              console.log('Invalid harvest date from API, falling back to manual calculation');
             }
-
-            baseDate.setDate(baseDate.getDate() + daysToHarvest);
-            return baseDate.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        } catch (e) {
-            return 'Unknown date';
+          } else {
+            console.log('No valid harvest date found in harvestData');
+          }
         }
-    };
+        
+        if (!plantedDate || !plantedDate.toDate) {
+          console.log('No plantedDate available, returning Unknown date');
+          return 'Unknown date';
+        }
+        
+        try {
+          const baseDate = plantedDate.toDate ? plantedDate.toDate() : new Date(plantedDate);
+          let daysToHarvest = 90; // Default
+      
+          if (cropName.toLowerCase().includes("rice")) {
+            daysToHarvest = 120;
+          } else if (cropName.toLowerCase().includes("corn")) {
+            daysToHarvest = 100;
+          }
+      
+          baseDate.setDate(baseDate.getDate() + daysToHarvest);
+          const result = baseDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+      
+          console.log('Calculated harvest date:', result);
+          return result;
+        } catch (e) {
+          console.error('Error calculating harvest date:', e);
+          return 'Unknown date';
+        }
+      };
 
     // Calculate harvest date range (earlier date - harvest date)
     const calculateHarvestDateRange = (plantedDate: any, cropName: string) => {
+        console.log('Calculating harvest date range with:', { harvestData, plantedDate, cropName });
+        
         // Use Gemini API data if available, otherwise fall back to original logic
-        if (harvestData && harvestData.formattedHarvestDate) {
-            // If we have a specific harvest date from API, calculate range based on crop type
-            const harvestDateStr = harvestData.formattedHarvestDate;
+        if (harvestData && (harvestData.formattedHarvestDate || harvestData.estimatedHarvestDate)) {
+          // If we have a specific harvest date from API, calculate range based on crop type
+          const harvestDateStr = harvestData.formattedHarvestDate || 
+                                (harvestData.estimatedHarvestDate ? 
+                                  new Date(harvestData.estimatedHarvestDate).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  }) : 
+                                  null);
+          
+          if (!harvestDateStr) {
+            console.log('No valid harvest date found in harvestData');
+            // Fall back to manual calculation
+          } else {
+            console.log('Using harvest date from API:', harvestDateStr);
             const harvestDate = new Date(harvestDateStr);
-
-            // Calculate earlier date based on crop type (minimum 30 days before harvest)
-            let daysBeforeHarvest = 30; // Minimum 30 days
-
-            // For crops with longer growing periods, use a larger range
-            if (cropName.toLowerCase().includes("rice")) {
+            
+            // Handle invalid date
+            if (isNaN(harvestDate.getTime())) {
+              console.log('Invalid harvest date from API, falling back to manual calculation');
+            } else {
+              // Calculate earlier date based on crop type (minimum 30 days before harvest)
+              let daysBeforeHarvest = 30; // Minimum 30 days
+              
+              // For crops with longer growing periods, use a larger range
+              if (cropName.toLowerCase().includes("rice")) {
                 daysBeforeHarvest = 45; // 1.5 months for rice
-            } else if (cropName.toLowerCase().includes("corn")) {
+              } else if (cropName.toLowerCase().includes("corn")) {
                 daysBeforeHarvest = 40; // ~1.3 months for corn
-            } else if (cropName.toLowerCase().includes("tomato")) {
+              } else if (cropName.toLowerCase().includes("tomato")) {
                 daysBeforeHarvest = 35; // ~1.2 months for tomato
-            } else if (cropName.toLowerCase().includes("pechay") || cropName.toLowerCase().includes("lettuce")) {
+              } else if (cropName.toLowerCase().includes("pechay") || cropName.toLowerCase().includes("lettuce")) {
                 daysBeforeHarvest = 30; // Exactly 1 month for leafy vegetables
-            }
-
-            const earlierDate = new Date(harvestDate);
-            earlierDate.setDate(earlierDate.getDate() - daysBeforeHarvest);
-
-            // Format both dates
-            const earlierDateStr = earlierDate.toLocaleDateString('en-US', {
+              }
+              
+              const earlierDate = new Date(harvestDate);
+              earlierDate.setDate(earlierDate.getDate() - daysBeforeHarvest);
+              
+              // Format both dates
+              const earlierDateStr = earlierDate.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
-            });
-
-            return `${earlierDateStr} – ${harvestDateStr}`;
+              });
+              
+              return `${earlierDateStr} – ${harvestDateStr}`;
+            }
+          }
         }
-
-        if (!plantedDate || !plantedDate.toDate) return 'Unknown date';
-
+        
+        if (!plantedDate || !plantedDate.toDate) {
+          console.log('No plantedDate available, returning Unknown date');
+          return 'Unknown date';
+        }
+        
         try {
-            const baseDate = plantedDate.toDate();
-            let daysToHarvest = 90; // Default
-
-            // Determine crop-specific harvest time
-            if (cropName.toLowerCase().includes("rice")) {
-                daysToHarvest = 120;
-            } else if (cropName.toLowerCase().includes("corn")) {
-                daysToHarvest = 100;
-            } else if (cropName.toLowerCase().includes("tomato")) {
-                daysToHarvest = 85;
-            } else if (cropName.toLowerCase().includes("pechay") || cropName.toLowerCase().includes("lettuce")) {
-                daysToHarvest = 45;
-            }
-
-            // Calculate harvest date
-            const harvestDate = new Date(baseDate);
-            harvestDate.setDate(harvestDate.getDate() + daysToHarvest);
-
-            // Calculate earlier date (minimum 30 days before harvest)
-            let daysBeforeHarvest = 30; // Minimum 30 days
-
-            // For crops with longer growing periods, use a larger range
-            if (cropName.toLowerCase().includes("rice")) {
-                daysBeforeHarvest = 45; // 1.5 months for rice
-            } else if (cropName.toLowerCase().includes("corn")) {
-                daysBeforeHarvest = 40; // ~1.3 months for corn
-            } else if (cropName.toLowerCase().includes("tomato")) {
-                daysBeforeHarvest = 35; // ~1.2 months for tomato
-            } else if (cropName.toLowerCase().includes("pechay") || cropName.toLowerCase().includes("lettuce")) {
-                daysBeforeHarvest = 30; // Exactly 1 month for leafy vegetables
-            }
-
-            const earlierDate = new Date(harvestDate);
-            earlierDate.setDate(earlierDate.getDate() - daysBeforeHarvest);
-
-            // Format both dates
-            const earlierDateStr = earlierDate.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-
-            const harvestDateStr = harvestDate.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-
-            return `${earlierDateStr} – ${harvestDateStr}`;
+          const baseDate = plantedDate.toDate ? plantedDate.toDate() : new Date(plantedDate);
+          let daysToHarvest = 90; // Default
+          
+          // Determine crop-specific harvest time
+          if (cropName.toLowerCase().includes("rice")) {
+            daysToHarvest = 120;
+          } else if (cropName.toLowerCase().includes("corn")) {
+            daysToHarvest = 100;
+          } else if (cropName.toLowerCase().includes("tomato")) {
+            daysToHarvest = 85;
+          } else if (cropName.toLowerCase().includes("pechay") || cropName.toLowerCase().includes("lettuce")) {
+            daysToHarvest = 45;
+          }
+          
+          // Calculate harvest date
+          const harvestDate = new Date(baseDate);
+          harvestDate.setDate(harvestDate.getDate() + daysToHarvest);
+          
+          // Calculate earlier date (minimum 30 days before harvest)
+          let daysBeforeHarvest = 30; // Minimum 30 days
+          
+          // For crops with longer growing periods, use a larger range
+          if (cropName.toLowerCase().includes("rice")) {
+            daysBeforeHarvest = 45; // 1.5 months for rice
+          } else if (cropName.toLowerCase().includes("corn")) {
+            daysBeforeHarvest = 40; // ~1.3 months for corn
+          } else if (cropName.toLowerCase().includes("tomato")) {
+            daysBeforeHarvest = 35; // ~1.2 months for tomato
+          } else if (cropName.toLowerCase().includes("pechay") || cropName.toLowerCase().includes("lettuce")) {
+            daysBeforeHarvest = 30; // Exactly 1 month for leafy vegetables
+          }
+          
+          const earlierDate = new Date(harvestDate);
+          earlierDate.setDate(earlierDate.getDate() - daysBeforeHarvest);
+          
+          // Format both dates
+          const earlierDateStr = earlierDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+          
+          const harvestDateStr = harvestDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+          
+          console.log('Calculated date range:', `${earlierDateStr} – ${harvestDateStr}`);
+          return `${earlierDateStr} – ${harvestDateStr}`;
         } catch (e) {
-            return 'Unknown date';
+          console.error('Error calculating harvest date range:', e);
+          return 'Unknown date';
         }
-    };
+      };
 
     // Calculate growth stage based on planting date
     const calculateGrowthStage = (plantedDate: any) => {
