@@ -228,9 +228,10 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
   const fetchMarketDemand = async (cropName: string) => {
     try {
       console.log('Fetching market demand for crop:', cropName);
-      // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-      const response = await fetch(`${BACKEND_URL}/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
+      // Use relative URL for proxy or full URL for production
+      const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+      const apiUrl = isDevelopment ? `/vegetables/vegetable-data/${encodeURIComponent(cropName)}` : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/vegetables/vegetable-data/${encodeURIComponent(cropName)}`;
+      const response = await fetch(apiUrl);
 
       console.log('Market demand response status:', response.status);
       console.log('Market demand response ok:', response.ok);
@@ -253,9 +254,11 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
         const historicalMonths = historicalData.map((item: any) => parseInt(item.MonthNum));
 
         // Make demand prediction
-        // Use environment variable for backend URL or default to localhost
-        const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-        const predictionResponse = await fetch(`${BACKEND_URL}/vegetables/predict-demand`, {
+        // Use relative URL for proxy or full URL for production
+        const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+        const predictionApiUrl = isDevelopment ? '/vegetables/predict-demand' : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/vegetables/predict-demand`;
+        
+        const predictionResponse = await fetch(predictionApiUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

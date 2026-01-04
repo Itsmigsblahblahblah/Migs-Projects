@@ -43,9 +43,10 @@ const MarketDemandCard = () => {
         return;
       }
 
-      // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-      const response = await fetch(`${BACKEND_URL}/vegetables/recommend-crops?top_n=5`);
+      // Use relative URL for proxy or full URL for production
+      const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+      const apiUrl = isDevelopment ? '/vegetables/recommend-crops?top_n=5' : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/vegetables/recommend-crops?top_n=5`;
+      const response = await fetch(apiUrl);
 
       if (!response.ok) {
         throw new Error("Failed to fetch market demand data");

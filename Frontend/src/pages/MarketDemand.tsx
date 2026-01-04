@@ -244,22 +244,22 @@ const MarketDemand = () => {
         return;
       }
 
-      // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      // Use relative URL for proxy or full URL for production
+      const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
       // Simplified approach - always fetch fresh data for current month
       // Include month, year, and demand_level parameters in the API call
       // Request all crops instead of just 20
-      let url = `${BACKEND_URL}/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
+      let apiUrl = isDevelopment ? `/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}` : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/vegetables/recommend-crops?top_n=1000&month=${selectedMonth}&year=${selectedYear}`;
       if (selectedDemandLevel) {
-        url += `&demand_level=${selectedDemandLevel}`;
+        apiUrl += `&demand_level=${selectedDemandLevel}`;
       }
 
-      console.log(`Making request to: ${url}`);
+      console.log(`Making request to: ${apiUrl}`);
       // Extended timeout for comprehensive processing
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 90000); // 90 seconds
       
-      const response = await fetch(url, { signal: controller.signal });
+      const response = await fetch(apiUrl, { signal: controller.signal });
       clearTimeout(timeoutId);
       
       console.log(`Response status: ${response.status}, ok: ${response.ok}`);

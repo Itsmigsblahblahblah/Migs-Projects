@@ -276,13 +276,15 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         month: currentMonth
       };
       
-      // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-      const controller = new AbortController();
-      // Extended timeout to 90 seconds for comprehensive processing
-      const timeoutId = setTimeout(() => controller.abort(), 90000);
+      // Use relative URL for proxy or full URL for production
+      const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+      const apiUrl = isDevelopment ? '/enhanced-soil/fair-recommend' : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/enhanced-soil/fair-recommend`;
       
-      const response = await fetch(`${BACKEND_URL}/enhanced-soil/fair-recommend`, {
+      // Create AbortController with timeout to prevent indefinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2-minute timeout
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -326,28 +328,19 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         setLoading(false);
       }
     } catch (err: any) {
-      if (err.name === 'AbortError') {
-        // Even on timeout, we shouldn't show an error - just continue loading until data is available
-        console.warn('Request timed out, but continuing to load until data is available');
-        // Don't set error message, keep loading
-        if (recommendations.length === 0) {
-          setError(null);
-        }
-      } else if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        if (recommendations.length === 0) {
-          setError('Network connection issue. Please check your connection and try again. If the problem persists, the server might be temporarily unavailable.');
-        }
-      } else {
-        console.error('Error fetching enhanced recommendations:', err);
-        // Only show error if we don't have any recommendations
-        if (recommendations.length === 0) {
-          // Keep showing loading state instead of error for better UX
-          setError(null);
-        }
-      }
       console.error('Error fetching enhanced recommendations:', err);
-      // Always stop loading on error
+      
+      // Always stop loading to prevent infinite loading state
       setLoading(false);
+      
+      // Set appropriate error message based on error type
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setError('Network connection issue. Please check your connection and try again.');
+      } else if (err.name === 'AbortError') {
+        setError('Request timed out. The model is still processing your request. Please try again or check back later.');
+      } else {
+        setError('Failed to load recommendations. Please try again.');
+      }
     }
   };
 
@@ -355,9 +348,10 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   const fetchMarketDemand = async (cropName: string) => {
     try {
       console.log('Fetching market demand for crop:', cropName);
-      // Use environment variable for backend URL or default to localhost
-      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-      const response = await fetch(`${BACKEND_URL}/vegetables/vegetable-data/${encodeURIComponent(cropName)}`);
+      // Use relative URL for proxy or full URL for production
+      const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+      const apiUrl = isDevelopment ? `/vegetables/vegetable-data/${encodeURIComponent(cropName)}` : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/vegetables/vegetable-data/${encodeURIComponent(cropName)}`;
+      const response = await fetch(apiUrl);
 
       console.log('Market demand response status:', response.status);
       console.log('Market demand response ok:', response.ok);
@@ -384,7 +378,10 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
         
         try {
-          const predictionResponse = await fetch(`${BACKEND_URL}/vegetables/predict-demand`, {
+          const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+          const predictionApiUrl = isDevelopment ? '/vegetables/predict-demand' : `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/vegetables/predict-demand`;
+          
+          const predictionResponse = await fetch(predictionApiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

@@ -91,7 +91,7 @@ class EnhancedSoilCropTransformer:
     def __init__(self, hyperparams=None):
         self.hyperparams = hyperparams or HYPERPARAMETERS
         self.model = None
-        self.label_encoder = LabelEncoder()
+        self.crop_label_encoder = LabelEncoder()
         self.scaler = StandardScaler()
         self.feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium',
                                 'temperature', 'humidity', 'precipitation_probability',
@@ -272,14 +272,14 @@ class EnhancedSoilCropTransformer:
         y = soil_df['Crop'].values
 
         # Encode labels
-        y_encoded = self.label_encoder.fit_transform(y)
+        y_encoded = self.crop_label_encoder.fit_transform(y)
 
         # Scale features
         X_scaled = self.scaler.fit_transform(X)
 
         # Save preprocessing pipeline
         self.preprocessor = {
-            'label_encoder': self.label_encoder,
+            'crop_label_encoder': self.crop_label_encoder,
             'scaler': self.scaler,
             'feature_columns': self.feature_columns,
             'market_scores': market_scores
@@ -468,7 +468,7 @@ class EnhancedSoilCropTransformer:
         unique_labels = np.unique(np.concatenate([y_test, y_pred]))
 
         # Create classification report
-        target_names = self.label_encoder.inverse_transform(unique_labels)
+        target_names = self.crop_label_encoder.inverse_transform(unique_labels)
         report = classification_report(
             y_test, y_pred, target_names=target_names, output_dict=True, zero_division="warn")
 
@@ -704,7 +704,7 @@ class EnhancedSoilCropTransformer:
             f"Model prediction time: {model_prediction_time:.4f} seconds")
 
         # Get all crops
-        all_crops = self.label_encoder.classes_
+        all_crops = self.crop_label_encoder.classes_
 
         # Get market demand scores for all crops
         market_scores_start = time_module.time()
@@ -734,7 +734,7 @@ class EnhancedSoilCropTransformer:
         # Get more predictions to ensure variety
         sorting_start = time_module.time()
         top_indices = np.argsort(final_scores)[-12:][::-1]
-        top_crops = self.label_encoder.inverse_transform(top_indices)
+        top_crops = self.crop_label_encoder.inverse_transform(top_indices)
         top_final_scores = final_scores[top_indices]
         top_ml_confidences = ml_confidence_scores[top_indices]
         top_market_scores = market_scores[top_indices]
@@ -844,7 +844,8 @@ class EnhancedSoilCropTransformer:
             f"Preprocessing pipeline loaded successfully in {preprocessor_load_time:.4f} seconds")
 
         # Restore components
-        self.label_encoder = self.preprocessor['label_encoder']
+        self.soil_label_encoder = self.preprocessor['soil_label_encoder']
+        self.crop_label_encoder = self.preprocessor['crop_label_encoder']
         self.scaler = self.preprocessor['scaler']
         self.feature_columns = self.preprocessor['feature_columns']
 
