@@ -53,8 +53,14 @@ const MarketDemand = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [sortBy, setSortBy] = useState<"predicted_price" | "current_avg_price" | "price_change_percent" | "vegetable">("predicted_price");
   const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
-  const [selectedMonth, setSelectedMonth] = useState<number>(12); // Default to December
-  const [selectedYear, setSelectedYear] = useState<number>(2025); // Default to 2025
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => {
+    const now = new Date();
+    return now.getMonth() + 1;
+  }); // Default to current month
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    const now = new Date();
+    return now.getFullYear();
+  }); // Default to current year
 
   // Debugging: Log initial state
   useEffect(() => {
@@ -62,7 +68,10 @@ const MarketDemand = () => {
     // Manually trigger fetch on mount to ensure it's called
     fetchMarketData();
   }, []);
-  const [yearRangeStart, setYearRangeStart] = useState<number>(2025); // Start from 2025 instead of current year
+  const [yearRangeStart, setYearRangeStart] = useState<number>(() => {
+    const now = new Date();
+    return now.getFullYear();
+  }); // Start from current year instead of 2025
   const [selectedDemandLevel, setSelectedDemandLevel] = useState<string | null>(null); // New state for demand level filtering
   const [currentPage, setCurrentPage] = useState(1); // Pagination state
   const cropsPerPage = 10; // Number of crops per page
@@ -121,8 +130,8 @@ const MarketDemand = () => {
     "July", "August", "September", "October", "November", "December"
   ];
 
-  // Generate year options based on range - start from 2025 (first forecastable year)
-  const years = Array.from({ length: 6 }, (_, i) => Math.max(minForecastYear, yearRangeStart) + i);
+  // Generate year options based on range - always start from current year
+  const years = Array.from({ length: 6 }, (_, i) => Math.max(minForecastYear, currentYear) + i);
 
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   
@@ -321,7 +330,7 @@ const MarketDemand = () => {
 
   const navigateYearRange = (direction: 'prev' | 'next') => {
     const newStart = direction === 'prev'
-      ? Math.max(2025, yearRangeStart - 6) // Minimum year is 2025
+      ? Math.max(minForecastYear, yearRangeStart - 6) // Minimum year is 2025
       : yearRangeStart + 6;
     setYearRangeStart(newStart);
   };
