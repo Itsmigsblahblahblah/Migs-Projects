@@ -158,7 +158,7 @@ const Landing = () => {
   const team = [
     {
       name: "Dean Mabulay",
-      role: "Lead Developer | AI Specialist",
+      role: "Fullstack Lead Developer | AI Specialist",
       src: dean,
       avatar: <img src={dean} alt="Dean Martin Mabulay" className="h-24 w-24 rounded-full object-cover no-select no-drag" draggable="false" />
     },
@@ -176,7 +176,7 @@ const Landing = () => {
     },
     {
       name: "Dondon Esquivel",
-      role: "Project Manager",
+      role: "Administrative Staff",
       src: dondon,
       avatar: <img src={dondon} alt="Dondon Esquivel" className="h-24 w-24 rounded-full object-cover no-select no-drag" draggable="false" />
     }
