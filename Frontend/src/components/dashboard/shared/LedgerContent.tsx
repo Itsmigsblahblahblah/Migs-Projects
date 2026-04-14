@@ -35,9 +35,7 @@ import {
   MapPin,
   Eye,
   BarChart3,
-  Calendar,
-  Award,
-  Package
+  Calendar
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -220,44 +218,6 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
               {formatCurrency(monthlyStats[0].profitMonthly)}
             </div>
             <p className="text-xs text-muted-foreground">This month's profit</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Summary Cards - Row 3 (Harvest Tracking) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Harvest This Month</CardTitle>
-            <Package className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{summary.totalMonthlyHarvests}</div>
-            <p className="text-xs text-muted-foreground">Crops with completed maintenance</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Most Harvested Crop</CardTitle>
-            <Award className="h-4 w-4 text-yellow-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{summary.mostHarvestedCrop}</div>
-            <p className="text-xs text-muted-foreground">
-              {summary.mostHarvestedCropCount} {summary.mostHarvestedCropCount === 1 ? 'harvest' : 'harvests'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed Crops</CardTitle>
-            <Sprout className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{summary.completedLedgers}</div>
-            <p className="text-xs text-muted-foreground">Total harvested (all time)</p>
           </CardContent>
         </Card>
       </div>

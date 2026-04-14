@@ -33,10 +33,7 @@ export const useFarmLedger = (userId?: string, isAdmin: boolean = false) => {
     totalProfit: 0,
     averageProfitMargin: 0,
     activeLedgers: 0,
-    completedLedgers: 0,
-    totalMonthlyHarvests: 0,
-    mostHarvestedCrop: 'N/A',
-    mostHarvestedCropCount: 0
+    completedLedgers: 0
   });
   const [loading, setLoading] = useState(true);
   const [selectedLedger, setSelectedLedger] = useState<FarmLedger | null>(null);

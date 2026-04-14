@@ -194,8 +194,7 @@ export const getUserLedgers = async (userId: string, getCropById?: (id: string) 
           generalNotes: cropData.generalNotes || '',
           recommendations: cropData.recommendations || [],
           createdAt: cropData.createdAt?.toDate?.() || new Date().toISOString(),
-          updatedAt: cropData.updatedAt?.toDate?.() || new Date().toISOString(),
-          checklist: cropData.checklist || [] // Include checklist data
+          updatedAt: cropData.updatedAt?.toDate?.() || new Date().toISOString()
         };
       } catch (error) {
         console.error('[Ledger] Error processing crop:', cropId, error);
@@ -278,8 +277,7 @@ export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<
           generalNotes: cropData.generalNotes || '',
           recommendations: cropData.recommendations || [],
           createdAt: cropData.createdAt?.toDate?.() || new Date().toISOString(),
-          updatedAt: cropData.updatedAt?.toDate?.() || new Date().toISOString(),
-          checklist: cropData.checklist || [] // Include checklist data
+          updatedAt: cropData.updatedAt?.toDate?.() || new Date().toISOString()
         };
       } catch (error) {
         console.error('[Ledger] Error processing crop:', cropId, error);
@@ -306,66 +304,17 @@ export const calculateLedgerSummary = (ledgers: FarmLedger[]) => {
   const totalRevenue = ledgers.reduce((sum, l) => sum + (l.financials.actualRevenue || l.financials.estimatedRevenue || 0), 0);
   const totalProfit = ledgers.reduce((sum, l) => sum + (l.financials.actualProfit || l.financials.estimatedProfit || 0), 0);
   
+  const activeLedgers = ledgers.filter(l => 
+    ['planned', 'planted', 'growing'].includes(l.status)
+  ).length;
+  
+  const completedLedgers = ledgers.filter(l => 
+    ['harvested', 'completed'].includes(l.status)
+  ).length;
+  
   const averageProfitMargin = totalRevenue > 0 
     ? (totalProfit / totalRevenue) * 100 
     : 0;
-
-  // Calculate harvests based on completed checklists
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-
-  // Count ALL crops with 100% completed checklists (for completedLedgers)
-  const completedLedgers = ledgers.filter(l => {
-    const hasChecklist = l.checklist && l.checklist.length > 0;
-    const allCompleted = hasChecklist && l.checklist.every(item => item.completed);
-    return allCompleted;
-  }).length;
-
-  // Count crops with 100% completed checklists THIS MONTH only
-  const harvestedThisMonth = ledgers.filter(l => {
-    // Check if the ledger has a date in the current month
-    const ledgerDate = new Date(l.date);
-    const isCurrentMonth = ledgerDate.getMonth() === currentMonth && ledgerDate.getFullYear() === currentYear;
-    
-    // Check if checklist is 100% complete
-    const hasChecklist = l.checklist && l.checklist.length > 0;
-    const allCompleted = hasChecklist && l.checklist.every(item => item.completed);
-    
-    return isCurrentMonth && allCompleted;
-  }).length;
-
-  const totalMonthlyHarvests = harvestedThisMonth;
-
-  // Count active crops (checklist NOT 100% complete)
-  const activeLedgers = ledgers.filter(l => {
-    const hasChecklist = l.checklist && l.checklist.length > 0;
-    const allCompleted = hasChecklist && l.checklist.every(item => item.completed);
-    return !allCompleted;
-  }).length;
-
-  // Find most harvested crop (based on completed checklists)
-  const cropHarvestCount: Record<string, number> = {};
-  
-  ledgers.forEach(l => {
-    const hasChecklist = l.checklist && l.checklist.length > 0;
-    const allCompleted = hasChecklist && l.checklist.every(item => item.completed);
-    
-    if (allCompleted) {
-      const cropName = l.crop;
-      cropHarvestCount[cropName] = (cropHarvestCount[cropName] || 0) + 1;
-    }
-  });
-
-  let mostHarvestedCrop = 'N/A';
-  let mostHarvestedCropCount = 0;
-
-  Object.entries(cropHarvestCount).forEach(([crop, count]) => {
-    if (count > mostHarvestedCropCount) {
-      mostHarvestedCrop = crop;
-      mostHarvestedCropCount = count;
-    }
-  });
 
   return {
     totalInvestment,
@@ -374,10 +323,7 @@ export const calculateLedgerSummary = (ledgers: FarmLedger[]) => {
     totalProfit,
     averageProfitMargin,
     activeLedgers,
-    completedLedgers,
-    totalMonthlyHarvests,
-    mostHarvestedCrop,
-    mostHarvestedCropCount
+    completedLedgers
   };
 };
 
