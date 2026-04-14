@@ -5,6 +5,10 @@
 // API base URL - use environment variable or default to localhost
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
+// Cache for vegetable data to prevent repeated API calls
+const VEGETABLE_CACHE: Record<string, any> = {};
+const PENDING_VEGETABLE_REQUESTS: Record<string, Promise<any>> = {};
+
 /**
  * Get vegetable demand prediction for a specific crop
  * @param vegetableName Name of the vegetable
@@ -96,36 +100,61 @@ export const getRecommendedCrops = async (
  * @returns Promise with historical data
  */
 export const getVegetableHistoricalData = async (vegetableName: string) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/vegetables/vegetable-data/${encodeURIComponent(vegetableName)}`);
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.vegetable_data;
-  } catch (error) {
-    console.error('Error getting vegetable historical data for:', vegetableName, error);
-    // Try with a simplified name
+  const cacheKey = `historical-${vegetableName.toLowerCase()}`;
+  
+  // Return from cache if available (instant)
+  if (VEGETABLE_CACHE[cacheKey]) {
+    return VEGETABLE_CACHE[cacheKey];
+  }
+  
+  // If request is already in-flight, return the same promise (deduplication)
+  if (PENDING_VEGETABLE_REQUESTS[cacheKey]) {
+    return PENDING_VEGETABLE_REQUESTS[cacheKey];
+  }
+  
+  const requestPromise = (async () => {
     try {
-      const simplifiedName = vegetableName.replace(/\s*\(.*?\)/g, '').trim();
-      console.log('Trying with simplified name:', simplifiedName);
-      const response = await fetch(`${API_BASE_URL}/vegetables/vegetable-data/${encodeURIComponent(simplifiedName)}`);
+      const response = await fetch(`${API_BASE_URL}/vegetables/vegetable-data/${encodeURIComponent(vegetableName)}`);
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      if (data.vegetable_data && data.vegetable_data.length > 0) {
-        console.log('Found data with simplified name:', simplifiedName);
-        return data.vegetable_data;
-      }
-    } catch (simplifiedError) {
-      console.error('Error with simplified name:', simplifiedError);
-    }
+      const result = data.vegetable_data;
+      
+      // Cache the result
+      VEGETABLE_CACHE[cacheKey] = result;
+      return result;
+    } catch (error) {
+      console.error('Error getting vegetable historical data for:', vegetableName, error);
+      // Try with a simplified name
+      try {
+        const simplifiedName = vegetableName.replace(/\s*\(.*?\)/g, '').trim();
+        console.log('Trying with simplified name:', simplifiedName);
+        const response = await fetch(`${API_BASE_URL}/vegetables/vegetable-data/${encodeURIComponent(simplifiedName)}`);
 
-    throw error;
-  }
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        if (data.vegetable_data && data.vegetable_data.length > 0) {
+          console.log('Found data with simplified name:', simplifiedName);
+          VEGETABLE_CACHE[cacheKey] = data.vegetable_data;
+          return data.vegetable_data;
+        }
+      } catch (simplifiedError) {
+        console.error('Error with simplified name:', simplifiedError);
+      }
+
+      throw error;
+    } finally {
+      // Remove from pending once complete
+      delete PENDING_VEGETABLE_REQUESTS[cacheKey];
+    }
+  })();
+  
+  PENDING_VEGETABLE_REQUESTS[cacheKey] = requestPromise;
+  return requestPromise;
 };

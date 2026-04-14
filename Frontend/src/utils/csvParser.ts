@@ -2,6 +2,10 @@
  * Utility functions for parsing CSV files in the frontend
  */
 
+// Cache for loaded CSV data to prevent repeated network requests
+const CSV_CACHE: Record<string, any[]> = {};
+const PENDING_CSV_REQUESTS: Record<string, Promise<any[]>> = {};
+
 /**
  * Parse a CSV string into an array of objects
  * @param csvString The CSV content as a string
@@ -45,21 +49,41 @@ export const parseCSV = (csvString: string, delimiter = ','): any[] => {
  * @returns Promise resolving to parsed CSV data
  */
 export const loadCSV = async (filePath: string): Promise<any[]> => {
-  try {
-    // For frontend, we'll need to fetch the file from the backend
-    // In a real implementation, this would be an API endpoint
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-    // Remove the extra /api prefix since our endpoints don't use it
-    const response = await fetch(`${BACKEND_URL}${filePath}`);
-    if (!response.ok) {
-      throw new Error(`Failed to load CSV file: ${response.statusText}`);
-    }
-    const csvText = await response.text();
-    return parseCSV(csvText);
-  } catch (error) {
-    console.error('Error loading CSV:', error);
-    throw error;
+  // Return from cache if available (instant)
+  if (CSV_CACHE[filePath]) {
+    return CSV_CACHE[filePath];
   }
+  
+  // If request is already in-flight, return the same promise (deduplication)
+  if (PENDING_CSV_REQUESTS[filePath]) {
+    return PENDING_CSV_REQUESTS[filePath];
+  }
+  
+  // Create the request promise
+  const requestPromise = (async () => {
+    try {
+      // For frontend, we'll need to fetch the file from the backend
+      // In a real implementation, this would be an API endpoint
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+      // Remove the extra /api prefix since our endpoints don't use it
+      const response = await fetch(`${BACKEND_URL}${filePath}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load CSV file: ${response.statusText}`);
+      }
+      const csvText = await response.text();
+      const parsedData = parseCSV(csvText);
+      
+      // Cache the parsed data
+      CSV_CACHE[filePath] = parsedData;
+      return parsedData;
+    } finally {
+      // Remove from pending once complete
+      delete PENDING_CSV_REQUESTS[filePath];
+    }
+  })();
+  
+  PENDING_CSV_REQUESTS[filePath] = requestPromise;
+  return requestPromise;
 };
 
 /**

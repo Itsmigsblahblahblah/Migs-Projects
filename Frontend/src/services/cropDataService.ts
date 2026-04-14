@@ -11,6 +11,10 @@ const VEGETABLE_PRICES_ENDPOINT = '/data/vegetable_prices.csv';
 const SEED_PRICES_ENDPOINT = '/data/seed.csv';
 const CROP_DATA_ENDPOINT = '/data/crop-data';
 
+// Global cache for crop insights to speed up repeated requests
+const CROP_INSIGHTS_CACHE: Record<string, any> = {};
+const PENDING_INSIGHTS_REQUESTS: Record<string, Promise<any>> = {};
+
 // Define interfaces for type safety
 interface SoilDataRecord {
   pH: number;
@@ -23,6 +27,7 @@ interface FertilizerRecommendation {
   level: string;
   recommendations: string[];
   detailedInfo: string;
+  amount: string; // Amount of fertilizer to apply
 }
 
 interface DetailedFertilizerRecommendations {
@@ -97,54 +102,66 @@ export const getFertilizerRecommendations = async (cropName: string, soilType: s
         nitrogen: {
           level: record['Nitrogen(N)'],
           recommendations: [],
-          detailedInfo: ""
+          detailedInfo: "",
+          amount: ""
         },
         phosphorus: {
           level: record['Phosphorus(P)'],
           recommendations: [],
-          detailedInfo: ""
+          detailedInfo: "",
+          amount: ""
         },
         potassium: {
           level: record['Potassium(K)'],
           recommendations: [],
-          detailedInfo: ""
+          detailedInfo: "",
+          amount: ""
         }
       };
       
       // Nitrogen recommendations
       if (record['Nitrogen(N)'] === 'L') {
-        detailedRecommendations.nitrogen.recommendations.push('Add nitrogen-rich fertilizer (e.g., ammonium nitrate)');
+        detailedRecommendations.nitrogen.recommendations.push('Add nitrogen-rich fertilizer (e.g., ammonium nitrate, urea)');
         detailedRecommendations.nitrogen.detailedInfo = "Nitrogen deficiency can cause stunted growth and yellowing of leaves. Apply nitrogen fertilizer in split doses to avoid leaching.";
+        detailedRecommendations.nitrogen.amount = "Apply 40-60 kg/ha of Urea (46-0-0) or 50-70 kg/ha of Ammonium Nitrate (34-0-0). Split into 2-3 applications: 50% at planting, 30% at 30 days, 20% at 60 days.";
       } else if (record['Nitrogen(N)'] === 'H') {
         detailedRecommendations.nitrogen.recommendations.push('Reduce nitrogen application to prevent excessive foliage growth');
         detailedRecommendations.nitrogen.detailedInfo = "Excessive nitrogen can lead to lush foliage at the expense of fruit/flower development. Reduce nitrogen application and increase phosphorus and potassium.";
+        detailedRecommendations.nitrogen.amount = "Reduce to 10-20 kg/ha of Urea (46-0-0). Focus on phosphorus and potassium instead. Avoid additional nitrogen until levels normalize.";
       } else {
         detailedRecommendations.nitrogen.recommendations.push('Maintain current nitrogen levels');
         detailedRecommendations.nitrogen.detailedInfo = "Nitrogen levels are optimal. Continue with balanced fertilization program.";
+        detailedRecommendations.nitrogen.amount = "Maintain with 20-30 kg/ha of Urea (46-0-0) as topdressing during vegetative stage only.";
       }
       
       // Phosphorus recommendations
       if (record['Phosphorus(P)'] === 'L') {
-        detailedRecommendations.phosphorus.recommendations.push('Add phosphorus-rich fertilizer (e.g., superphosphate)');
+        detailedRecommendations.phosphorus.recommendations.push('Add phosphorus-rich fertilizer (e.g., superphosphate, diammonium phosphate)');
         detailedRecommendations.phosphorus.detailedInfo = "Phosphorus deficiency can delay maturity and reduce flowering/fruiting. Apply phosphorus fertilizer near the root zone for better uptake.";
+        detailedRecommendations.phosphorus.amount = "Apply 30-50 kg/ha of Single Superphosphate (0-20-0) or 25-40 kg/ha of Diammonium Phosphate (18-46-0). Apply at planting time, placed 5-10 cm below seeds.";
       } else if (record['Phosphorus(P)'] === 'H') {
         detailedRecommendations.phosphorus.recommendations.push('Reduce phosphorus application');
         detailedRecommendations.phosphorus.detailedInfo = "Excessive phosphorus can interfere with micronutrient uptake, particularly zinc and iron. Reduce phosphorus application and consider soil testing.";
+        detailedRecommendations.phosphorus.amount = "Avoid additional phosphorus fertilizers for this season. Monitor plant growth and retest soil after harvest.";
       } else {
         detailedRecommendations.phosphorus.recommendations.push('Maintain current phosphorus levels');
         detailedRecommendations.phosphorus.detailedInfo = "Phosphorus levels are optimal. Continue with balanced fertilization program.";
+        detailedRecommendations.phosphorus.amount = "Maintain with 15-25 kg/ha of Single Superphosphate (0-20-0) applied at planting time.";
       }
       
       // Potassium recommendations
       if (record['Potassium(K)'] === 'L') {
-        detailedRecommendations.potassium.recommendations.push('Add potassium-rich fertilizer (e.g., potassium chloride)');
+        detailedRecommendations.potassium.recommendations.push('Add potassium-rich fertilizer (e.g., potassium chloride, potassium sulfate)');
         detailedRecommendations.potassium.detailedInfo = "Potassium deficiency can weaken plant resistance to diseases and reduce fruit quality. Apply potassium fertilizer in multiple applications.";
+        detailedRecommendations.potassium.amount = "Apply 40-60 kg/ha of Muriate of Potash (0-0-60) or 50-70 kg/ha of Potassium Sulfate (0-0-50). Split into 2 applications: 60% at planting, 40% at flowering stage.";
       } else if (record['Potassium(K)'] === 'H') {
         detailedRecommendations.potassium.recommendations.push('Reduce potassium application');
         detailedRecommendations.potassium.detailedInfo = "Excessive potassium can interfere with magnesium and calcium uptake. Reduce potassium application and monitor other nutrients.";
+        detailedRecommendations.potassium.amount = "Reduce to 10-15 kg/ha of Muriate of Potash (0-0-60). Monitor for magnesium and calcium deficiency symptoms.";
       } else {
         detailedRecommendations.potassium.recommendations.push('Maintain current potassium levels');
         detailedRecommendations.potassium.detailedInfo = "Potassium levels are optimal. Continue with balanced fertilization program.";
+        detailedRecommendations.potassium.amount = "Maintain with 20-30 kg/ha of Muriate of Potash (0-0-60) applied during flowering and fruit development.";
       }
       
       // Combine all recommendations for backward compatibility
@@ -184,17 +201,20 @@ export const getFertilizerRecommendations = async (cropName: string, soilType: s
         nitrogen: {
           level: 'M',
           recommendations: ['Apply balanced nitrogen fertilizer'],
-          detailedInfo: "General recommendation for nitrogen management. Consider soil testing for precise requirements."
+          detailedInfo: "General recommendation for nitrogen management. Consider soil testing for precise requirements.",
+          amount: "Apply 20-30 kg/ha of Urea (46-0-0) during vegetative stage. Adjust based on crop response and soil test results."
         },
         phosphorus: {
           level: 'M',
           recommendations: ['Apply balanced phosphorus fertilizer'],
-          detailedInfo: "General recommendation for phosphorus management. Consider soil testing for precise requirements."
+          detailedInfo: "General recommendation for phosphorus management. Consider soil testing for precise requirements.",
+          amount: "Apply 15-25 kg/ha of Single Superphosphate (0-20-0) at planting time. Place fertilizer 5-10 cm below seed level."
         },
         potassium: {
           level: 'M',
           recommendations: ['Apply balanced potassium fertilizer'],
-          detailedInfo: "General recommendation for potassium management. Consider soil testing for precise requirements."
+          detailedInfo: "General recommendation for potassium management. Consider soil testing for precise requirements.",
+          amount: "Apply 20-30 kg/ha of Muriate of Potash (0-0-60). Split application: 60% at planting, 40% at flowering stage."
         }
       }
     };
@@ -214,17 +234,20 @@ export const getFertilizerRecommendations = async (cropName: string, soilType: s
         nitrogen: {
           level: 'M',
           recommendations: ['Apply balanced nitrogen fertilizer'],
-          detailedInfo: "General recommendation for nitrogen management. Consider soil testing for precise requirements."
+          detailedInfo: "General recommendation for nitrogen management. Consider soil testing for precise requirements.",
+          amount: "Apply 20-30 kg/ha of Urea (46-0-0) during vegetative stage. Adjust based on crop response and soil test results."
         },
         phosphorus: {
           level: 'M',
           recommendations: ['Apply balanced phosphorus fertilizer'],
-          detailedInfo: "General recommendation for phosphorus management. Consider soil testing for precise requirements."
+          detailedInfo: "General recommendation for phosphorus management. Consider soil testing for precise requirements.",
+          amount: "Apply 15-25 kg/ha of Single Superphosphate (0-20-0) at planting time. Place fertilizer 5-10 cm below seed level."
         },
         potassium: {
           level: 'M',
           recommendations: ['Apply balanced potassium fertilizer'],
-          detailedInfo: "General recommendation for potassium management. Consider soil testing for precise requirements."
+          detailedInfo: "General recommendation for potassium management. Consider soil testing for precise requirements.",
+          amount: "Apply 20-30 kg/ha of Muriate of Potash (0-0-60). Split application: 60% at planting, 40% at flowering stage."
         }
       }
     };
@@ -509,16 +532,44 @@ export const getCropInsights = async (
   landArea: number,
   puhunan: number
 ) => {
-  // Get all insights in parallel
-  const [fertilizerInfo, marketInfo, profitProjection] = await Promise.all([
-    getFertilizerRecommendations(cropName, soilType),
-    getMarketPriceInfo(cropName),
-    calculateProfitProjection(cropName, landArea, puhunan)
-  ]);
+  // Create cache key
+  const cacheKey = `${cropName.toLowerCase()}-${soilType.toLowerCase()}-${landArea}-${puhunan}`;
   
-  return {
-    fertilizer: fertilizerInfo,
-    market: marketInfo,
-    profit: profitProjection
-  };
+  // Return from cache if available (instant)
+  if (CROP_INSIGHTS_CACHE[cacheKey]) {
+    return CROP_INSIGHTS_CACHE[cacheKey];
+  }
+  
+  // If request is already in-flight, return the same promise (deduplication)
+  if (PENDING_INSIGHTS_REQUESTS[cacheKey]) {
+    return PENDING_INSIGHTS_REQUESTS[cacheKey];
+  }
+  
+  // Create the request promise
+  const requestPromise = (async () => {
+    try {
+      // Get all insights in parallel
+      const [fertilizerInfo, marketInfo, profitProjection] = await Promise.all([
+        getFertilizerRecommendations(cropName, soilType),
+        getMarketPriceInfo(cropName),
+        calculateProfitProjection(cropName, landArea, puhunan)
+      ]);
+      
+      const result = {
+        fertilizer: fertilizerInfo,
+        market: marketInfo,
+        profit: profitProjection
+      };
+      
+      // Cache the result
+      CROP_INSIGHTS_CACHE[cacheKey] = result;
+      return result;
+    } finally {
+      // Remove from pending once complete
+      delete PENDING_INSIGHTS_REQUESTS[cacheKey];
+    }
+  })();
+  
+  PENDING_INSIGHTS_REQUESTS[cacheKey] = requestPromise;
+  return requestPromise;
 };

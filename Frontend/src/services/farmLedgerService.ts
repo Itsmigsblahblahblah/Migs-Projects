@@ -12,7 +12,11 @@ import { FarmLedger, ExpenseBreakdown } from './types';
 
 // Cache for FULL crop insights responses (avoids repeated API calls)
 // Key: "cropName-soilType", Value: insights object
+// Using sessionStorage for persistence across page navigations
 const INSIGHTS_CACHE: Record<string, any> = {};
+
+// Track in-flight requests to prevent duplicate calls
+const PENDING_REQUESTS: Record<string, Promise<any>> = {};
 
 /**
  * Get crop insights with intelligent caching
@@ -29,21 +33,28 @@ const getCachedCropInsights = async (
   
   // Return from cache if available (INSTANT!)
   if (INSIGHTS_CACHE[cacheKey]) {
-    console.log(`[Ledger Cache] Using cached insights for ${cacheKey}`);
     return INSIGHTS_CACHE[cacheKey];
   }
   
-  // Call API ONCE and cache the result
-  console.log(`[Ledger Cache] Fetching insights for ${cacheKey} (API CALL)`);
-  const insights = await getCropInsights(cropName, soilType, landArea, puhunan);
-  INSIGHTS_CACHE[cacheKey] = insights;
-  console.log(`[Ledger Cache] Cached insights for ${cacheKey}:`, {
-    estimatedYield: insights?.profit?.estimatedYield,
-    suggestedCapital: insights?.profit?.suggestedCapital,
-    averagePrice: insights?.market?.averagePrice
-  });
+  // If request is already in-flight, return the same promise (deduplication)
+  if (PENDING_REQUESTS[cacheKey]) {
+    return PENDING_REQUESTS[cacheKey];
+  }
   
-  return insights;
+  // Call API ONCE and cache the result
+  const requestPromise = (async () => {
+    try {
+      const insights = await getCropInsights(cropName, soilType, landArea, puhunan);
+      INSIGHTS_CACHE[cacheKey] = insights;
+      return insights;
+    } finally {
+      // Remove from pending once complete
+      delete PENDING_REQUESTS[cacheKey];
+    }
+  })();
+  
+  PENDING_REQUESTS[cacheKey] = requestPromise;
+  return requestPromise;
 };
 
 /**
@@ -129,12 +140,9 @@ const calculateLedgerData = async (
  */
 export const getUserLedgers = async (userId: string, getCropById?: (id: string) => any): Promise<FarmLedger[]> => {
   try {
-    console.log('[Ledger] Fetching crops for user:', userId);
     const cropsRef = collection(db, 'farmerCrops');
     const cropsQuery = query(cropsRef, where('userId', '==', userId));
     const cropsSnap = await getDocs(cropsQuery);
-    
-    console.log('[Ledger] Found', cropsSnap.size, 'crops');
     
     const ledgers: FarmLedger[] = [];
     
@@ -211,11 +219,8 @@ export const getUserLedgers = async (userId: string, getCropById?: (id: string) 
  */
 export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<FarmLedger[]> => {
   try {
-    console.log('[Ledger] Fetching all crops');
     const cropsRef = collection(db, 'farmerCrops');
     const cropsSnap = await getDocs(cropsRef);
-    
-    console.log('[Ledger] Found', cropsSnap.size, 'total crops');
     
     const ledgers: FarmLedger[] = [];
     

@@ -6,12 +6,22 @@ import { loadCSV, findMatchingRecords } from '@/utils/csvParser';
 // API endpoint for crop yield ranges
 const CROP_YIELD_RANGES_ENDPOINT = '/data/crop_yield_ranges.csv';
 
+// Cache for crop yield ranges
+const YIELD_CACHE: Record<string, any> = {};
+
 /**
  * Get crop yield ranges based on crop name
  * @param cropName Name of the crop
  * @returns Min and max yield per 0.1 hectare
  */
 export const getCropYieldRanges = async (cropName: string) => {
+  const cacheKey = cropName.toLowerCase();
+  
+  // Return from cache if available (instant)
+  if (YIELD_CACHE[cacheKey]) {
+    return YIELD_CACHE[cacheKey];
+  }
+  
   try {
     // Load crop yield ranges data
     const yieldData = await loadCSV(CROP_YIELD_RANGES_ENDPOINT);
@@ -61,27 +71,34 @@ export const getCropYieldRanges = async (cropName: string) => {
       }
     }
     
+    let result;
     if (matchingRecords.length > 0) {
       // Get the first matching record
       const record = matchingRecords[0];
-      return {
+      result = {
         minKGPer0_1Ha: record['MinKG_0.1ha'],
         maxKGPer0_1Ha: record['MaxKG_0.1ha']
       };
+    } else {
+      // Default values if no data found
+      console.warn(`No yield data found for crop: ${cropName}. Using default values.`);
+      result = {
+        minKGPer0_1Ha: 500,
+        maxKGPer0_1Ha: 1500
+      };
     }
     
-    // Default values if no data found
-    console.warn(`No yield data found for crop: ${cropName}. Using default values.`);
-    return {
-      minKGPer0_1Ha: 500,
-      maxKGPer0_1Ha: 1500
-    };
+    // Cache the result
+    YIELD_CACHE[cacheKey] = result;
+    return result;
   } catch (error) {
     console.error('Error getting crop yield ranges:', error);
-    return {
+    const result = {
       minKGPer0_1Ha: 500,
       maxKGPer0_1Ha: 1500
     };
+    YIELD_CACHE[cacheKey] = result;
+    return result;
   }
 };
 

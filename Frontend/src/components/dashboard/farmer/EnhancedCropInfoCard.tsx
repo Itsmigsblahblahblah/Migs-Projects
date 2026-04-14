@@ -297,6 +297,12 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                                                     <p className="text-sm text-muted-foreground mb-2">
                                                                         {insights.fertilizer.detailedRecommendations.nitrogen.detailedInfo}
                                                                     </p>
+                                                                    {insights.fertilizer.detailedRecommendations.nitrogen.amount && (
+                                                                        <div className="p-2 bg-white rounded-md border border-green-200 mb-2">
+                                                                            <p className="text-sm font-semibold text-green-800">💡 Recommended Amount:</p>
+                                                                            <p className="text-sm text-green-700">{insights.fertilizer.detailedRecommendations.nitrogen.amount}</p>
+                                                                        </div>
+                                                                    )}
                                                                     <ul className="text-sm space-y-1">
                                                                         {insights.fertilizer.detailedRecommendations.nitrogen.recommendations.map((rec: string, index: number) => (
                                                                             <li key={index} className="flex items-start gap-2">
@@ -314,6 +320,12 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                                                     <p className="text-sm text-muted-foreground mb-2">
                                                                         {insights.fertilizer.detailedRecommendations.phosphorus.detailedInfo}
                                                                     </p>
+                                                                    {insights.fertilizer.detailedRecommendations.phosphorus.amount && (
+                                                                        <div className="p-2 bg-white rounded-md border border-green-200 mb-2">
+                                                                            <p className="text-sm font-semibold text-green-800">💡 Recommended Amount:</p>
+                                                                            <p className="text-sm text-green-700">{insights.fertilizer.detailedRecommendations.phosphorus.amount}</p>
+                                                                        </div>
+                                                                    )}
                                                                     <ul className="text-sm space-y-1">
                                                                         {insights.fertilizer.detailedRecommendations.phosphorus.recommendations.map((rec: string, index: number) => (
                                                                             <li key={index} className="flex items-start gap-2">
@@ -331,6 +343,12 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                                                     <p className="text-sm text-muted-foreground mb-2">
                                                                         {insights.fertilizer.detailedRecommendations.potassium.detailedInfo}
                                                                     </p>
+                                                                    {insights.fertilizer.detailedRecommendations.potassium.amount && (
+                                                                        <div className="p-2 bg-white rounded-md border border-purple-200 mb-2">
+                                                                            <p className="text-sm font-semibold text-purple-800">💡 Recommended Amount:</p>
+                                                                            <p className="text-sm text-purple-700">{insights.fertilizer.detailedRecommendations.potassium.amount}</p>
+                                                                        </div>
+                                                                    )}
                                                                     <ul className="text-sm space-y-1">
                                                                         {insights.fertilizer.detailedRecommendations.potassium.recommendations.map((rec: string, index: number) => (
                                                                             <li key={index} className="flex items-start gap-2">
