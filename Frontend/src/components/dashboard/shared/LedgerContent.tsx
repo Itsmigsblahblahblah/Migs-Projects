@@ -58,6 +58,9 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
 
   const [uniqueCrops, setUniqueCrops] = useState<string[]>([]);
 
+  // Determine spinner color based on user role
+  const spinnerColor = isAdmin ? 'border-blue-600' : 'border-green-600';
+
   // Calculate monthly values for current month
   const monthlyStats = useState(() => {
     if (!ledgers || ledgers.length === 0) return { investmentMonthly: 0, profitMonthly: 0 };
@@ -130,7 +133,7 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className={`w-12 h-12 border-4 ${spinnerColor} border-t-transparent rounded-full animate-spin mx-auto mb-4`} />
           <p className="text-muted-foreground">Loading ledger data...</p>
         </div>
       </div>

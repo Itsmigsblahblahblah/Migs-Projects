@@ -1008,7 +1008,7 @@ const FarmerDetailPage = () => {
           <TabsContent value="ledger" className="space-y-6">
             <LedgerContent 
               userId={farmerId || ''} 
-              isAdmin={false}
+              isAdmin={true}
             />
           </TabsContent>
         </Tabs>
