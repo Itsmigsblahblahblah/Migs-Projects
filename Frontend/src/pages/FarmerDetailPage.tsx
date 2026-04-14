@@ -8,8 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Layout from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
+import { useFarmLedger } from "@/hooks/custom/useFarmLedger";
+import { format } from "date-fns";
+import LedgerContent from "@/components/dashboard/shared/LedgerContent";
 import { collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import {
@@ -69,6 +73,9 @@ const FarmerDetailPage = () => {
   const [inProgressCurrentPage, setInProgressCurrentPage] = useState(1);
   const [harvestedCurrentPage, setHarvestedCurrentPage] = useState(1);
   const cropsPerPage = 6; // Show 6 crops per page
+
+  // Farm Ledger integration - uses same component as farmer side
+  const { loading: ledgerLoading } = useFarmLedger(farmerId, false);
 
   // Add sorting state (keeping for now, will be replaced with filter system)
   const [inProgressSortConfig, setInProgressSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
@@ -651,6 +658,22 @@ const FarmerDetailPage = () => {
           </div>
         </div>
 
+        {/* Tabs for Crops and Ledger */}
+        <Tabs defaultValue="crops" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="crops" className="flex items-center gap-2">
+              <Sprout className="h-4 w-4" />
+              Crops ({totalCrops})
+            </TabsTrigger>
+            <TabsTrigger value="ledger" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Ledger
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Crops Tab Content */}
+          <TabsContent value="crops" className="space-y-6">
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="shadow-card">
@@ -785,7 +808,7 @@ const FarmerDetailPage = () => {
         </Card>
 
         {/* Crops Section */}
-        <div className="space-y-6">
+        <div className="space-y-6 pt-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Sprout className="h-6 w-6" />
@@ -979,6 +1002,16 @@ const FarmerDetailPage = () => {
             </Card>
           )}
         </div>
+          </TabsContent>
+
+          {/* Ledger Tab */}
+          <TabsContent value="ledger" className="space-y-6">
+            <LedgerContent 
+              userId={farmerId || ''} 
+              isAdmin={false}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

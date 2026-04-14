@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
-import { Sprout, Leaf, X, RotateCcw, ChevronLeft, ChevronRight, Lightbulb, Plus } from "lucide-react";
+import { Sprout, Leaf, X, RotateCcw, ChevronLeft, ChevronRight, Lightbulb, Plus, BookOpen } from "lucide-react";
 import ProfileCard from "@/components/dashboard/farmer/ProfileCard";
 import WeatherCard from "@/components/dashboard/farmer/WeatherCard";
 import CropStatusCard from "@/components/dashboard/farmer/CropStatusCard";
@@ -541,13 +541,23 @@ const FarmerDashboard = () => {
                   <h2 className="text-2xl font-bold">Welcome back, {username}!</h2>
                   <p className="opacity-90">Here's what's happening with your farm today.</p>
                 </div>
-                <Button 
-                  onClick={() => setIsAddCropDialogOpen(true)}
-                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 w-full sm:w-auto"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Crop
-                </Button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button 
+                    onClick={() => navigate('/farmer/ledger')}
+                    className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                    variant="outline"
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    View Farm Ledger
+                  </Button>
+                  <Button 
+                    onClick={() => setIsAddCropDialogOpen(true)}
+                    className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New Crop
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

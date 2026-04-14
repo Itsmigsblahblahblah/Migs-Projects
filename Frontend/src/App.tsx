@@ -21,6 +21,8 @@ import MarketDemand from "@/pages/MarketDemand";
 import CropPrescriptionPage from "@/pages/CropPrescriptionPage";
 import FarmerDetailPage from "@/pages/FarmerDetailPage";
 import FarmerReportDetail from "@/pages/FarmerReportDetail";
+import FarmLedger from "@/pages/FarmLedger";
+import FarmLedgerDetail from "@/pages/FarmLedgerDetail";
 import SplashScreen from "@/components/SplashScreen";
 import { useState } from "react";
 
@@ -67,6 +69,22 @@ const App = () => {
                     element={
                       <ProtectedRoute requiredRole="farmer">
                         <FarmerDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/farmer/ledger" 
+                    element={
+                      <ProtectedRoute requiredRole="farmer">
+                        <FarmLedger />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/farmer/ledger/:ledgerId" 
+                    element={
+                      <ProtectedRoute requiredRole="farmer">
+                        <FarmLedgerDetail />
                       </ProtectedRoute>
                     } 
                   />
