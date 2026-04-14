@@ -95,6 +95,15 @@ export interface FarmLedger {
   createdAt: string;
   updatedAt: string;
   recommendationSessionId?: string; // Link to original recommendation
+  
+  // Checklist data for harvest tracking
+  checklist?: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+    category: string;
+    completedAt?: string;
+  }>;
 }
 
 // Ledger Summary (for quick overview)
@@ -106,6 +115,10 @@ export interface LedgerSummary {
   averageProfitMargin: number;
   activeLedgers: number;
   completedLedgers: number;
+  // Monthly harvest tracking
+  totalMonthlyHarvests: number;
+  mostHarvestedCrop: string;
+  mostHarvestedCropCount: number;
 }
 
 // Filter Options
