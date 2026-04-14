@@ -410,7 +410,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                         <Button
                             variant={sortOption === 'barangay' ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setSortOption('barangay')}
+                            onClick={() => setSortOption(sortOption === 'barangay' ? 'newest' : 'barangay')}
                             className={`text-blue-600 hover:text-white ${sortOption === 'barangay' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-blue-50'}`}
                         >
                             Group by Barangay
