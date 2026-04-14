@@ -105,8 +105,43 @@ const calculateLedgerData = async (
       profit
     });
 
-    // Status from crop
-    const status = crop.status || 'planned';
+    // Status from crop - apply same logic as admin view
+    // If crop doesn't have a status or has 'planned'/'planted'/'growing', check if it should be 'harvested'
+    let status = crop.status || 'planned';
+    
+    // Apply admin's harvested determination logic: if planted > 90 days ago, mark as harvested
+    if (crop.plantedDate && ['planned', 'planted', 'growing'].includes(status)) {
+      try {
+        let plantedDate: Date;
+        
+        // Handle string dates (YYYY-MM-DD format)
+        if (typeof crop.plantedDate === 'string') {
+          plantedDate = new Date(crop.plantedDate);
+        }
+        // Handle Firestore Timestamp
+        else if (crop.plantedDate?.toDate) {
+          plantedDate = crop.plantedDate.toDate();
+        }
+        // Handle JavaScript Date objects
+        else if (crop.plantedDate instanceof Date) {
+          plantedDate = crop.plantedDate;
+        } else {
+          plantedDate = new Date();
+        }
+        
+        if (!isNaN(plantedDate.getTime())) {
+          const now = new Date();
+          const daysDiff = Math.floor((now.getTime() - plantedDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // If planted more than 90 days ago, mark as harvested
+          if (daysDiff > 90) {
+            status = 'harvested';
+          }
+        }
+      } catch (error) {
+        console.error('[Ledger] Error determining crop status:', error);
+      }
+    }
 
     const emptyExpenses: ExpenseBreakdown = {
       seeds: 0, fertilizer: 0, pesticides: 0, labor: 0,
