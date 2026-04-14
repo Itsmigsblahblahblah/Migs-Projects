@@ -532,38 +532,36 @@ const FarmerDashboard = () => {
   return (
     <Layout>
       <div className="space-y-6 h-full flex flex-col">
-        {/* Welcome Banner - only shown when there are no deletion requests or the notification is visible */}
-        {!deletionRequest && (
-          <Card className="bg-gradient-primary text-primary-foreground shadow-card">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold">Welcome back, {username}!</h2>
-                  <p className="opacity-90">Here's what's happening with your farm today.</p>
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Button 
-                    onClick={() => navigate('/farmer/ledger')}
-                    className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-                    variant="outline"
-                  >
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    View Farm Ledger
-                  </Button>
-                  <Button 
-                    onClick={() => setIsAddCropDialogOpen(true)}
-                    className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Crop
-                  </Button>
-                </div>
+        {/* Welcome Banner - ALWAYS visible */}
+        <Card className="bg-gradient-primary text-primary-foreground shadow-card">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-bold">Welcome back, {username}!</h2>
+                <p className="opacity-90">Here's what's happening with your farm today.</p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button 
+                  onClick={() => navigate('/farmer/ledger')}
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                  variant="outline"
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  View Farm Ledger
+                </Button>
+                <Button 
+                  onClick={() => setIsAddCropDialogOpen(true)}
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Crop
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Deletion Request Status Banner */}
+        {/* Deletion Request Status Banner - appears independently */}
         {deletionRequest && showDeletionNotification && (
           <Card className="border-l-4 p-4 rounded-r-lg relative">
             <button
