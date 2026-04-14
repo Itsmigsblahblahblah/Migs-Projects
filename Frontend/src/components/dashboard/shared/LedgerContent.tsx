@@ -3,7 +3,7 @@
  * Used by both Farmer and Admin to ensure identical data rendering and computations
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFarmLedger } from '@/hooks/custom/useFarmLedger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +35,8 @@ import {
   MapPin,
   Eye,
   BarChart3,
-  Calendar
+  Calendar,
+  Package
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -62,7 +63,7 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
   const spinnerColor = isAdmin ? 'border-blue-600' : 'border-green-600';
 
   // Calculate monthly values for current month
-  const monthlyStats = useState(() => {
+  const monthlyStats = useMemo(() => {
     if (!ledgers || ledgers.length === 0) return { investmentMonthly: 0, profitMonthly: 0 };
     
     const now = new Date();
@@ -78,7 +79,34 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
     const profitMonthly = monthlyLedgers.reduce((sum, l) => sum + (l.financials.actualProfit || l.financials.estimatedProfit || 0), 0);
 
     return { investmentMonthly, profitMonthly };
-  });
+  }, [ledgers]);
+
+  // Calculate harvest report statistics
+  const harvestStats = useMemo(() => {
+    if (!ledgers || ledgers.length === 0) return { 
+      totalHarvested: 0, 
+      harvestRevenue: 0, 
+      harvestProfit: 0,
+      harvestInvestment: 0
+    };
+    
+    const harvestedLedgers = ledgers.filter(l => 
+      l.status === 'harvested' || l.status === 'completed'
+    );
+
+    const totalHarvested = harvestedLedgers.length;
+    const harvestRevenue = harvestedLedgers.reduce((sum, l) => 
+      sum + (l.financials.actualRevenue || l.financials.estimatedRevenue || 0), 0
+    );
+    const harvestProfit = harvestedLedgers.reduce((sum, l) => 
+      sum + (l.financials.actualProfit || l.financials.estimatedProfit || 0), 0
+    );
+    const harvestInvestment = harvestedLedgers.reduce((sum, l) => 
+      sum + (l.financials.capital || 0), 0
+    );
+
+    return { totalHarvested, harvestRevenue, harvestProfit, harvestInvestment };
+  }, [ledgers]);
 
   useEffect(() => {
     // Extract unique crops for filter
@@ -143,7 +171,7 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
   return (
     <div className="space-y-6">
       {/* Summary Cards - Row 1 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="shadow-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Investments</CardTitle>
@@ -193,6 +221,29 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
             <p className="text-xs text-muted-foreground">Currently growing</p>
           </CardContent>
         </Card>
+
+        <Card className="shadow-card border-purple-200 bg-purple-50/30">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Harvest Report</CardTitle>
+            <Package className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-700">{harvestStats.totalHarvested}</div>
+            <p className="text-xs text-muted-foreground">Harvested crops</p>
+            <div className="mt-2 pt-2 border-t border-purple-200 space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Revenue:</span>
+                <span className="font-medium text-purple-700">{formatCurrency(harvestStats.harvestRevenue)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Profit:</span>
+                <span className={`font-medium ${harvestStats.harvestProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(harvestStats.harvestProfit)}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Summary Cards - Row 2 (Monthly) */}
@@ -203,7 +254,7 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(monthlyStats[0].investmentMonthly)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(monthlyStats.investmentMonthly)}</div>
             <p className="text-xs text-muted-foreground">This month's investments</p>
           </CardContent>
         </Card>
@@ -214,8 +265,8 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${monthlyStats[0].profitMonthly >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(monthlyStats[0].profitMonthly)}
+            <div className={`text-2xl font-bold ${monthlyStats.profitMonthly >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(monthlyStats.profitMonthly)}
             </div>
             <p className="text-xs text-muted-foreground">This month's profit</p>
           </CardContent>
