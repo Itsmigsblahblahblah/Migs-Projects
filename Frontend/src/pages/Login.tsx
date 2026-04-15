@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
-import { Sprout, Users, ArrowLeft, AlertCircle, LogIn, UserPlus, Eye, EyeOff, Mail, Lock, User, Building2, CheckCircle } from "lucide-react";
+import { Sprout, Users, ArrowLeft, AlertCircle, LogIn, UserPlus, Eye, EyeOff, Mail, Lock, User, Building2, CheckCircle, Smartphone } from "lucide-react";
 import { auth, db } from "../firebaseConfig";
 import {
   signInWithEmailAndPassword,
@@ -20,6 +20,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { clearMarketDemandCache } from "@/services/marketDemandMultiCacheService";
+import { sendOTP, verifyOTP, formatPhoneNumber, isValidPhilippinePhone } from "@/services/otpAuthService";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -28,6 +29,12 @@ const Login = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState("");
+  const [signupMethod, setSignupMethod] = useState<'email' | 'mobile'>('email');
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
@@ -95,10 +102,33 @@ const Login = () => {
     setSearchTerm("");
   };
 
-  // Handle input change for contact number
+  // Handle input change for email - auto-detect signup method
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCredentials({ ...credentials, email: value });
+    
+    // Auto-detect: if email is provided, use email signup
+    if (value && value.includes('@')) {
+      setSignupMethod('email');
+    }
+  };
+
+  // Handle input change for contact number - auto-detect signup method
   const handleContactNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, ''); // Remove non-digit characters
     setCredentials({ ...credentials, contactNumber: value });
+    
+    console.log('Contact number changed:', value);
+    
+    // Auto-detect: if phone number is provided (10 digits), use mobile signup
+    if (value && value.length >= 10 && /^9\d{9}$/.test(value.slice(0, 10))) {
+      console.log('Mobile signup detected!');
+      setSignupMethod('mobile');
+    } else if (!value || value.length === 0) {
+      // If empty, default to email
+      console.log('Empty, defaulting to email');
+      setSignupMethod('email');
+    }
   };
 
   // Format contact number for display
@@ -125,6 +155,182 @@ const Login = () => {
     }
     
     return `${limited.slice(0, 3)} ${limited.slice(3, 6)} ${limited.slice(6)}`;
+  };
+
+  // Handle OTP sending
+  const handleSendOTP = async () => {
+    console.log('=== HANDLE SEND OTP CALLED ===');
+    setError("");
+    setSuccessMessage("");
+    
+    // Validate phone number
+    if (!credentials.contactNumber) {
+      console.error('No contact number provided');
+      setError("Please enter your mobile number");
+      return;
+    }
+
+    // Clean and validate phone number
+    const cleanedNumber = credentials.contactNumber.replace(/\D/g, '');
+    console.log('Cleaned number:', cleanedNumber);
+    
+    if (!isValidPhilippinePhone(cleanedNumber)) {
+      console.error('Invalid Philippine phone number:', cleanedNumber);
+      setError("Please enter a valid Philippine mobile number (e.g., 09xxxxxxxxx or 9xxxxxxxxx)");
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      console.log('Sending OTP to:', cleanedNumber);
+      const response = await sendOTP(cleanedNumber);
+      
+      console.log('OTP Response:', response);
+      
+      if (response.success) {
+        console.log('OTP sent successfully! Setting otpSent to true');
+        setOtpSent(true);
+        setSuccessMessage(`OTP sent to +63${cleanedNumber}. Valid for 5 minutes.`);
+        setCountdown(300); // 5 minutes countdown
+        
+        // Start countdown timer
+        const timer = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        setError(response.message || "Failed to send OTP");
+        console.error('OTP send failed:', response.message);
+      }
+    } catch (err: any) {
+      setError("Failed to send OTP. Please check your connection and try again.");
+      console.error('OTP send error:', err);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  // Handle OTP verification and account creation
+  const handleVerifyOTPAndSignup = async () => {
+    setLoading(true);
+    setError("");
+
+    if (!otpCode) {
+      setError("Please enter the OTP");
+      setLoading(false);
+      return;
+    }
+
+    if (otpCode.length !== 6) {
+      setError("OTP must be 6 digits");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Verify OTP
+      const cleanedNumber = credentials.contactNumber.replace(/\D/g, '');
+      console.log('Verifying OTP for:', cleanedNumber, 'Code:', otpCode);
+      const response = await verifyOTP(cleanedNumber, otpCode);
+
+      console.log('Verify Response:', response);
+
+      if (response.success) {
+        // OTP verified, proceed with account creation
+        setVerifiedPhoneNumber(cleanedNumber);
+        await createAccountWithMobile(cleanedNumber);
+      } else {
+        setError(response.message || "Invalid OTP");
+      }
+    } catch (err: any) {
+      setError("OTP verification failed. Please try again.");
+      console.error('OTP verify error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create account after mobile verification
+  const createAccountWithMobile = async (phoneNumber: string) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      // Validate other fields
+      if (!credentials.firstName || !credentials.lastName || !credentials.farmAddress || !credentials.password) {
+        setError("Please fill in all required fields");
+        setLoading(false);
+        return;
+      }
+
+      if (credentials.password.length < 6) {
+        setError("Password must be at least 6 characters");
+        setLoading(false);
+        return;
+      }
+
+      // Generate a unique email using phone number for Firebase Auth (required by Firebase)
+      // But we'll store the real mobile number in Firestore
+      const tempEmail = `mobile_${phoneNumber}@harvestify.local`;
+      const userCredential: UserCredential = await createUserWithEmailAndPassword(
+        auth,
+        tempEmail,
+        credentials.password
+      );
+
+      const fullName = `${credentials.firstName} ${credentials.lastName}`;
+
+      // Store user data in Firestore - ONLY store mobile number, don't show email
+      await setDoc(doc(db, "farmers", userCredential.user.uid), {
+        email: "", // Leave empty for mobile users
+        fullName: fullName,
+        contactNumber: `+63${phoneNumber}`,
+        farmAddress: credentials.farmAddress,
+        role: "farmer",
+        createdAt: new Date().toISOString(),
+        uid: userCredential.user.uid,
+        emailVerified: false,
+        phoneVerified: true,
+        registrationMethod: "mobile"
+      });
+
+      // Sign out user to prevent auto-login
+      await signOut(auth);
+      clearMarketDemandCache();
+
+      setSuccessMessage(
+        "Account created successfully! You can now login with your password."
+      );
+
+      // Clear form
+      setCredentials({
+        email: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+        farmAddress: "",
+        contactNumber: ""
+      });
+      setOtpCode("");
+      setOtpSent(false);
+
+    } catch (err: any) {
+      console.error('Account creation error:', err);
+      if (err.code === 'auth/email-already-in-use') {
+        setError("This mobile number is already registered. Please login instead.");
+      } else if (err.code === 'auth/weak-password') {
+        setError("Password is too weak. Use at least 6 characters.");
+      } else {
+        setError("Signup failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Check if user is already authenticated on component mount
@@ -223,22 +429,19 @@ const Login = () => {
   };
 
   const handleSignUp = async () => {
+    // Only for email signup
+    if (signupMethod === 'mobile') {
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccessMessage("");
 
     try {
-      if (!credentials.email || !credentials.password || !credentials.firstName || !credentials.lastName || !credentials.farmAddress || !credentials.contactNumber) {
+      // Validate required fields
+      if (!credentials.email || !credentials.password || !credentials.firstName || !credentials.lastName || !credentials.farmAddress) {
         setError("Please fill in all fields");
-        setLoading(false);
-        return;
-      }
-
-      // Validate contact number format (Philippines format: 9 followed by 9 digits)
-      const cleanContactNumber = credentials.contactNumber.replace(/\s/g, '');
-      const mobileRegex = /^9\d{9}$/;
-      if (!mobileRegex.test(cleanContactNumber)) {
-        setError("Please enter a valid Philippine mobile number starting with 9 followed by 9 digits (e.g., 9123456789)");
         setLoading(false);
         return;
       }
@@ -263,12 +466,14 @@ const Login = () => {
       await setDoc(doc(db, "farmers", userCredential.user.uid), {
         email: credentials.email,
         fullName: fullName,
-        contactNumber: `+63${cleanContactNumber}`, // Add +63 prefix
+        contactNumber: credentials.contactNumber ? `+63${credentials.contactNumber.replace(/\s/g, '')}` : "",
         farmAddress: credentials.farmAddress,
         role: "farmer",
         createdAt: new Date().toISOString(),
         uid: userCredential.user.uid,
-        emailVerified: false
+        emailVerified: false,
+        phoneVerified: credentials.contactNumber ? true : false,
+        registrationMethod: "email"
       });
 
       // Send email verification
@@ -317,15 +522,34 @@ const Login = () => {
 
     try {
       if (!credentials.email || !credentials.password) {
-        setError("Please enter email and password");
+        setError("Please enter email/mobile number and password");
         setLoading(false);
         return;
+      }
+
+      // Check if input is mobile number or email
+      const isMobileNumber = /^9\d{9}$/.test(credentials.email.replace(/\D/g, '')) || 
+                             /^09\d{9}$/.test(credentials.email.replace(/\D/g, '')) || 
+                             /^\+639\d{9}$/.test(credentials.email.replace(/\D/g, ''));
+
+      let loginEmail = credentials.email;
+      
+      // If mobile number, convert to Firebase email format
+      if (isMobileNumber) {
+        // Clean the number (remove non-digits)
+        let cleaned = credentials.email.replace(/\D/g, '');
+        // Remove leading 0 or +63
+        if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+        if (cleaned.startsWith('63')) cleaned = cleaned.substring(2);
+        
+        loginEmail = `mobile_${cleaned}@harvestify.local`;
+        console.log('Mobile login detected, using email:', loginEmail);
       }
 
       // Sign in user
       const userCredential = await signInWithEmailAndPassword(
         auth,
-        credentials.email,
+        loginEmail,
         credentials.password
       );
 
@@ -338,54 +562,26 @@ const Login = () => {
         return;
       }
 
-      // Check if email is verified
-      if (!userCredential.user.emailVerified) {
-        setError(
-          "Please verify your email before logging in. Check your inbox for the verification link. " +
-          "Didn't receive the email? Click 'Resend Verification Email' below."
-        );
-        await signOut(auth);
-        clearMarketDemandCache(); // Clear market demand cache on logout
-        setLoading(false);
-        return;
-      }
-
-      // Get farmer data from Firestore
+      // Check if user registered via mobile (skip email verification)
       const farmerDoc = await getDoc(doc(db, "farmers", userCredential.user.uid));
-
-      // If farmer document doesn't exist (shouldn't happen with our fix), create it now
-      if (!farmerDoc.exists()) {
-        // This shouldn't happen with our fix, but just in case
-        await setDoc(doc(db, "farmers", userCredential.user.uid), {
-          email: userCredential.user.email,
-          fullName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer',
-          farmAddress: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
-          contactNumber: "", // Will be added later by user in profile settings
-          role: "farmer",
-          createdAt: new Date().toISOString(),
-          uid: userCredential.user.uid,
-          emailVerified: true
-        });
-        
-        const farmerData = {
-          email: userCredential.user.email,
-          fullName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer',
-          farmAddress: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
-          contactNumber: "", // Will be added later by user in profile settings
-          role: "farmer",
-          createdAt: new Date().toISOString(),
-          uid: userCredential.user.uid,
-          emailVerified: true
-        };
-        
-        // Store user info
-        localStorage.setItem('userRole', 'farmer');
-        localStorage.setItem('userId', userCredential.user.uid);
-        localStorage.setItem('username', farmerData.fullName);
-        navigate('/farmer');
-      } else {
-        // Update the emailVerified status to true since user is now verified
+      
+      if (farmerDoc.exists()) {
         const farmerData = farmerDoc.data();
+        const isMobileUser = farmerData.registrationMethod === 'mobile' || farmerData.phoneVerified;
+
+        // Skip email verification for mobile users
+        if (!isMobileUser && !userCredential.user.emailVerified) {
+          setError(
+            "Please verify your email before logging in. Check your inbox for the verification link. " +
+            "Didn't receive the email? Click 'Resend Verification Email' below."
+          );
+          await signOut(auth);
+          clearMarketDemandCache();
+          setLoading(false);
+          return;
+        }
+
+        // Update the emailVerified status to true since user is now verified
         await updateDoc(doc(db, "farmers", userCredential.user.uid), {
           emailVerified: true
         });
@@ -397,6 +593,35 @@ const Login = () => {
             : rawContactNumber.replace("+63", "").replace(/\s/g, '');
         
         // Store user info using the original data from signup
+        localStorage.setItem('userRole', 'farmer');
+        localStorage.setItem('userId', userCredential.user.uid);
+        localStorage.setItem('username', farmerData.fullName);
+        navigate('/farmer');
+      } else {
+        // Farmer document doesn't exist - create it
+        await setDoc(doc(db, "farmers", userCredential.user.uid), {
+          email: userCredential.user.email,
+          fullName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer',
+          farmAddress: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
+          contactNumber: "",
+          role: "farmer",
+          createdAt: new Date().toISOString(),
+          uid: userCredential.user.uid,
+          emailVerified: true
+        });
+        
+        const farmerData = {
+          email: userCredential.user.email,
+          fullName: userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer',
+          farmAddress: `${userCredential.user.displayName || userCredential.user.email?.split('@')[0] || 'Farmer'}'s Farm`,
+          contactNumber: "",
+          role: "farmer",
+          createdAt: new Date().toISOString(),
+          uid: userCredential.user.uid,
+          emailVerified: true
+        };
+        
+        // Store user info
         localStorage.setItem('userRole', 'farmer');
         localStorage.setItem('userId', userCredential.user.uid);
         localStorage.setItem('username', farmerData.fullName);
@@ -572,13 +797,13 @@ const Login = () => {
                 <div className="space-y-2 group">
                   <Label htmlFor="login-email" className="flex items-center gap-2">
                     <Mail className="h-4 w-4" />
-                    Email
+                    Email / Mobile No.
                   </Label>
                   <div className="relative">
                     <Input
                       id="login-email"
-                      type="email"
-                      placeholder="your@email.com"
+                      type="text"
+                      placeholder="your@email.com or 9xxxxxxxxx"
                       value={credentials.email}
                       onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
                       className="peer"
@@ -690,7 +915,7 @@ const Login = () => {
                     <Separator />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">Or sign up with email</span>
+                    <span className="bg-card px-2 text-muted-foreground">Or sign up with</span>
                   </div>
                 </div>
 
@@ -779,13 +1004,31 @@ const Login = () => {
                   </div>
                 </div>
 
+                {/* Email Field */}
+                <div className="space-y-2 group mt-4">
+                  <Label htmlFor="signup-email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email
+                    <span className="text-xs text-muted-foreground">(Optional if using mobile)</span>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={credentials.email}
+                      onChange={handleEmailChange}
+                      className="peer"
+                    />
+                  </div>
+                </div>
+
                 {/* Contact Number Field */}
-                <div className="space-y-2 group mt-10">
+                <div className="space-y-2 group mt-4">
                   <Label htmlFor="contactNumber" className="flex items-center gap-2">
-                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                    </svg>
-                    Contact Number
+                    <Smartphone className="h-4 w-4" />
+                    Mobile Number
+                    <span className="text-xs text-muted-foreground">(Optional if using email)</span>
                   </Label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-4 pr-4 pointer-events-none bg-gray-100 dark:bg-gray-800 rounded-l-md border-r border-gray-300 dark:border-gray-600">
@@ -799,39 +1042,59 @@ const Login = () => {
                       onChange={handleContactNumberChange}
                       className="peer pl-20"
                       maxLength={12}
+                      disabled={otpSent}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Enter your 10-digit Philippine mobile number (e.g., 9123456789)
                   </p>
-                  {credentials.contactNumber && (
-                    <p className="text-xs text-muted-foreground">
-                      Will be stored as: <span className="font-medium">+63{credentials.contactNumber.replace(/\s/g, '').replace('+63', '')}</span>
-                    </p>
-                  )}
                 </div>
 
-                <div className="space-y-2 group mt-10">
-                  <Label htmlFor="signup-email" className="flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Email
-                  </Label>
-                  <div className="relative">
+                {/* OTP Verification - Shows when OTP is sent */}
+                {otpSent && (
+                  <div className="space-y-4 group mt-4">
+                    <Label htmlFor="otpCode" className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Verification Code
+                      <span className="text-destructive">*</span>
+                    </Label>
                     <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={credentials.email}
-                      onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-                      className="peer"
+                      id="otpCode"
+                      type="text"
+                      placeholder="Enter 6-digit OTP"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      maxLength={6}
+                      className="text-center text-2xl tracking-widest"
                     />
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Valid for 5 minutes</span>
+                      {countdown > 0 && (
+                        <span className="font-mono">
+                          {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
+                        </span>
+                      )}
+                    </div>
+                    {countdown === 0 && (
+                      <Button
+                        type="button"
+                        onClick={handleSendOTP}
+                        disabled={otpLoading}
+                        variant="link"
+                        size="sm"
+                        className="w-full"
+                      >
+                        {otpLoading ? "Sending..." : "Resend OTP"}
+                      </Button>
+                    )}
                   </div>
-                </div>
+                )}
 
                 <div className="space-y-2 group mt-10">
                   <Label htmlFor="signup-password" className="flex items-center gap-2">
                     <Lock className="h-4 w-4" />
                     Password
+                    {signupMethod === 'email' && <span className="text-destructive">*</span>}
                   </Label>
                   <div className="relative">
                     <Input
@@ -853,19 +1116,41 @@ const Login = () => {
                 </div>
 
                 <Button
-                  onClick={handleSignUp}
-                  disabled={loading}
+                  onClick={() => {
+                    console.log('=== SIGNUP BUTTON CLICKED ===');
+                    console.log('signupMethod:', signupMethod);
+                    console.log('otpSent:', otpSent);
+                    console.log('credentials:', credentials);
+                    console.log('otpLoading:', otpLoading);
+                    
+                    if (signupMethod === 'mobile' && otpSent) {
+                      console.log('Calling handleVerifyOTPAndSignup');
+                      handleVerifyOTPAndSignup();
+                    } else if (signupMethod === 'mobile' && !otpSent) {
+                      console.log('Calling handleSendOTP');
+                      handleSendOTP();
+                    } else {
+                      console.log('Calling handleSignUp (email)');
+                      handleSignUp();
+                    }
+                  }}
+                  disabled={loading || otpLoading}
                   className="w-full bg-gradient-primary hover:opacity-90 transition-opacity mt-10 relative group"
                   size="lg"
                 >
                   <span className="relative z-10">
-                    {loading ? "Creating account..." : "Create Account"}
+                    {loading ? "Creating account..." : 
+                     otpLoading ? "Sending OTP..." :
+                     signupMethod === 'mobile' ? (otpSent ? "Verify & Create Account" : "Send OTP") : 
+                     "Create Account"}
                   </span>
                   <span className="absolute inset-0 rounded-md bg-gradient-primary opacity-0 group-hover:opacity-100 blur-md transition-opacity"></span>
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
-                  Join as a farmer and start managing your farm
+                  {signupMethod === 'mobile' 
+                    ? "Enter your mobile number to receive OTP verification code" 
+                    : "Join as a farmer and start managing your farm"}
                 </p>
               </TabsContent>
             </Tabs>
