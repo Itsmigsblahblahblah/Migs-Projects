@@ -788,8 +788,8 @@ const Login = () => {
                     Contact Number
                   </Label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none bg-gray-100 dark:bg-gray-800 rounded-l-md border-r border-gray-300 dark:border-gray-600">
-                      <span className="text-gray-500 dark:text-gray-400 font-medium">+63</span>
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pr-4 pointer-events-none bg-gray-100 dark:bg-gray-800 rounded-l-md border-r border-gray-300 dark:border-gray-600">
+                      <span className="text-gray-500 dark:text-gray-400 font-medium text-sm">+63</span>
                     </div>
                     <Input
                       id="contactNumber"
@@ -797,7 +797,7 @@ const Login = () => {
                       placeholder="9xx xxx xxxx"
                       value={formatContactNumberDisplay(credentials.contactNumber)}
                       onChange={handleContactNumberChange}
-                      className="peer pl-16"
+                      className="peer pl-20"
                       maxLength={12}
                     />
                   </div>
