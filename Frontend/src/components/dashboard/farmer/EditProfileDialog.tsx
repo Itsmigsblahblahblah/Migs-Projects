@@ -53,6 +53,8 @@ const EditProfileDialog = ({
 }: EditProfileDialogProps) => {
     const [isSaving, setIsSaving] = useState(false);
     const wasJustSaved = useRef(false);
+    const [emailHasBeenSaved, setEmailHasBeenSaved] = useState(false); // Track if email was saved
+    const [editableEmail, setEditableEmail] = useState(farmerProfile.email || "");
     
     // Dropdown states for home address
     const [showHomeDropdown, setShowHomeDropdown] = useState(false);
@@ -98,6 +100,19 @@ const EditProfileDialog = ({
             }, 10);
         }
     }, [farmerProfile.fullName, open]);
+    
+    // Sync email state when dialog opens
+    useEffect(() => {
+        if (open) {
+            setTimeout(() => {
+                setEditableEmail(farmerProfile.email || "");
+                // If email already exists and is not empty, mark it as saved
+                if (farmerProfile.email && farmerProfile.email.trim() !== "") {
+                    setEmailHasBeenSaved(true);
+                }
+            }, 10);
+        }
+    }, [farmerProfile.email, open]);
     
     // Home address options
     const homeAddressOptions = [
@@ -193,6 +208,11 @@ const EditProfileDialog = ({
         setLastName(e.target.value);
     };
 
+    // Handle input change for email
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setEditableEmail(e.target.value);
+    };
+
     // Handle input change for contact number
     const handleContactNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.replace(/\D/g, ''); // Remove non-digit characters
@@ -234,14 +254,21 @@ const EditProfileDialog = ({
             // Combine first and last name into full name before saving
             const combinedFullName = `${firstName} ${lastName}`.trim();
             
-            // Create updated profile data with the new fullName
+            // Create updated profile data with the new fullName and email
             const updatedProfileData = {
                 ...farmerProfile,
-                fullName: combinedFullName
+                fullName: combinedFullName,
+                email: editableEmail // Use the editable email
             };
             
             // Call the update function with the updated profile data
             await handleUpdateProfile(updatedProfileData);
+            
+            // Mark email as saved if it has a value
+            if (editableEmail && editableEmail.trim() !== "") {
+                setEmailHasBeenSaved(true);
+            }
+            
             onOpenChange(false);
         } catch (error) {
             setIsSaving(false);
@@ -322,15 +349,24 @@ const EditProfileDialog = ({
                         )}
                     </div>
 
-                    {/* Email (Disabled) - Full width */}
+                    {/* Email - Editable if empty, disabled after saved */}
                     <div className="space-y-2">
-                        <Label htmlFor="profile-email">Email (Cannot be edited)</Label>
+                        <Label htmlFor="profile-email">
+                            Email
+                            {emailHasBeenSaved ? (
+                                <span className="text-xs text-muted-foreground ml-2">(Cannot be edited after saving)</span>
+                            ) : (
+                                <span className="text-xs text-destructive ml-2">*Required - You must provide an email</span>
+                            )}
+                        </Label>
                         <Input
                             id="profile-email"
                             name="email"
-                            value={farmerProfile.email}
-                            disabled
-                            className="bg-muted cursor-not-allowed"
+                            value={editableEmail}
+                            onChange={handleEmailChange}
+                            disabled={emailHasBeenSaved || isSaving}
+                            className={emailHasBeenSaved ? "bg-muted cursor-not-allowed" : "bg-white"}
+                            placeholder={emailHasBeenSaved ? "" : "Enter your email address"}
                         />
                     </div>
 
