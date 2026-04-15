@@ -255,7 +255,7 @@ const Login = () => {
     }
   };
 
-  // Create account after mobile verification
+  // Create account after mobile verification - NO EMAIL REQUIRED
   const createAccountWithMobile = async (phoneNumber: string) => {
     setLoading(true);
     setError("");
@@ -274,27 +274,34 @@ const Login = () => {
         return;
       }
 
-      // Generate a unique email using phone number for Firebase Auth (required by Firebase)
-      // But we'll store the real mobile number in Firestore
-      const tempEmail = `mobile_${phoneNumber}@harvestify.local`;
+      // Use phone number as email substitute with guaranteed valid format
+      // Use gmail.com format which Firebase always accepts
+      const firebaseEmail = `mobile.${phoneNumber}@gmail.com`;
+      
+      console.log('=== CREATING MOBILE ACCOUNT ===');
+      console.log('Phone number:', phoneNumber);
+      console.log('Firebase email (internal):', firebaseEmail);
+      
       const userCredential: UserCredential = await createUserWithEmailAndPassword(
         auth,
-        tempEmail,
+        firebaseEmail,
         credentials.password
       );
+      
+      console.log('Account created! UID:', userCredential.user.uid);
 
       const fullName = `${credentials.firstName} ${credentials.lastName}`;
 
-      // Store user data in Firestore - ONLY store mobile number, don't show email
+      // Store user data in Firestore - EMAIL IS EMPTY, only mobile number
       await setDoc(doc(db, "farmers", userCredential.user.uid), {
-        email: "", // Leave empty for mobile users
+        email: "", // EMPTY - user has no email
         fullName: fullName,
         contactNumber: `+63${phoneNumber}`,
         farmAddress: credentials.farmAddress,
         role: "farmer",
         createdAt: new Date().toISOString(),
         uid: userCredential.user.uid,
-        emailVerified: false,
+        emailVerified: true, // Mark as verified since it's internal
         phoneVerified: true,
         registrationMethod: "mobile"
       });
@@ -527,14 +534,20 @@ const Login = () => {
         return;
       }
 
+      console.log('=== LOGIN ATTEMPT ===');
+      console.log('Input email/mobile:', credentials.email);
+      console.log('Password length:', credentials.password.length);
+
       // Check if input is mobile number or email
       const isMobileNumber = /^9\d{9}$/.test(credentials.email.replace(/\D/g, '')) || 
                              /^09\d{9}$/.test(credentials.email.replace(/\D/g, '')) || 
                              /^\+639\d{9}$/.test(credentials.email.replace(/\D/g, ''));
 
+      console.log('Is mobile number?', isMobileNumber);
+
       let loginEmail = credentials.email;
       
-      // If mobile number, convert to Firebase email format
+      // If mobile number, try multiple email formats
       if (isMobileNumber) {
         // Clean the number (remove non-digits)
         let cleaned = credentials.email.replace(/\D/g, '');
@@ -542,16 +555,58 @@ const Login = () => {
         if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
         if (cleaned.startsWith('63')) cleaned = cleaned.substring(2);
         
-        loginEmail = `mobile_${cleaned}@harvestify.local`;
-        console.log('Mobile login detected, using email:', loginEmail);
+        // Validate it's a proper Philippine number
+        if (!/^9\d{9}$/.test(cleaned)) {
+          setError("Invalid mobile number format. Please enter a valid 10-digit Philippine mobile number (e.g., 9123456789)");
+          setLoading(false);
+          return;
+        }
+        
+        // Try new format first (gmail.com), fallback to old format
+        loginEmail = `mobile.${cleaned}@gmail.com`;
+        console.log('=== MOBILE LOGIN DETECTED ===');
+        console.log('Input:', credentials.email);
+        console.log('Cleaned number:', cleaned);
+        console.log('Trying Firebase email (new format):', loginEmail);
+        
+        // Try login with new format
+        try {
+          const userCredential = await signInWithEmailAndPassword(
+            auth,
+            loginEmail,
+            credentials.password
+          );
+          console.log('Login successful with NEW format! UID:', userCredential.user.uid);
+          // Continue with login flow below
+        } catch (firstError) {
+          console.log('Failed with new format, trying old format...');
+          // Try old format (harvestify.mobile)
+          const oldEmail = `mobile_${cleaned}@harvestify.mobile`;
+          console.log('Trying Firebase email (old format):', oldEmail);
+          
+          const userCredential = await signInWithEmailAndPassword(
+            auth,
+            oldEmail,
+            credentials.password
+          );
+          console.log('Login successful with OLD format! UID:', userCredential.user.uid);
+          loginEmail = oldEmail; // Update for later use
+        }
+      } else {
+        console.log('Email login detected, using:', credentials.email);
       }
 
       // Sign in user
+      console.log('Attempting Firebase Auth login with:', loginEmail);
+      
       const userCredential = await signInWithEmailAndPassword(
         auth,
         loginEmail,
         credentials.password
       );
+      
+      console.log('Login successful! UID:', userCredential.user.uid);
+      console.log('User email:', userCredential.user.email);
 
       // Check if admin
       if (credentials.email === ADMIN_EMAIL) {
@@ -579,6 +634,13 @@ const Login = () => {
           clearMarketDemandCache();
           setLoading(false);
           return;
+        }
+
+        // For mobile users logging in with their own email, check if email matches
+        if (isMobileUser && isMobileNumber) {
+          // User logged in with mobile number - convert to check if it matches
+          // Since they provided their own email, just proceed
+          console.log('Mobile user logging in with mobile number format');
         }
 
         // Update the emailVerified status to true since user is now verified
@@ -629,12 +691,19 @@ const Login = () => {
       }
 
     } catch (err: any) {
+      console.error('=== LOGIN ERROR ===');
+      console.error('Error code:', err.code);
+      console.error('Error message:', err.message);
+      console.error('Login input attempted:', credentials.email);
+      
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError("Invalid email or password. Please check your credentials and try again.");
+        setError("Invalid email/mobile number or password. Please check your credentials and try again.");
       } else if (err.code === 'auth/invalid-email') {
         setError("Invalid email address. Please enter a valid email.");
+      } else if (err.code === 'auth/too-many-requests') {
+        setError("Too many failed login attempts. Please try again later.");
       } else {
-        setError("Login failed. Please try again.");
+        setError(`Login failed: ${err.message || 'Please try again.'}`);
       }
     } finally {
       setLoading(false);
