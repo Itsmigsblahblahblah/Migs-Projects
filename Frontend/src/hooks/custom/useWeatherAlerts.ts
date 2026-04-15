@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { log } from "@/utils/logger";
 
 // Weather alert interface
 interface WeatherAlert {
@@ -25,7 +26,7 @@ export const useWeatherAlerts = () => {
             
             if (weatherDataStr) {
                 const weatherData = JSON.parse(weatherDataStr);
-                console.log("Weather data from localStorage:", weatherData);
+                log("Weather data from localStorage:", weatherData);
                 
                 // Extract current alerts
                 let currentAlerts = weatherData.currentAlerts || [];
@@ -66,7 +67,7 @@ export const useWeatherAlerts = () => {
                 
                 // If we still don't have alerts, let's check what's in the weather data
                 if (allAlerts.length === 0) {
-                    console.log("No alerts found, checking weather data structure");
+                    log("No alerts found, checking weather data structure");
                 }
                 
                 // Remove duplicates based on description
@@ -74,11 +75,11 @@ export const useWeatherAlerts = () => {
                     index === self.findIndex(a => a.description === alert.description)
                 );
                 
-                console.log("Final alerts to display:", uniqueAlerts);
+                log("Final alerts to display:", uniqueAlerts);
                 setWeatherAlerts(uniqueAlerts);
             } else {
                 // If no weather data in localStorage, this shouldn't happen in real usage
-                console.log("No weather data found in localStorage");
+                log("No weather data found in localStorage");
                 setWeatherAlerts([]);
             }
         } catch (err) {

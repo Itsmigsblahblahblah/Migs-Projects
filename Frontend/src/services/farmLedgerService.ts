@@ -9,6 +9,7 @@ import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firesto
 import { db } from '@/firebaseConfig';
 import { getCropInsights } from '@/services/cropDataService';
 import { FarmLedger, ExpenseBreakdown } from './types';
+import { log, error } from '@/utils/logger';
 
 // Cache for FULL crop insights responses (avoids repeated API calls)
 // Key: "cropName-soilType", Value: insights object
@@ -95,7 +96,7 @@ const calculateLedgerData = async (
     // Calculate profit (SAME as EnhancedSalesForecastCard line 179)
     const profit = userInvestment === 0 ? 0 : revenue - userInvestment;
 
-    console.log(`[Ledger] EXACT match for ${cropName}:`, {
+    log(`[Ledger] EXACT match for ${cropName}:`, {
       userInvestment,
       suggestedCapital,
       estimatedYield: cropInsights?.profit?.estimatedYield,
@@ -139,7 +140,7 @@ const calculateLedgerData = async (
           }
         }
       } catch (error) {
-        console.error('[Ledger] Error determining crop status:', error);
+        error('[Ledger] Error determining crop status:', error);
       }
     }
 
@@ -164,7 +165,7 @@ const calculateLedgerData = async (
       }
     };
   } catch (error) {
-    console.error('[Ledger] Error calculating ledger data:', error);
+    error('[Ledger] Error calculating ledger data:', error);
     return {};
   }
 };
@@ -232,7 +233,7 @@ export const getUserLedgers = async (userId: string, getCropById?: (id: string) 
           updatedAt: cropData.updatedAt?.toDate?.() || new Date().toISOString()
         };
       } catch (error) {
-        console.error('[Ledger] Error processing crop:', cropId, error);
+        error('[Ledger] Error processing crop:', cropId, error);
         return null;
       }
     });
@@ -243,7 +244,7 @@ export const getUserLedgers = async (userId: string, getCropById?: (id: string) 
     
     return ledgers.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   } catch (error) {
-    console.error('[Ledger] Error getting user ledgers:', error);
+    error('[Ledger] Error getting user ledgers:', error);
     return [];
   }
 };
@@ -315,7 +316,7 @@ export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<
           updatedAt: cropData.updatedAt?.toDate?.() || new Date().toISOString()
         };
       } catch (error) {
-        console.error('[Ledger] Error processing crop:', cropId, error);
+        error('[Ledger] Error processing crop:', cropId, error);
         return null;
       }
     });
@@ -326,7 +327,7 @@ export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<
     
     return ledgers.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   } catch (error) {
-    console.error('[Ledger] Error getting all ledgers:', error);
+    error('[Ledger] Error getting all ledgers:', error);
     return [];
   }
 };

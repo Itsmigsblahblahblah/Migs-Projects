@@ -6,6 +6,7 @@ import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, upda
 import { db, auth } from "@/firebaseConfig";
 import { deleteUser, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { generateDeletionRequestId } from "@/lib/idUtils"; // Added import for ID generation
+import { log } from "@/utils/logger";
 
 // Weather data interface
 interface WeatherData {
@@ -93,7 +94,7 @@ export const useFarmerDashboard = () => {
         const user = localStorage.getItem('username');
         const uid = localStorage.getItem('userId') || 'default-user';
 
-        console.log("useFarmerDashboard: role=", role, "user=", user, "uid=", uid);
+        log("useFarmerDashboard: role=", role, "user=", user, "uid=", uid);
 
         if (role !== 'farmer') {
             navigate('/');
@@ -194,7 +195,7 @@ export const useFarmerDashboard = () => {
                 // Log if there are multiple requests (for debugging)
                 if (sortedDocs.length > 1) {
                     console.warn(`[Farmer] Found ${sortedDocs.length} deletion requests for user ${uid}. Using the most recent one.`);
-                    console.log("[Farmer] All requests:", sortedDocs.map(d => ({ id: d.id, status: d.data().status, requestedAt: d.data().requestedAt?.toDate?.() })));
+                    log("[Farmer] All requests:", sortedDocs.map(d => ({ id: d.id, status: d.data().status, requestedAt: d.data().requestedAt?.toDate?.() })));
                 }
             } else {
                 setDeletionRequest(null);
@@ -248,7 +249,7 @@ export const useFarmerDashboard = () => {
             
             setWeatherData(processedWeatherData);
             // Save to localStorage so other components can access it
-            console.log("Saving weather data to localStorage:", processedWeatherData);
+            log("Saving weather data to localStorage:", processedWeatherData);
             localStorage.setItem('weatherData', JSON.stringify(processedWeatherData));
         } catch (error: any) {
             console.error("Error loading weather data:", error);
@@ -606,24 +607,24 @@ export const useFarmerDashboard = () => {
             if (deletionRequest) {
                 if (deletionRequest.status === 'denied') {
                     // User is re-requesting after denial - delete ALL old requests
-                    console.log("[Farmer] Deleting old denied request before creating new one...");
+                    log("[Farmer] Deleting old denied request before creating new one...");
                     try {
                         // Query ALL requests for this user to ensure cleanup
                         const requestsRef = collection(db, "deletionRequests");
                         const q = query(requestsRef, where("userId", "==", userId));
                         const querySnapshot = await getDocs(q);
 
-                        console.log(`[Farmer] Found ${querySnapshot.size} old request(s) to delete`);
+                        log(`[Farmer] Found ${querySnapshot.size} old request(s) to delete`);
 
                         // Delete all old requests using batch
                         const batch = writeBatch(db);
                         querySnapshot.forEach((doc) => {
-                            console.log(`[Farmer] Deleting old request: ${doc.id}`);
+                            log(`[Farmer] Deleting old request: ${doc.id}`);
                             batch.delete(doc.ref);
                         });
                         await batch.commit();
 
-                        console.log("[Farmer] All old requests deleted successfully");
+                        log("[Farmer] All old requests deleted successfully");
                         setDeletionRequest(null);
                     } catch (error) {
                         console.error("Error deleting old requests:", error);
@@ -667,7 +668,7 @@ export const useFarmerDashboard = () => {
                 requestData.reason = reason;
             }
 
-            console.log("Creating deletion request:", requestData);
+            log("Creating deletion request:", requestData);
 
             // Generate a readable document ID using username instead of userId
             const documentId = generateDeletionRequestId(username);
@@ -675,7 +676,7 @@ export const useFarmerDashboard = () => {
             // Add to Firestore with custom ID
             const requestRef = doc(db, "deletionRequests", documentId);
             await setDoc(requestRef, requestData);
-            console.log("Deletion request created with ID:", documentId);
+            log("Deletion request created with ID:", documentId);
 
             // Reload deletion request
             await checkDeletionRequest(userId);

@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { collection, query, getDocs, orderBy, Timestamp, updateDoc, doc, deleteDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { HARDCODED_CROPS } from "@/utils/cropUtils";
+import { log } from "@/utils/logger";
 
 interface Report {
     id: string;
@@ -93,7 +94,7 @@ export const useAdminDashboard = () => {
     const loadDashboardData = async () => {
         setLoading(true);
         try {
-            console.log("Loading dashboard data...");
+            log("Loading dashboard data...");
 
             // Load all reports - Query without orderBy to get ALL data including old records
             const reportsRef = collection(db, "farmReports");
@@ -103,7 +104,7 @@ export const useAdminDashboard = () => {
             const reportsData: Report[] = [];
             reportsSnapshot.forEach((doc) => {
                 const data = doc.data();
-                console.log("Report found:", doc.id, data);
+                log("Report found:", doc.id, data);
                 reportsData.push({
                     id: doc.id,
                     userId: data.userId || '',
@@ -128,7 +129,7 @@ export const useAdminDashboard = () => {
                 return dateB.getTime() - dateA.getTime();
             });
 
-            console.log("Total reports loaded:", reportsData.length);
+            log("Total reports loaded:", reportsData.length);
             setReports(reportsData);
 
             // Calculate statistics with reports data only first
@@ -357,16 +358,16 @@ export const useAdminDashboard = () => {
 
     const loadDeletionRequests = async () => {
         try {
-            console.log("[Admin] Loading deletion requests...");
+            log("[Admin] Loading deletion requests...");
             const requestsRef = collection(db, "deletionRequests");
             const requestsSnapshot = await getDocs(requestsRef);
 
-            console.log("[Admin] Found", requestsSnapshot.size, "deletion request(s)");
+            log("[Admin] Found", requestsSnapshot.size, "deletion request(s)");
 
             const requestsData: DeletionRequest[] = [];
             requestsSnapshot.forEach((doc) => {
                 const data = doc.data();
-                console.log("[Admin] Deletion request:", doc.id, data);
+                log("[Admin] Deletion request:", doc.id, data);
                 requestsData.push({
                     id: doc.id,
                     userId: data.userId || '',
@@ -388,8 +389,8 @@ export const useAdminDashboard = () => {
                 return dateB.getTime() - dateA.getTime();
             });
 
-            console.log("[Admin] Total deletion requests loaded:", requestsData.length);
-            console.log("[Admin] Deletion requests data:", requestsData);
+            log("[Admin] Total deletion requests loaded:", requestsData.length);
+            log("[Admin] Deletion requests data:", requestsData);
             setDeletionRequests(requestsData);
         } catch (error) {
             console.error("[Admin] Error loading deletion requests:", error);
@@ -455,7 +456,7 @@ export const useAdminDashboard = () => {
         }
 
         try {
-            console.log("[Admin] Deleting requests:", selectedRequests);
+            log("[Admin] Deleting requests:", selectedRequests);
             const batch = writeBatch(db);
 
             selectedRequests.forEach(requestId => {

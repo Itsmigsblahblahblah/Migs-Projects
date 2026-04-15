@@ -15,6 +15,7 @@ import { db } from "@/firebaseConfig";
 import { collection, query, where, orderBy, onSnapshot, updateDoc, doc, Timestamp, deleteDoc, getDocs } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Send, CheckCircle, Trash2, X } from "lucide-react";
+import { log } from "@/utils/logger";
 
 interface AdminMessage {
   id: string;
@@ -45,13 +46,12 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
     
     // If userId is not available, don't fetch messages
     if (!userId || userId === 'default-user') {
-      console.log("AdminMessages: No valid userId, setting empty messages");
       setMessages([]);
       setLoading(false);
       return;
     }
 
-    console.log("AdminMessages: Fetching messages for userId:", userId);
+    log("AdminMessages: Fetching messages for userId:", userId);
 
     // Query without orderBy to avoid index issues
     // We'll sort manually instead
@@ -62,13 +62,13 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      console.log("AdminMessages: Received snapshot with", snapshot.size, "messages");
-      console.log("AdminMessages: Snapshot metadata:", snapshot.metadata);
+      log("AdminMessages: Received snapshot with", snapshot.size, "messages");
+      log("AdminMessages: Snapshot metadata:", snapshot.metadata);
       
       const messagesData: AdminMessage[] = [];
       
       snapshot.forEach((doc) => {
-        console.log("AdminMessages: Processing document:", doc.id, doc.data());
+        log("AdminMessages: Processing document:", doc.id, doc.data());
         messagesData.push({
           id: doc.id,
           ...doc.data()
@@ -89,7 +89,7 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
         return 0;
       });
 
-      console.log("AdminMessages: Final messages array:", messagesData);
+      log("AdminMessages: Final messages array:", messagesData);
       setMessages(messagesData);
       setLoading(false);
     }, (error) => {
@@ -120,7 +120,6 @@ const AdminMessages = ({ userId }: AdminMessagesProps) => {
     });
 
     return () => {
-      console.log("AdminMessages: Cleaning up listener");
       unsubscribe();
       setLoading(false);
     };
