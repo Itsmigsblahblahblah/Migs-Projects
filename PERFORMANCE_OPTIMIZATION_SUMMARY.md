@@ -236,9 +236,11 @@ getCacheStats();
 
 Caches are automatically invalidated when:
 - ✅ User adds a new crop
-- ✅ User updates an existing crop
+- ✅ User updates an existing crop (especially puhunan/capital, landArea, soilType, name)
 - ✅ User deletes a crop
 - ✅ Cache age exceeds 5 minutes (localStorage)
+
+**Important**: When you edit a crop's capital/investment, the insights cache is automatically cleared so the ledger recalculates with the new values immediately - **no refresh needed!**
 
 Caches are NEVER invalidated when:
 - ❌ User just views/refreshes the page

@@ -3,6 +3,8 @@ import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, o
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "@/firebaseConfig";
 import { generateFarmerCropId } from "@/lib/idUtils";
+import { clearInsightsCache } from "@/services/farmLedgerService";
+import { clearAllCropCaches } from "@/services/cropDataService";
 
 interface ChecklistItem {
     id: string;
@@ -183,9 +185,14 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
 
             setCrops(prev => [newCrop, ...prev]);
 
-            // OPTIMIZATION: Invalidate cache when crops change
+            // OPTIMIZATION: Invalidate caches when crops change
             const cacheKey = `crops_${userId}`;
             localStorage.removeItem(cacheKey);
+            
+            // Clear insights cache for new crop type
+            console.log('[CropContext] Clearing insights cache for new crop');
+            clearInsightsCache();
+            clearAllCropCaches();
 
             // Return the ID of the newly added crop
             return docRef.id;
@@ -215,11 +222,19 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 )
             );
 
-            // OPTIMIZATION: Invalidate cache when crops change
+            // OPTIMIZATION: Invalidate caches when crops change
             const userId = currentUserId || localStorage.getItem('userId');
             if (userId) {
                 const cacheKey = `crops_${userId}`;
                 localStorage.removeItem(cacheKey);
+            }
+            
+            // CRITICAL: Clear insights cache when puhunan/capital changes
+            // This ensures ledger recalculates with new investment values
+            if (cropData.puhunan !== undefined || cropData.landArea !== undefined || cropData.soilType !== undefined || cropData.name !== undefined) {
+                console.log('[CropContext] Clearing insights cache due to crop data change');
+                clearInsightsCache();
+                clearAllCropCaches();
             }
         } catch (error) {
             console.error("Error updating crop in Firestore:", error);
@@ -236,12 +251,17 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
             // Update local state
             setCrops(prev => prev.filter(crop => crop.id !== id));
 
-            // OPTIMIZATION: Invalidate cache when crops change
+            // OPTIMIZATION: Invalidate caches when crops change
             const userId = currentUserId || localStorage.getItem('userId');
             if (userId) {
                 const cacheKey = `crops_${userId}`;
                 localStorage.removeItem(cacheKey);
             }
+            
+            // Clear insights cache when crop is deleted
+            console.log('[CropContext] Clearing insights cache due to crop deletion');
+            clearInsightsCache();
+            clearAllCropCaches();
         } catch (error) {
             console.error("Error deleting crop from Firestore:", error);
             throw error;
