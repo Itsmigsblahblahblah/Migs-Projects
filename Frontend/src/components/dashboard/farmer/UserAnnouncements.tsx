@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { db, auth } from "@/firebaseConfig";
-import { collection, query, orderBy, onSnapshot, deleteDoc, doc, setDoc } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, deleteDoc, doc, setDoc, getDoc } from "firebase/firestore";
 import { Bell, Trash2, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,7 +26,30 @@ export const useAnnouncements = () => {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userReadStatus, setUserReadStatus] = useState<Record<string, ReadStatus>>({});
+  const [userCreatedAt, setUserCreatedAt] = useState<Date | null>(null);
   const userId = localStorage.getItem('userId') || 'default-user';
+
+  // Fetch user's account creation date
+  useEffect(() => {
+    if (!userId || userId === 'default-user') return;
+
+    const fetchUserCreationDate = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, "farmers", userId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          // createdAt is stored as ISO string
+          if (userData.createdAt) {
+            setUserCreatedAt(new Date(userData.createdAt));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user creation date:", error);
+      }
+    };
+
+    fetchUserCreationDate();
+  }, [userId]);
 
   // Fetch user read status
   useEffect(() => {
@@ -53,14 +76,30 @@ export const useAnnouncements = () => {
     return () => unsubscribe();
   }, [userId]);
 
-  // Fetch announcements
+  // Fetch announcements (filtered by user account creation date)
   useEffect(() => {
     const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const announcementsData: Announcement[] = [];
+      
       snapshot.forEach((doc) => {
-        announcementsData.push({ id: doc.id, ...doc.data() } as Announcement);
+        const announcementData = { id: doc.id, ...doc.data() } as Announcement;
+        
+        // FILTER: Only include announcements created on or after user's account creation date
+        if (userCreatedAt && announcementData.createdAt) {
+          const announcementDate = announcementData.createdAt.toDate 
+            ? announcementData.createdAt.toDate() 
+            : new Date(announcementData.createdAt);
+          
+          // Skip announcements created before user's account
+          if (announcementDate < userCreatedAt) {
+            return; // Don't add this announcement
+          }
+        }
+        
+        announcementsData.push(announcementData);
       });
+      
       setAnnouncements(announcementsData);
       
       // Calculate unread count based on read status
@@ -83,7 +122,7 @@ export const useAnnouncements = () => {
     });
 
     return () => unsubscribe();
-  }, [userReadStatus, userId]);
+  }, [userReadStatus, userId, userCreatedAt]);
 
   return { announcements, loading, unreadCount, userReadStatus, setUserReadStatus };
 };
