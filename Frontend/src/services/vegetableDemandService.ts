@@ -15,13 +15,15 @@ const PENDING_VEGETABLE_REQUESTS: Record<string, Promise<any>> = {};
  * @param historicalPrices Array of historical prices
  * @param historicalAnnualPrices Array of historical annual prices
  * @param historicalMonths Array of historical months (1-12)
+ * @param signal Optional AbortController signal for timeout support
  * @returns Promise with demand prediction data
  */
 export const getVegetableDemandPrediction = async (
   vegetableName: string,
   historicalPrices: number[],
   historicalAnnualPrices: number[],
-  historicalMonths: number[]
+  historicalMonths: number[],
+  signal?: AbortSignal
 ) => {
   try {
     const response = await fetch(`${API_BASE_URL}/vegetables/predict-demand`, {
@@ -34,7 +36,8 @@ export const getVegetableDemandPrediction = async (
         historical_prices: historicalPrices,
         historical_annual_prices: historicalAnnualPrices,
         historical_months: historicalMonths
-      })
+      }),
+      signal // Support for abort/timeout
     });
 
     if (!response.ok) {

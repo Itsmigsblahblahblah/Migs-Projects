@@ -413,12 +413,16 @@ export const getSeedPriceInfo = async (cropName: string) => {
  * @param cropName Name of the crop
  * @param landArea Area of land in hectares
  * @param puhunan Capital investment
+ * @param marketInfo Optional pre-fetched market data to avoid duplicate API calls
+ * @param historicalData Optional pre-fetched historical data to avoid duplicate API calls
  * @returns Profit projection information
  */
 export const calculateProfitProjection = async (
   cropName: string, 
   landArea: number, 
-  puhunan: number
+  puhunan: number,
+  marketInfo?: any,
+  historicalData?: any
 ) => {
   try {
     console.log('calculateProfitProjection called with:', { cropName, landArea, puhunan });
@@ -438,29 +442,37 @@ export const calculateProfitProjection = async (
       };
     }
     
-    // Get market price information from the backend API
-    const marketInfo = await getMarketPriceInfo(cropName);
-    console.log('Market info:', marketInfo);
+    // OPTIMIZED: Use pre-fetched market data if provided, otherwise fetch it
+    const marketData = marketInfo || await getMarketPriceInfo(cropName);
+    console.log('Market info:', marketData);
     
-    // Get demand prediction for more accurate pricing
-    const historicalData = await getVegetableHistoricalData(cropName);
-    console.log('Historical data length:', historicalData?.length);
+    // OPTIMIZED: Use pre-fetched historical data if provided, otherwise fetch it
+    const histData = historicalData || await getVegetableHistoricalData(cropName);
+    console.log('Historical data length:', histData?.length);
     
-    let predictedPrice = marketInfo.averagePrice;
-    if (historicalData && historicalData.length > 0) {
+    let predictedPrice = marketData.averagePrice;
+    if (histData && histData.length > 0) {
       // Prepare data for demand prediction
-      const prices = historicalData.map((record: any) => parseFloat(record.Price));
-      const annualPrices = historicalData.map((record: any) => parseFloat(record.Annual_Price));
-      const months = historicalData.map((record: any) => parseInt(record.MonthNum));
+      const prices = histData.map((record: any) => parseFloat(record.Price));
+      const annualPrices = histData.map((record: any) => parseFloat(record.Annual_Price));
+      const months = histData.map((record: any) => parseInt(record.MonthNum));
+      
+      // OPTIMIZED: Add timeout to demand prediction to prevent blocking
+      const controller = new AbortController();
+      let timeoutId: any = null;
       
       try {
-        // Get demand prediction from the backend API
+        timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        // Get demand prediction from the backend API with timeout support
         const demandPrediction = await getVegetableDemandPrediction(
           cropName,
           prices,
           annualPrices,
-          months
+          months,
+          controller.signal
         );
+        clearTimeout(timeoutId);
         console.log('Demand prediction:', demandPrediction);
         
         // Use predicted price if available
@@ -468,8 +480,9 @@ export const calculateProfitProjection = async (
           predictedPrice = demandPrediction.predicted_price;
         }
       } catch (predictionError) {
+        if (timeoutId) clearTimeout(timeoutId);
         console.warn('Could not get demand prediction, using average price:', predictionError);
-        // Fall back to average price if prediction fails
+        // Fall back to average price if prediction fails or times out
       }
     }
     
@@ -530,7 +543,7 @@ export const calculateProfitProjection = async (
       totalCosts: userInvestment, // Total costs equal user's investment
       netProfit,
       profitMargin,
-      marketTrend: marketInfo.trend,
+      marketTrend: marketData.trend,
       averageMarketPrice: predictedPrice, // Use predicted price instead of average
       suggestedCapital: suggestedCapital
     };
@@ -583,11 +596,16 @@ export const getCropInsights = async (
   // Create the request promise
   const requestPromise = (async () => {
     try {
-      // Get all insights in parallel
-      const [fertilizerInfo, marketInfo, profitProjection] = await Promise.all([
+      // OPTIMIZED: Fetch market data ONCE and reuse it
+      const marketInfo = await getMarketPriceInfo(cropName);
+      
+      // Get historical data ONCE and pass it to profit calculation
+      const historicalData = await getVegetableHistoricalData(cropName);
+      
+      // Get all insights in parallel, reusing already-fetched data
+      const [fertilizerInfo, profitProjection] = await Promise.all([
         getFertilizerRecommendations(cropName, soilType),
-        getMarketPriceInfo(cropName),
-        calculateProfitProjection(cropName, landArea, puhunan)
+        calculateProfitProjection(cropName, landArea, puhunan, marketInfo, historicalData)
       ]);
       
       const result = {
