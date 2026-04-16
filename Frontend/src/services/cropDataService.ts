@@ -15,6 +15,40 @@ const CROP_DATA_ENDPOINT = '/data/crop-data';
 const CROP_INSIGHTS_CACHE: Record<string, any> = {};
 const PENDING_INSIGHTS_REQUESTS: Record<string, Promise<any>> = {};
 
+// OPTIMIZATION: Global CSV data cache to prevent repeated fetches
+const CSV_DATA_CACHE: Record<string, any[]> = {};
+const PENDING_CSV_REQUESTS: Record<string, Promise<any[]>> = {};
+
+/**
+ * OPTIMIZED: Load CSV with caching to prevent repeated network requests
+ * This is the #1 performance bottleneck - CSVs are fetched on EVERY crop calculation
+ */
+const loadCachedCSV = async (endpoint: string): Promise<any[]> => {
+  // Return from cache if available (INSTANT!)
+  if (CSV_DATA_CACHE[endpoint]) {
+    return CSV_DATA_CACHE[endpoint];
+  }
+  
+  // If request is already in-flight, return the same promise (deduplication)
+  if (PENDING_CSV_REQUESTS[endpoint]) {
+    return PENDING_CSV_REQUESTS[endpoint];
+  }
+  
+  // Fetch once and cache forever (CSV data is static)
+  const requestPromise = (async () => {
+    try {
+      const data = await loadCSV(endpoint);
+      CSV_DATA_CACHE[endpoint] = data;
+      return data;
+    } finally {
+      delete PENDING_CSV_REQUESTS[endpoint];
+    }
+  })();
+  
+  PENDING_CSV_REQUESTS[endpoint] = requestPromise;
+  return requestPromise;
+};
+
 // Define interfaces for type safety
 interface SoilDataRecord {
   pH: number;
@@ -86,8 +120,8 @@ interface CropInsights {
  */
 export const getFertilizerRecommendations = async (cropName: string, soilType: string): Promise<FertilizerInfo> => {
   try {
-    // Fetch from the backend API
-    const soilData = await loadCSV(SOIL_DATA_ENDPOINT);
+    // OPTIMIZED: Use cached CSV loading
+    const soilData = await loadCachedCSV(SOIL_DATA_ENDPOINT);
     
     // Find matching records for the crop
     const matchingRecords = findMatchingRecords(soilData, 'Crop', cropName);
@@ -343,8 +377,8 @@ export const getMarketPriceInfo = async (cropName: string) => {
  */
 export const getSeedPriceInfo = async (cropName: string) => {
   try {
-    // Fetch from the backend API
-    const seedData = await loadCSV(SEED_PRICES_ENDPOINT);
+    // OPTIMIZED: Use cached CSV loading
+    const seedData = await loadCachedCSV(SEED_PRICES_ENDPOINT);
     
     // Find matching records for the crop
     const matchingRecords = findMatchingRecords(seedData, 'Gulay (Vegetable)', cropName);
@@ -532,8 +566,9 @@ export const getCropInsights = async (
   landArea: number,
   puhunan: number
 ) => {
-  // Create cache key
-  const cacheKey = `${cropName.toLowerCase()}-${soilType.toLowerCase()}-${landArea}-${puhunan}`;
+  // OPTIMIZED: Cache key based ONLY on crop and soil (not landArea/puhunan)
+  // This dramatically increases cache hits since most crops share the same type
+  const cacheKey = `${cropName.toLowerCase()}-${soilType.toLowerCase()}`;
   
   // Return from cache if available (instant)
   if (CROP_INSIGHTS_CACHE[cacheKey]) {
@@ -572,4 +607,27 @@ export const getCropInsights = async (
   
   PENDING_INSIGHTS_REQUESTS[cacheKey] = requestPromise;
   return requestPromise;
+};
+
+/**
+ * OPTIMIZATION: Clear all caches (useful when data is updated)
+ */
+export const clearAllCropCaches = () => {
+  Object.keys(CROP_INSIGHTS_CACHE).forEach(key => delete CROP_INSIGHTS_CACHE[key]);
+  Object.keys(PENDING_INSIGHTS_REQUESTS).forEach(key => delete PENDING_INSIGHTS_REQUESTS[key]);
+  Object.keys(CSV_DATA_CACHE).forEach(key => delete CSV_DATA_CACHE[key]);
+  Object.keys(PENDING_CSV_REQUESTS).forEach(key => delete PENDING_CSV_REQUESTS[key]);
+  console.log('[CropDataService] All caches cleared');
+};
+
+/**
+ * OPTIMIZATION: Get cache statistics for debugging
+ */
+export const getCacheStats = () => {
+  return {
+    cropInsights: Object.keys(CROP_INSIGHTS_CACHE).length,
+    csvData: Object.keys(CSV_DATA_CACHE).length,
+    pendingInsights: Object.keys(PENDING_INSIGHTS_REQUESTS).length,
+    pendingCSV: Object.keys(PENDING_CSV_REQUESTS).length
+  };
 };

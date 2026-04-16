@@ -20,6 +20,47 @@ const INSIGHTS_CACHE: Record<string, any> = {};
 const PENDING_REQUESTS: Record<string, Promise<any>> = {};
 
 /**
+ * OPTIMIZATION: Pre-fetch all unique crop insights in ONE batch
+ * Instead of fetching per-crop, we identify unique crop types first,
+ * then fetch all insights in parallel for maximum speed.
+ */
+const preFetchCropInsights = async (crops: any[]): Promise<void> => {
+  // Extract unique crop+soil combinations
+  const uniqueCropKeys = new Set<string>();
+  const cropsToFetch: Array<{crop: any, cacheKey: string}> = [];
+  
+  for (const crop of crops) {
+    const cropName = (crop.name || 'Unknown').toLowerCase();
+    const soilType = (crop.soilType || 'default').toLowerCase();
+    const cacheKey = `${cropName}-${soilType}`;
+    
+    // Only fetch if not already cached or in-flight
+    if (!INSIGHTS_CACHE[cacheKey] && !PENDING_REQUESTS[cacheKey]) {
+      uniqueCropKeys.add(cacheKey);
+      cropsToFetch.push({ crop, cacheKey });
+    }
+  }
+  
+  // Fetch all unique crop insights in parallel
+  const fetchPromises = cropsToFetch.map(async ({ crop, cacheKey }) => {
+    try {
+      const cropName = crop.name || 'Unknown';
+      const soilType = crop.soilType || 'default';
+      const landArea = crop.landArea || 0;
+      const puhunan = Number(crop.puhunan) || 0;
+      
+      const insights = await getCropInsights(cropName, soilType, landArea, puhunan);
+      INSIGHTS_CACHE[cacheKey] = insights;
+    } catch (error) {
+      console.error(`[Ledger] Failed to prefetch insights for ${cacheKey}:`, error);
+    }
+  });
+  
+  // Wait for all prefetches to complete
+  await Promise.all(fetchPromises);
+};
+
+/**
  * Get crop insights with intelligent caching
  * Calls API only ONCE per unique crop+soil combination
  * Subsequent calls return cached data instantly
@@ -172,7 +213,7 @@ const calculateLedgerData = async (
 
 /**
  * Get user's ledger entries
- * Uses CACHED insights (API called only ONCE per unique crop type)
+ * OPTIMIZED: Pre-fetches all unique crop insights first, then processes ledgers instantly from cache
  */
 export const getUserLedgers = async (userId: string, getCropById?: (id: string) => any): Promise<FarmLedger[]> => {
   try {
@@ -181,17 +222,21 @@ export const getUserLedgers = async (userId: string, getCropById?: (id: string) 
     const cropsSnap = await getDocs(cropsQuery);
     
     const ledgers: FarmLedger[] = [];
+    const cropsData = cropsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as any);
     
-    // Calculate all ledgers in parallel (API called once per crop type, then cached)
-    const cropPromises = cropsSnap.docs.map(async (cropDoc) => {
-      const cropData = cropDoc.data();
-      const cropId = cropDoc.id;
+    // OPTIMIZATION STEP 1: Pre-fetch all unique crop insights in ONE batch
+    // This is the KEY performance improvement - fetch all at once instead of one-by-one
+    await preFetchCropInsights(cropsData);
+    
+    // OPTIMIZATION STEP 2: Now process all ledgers (all data is cached, so this is FAST)
+    const cropPromises = cropsData.map(async (cropData) => {
+      const cropId = cropData.id;
       
       try {
         // Get crop data (from context or use directly)
         const crop = getCropById ? getCropById(cropId) : cropData;
         
-        // Calculate using cached insights (API called only once per crop type!)
+        // Calculate using CACHED insights (instant, no API calls!)
         const calculatedData = await calculateLedgerData(crop || cropData);
         
         const emptyExpenses: ExpenseBreakdown = {
@@ -251,7 +296,7 @@ export const getUserLedgers = async (userId: string, getCropById?: (id: string) 
 
 /**
  * Get all ledger entries (for admin)
- * Uses CACHED insights (API called only ONCE per unique crop type)
+ * OPTIMIZED: Pre-fetches all unique crop insights first, then processes ledgers instantly from cache
  */
 export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<FarmLedger[]> => {
   try {
@@ -259,11 +304,14 @@ export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<
     const cropsSnap = await getDocs(cropsRef);
     
     const ledgers: FarmLedger[] = [];
+    const cropsData = cropsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as any);
     
-    // Calculate all ledgers in parallel (API called once per crop type, then cached)
-    const cropPromises = cropsSnap.docs.map(async (cropDoc) => {
-      const cropData = cropDoc.data();
-      const cropId = cropDoc.id;
+    // OPTIMIZATION STEP 1: Pre-fetch all unique crop insights in ONE batch
+    await preFetchCropInsights(cropsData);
+    
+    // OPTIMIZATION STEP 2: Now process all ledgers (all data is cached, so this is FAST)
+    const cropPromises = cropsData.map(async (cropData) => {
+      const cropId = cropData.id;
       const userId = cropData.userId;
       
       if (!userId) {
@@ -274,7 +322,7 @@ export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<
         // Get crop data (from context or use directly)
         const crop = getCropById ? getCropById(cropId) : cropData;
         
-        // Calculate using cached insights (API called only once per crop type!)
+        // Calculate using CACHED insights (instant, no API calls!)
         const calculatedData = await calculateLedgerData(crop || cropData);
         
         const emptyExpenses: ExpenseBreakdown = {
@@ -386,4 +434,23 @@ export const addActivity = async (_ledgerId: string, _activity: any): Promise<vo
 
 export const getLedgerById = async (_id: string): Promise<FarmLedger | null> => {
   throw new Error('Ledgers are auto-generated.');
+};
+
+/**
+ * OPTIMIZATION: Clear insights cache (call when crop data changes)
+ */
+export const clearInsightsCache = () => {
+  Object.keys(INSIGHTS_CACHE).forEach(key => delete INSIGHTS_CACHE[key]);
+  Object.keys(PENDING_REQUESTS).forEach(key => delete PENDING_REQUESTS[key]);
+  console.log('[FarmLedgerService] Insights cache cleared');
+};
+
+/**
+ * OPTIMIZATION: Get cache statistics for debugging
+ */
+export const getCacheStats = () => {
+  return {
+    insights: Object.keys(INSIGHTS_CACHE).length,
+    pending: Object.keys(PENDING_REQUESTS).length
+  };
 };

@@ -48,7 +48,7 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
             if (user) {
                 const userId = user.uid;
                 setCurrentUserId(userId);
-                // Load crops when user changes
+                // Load crops immediately when user is detected
                 loadCrops(userId);
             } else {
                 setCurrentUserId(null);
@@ -59,14 +59,8 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
         return () => unsubscribe();
     }, []);
 
-    // Load crops when currentUserId changes
-    useEffect(() => {
-        if (currentUserId) {
-            loadCrops(currentUserId);
-        } else {
-            setCrops([]);
-        }
-    }, [currentUserId]);
+    // REMOVED: Duplicate loading effect - crops are now loaded in onAuthStateChanged only
+    // This prevents double-loading which slows down initial page load
 
     const loadCrops = async (userId?: string) => {
         try {
@@ -76,6 +70,24 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 console.warn("No userId found");
                 setCrops([]);
                 return;
+            }
+
+            // OPTIMIZATION: Check localStorage cache first for instant loading
+            const cacheKey = `crops_${effectiveUserId}`;
+            const cachedCrops = localStorage.getItem(cacheKey);
+            if (cachedCrops) {
+                try {
+                    const parsedCrops = JSON.parse(cachedCrops);
+                    // Only use cache if it's less than 5 minutes old
+                    const cacheAge = Date.now() - (parsedCrops._timestamp || 0);
+                    if (cacheAge < 5 * 60 * 1000) {
+                        console.log('[CropContext] Using cached crops (instant load)');
+                        setCrops(parsedCrops.crops || []);
+                        // Still fetch fresh data in background
+                    }
+                } catch (e) {
+                    // Ignore cache parse errors
+                }
             }
 
             console.log("Loading crops for userId:", effectiveUserId);
@@ -120,6 +132,17 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
 
             console.log("Loaded crops:", loadedCrops.length);
             setCrops(loadedCrops);
+
+            // OPTIMIZATION: Cache to localStorage for faster subsequent loads
+            try {
+                const cacheData = {
+                    crops: loadedCrops,
+                    _timestamp: Date.now()
+                };
+                localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+            } catch (e) {
+                // Ignore cache storage errors (e.g., quota exceeded)
+            }
         } catch (error) {
             console.error("Error loading crops from Firestore:", error);
             setCrops([]);
@@ -160,6 +183,10 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
 
             setCrops(prev => [newCrop, ...prev]);
 
+            // OPTIMIZATION: Invalidate cache when crops change
+            const cacheKey = `crops_${userId}`;
+            localStorage.removeItem(cacheKey);
+
             // Return the ID of the newly added crop
             return docRef.id;
         } catch (error) {
@@ -187,6 +214,13 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                         : crop
                 )
             );
+
+            // OPTIMIZATION: Invalidate cache when crops change
+            const userId = currentUserId || localStorage.getItem('userId');
+            if (userId) {
+                const cacheKey = `crops_${userId}`;
+                localStorage.removeItem(cacheKey);
+            }
         } catch (error) {
             console.error("Error updating crop in Firestore:", error);
             throw error;
@@ -201,6 +235,13 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
 
             // Update local state
             setCrops(prev => prev.filter(crop => crop.id !== id));
+
+            // OPTIMIZATION: Invalidate cache when crops change
+            const userId = currentUserId || localStorage.getItem('userId');
+            if (userId) {
+                const cacheKey = `crops_${userId}`;
+                localStorage.removeItem(cacheKey);
+            }
         } catch (error) {
             console.error("Error deleting crop from Firestore:", error);
             throw error;
