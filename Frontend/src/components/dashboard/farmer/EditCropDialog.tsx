@@ -16,6 +16,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { useState, useEffect, useRef } from "react";
+import { HARDCODED_CROPS } from "@/utils/cropUtils";
+import { ChevronDown, AlertCircle } from "lucide-react";
 
 interface EditCropDialogProps {
     open: boolean;
@@ -40,7 +43,69 @@ const EditCropDialog = ({
     handleEditSoilTypeChange,
     handleEditCropSubmit
 }: EditCropDialogProps) => {
+    const [cropSearchTerm, setCropSearchTerm] = useState(editCrop.name || "");
+    const [showCropDropdown, setShowCropDropdown] = useState(false);
+    const [isValidCrop, setIsValidCrop] = useState(true);
+    const cropDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Filter crops based on search term
+    const filteredCrops = HARDCODED_CROPS.filter(crop =>
+        crop.toLowerCase().includes(cropSearchTerm.toLowerCase())
+    );
+
+    // Sync crop search term with editCrop.name when it changes
+    useEffect(() => {
+        setCropSearchTerm(editCrop.name || "");
+        // Validate if the current crop name exists in the options
+        if (editCrop.name) {
+            const isValid = HARDCODED_CROPS.some(
+                crop => crop.toLowerCase() === editCrop.name.toLowerCase()
+            );
+            setIsValidCrop(isValid);
+        } else {
+            setIsValidCrop(true); // Reset when empty
+        }
+    }, [editCrop.name]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (cropDropdownRef.current && !cropDropdownRef.current.contains(event.target as Node)) {
+                setShowCropDropdown(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    // Handle crop selection
+    const handleCropSelect = (value: string) => {
+        setCropSearchTerm(value);
+        handleEditCropInputChange({
+            target: { name: "name", value }
+        } as React.ChangeEvent<HTMLInputElement>);
+        setShowCropDropdown(false);
+    };
+
+    // Handle input change for crop name
+    const handleCropInputChangeLocal = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setCropSearchTerm(value);
+        handleEditCropInputChange({
+            target: { name: "name", value }
+        } as React.ChangeEvent<HTMLInputElement>);
+        setShowCropDropdown(true);
+    };
+
     const handleEditCropSubmitWrapper = async () => {
+        // Validate that the crop name matches an option in the dropdown
+        if (editCrop.name && !isValidCrop) {
+            return; // Don't submit if crop name is invalid
+        }
+        
         const success = await handleEditCropSubmit();
         if (success) {
             onOpenChange(false);
@@ -65,13 +130,51 @@ const EditCropDialog = ({
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="editCropName">Crop Name *</Label>
-                        <Input
-                            id="editCropName"
-                            name="name"
-                            value={editCrop.name}
-                            onChange={handleEditCropInputChange}
-                            placeholder="e.g., Rice, Corn"
-                        />
+                        <div className="relative" ref={cropDropdownRef}>
+                            <Input
+                                id="editCropName"
+                                name="name"
+                                value={cropSearchTerm}
+                                onChange={handleCropInputChangeLocal}
+                                onFocus={() => setShowCropDropdown(true)}
+                                placeholder="Select or type a crop"
+                                className={`pr-10 ${!isValidCrop && cropSearchTerm ? 'border-destructive' : ''}`}
+                                autoComplete="off"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowCropDropdown(!showCropDropdown)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                <ChevronDown className="h-4 w-4" />
+                            </button>
+
+                            {showCropDropdown && (
+                                <div className="absolute z-10 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-auto">
+                                    {filteredCrops.length > 0 ? (
+                                        filteredCrops.map((crop) => (
+                                            <div
+                                                key={crop}
+                                                className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                                onClick={() => handleCropSelect(crop)}
+                                            >
+                                                {crop}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                                            No crop found
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        {!isValidCrop && cropSearchTerm && (
+                            <div className="flex items-center gap-2 text-sm text-destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <span>No crop found. Please select from the dropdown list.</span>
+                            </div>
+                        )}
                     </div>
                     
                     <div className="space-y-2">

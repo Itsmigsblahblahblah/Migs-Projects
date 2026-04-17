@@ -4,7 +4,6 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useFarmLedger } from '@/hooks/custom/useFarmLedger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,6 @@ import {
   Filter,
   Search,
   MapPin,
-  Eye,
   BarChart3,
   Calendar,
   Package
@@ -43,11 +41,9 @@ import { format } from 'date-fns';
 interface LedgerContentProps {
   userId: string;
   isAdmin?: boolean;
-  onNavigateToLedgerDetail?: (ledgerId: string) => void;
 }
 
-const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: LedgerContentProps) => {
-  const navigate = useNavigate();
+const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
   const {
     ledgers,
     summary,
@@ -146,14 +142,6 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
       return format(new Date(dateString), 'MMM dd, yyyy');
     } catch {
       return 'N/A';
-    }
-  };
-
-  const handleViewDetails = (ledgerId: string) => {
-    if (onNavigateToLedgerDetail) {
-      onNavigateToLedgerDetail(ledgerId);
-    } else if (!isAdmin) {
-      navigate(`/farmer/ledger/${ledgerId}`);
     }
   };
 
@@ -367,7 +355,6 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
                     <TableHead className="text-right">Investment</TableHead>
                     <TableHead className="text-right">Revenue</TableHead>
                     <TableHead className="text-right">Profit</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -400,15 +387,6 @@ const LedgerContent = ({ userId, isAdmin = false, onNavigateToLedgerDetail }: Le
                         }>
                           {formatCurrency(ledger.financials.actualProfit || ledger.financials.estimatedProfit)}
                         </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetails(ledger.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

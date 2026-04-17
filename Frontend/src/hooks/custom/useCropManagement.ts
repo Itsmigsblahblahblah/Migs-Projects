@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useCrops } from "@/contexts/CropContext";
+import { HARDCODED_CROPS } from "@/utils/cropUtils";
 
 export const useCropManagement = () => {
     const [newCrop, setNewCrop] = useState({
@@ -65,6 +66,19 @@ export const useCropManagement = () => {
             toast({
                 title: "Incomplete Information",
                 description: "Please fill in all required fields.",
+                variant: "destructive",
+            });
+            return false;
+        }
+
+        // Validate crop name exists in the dropdown list
+        const isValidCrop = HARDCODED_CROPS.some(
+            crop => crop.toLowerCase() === newCrop.name.toLowerCase()
+        );
+        if (!isValidCrop) {
+            toast({
+                title: "Invalid Crop Name",
+                description: "Please select a valid crop from the dropdown list.",
                 variant: "destructive",
             });
             return false;
@@ -249,7 +263,20 @@ export const useCropManagement = () => {
                 description: "Please fill in all required fields.",
                 variant: "destructive",
             });
-            return;
+            return false;
+        }
+
+        // Validate crop name exists in the dropdown list
+        const isValidCrop = HARDCODED_CROPS.some(
+            crop => crop.toLowerCase() === editCrop.name.toLowerCase()
+        );
+        if (!isValidCrop) {
+            toast({
+                title: "Invalid Crop Name",
+                description: "Please select a valid crop from the dropdown list.",
+                variant: "destructive",
+            });
+            return false;
         }
 
         // Note: Planting date validation is removed for editing since the field is now read-only
@@ -261,7 +288,7 @@ export const useCropManagement = () => {
                     description: "No crop selected for update.",
                     variant: "destructive",
                 });
-                return;
+                return false;
             }
 
             // Get the current crop data to check if plantedDate changed

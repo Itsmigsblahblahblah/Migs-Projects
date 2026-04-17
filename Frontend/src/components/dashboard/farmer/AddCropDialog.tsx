@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect, useRef } from "react";
 import { HARDCODED_CROPS, formatCropName } from "@/utils/cropUtils";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, AlertCircle } from "lucide-react";
 import { getAllLatestCropPrices } from "@/services/cropPriceService"; // Import the new service
 
 interface AddCropDialogProps {
@@ -56,6 +56,7 @@ const AddCropDialog = ({
     const [cropPrices, setCropPrices] = useState<{ [key: string]: any }>({}); // For storing crop prices
     const [loadingPrices, setLoadingPrices] = useState(true); // For tracking if prices are loading
     const [isSubmitting, setIsSubmitting] = useState(false); // For preventing multiple submissions
+    const [isValidCrop, setIsValidCrop] = useState(true); // For tracking if selected crop is valid
     const cropDropdownRef = useRef<HTMLDivElement>(null);
 
     // Filter crops based on search term
@@ -83,7 +84,16 @@ const AddCropDialog = ({
     // Sync crop search term with newCrop.name when it changes
     useEffect(() => {
         setCropSearchTerm(newCrop.name || "");
-    }, [newCrop.name]);
+        // Validate if the current crop name exists in the options
+        if (newCrop.name) {
+            const isValid = cropOptions.some(
+                crop => crop.toLowerCase() === newCrop.name.toLowerCase()
+            );
+            setIsValidCrop(isValid);
+        } else {
+            setIsValidCrop(true); // Reset when empty
+        }
+    }, [newCrop.name, cropOptions]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -100,6 +110,11 @@ const AddCropDialog = ({
     }, []);
 
     const handleAddCropSubmit = async () => {
+        // Validate that the crop name matches an option in the dropdown
+        if (newCrop.name && !isValidCrop) {
+            return; // Don't submit if crop name is invalid
+        }
+        
         setIsSubmitting(true);
         const result = await handleAddCrop();
         if (result) {
@@ -185,7 +200,7 @@ const AddCropDialog = ({
                                         onChange={handleCropInputChangeLocal}
                                         onFocus={() => setShowCropDropdown(true)}
                                         placeholder="Select or type a crop"
-                                        className="pr-10"
+                                        className={`pr-10 ${!isValidCrop && cropSearchTerm ? 'border-destructive' : ''}`}
                                         autoComplete="off"
                                     />
                                     <button
@@ -229,12 +244,18 @@ const AddCropDialog = ({
                                                 })
                                             ) : (
                                                 <div className="px-3 py-2 text-sm text-muted-foreground">
-                                                    No matching crops found
+                                                    No crop found
                                                 </div>
                                             )}
                                         </div>
                                     )}
                                 </div>
+                                {!isValidCrop && cropSearchTerm && (
+                                    <div className="flex items-center gap-2 text-sm text-destructive">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span>No crop found. Please select from the dropdown list.</span>
+                                    </div>
+                                )}
 
                                 {showAddCropInput ? (
                                     <div className="flex gap-2">
@@ -279,7 +300,7 @@ const AddCropDialog = ({
                                             onChange={handleCropInputChangeLocal}
                                             onFocus={() => setShowCropDropdown(true)}
                                             placeholder="Select or type a crop"
-                                            className="pr-10"
+                                            className={`pr-10 ${!isValidCrop && cropSearchTerm ? 'border-destructive' : ''}`}
                                             autoComplete="off"
                                         />
                                         <button
@@ -323,11 +344,17 @@ const AddCropDialog = ({
                                                     })
                                                 ) : (
                                                     <div className="px-3 py-2 text-sm text-muted-foreground">
-                                                        No matching crops found
+                                                        No crop found
                                                     </div>
                                                 )}
                                             </div>
                                         )}
+                                    </div>
+                                )}
+                                {!isValidCrop && cropSearchTerm && !lockedCropName && (
+                                    <div className="flex items-center gap-2 text-sm text-destructive">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span>No crop found. Please select from the dropdown list.</span>
                                     </div>
                                 )}
                             </div>
