@@ -26,6 +26,7 @@ export const useFarmLedger = (userId?: string, isAdmin: boolean = false) => {
   const { toast } = useToast();
   const { getCropById } = useCrops();
   const [ledgers, setLedgers] = useState<FarmLedger[]>([]);
+  const [allLedgers, setAllLedgers] = useState<FarmLedger[]>([]); // Store all ledgers before filtering
   const [summary, setSummary] = useState<LedgerSummary>({
     totalInvestment: 0,
     totalExpenses: 0,
@@ -51,6 +52,40 @@ export const useFarmLedger = (userId?: string, isAdmin: boolean = false) => {
     }
   }, [userId, isAdmin]);
 
+  // Apply filters when filters or allLedgers change
+  useEffect(() => {
+    let filteredLedgers = allLedgers;
+    
+    if (filters.status !== 'all') {
+      filteredLedgers = filteredLedgers.filter(l => l.status === filters.status);
+    }
+    if (filters.crop !== 'all') {
+      filteredLedgers = filteredLedgers.filter(l => 
+        l.crop.toLowerCase() === filters.crop.toLowerCase()
+      );
+    }
+    if (filters.dateRange.start) {
+      filteredLedgers = filteredLedgers.filter(l => 
+        new Date(l.date) >= new Date(filters.dateRange.start!)
+      );
+    }
+    if (filters.dateRange.end) {
+      filteredLedgers = filteredLedgers.filter(l => 
+        new Date(l.date) <= new Date(filters.dateRange.end!)
+      );
+    }
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
+      filteredLedgers = filteredLedgers.filter(l => 
+        l.crop.toLowerCase().includes(query) ||
+        l.location.toLowerCase().includes(query) ||
+        l.generalNotes?.toLowerCase().includes(query)
+      );
+    }
+    
+    setLedgers(filteredLedgers);
+  }, [filters, allLedgers]);
+
   // Recalculate summary when ledgers change
   useEffect(() => {
     const calculatedSummary = calculateLedgerSummary(ledgers);
@@ -60,56 +95,27 @@ export const useFarmLedger = (userId?: string, isAdmin: boolean = false) => {
   const loadLedgers = async () => {
     setLoading(true);
     try {
-      let allLedgers: FarmLedger[] = [];
+      let loadedLedgers: FarmLedger[] = [];
       
       if (isAdmin) {
         // For admin, try to get all ledgers but handle errors gracefully
         try {
-          allLedgers = await getAllLedgers(getCropById);
+          loadedLedgers = await getAllLedgers(getCropById);
         } catch (adminError) {
           console.warn('Admin could not load all ledgers, falling back:', adminError);
-          allLedgers = [];
+          loadedLedgers = [];
         }
       } else if (userId) {
         try {
-          allLedgers = await getUserLedgers(userId, getCropById);
+          loadedLedgers = await getUserLedgers(userId, getCropById);
         } catch (userError) {
           console.warn('User could not load ledgers:', userError);
-          allLedgers = [];
+          loadedLedgers = [];
         }
       }
       
-      // Apply filters
-      let filteredLedgers = allLedgers;
-      
-      if (filters.status !== 'all') {
-        filteredLedgers = filteredLedgers.filter(l => l.status === filters.status);
-      }
-      if (filters.crop !== 'all') {
-        filteredLedgers = filteredLedgers.filter(l => 
-          l.crop.toLowerCase() === filters.crop.toLowerCase()
-        );
-      }
-      if (filters.dateRange.start) {
-        filteredLedgers = filteredLedgers.filter(l => 
-          new Date(l.date) >= new Date(filters.dateRange.start!)
-        );
-      }
-      if (filters.dateRange.end) {
-        filteredLedgers = filteredLedgers.filter(l => 
-          new Date(l.date) <= new Date(filters.dateRange.end!)
-        );
-      }
-      if (filters.searchQuery) {
-        const query = filters.searchQuery.toLowerCase();
-        filteredLedgers = filteredLedgers.filter(l => 
-          l.crop.toLowerCase().includes(query) ||
-          l.location.toLowerCase().includes(query) ||
-          l.generalNotes?.toLowerCase().includes(query)
-        );
-      }
-      
-      setLedgers(filteredLedgers);
+      // Store all ledgers (filters will be applied in the useEffect)
+      setAllLedgers(loadedLedgers);
     } catch (error) {
       console.error('Error loading ledgers:', error);
       // Don't show toast for permission errors or empty collections
@@ -121,7 +127,7 @@ export const useFarmLedger = (userId?: string, isAdmin: boolean = false) => {
           variant: 'destructive'
         });
       }
-      setLedgers([]);
+      setAllLedgers([]);
     } finally {
       setLoading(false);
     }
@@ -263,6 +269,7 @@ export const useFarmLedger = (userId?: string, isAdmin: boolean = false) => {
 
   return {
     ledgers,
+    allLedgers,
     summary,
     loading,
     selectedLedger,
