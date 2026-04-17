@@ -4,7 +4,7 @@
  */
 
 // Ledger Entry Status
-export type LedgerStatus = 'planned' | 'planted' | 'growing' | 'harvested' | 'completed';
+export type LedgerStatus = 'preparation' | 'planting' | 'maintenance' | 'harvesting' | 'post-harvest';
 
 // Expense Categories
 export interface ExpenseBreakdown {

@@ -402,24 +402,54 @@ const FarmerDashboard = () => {
       }
     }
 
-    // Calculate growth stage (similar to CropDetails page)
-    let growthStage = "Unknown";
-    // Use Gemini API data if available, otherwise fall back to original logic
-    if (currentCrop.harvestData && currentCrop.harvestData.growthStage) {
-      growthStage = currentCrop.harvestData.growthStage;
-    } else if (currentCrop.plantedDate) {
+    // Calculate growth stage based on checklist completion
+    let growthStage = "Preparation";
+    if (currentCrop.checklist && currentCrop.checklist.length > 0) {
       try {
-        const planted = currentCrop.plantedDate.toDate ? currentCrop.plantedDate.toDate() : new Date(currentCrop.plantedDate);
-        const now = new Date();
-        const diffTime = Math.abs(now.getTime() - planted.getTime());
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const checklistItems = currentCrop.checklist;
+        
+        // Count completed items per category
+        const categories = ['Preparation', 'Planting', 'Maintenance', 'Harvesting', 'Post-Harvest'];
+        const categoryProgress = categories.map(category => {
+          const itemsInCategory = checklistItems.filter((item: any) => item.category === category);
+          const completedItems = itemsInCategory.filter((item: any) => item.completed);
+          return {
+            category,
+            total: itemsInCategory.length,
+            completed: completedItems.length,
+            percentage: itemsInCategory.length > 0 ? (completedItems.length / itemsInCategory.length) * 100 : 0
+          };
+        });
 
-        if (diffDays < 30) growthStage = 'Germination';
-        else if (diffDays < 60) growthStage = 'Vegetative';
-        else if (diffDays < 90) growthStage = 'Flowering';
-        else growthStage = 'Fruiting';
+        // Determine current stage based on completion
+        const postHarvest = categoryProgress.find(c => c.category === 'Post-Harvest');
+        if (postHarvest && postHarvest.percentage === 100) {
+          growthStage = 'Post-Harvest';
+        } else {
+          const harvesting = categoryProgress.find(c => c.category === 'Harvesting');
+          if (harvesting && harvesting.percentage === 100) {
+            growthStage = 'Harvesting';
+          } else {
+            const maintenance = categoryProgress.find(c => c.category === 'Maintenance');
+            if (maintenance && maintenance.percentage === 100) {
+              growthStage = 'Harvesting';
+            } else {
+              const planting = categoryProgress.find(c => c.category === 'Planting');
+              if (planting && planting.percentage === 100) {
+                growthStage = 'Maintenance';
+              } else {
+                const preparation = categoryProgress.find(c => c.category === 'Preparation');
+                if (preparation && preparation.percentage === 100) {
+                  growthStage = 'Planting';
+                } else {
+                  growthStage = 'Preparation';
+                }
+              }
+            }
+          }
+        }
       } catch (e) {
-        growthStage = "Unknown";
+        growthStage = "Preparation";
       }
     }
 

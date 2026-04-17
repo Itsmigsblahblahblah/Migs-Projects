@@ -35,7 +35,7 @@ export const getHarvestEstimate = async (
     {
       "estimatedHarvestDate": "YYYY-MM-DD",
       "daysToHarvest": number,
-      "growthStage": "Current growth stage (Germination/Vegetative/Flowering/Fruiting/Maturing)",
+      "growthStage": "Current growth stage (Preparation/Planting/Maintenance/Harvesting/Post-Harvest)",
       "daysInCurrentStage": number,
       "careTips": ["Array of 3-5 specific care tips for current growth stage"],
       "potentialIssues": ["Array of 2-3 potential issues to watch for"],

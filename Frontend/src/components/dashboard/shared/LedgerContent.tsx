@@ -87,7 +87,7 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
     };
     
     const harvestedLedgers = ledgers.filter(l => 
-      l.status === 'harvested' || l.status === 'completed'
+      l.status === 'post-harvest'
     );
 
     const totalHarvested = harvestedLedgers.length;
@@ -114,15 +114,15 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'planned':
+      case 'preparation':
         return 'bg-blue-100 text-blue-800';
-      case 'planted':
+      case 'planting':
         return 'bg-green-100 text-green-800';
-      case 'growing':
+      case 'maintenance':
         return 'bg-yellow-100 text-yellow-800';
-      case 'harvested':
+      case 'harvesting':
         return 'bg-purple-100 text-purple-800';
-      case 'completed':
+      case 'post-harvest':
         return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -286,15 +286,15 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
               onValueChange={(value) => updateFilters({ status: value as any })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder="Filter by growth stage" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="planned">Planned</SelectItem>
-                <SelectItem value="planted">Planted</SelectItem>
-                <SelectItem value="growing">Growing</SelectItem>
-                <SelectItem value="harvested">Harvested</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="all">All Stages</SelectItem>
+                <SelectItem value="preparation">Preparation</SelectItem>
+                <SelectItem value="planting">Planting</SelectItem>
+                <SelectItem value="maintenance">Maintenance</SelectItem>
+                <SelectItem value="harvesting">Harvesting</SelectItem>
+                <SelectItem value="post-harvest">Post-Harvest</SelectItem>
               </SelectContent>
             </Select>
 

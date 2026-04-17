@@ -386,7 +386,8 @@ const FarmerDetailPage = () => {
           puhunan: data.puhunan,
           plantedDate: data.plantedDate,
           createdAt: data.createdAt,
-          status: data.status || determineCropStatus(data.plantedDate)
+          checklist: data.checklist || [],
+          status: data.status || determineCropStatus(data.plantedDate, data.checklist)
         });
       });
 
@@ -410,37 +411,82 @@ const FarmerDetailPage = () => {
     }
   };
 
-  const determineCropStatus = (plantedDate: any): string => {
+  const determineCropStatus = (plantedDate: any, checklist?: any[]): string => {
+    // If checklist is available, use it to determine status
+    if (checklist && checklist.length > 0) {
+      try {
+        const categories = ['Preparation', 'Planting', 'Maintenance', 'Harvesting', 'Post-Harvest'];
+        const categoryProgress = categories.map(category => {
+          const itemsInCategory = checklist.filter((item: any) => item.category === category);
+          const completedItems = itemsInCategory.filter((item: any) => item.completed);
+          return {
+            category,
+            total: itemsInCategory.length,
+            completed: completedItems.length,
+            percentage: itemsInCategory.length > 0 ? (completedItems.length / itemsInCategory.length) * 100 : 0
+          };
+        });
+
+        // Determine status based on completion
+        const postHarvest = categoryProgress.find(c => c.category === 'Post-Harvest');
+        if (postHarvest && postHarvest.percentage === 100) {
+          return 'post-harvest';
+        }
+
+        const harvesting = categoryProgress.find(c => c.category === 'Harvesting');
+        if (harvesting && harvesting.percentage === 100) {
+          return 'harvesting';
+        }
+
+        const maintenance = categoryProgress.find(c => c.category === 'Maintenance');
+        if (maintenance && maintenance.percentage === 100) {
+          return 'harvesting';
+        }
+
+        const planting = categoryProgress.find(c => c.category === 'Planting');
+        if (planting && planting.percentage === 100) {
+          return 'maintenance';
+        }
+
+        const preparation = categoryProgress.find(c => c.category === 'Preparation');
+        if (preparation && preparation.percentage === 100) {
+          return 'planting';
+        }
+
+        return 'preparation';
+      } catch {
+        return 'preparation';
+      }
+    }
+
+    // Fallback to time-based if no checklist
     try {
       let planted: Date;
 
-      // Handle string dates (YYYY-MM-DD format)
       if (typeof plantedDate === 'string') {
         planted = new Date(plantedDate);
-      }
-      // Handle Firestore Timestamp
-      else if (plantedDate?.toDate) {
+      } else if (plantedDate?.toDate) {
         planted = plantedDate.toDate();
-      }
-      // Handle JavaScript Date objects
-      else if (plantedDate instanceof Date) {
+      } else if (plantedDate instanceof Date) {
         planted = plantedDate;
       } else {
-        return "In Progress";
+        return "preparation";
       }
 
       if (isNaN(planted.getTime())) {
-        return "In Progress";
+        return "preparation";
       }
 
       const now = new Date();
       const daysDiff = Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Simple logic: crops harvested after 90 days
-      if (daysDiff > 90) return "Harvested";
-      return "In Progress";
+      if (daysDiff > 90) return "post-harvest";
+      if (daysDiff > 60) return "harvesting";
+      if (daysDiff > 30) return "maintenance";
+      if (daysDiff > 14) return "planting";
+      return "preparation";
     } catch {
-      return "In Progress";
+      return "preparation";
     }
   };
 
@@ -557,8 +603,16 @@ const FarmerDetailPage = () => {
     );
   }
 
-  const inProgressCrops = getCropsByStatus("In Progress");
-  const harvestedCrops = getCropsByStatus("Harvested");
+  // Group crops by status
+  // Active crops: preparation, planting, maintenance, harvesting
+  const inProgressCrops = crops.filter(crop => 
+    ['preparation', 'planting', 'maintenance', 'harvesting'].includes(crop.status)
+  );
+  
+  // Harvested crops: post-harvest
+  const harvestedCrops = crops.filter(crop => 
+    crop.status === 'post-harvest'
+  );
 
   // Apply filtering to crops
   const filteredInProgressCrops = filterCrops(inProgressCrops, inProgressFilters);

@@ -147,12 +147,57 @@ const calculateLedgerData = async (
       profit
     });
 
-    // Status from crop - apply same logic as admin view
-    // If crop doesn't have a status or has 'planned'/'planted'/'growing', check if it should be 'harvested'
-    let status = crop.status || 'planned';
+    // Status from crop - calculate based on checklist completion
+    let status = 'preparation';
     
-    // Apply admin's harvested determination logic: if planted > 90 days ago, mark as harvested
-    if (crop.plantedDate && ['planned', 'planted', 'growing'].includes(status)) {
+    // If crop has checklist, calculate growth stage based on checklist completion
+    if (crop.checklist && crop.checklist.length > 0) {
+      try {
+        const categories = ['Preparation', 'Planting', 'Maintenance', 'Harvesting', 'Post-Harvest'];
+        const categoryProgress = categories.map((category: string) => {
+          const itemsInCategory = crop.checklist.filter((item: any) => item.category === category);
+          const completedItems = itemsInCategory.filter((item: any) => item.completed);
+          return {
+            category,
+            total: itemsInCategory.length,
+            completed: completedItems.length,
+            percentage: itemsInCategory.length > 0 ? (completedItems.length / itemsInCategory.length) * 100 : 0
+          };
+        });
+
+        // Determine status based on completion
+        const postHarvest = categoryProgress.find((c: any) => c.category === 'Post-Harvest');
+        if (postHarvest && postHarvest.percentage === 100) {
+          status = 'post-harvest';
+        } else {
+          const harvesting = categoryProgress.find((c: any) => c.category === 'Harvesting');
+          if (harvesting && harvesting.percentage === 100) {
+            status = 'harvesting';
+          } else {
+            const maintenance = categoryProgress.find((c: any) => c.category === 'Maintenance');
+            if (maintenance && maintenance.percentage === 100) {
+              status = 'harvesting';
+            } else {
+              const planting = categoryProgress.find((c: any) => c.category === 'Planting');
+              if (planting && planting.percentage === 100) {
+                status = 'maintenance';
+              } else {
+                const preparation = categoryProgress.find((c: any) => c.category === 'Preparation');
+                if (preparation && preparation.percentage === 100) {
+                  status = 'planting';
+                } else {
+                  status = 'preparation';
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[Ledger] Error determining crop status from checklist:', error);
+        status = 'preparation';
+      }
+    } else if (crop.plantedDate) {
+      // Fallback to time-based if no checklist
       try {
         let plantedDate: Date;
         
@@ -175,13 +220,22 @@ const calculateLedgerData = async (
           const now = new Date();
           const daysDiff = Math.floor((now.getTime() - plantedDate.getTime()) / (1000 * 60 * 60 * 24));
           
-          // If planted more than 90 days ago, mark as harvested
+          // Time-based fallback
           if (daysDiff > 90) {
-            status = 'harvested';
+            status = 'post-harvest';
+          } else if (daysDiff > 60) {
+            status = 'harvesting';
+          } else if (daysDiff > 30) {
+            status = 'maintenance';
+          } else if (daysDiff > 14) {
+            status = 'planting';
+          } else {
+            status = 'preparation';
           }
         }
       } catch (error) {
-        error('[Ledger] Error determining crop status:', error);
+        console.error('[Ledger] Error determining crop status:', error);
+        status = 'preparation';
       }
     }
 
@@ -193,7 +247,7 @@ const calculateLedgerData = async (
     return {
       crop: crop.name || 'Unknown Crop',
       location: crop.farmAddress || crop.location || 'Unknown Location',
-      status: status,
+      status: status as any,
       financials: {
         capital: userInvestment,
         expenses: emptyExpenses,
@@ -388,12 +442,14 @@ export const calculateLedgerSummary = (ledgers: FarmLedger[]) => {
   const totalRevenue = ledgers.reduce((sum, l) => sum + (l.financials.actualRevenue || l.financials.estimatedRevenue || 0), 0);
   const totalProfit = ledgers.reduce((sum, l) => sum + (l.financials.actualProfit || l.financials.estimatedProfit || 0), 0);
   
+  // Active crops: preparation, planting, maintenance, harvesting (not yet post-harvest)
   const activeLedgers = ledgers.filter(l => 
-    ['planned', 'planted', 'growing'].includes(l.status)
+    ['preparation', 'planting', 'maintenance', 'harvesting'].includes(l.status)
   ).length;
   
+  // Completed crops: post-harvest only
   const completedLedgers = ledgers.filter(l => 
-    ['harvested', 'completed'].includes(l.status)
+    l.status === 'post-harvest'
   ).length;
   
   const averageProfitMargin = totalRevenue > 0 

@@ -329,20 +329,20 @@ const FarmLedgerForm = () => {
               </div>
 
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">Growth Stage</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) => handleInputChange('status', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder="Select growth stage" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="planned">Planned</SelectItem>
-                    <SelectItem value="planted">Planted</SelectItem>
-                    <SelectItem value="growing">Growing</SelectItem>
-                    <SelectItem value="harvested">Harvested</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="preparation">Preparation</SelectItem>
+                    <SelectItem value="planting">Planting</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                    <SelectItem value="harvesting">Harvesting</SelectItem>
+                    <SelectItem value="post-harvest">Post-Harvest</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
