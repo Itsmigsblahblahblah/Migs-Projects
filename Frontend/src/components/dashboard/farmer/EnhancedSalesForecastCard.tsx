@@ -61,13 +61,9 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
             try {
                 setLoading(true);
                 console.log('Fetching insights for crop:', crop?.name, 'with investment:', crop?.puhunan);
-                console.log('Crop data:', crop);
-                console.log('Crop landArea:', crop?.landArea, 'type:', typeof crop?.landArea);
-                console.log('Crop soilType:', crop?.soilType);
-                console.log('Crop puhunan:', crop?.puhunan, 'type:', typeof crop?.puhunan);
 
-                // Always fetch fresh insights to ensure we have up-to-date calculations based on current investment
-                console.log('Fetching new insights');
+                // The getCropInsights function now handles caching automatically
+                // It checks localStorage cache first (2 hour expiry), then memory cache, then API
                 const cropInsights = await getCropInsights(
                     crop.name,
                     crop.soilType,
@@ -81,13 +77,15 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
                 // Calculate values for chart data
                 const userInvestment = Number(crop.puhunan) || 0;
                 const suggestedCapital = cropInsights?.profit?.suggestedCapital || 0;
+                const baseYield = cropInsights?.profit?.estimatedYield || 0; // This is now the BASE yield (not adjusted)
 
-                // Calculate estimated yield based on user's investment
+                // Recalculate estimated yield based on CURRENT user investment
+                // This ensures that even if cache is from investment=0, we recalculate properly
                 const estimatedYield = userInvestment === 0 ? 0 :
-                    (cropInsights?.profit?.estimatedYield || 0) *
+                    baseYield *
                     (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 ? 1 : (userInvestment / suggestedCapital));
                 
-                console.log('Calculating yield - userInvestment:', userInvestment, 'suggestedCapital:', suggestedCapital, 'cropInsights.estimatedYield:', cropInsights?.profit?.estimatedYield, 'calculated estimatedYield:', estimatedYield);
+                console.log('Calculating yield - userInvestment:', userInvestment, 'suggestedCapital:', suggestedCapital, 'baseYield:', baseYield, 'calculated estimatedYield:', estimatedYield);
 
                 // Calculate potential revenue using the same ML logic as Market Demand feature
                 // Use predicted_price from demand prediction if available, otherwise fall back to averagePrice
@@ -101,6 +99,9 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
 
                 // Generate sales forecast data based on insights
                 // Distribute investment across all stages based on typical farming expense patterns
+                // Planting: 40% (seeds, initial soil prep, labor)
+                // Growth: 45% (fertilizers, ongoing labor, pest control)
+                // Harvest: 15% (harvesting, transport, post-harvest)
                 // Planting: 40% (seeds, initial soil prep, labor)
                 // Growth: 45% (fertilizers, ongoing labor, pest control)
                 // Harvest: 15% (harvesting, transport, post-harvest)
@@ -159,17 +160,19 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
     // Calculate values based on user's investment
     const userInvestment = Number(crop.puhunan) || 0;
     const suggestedCapital = insights?.profit?.suggestedCapital || 0;
+    const baseYield = insights?.profit?.estimatedYield || 0; // BASE yield (not investment-adjusted)
     
     console.log('Render calculations - crop.puhunan:', crop.puhunan, 'userInvestment:', userInvestment, 'suggestedCapital:', suggestedCapital);
     console.log('Render calculations - insights.profit:', insights?.profit);
 
     // Calculate estimated yield based on user's investment
     // If investment is 0, yield should also be 0
+    // Recalculate based on CURRENT investment using base yield
     const estimatedYield = userInvestment === 0 ? 0 :
-        (insights?.profit?.estimatedYield || 0) *
+        baseYield *
         (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 ? 1 : (userInvestment / suggestedCapital));
     
-    console.log('Render - userInvestment:', userInvestment, 'suggestedCapital:', suggestedCapital, 'insights.estimatedYield:', insights?.profit?.estimatedYield, 'calculated estimatedYield:', estimatedYield);
+    console.log('Render - userInvestment:', userInvestment, 'suggestedCapital:', suggestedCapital, 'baseYield:', baseYield, 'calculated estimatedYield:', estimatedYield);
 
     // Calculate potential revenue
     const potentialRevenue = estimatedYield * (insights?.market?.averagePrice || 0);

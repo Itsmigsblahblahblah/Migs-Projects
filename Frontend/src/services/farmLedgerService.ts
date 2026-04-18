@@ -103,7 +103,7 @@ const getCachedCropInsights = async (
  * Helper to get crop data and calculate profit/revenue/status
  * Uses CACHED insights to EXACTLY match EnhancedSalesForecastCard calculations
  * Formula (identical to EnhancedSalesForecastCard lines 168-179):
- *   estimatedYield = insights.estimatedYield * (userInvestment / suggestedCapital)
+ *   estimatedYield = insights.estimatedYield (BASE yield) * (userInvestment / suggestedCapital)
  *   revenue = estimatedYield * market.averagePrice
  *   profit = revenue - userInvestment
  */
@@ -124,10 +124,12 @@ const calculateLedgerData = async (
     
     // EXACT calculation matching EnhancedSalesForecastCard lines 160-179
     const suggestedCapital = cropInsights?.profit?.suggestedCapital || 0;
+    const baseYield = cropInsights?.profit?.estimatedYield || 0; // BASE yield (not investment-adjusted)
     
     // Calculate estimated yield (SAME formula as EnhancedSalesForecastCard line 168-170)
+    // Recalculate based on CURRENT investment, even if cache has old investment data
     const estimatedYield = userInvestment === 0 ? 0 :
-      (cropInsights?.profit?.estimatedYield || 0) *
+      baseYield *
       (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 ? 1 : (userInvestment / suggestedCapital));
     
     // Calculate revenue (SAME as EnhancedSalesForecastCard line 175)
@@ -140,7 +142,7 @@ const calculateLedgerData = async (
     log(`[Ledger] EXACT match for ${cropName}:`, {
       userInvestment,
       suggestedCapital,
-      estimatedYield: cropInsights?.profit?.estimatedYield,
+      baseYield: baseYield,
       calculatedEstimatedYield: estimatedYield,
       marketPrice,
       revenue,

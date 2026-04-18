@@ -4,6 +4,7 @@
 import { parseCSV, findMatchingRecords, loadCSV } from '@/utils/csvParser';
 import { getVegetableDemandPrediction, getVegetableHistoricalData } from '@/services/vegetableDemandService';
 import { calculateEstimatedYield, getCropYieldRanges } from '@/services/cropYieldService';
+import { getCachedCropInsights, setCachedCropInsights } from '@/services/cropInsightsCache';
 
 // API endpoints
 const SOIL_DATA_ENDPOINT = '/data/brgy_soil_dataset.csv';
@@ -538,7 +539,8 @@ export const calculateProfitProjection = async (
     console.log('Profit margin:', profitMargin);
     
     const result = {
-      estimatedYield: estimatedYield,
+      estimatedYield: totalEstimatedYield, // Cache the BASE yield (not investment-adjusted)
+      estimatedYieldAdjusted: estimatedYield, // Also store the adjusted yield for this specific investment
       potentialRevenue,
       totalCosts: userInvestment, // Total costs equal user's investment
       netProfit,
@@ -579,23 +581,32 @@ export const getCropInsights = async (
   landArea: number,
   puhunan: number
 ) => {
-  // OPTIMIZED: Cache key based ONLY on crop and soil (not landArea/puhunan)
-  // This dramatically increases cache hits since most crops share the same type
+  // Create cache key based on crop name and soil type (same pattern as MarketDemand)
   const cacheKey = `${cropName.toLowerCase()}-${soilType.toLowerCase()}`;
   
-  // Return from cache if available (instant)
+  // OPTIMIZATION: Check localStorage cache first (like MarketDemand & CropPrescription)
+  const cachedData = getCachedCropInsights(cacheKey);
+  if (cachedData) {
+    console.log('[getCropInsights] Using cached insights from localStorage');
+    return cachedData;
+  }
+  
+  // Return from memory cache if available (instant)
   if (CROP_INSIGHTS_CACHE[cacheKey]) {
+    console.log('[getCropInsights] Using in-memory cache');
     return CROP_INSIGHTS_CACHE[cacheKey];
   }
   
   // If request is already in-flight, return the same promise (deduplication)
   if (PENDING_INSIGHTS_REQUESTS[cacheKey]) {
+    console.log('[getCropInsights] Request already in-flight, waiting...');
     return PENDING_INSIGHTS_REQUESTS[cacheKey];
   }
   
   // Create the request promise
   const requestPromise = (async () => {
     try {
+      console.log('[getCropInsights] Fetching fresh data from API');
       // OPTIMIZED: Fetch market data ONCE and reuse it
       const marketInfo = await getMarketPriceInfo(cropName);
       
@@ -614,8 +625,12 @@ export const getCropInsights = async (
         profit: profitProjection
       };
       
-      // Cache the result
+      // Cache the result in memory
       CROP_INSIGHTS_CACHE[cacheKey] = result;
+      
+      // Cache the result in localStorage (like MarketDemand & CropPrescription)
+      setCachedCropInsights(cacheKey, result);
+      
       return result;
     } finally {
       // Remove from pending once complete

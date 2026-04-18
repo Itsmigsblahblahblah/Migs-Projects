@@ -26,6 +26,8 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
         const fetchInsights = async () => {
             try {
                 setLoading(true);
+                // The getCropInsights function now handles caching automatically
+                // It checks localStorage cache first (2 hour expiry), then memory cache, then API
                 const cropInsights = await getCropInsights(
                     crop.name,
                     crop.soilType,
@@ -43,7 +45,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
         if (crop) {
             fetchInsights();
         }
-    }, [crop]);
+    }, [crop.name, crop.soilType, crop.landArea, crop.puhunan]);
 
     const getTrendIcon = (trend: string) => {
         switch (trend) {

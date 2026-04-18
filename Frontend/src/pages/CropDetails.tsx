@@ -238,9 +238,11 @@ const CropDetails = () => {
                         (async () => {
                             if (cropData.marketData) {
                                 // Use existing market data
+                                console.log('[CropDetails] Using cached marketData from Firestore');
                                 return cropData.marketData;
                             } else {
                                 // Fetch new market data
+                                console.log('[CropDetails] Fetching fresh market data from API');
                                 try {
                                     const insights = await getCropInsights(
                                         cropData.name,
