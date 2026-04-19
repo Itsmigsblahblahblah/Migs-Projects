@@ -69,31 +69,28 @@ const CropHistory = () => {
     useEffect(() => {
         const role = localStorage.getItem('userRole');
         const user = localStorage.getItem('username');
+        const userId = localStorage.getItem('userId');
+
+        console.log('[CropHistory] Component mounted');
+        console.log('[CropHistory] Role:', role);
+        console.log('[CropHistory] Username:', user);
+        console.log('[CropHistory] UserId from localStorage:', userId);
+        console.log('[CropHistory] Crops from context:', crops.length);
 
         if (role !== 'farmer') {
+            console.log('[CropHistory] Redirecting - not a farmer');
             navigate('/');
             return;
         }
 
         setUsername(user || 'Farmer');
 
-        // Load crops when component mounts
-        const loadCropsData = async () => {
-            try {
-                // Wait for crops to be loaded
-                if (!cropsLoaded) {
-                    await loadCrops();
-                    setCropsLoaded(true);
-                }
-            } catch (error) {
-                console.error("Error loading crops:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadCropsData();
-    }, [navigate, loadCrops, cropsLoaded]);
+        // Don't load crops here - let CropContext handle it
+        // Just log when crops are available
+        console.log('[CropHistory] Waiting for crops to load from context...');
+        
+        setLoading(false);
+    }, [navigate, crops]); // Re-run when crops change
 
     // Reset to first page when crops change
     useEffect(() => {
@@ -168,6 +165,7 @@ const CropHistory = () => {
     };
 
     if (loading) {
+        console.log('[CropHistory] Showing loading state...');
         return (
             <Layout>
                 <div className="space-y-6">
@@ -329,6 +327,10 @@ const CropHistory = () => {
                 )}
 
                 {/* Crops List */}
+                {(() => {
+                    console.log('[CropHistory] Rendering crops list, count:', crops.length);
+                    return null;
+                })()}
                 {crops.length === 0 ? (
                     <Card className="shadow-card">
                         <CardContent className="py-12 text-center">

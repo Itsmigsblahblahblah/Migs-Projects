@@ -30,6 +30,7 @@ const DeleteAccountDialog = ({
 
     // Check if user is signed in with Google
     useEffect(() => {
+        if (!auth) return; // Skip if auth not initialized yet
         const user = auth.currentUser;
         if (user) {
             const googleProvider = user.providerData.some(provider => provider.providerId === 'google.com');

@@ -55,7 +55,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   // Fetch user read status for both announcements and weather alerts
   useEffect(() => {
-    if (!userId || !isFarmer) return;
+    if (!userId || !isFarmer || !db) return; // Skip if db not initialized
 
     // Fetch announcement read status
     const announcementReadStatusQuery = query(
@@ -111,7 +111,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   // Fetch unread admin messages count
   useEffect(() => {
-    if (!userId || !isFarmer) return;
+    if (!userId || !isFarmer || !db) return; // Skip if db not initialized
 
     const messagesQuery = query(
       collection(db, "adminMessages"),

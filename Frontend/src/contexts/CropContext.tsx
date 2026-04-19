@@ -43,22 +43,63 @@ const CropContext = createContext<CropContextType | undefined>(undefined);
 export const CropProvider = ({ children }: { children: ReactNode }) => {
     const [crops, setCrops] = useState<Crop[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [authReady, setAuthReady] = useState(false);
 
-    // Listen for auth state changes
+    console.log('[CropContext] Provider initialized, crops:', crops.length, 'userId:', currentUserId);
+
+    // Listen for auth state changes - wait for auth to be ready
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                const userId = user.uid;
-                setCurrentUserId(userId);
-                // Load crops immediately when user is detected
-                loadCrops(userId);
-            } else {
-                setCurrentUserId(null);
-                setCrops([]);
-            }
-        });
+        // Wait a bit for Firebase to initialize
+        const initAuth = async () => {
+            try {
+                // Use getAuthWhenReady to ensure Firebase is initialized
+                const { getAuthWhenReady } = await import("@/firebaseConfig");
+                let auth;
+                try {
+                    auth = await getAuthWhenReady();
+                } catch (authError) {
+                    console.warn('[CropContext] Auth initialization failed, retrying...', authError);
+                    // Retry after a delay
+                    setTimeout(() => initAuth(), 1000);
+                    return;
+                }
+                
+                if (!auth) {
+                    console.warn('[CropContext] Auth is null after initialization');
+                    setTimeout(() => initAuth(), 1000);
+                    return;
+                }
+                
+                setAuthReady(true);
+                const { onAuthStateChanged } = await import("firebase/auth");
+                
+                const unsubscribe = onAuthStateChanged(auth, (user) => {
+                    console.log('[CropContext] Auth state changed, user:', user ? user.uid : 'null');
+                    console.log('[CropContext] User email:', user?.email);
+                    console.log('[CropContext] User displayName:', user?.displayName);
+                    
+                    if (user) {
+                        const userId = user.uid;
+                        setCurrentUserId(userId);
+                        console.log('[CropContext] Setting userId and loading crops...');
+                        // Load crops immediately when user is detected
+                        loadCrops(userId);
+                    } else {
+                        console.warn('[CropContext] No user detected, clearing crops');
+                        setCurrentUserId(null);
+                        setCrops([]);
+                    }
+                });
 
-        return () => unsubscribe();
+                return () => unsubscribe();
+            } catch (error) {
+                console.error('[CropContext] Error initializing auth:', error);
+                // Retry after a delay
+                setTimeout(() => initAuth(), 1000);
+            }
+        };
+        
+        initAuth();
     }, []);
 
     // REMOVED: Duplicate loading effect - crops are now loaded in onAuthStateChanged only
@@ -66,6 +107,21 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
 
     const loadCrops = async (userId?: string) => {
         try {
+            // Use getDbWhenReady to ensure Firebase is initialized
+            const { getDbWhenReady } = await import("@/firebaseConfig");
+            let db;
+            try {
+                db = await getDbWhenReady();
+            } catch (dbError) {
+                console.error('[CropContext] Database initialization failed:', dbError);
+                return;
+            }
+
+            if (!db) {
+                console.warn('[CropContext] Database is null after initialization');
+                return;
+            }
+
             const effectiveUserId = userId || currentUserId || localStorage.getItem('userId') || 'default-user';
 
             if (!effectiveUserId) {
@@ -92,9 +148,11 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 }
             }
 
-            console.log("Loading crops for userId:", effectiveUserId);
+            console.log("[CropContext] Loading crops for userId:", effectiveUserId);
+            console.log("[CropContext] Using db instance:", !!db);
 
             const cropsRef = collection(db, "farmerCrops");
+            console.log("[CropContext] Created collection reference for farmerCrops");
             // Query without orderBy to get ALL data including old records without createdAt
             const q = query(
                 cropsRef,
@@ -102,9 +160,13 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
             );
 
             const querySnapshot = await getDocs(q);
+            console.log("[CropContext] Query executed, found docs:", querySnapshot.size);
             const loadedCrops: Crop[] = [];
 
-            console.log("Found crops:", querySnapshot.size);
+            if (querySnapshot.empty) {
+                console.log("[CropContext] No crops found for this user");
+                console.log("[CropContext] UserId used for query:", effectiveUserId);
+            }
 
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
@@ -132,8 +194,10 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 return dateB.getTime() - dateA.getTime();
             });
 
-            console.log("Loaded crops:", loadedCrops.length);
+            console.log("[CropContext] Processed crops:", loadedCrops.length);
+            console.log("[CropContext] Setting crops to state...");
             setCrops(loadedCrops);
+            console.log("[CropContext] Crops set successfully!");
 
             // OPTIMIZATION: Cache to localStorage for faster subsequent loads
             try {
@@ -153,6 +217,9 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
 
     const addCrop = async (cropData: Omit<Crop, 'id' | 'createdAt' | 'userId'> & { checklist?: ChecklistItem[] }) => {
         try {
+            const { getDbWhenReady } = await import("@/firebaseConfig");
+            const db = await getDbWhenReady();
+
             const userId = currentUserId || localStorage.getItem('userId') || 'default-user';
             if (!userId) {
                 throw new Error("No userId found. Please log in again.");
@@ -204,6 +271,9 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
 
     const updateCrop = async (id: string, cropData: Partial<Omit<Crop, 'id' | 'plantedDate' | 'createdAt' | 'userId'>>) => {
         try {
+            const { getDbWhenReady } = await import("@/firebaseConfig");
+            const db = await getDbWhenReady();
+
             // Remove undefined properties to prevent Firebase errors
             const cleanCropData = Object.fromEntries(
                 Object.entries(cropData).filter(([_, value]) => value !== undefined)
@@ -244,6 +314,9 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
 
     const deleteCrop = async (id: string) => {
         try {
+            const { getDbWhenReady } = await import("@/firebaseConfig");
+            const db = await getDbWhenReady();
+
             // Delete from Firestore
             const cropRef = doc(db, "farmerCrops", id);
             await deleteDoc(cropRef);

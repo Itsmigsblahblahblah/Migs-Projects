@@ -30,7 +30,7 @@ export const useAnnouncements = () => {
 
   // Fetch user read status
   useEffect(() => {
-    if (!userId || userId === 'default-user') return;
+    if (!userId || userId === 'default-user' || !db) return; // Skip if db not initialized
 
     const readStatusQuery = query(
       collection(db, "userReadStatus", userId, "announcements")
@@ -55,6 +55,7 @@ export const useAnnouncements = () => {
 
   // Fetch announcements
   useEffect(() => {
+    if (!db) return; // Skip if db not initialized yet
     const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const announcementsData: Announcement[] = [];
@@ -96,6 +97,7 @@ const UserAnnouncements = () => {
   const deleteAnnouncement = async (announcementId: string) => {
     try {
       // Check if user is admin
+      if (!auth) return; // Skip if auth not initialized
       const currentUser = auth.currentUser;
       const isAdmin = currentUser && currentUser.email === 'admin@majayjay.farm';
       
@@ -137,6 +139,7 @@ const UserAnnouncements = () => {
 
   const markAsRead = async (announcementId: string) => {
     try {
+      if (!db) return; // Skip if db not initialized
       await setDoc(doc(db, "userReadStatus", userId, "announcements", announcementId), {
         read: true,
         // Don't set deleted flag for mark as read

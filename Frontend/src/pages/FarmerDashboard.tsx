@@ -20,9 +20,7 @@ import AdminMessages from "@/components/dashboard/farmer/AdminMessages";
 import { useFarmerDashboard } from "@/hooks/custom/useFarmerDashboard";
 import { useCropManagement } from "@/hooks/custom/useCropManagement";
 import { useReportManagement } from "@/hooks/custom/useReportManagement";
-import { useCrops } from "@/contexts/CropContext"; // Added import
-import { db } from '@/firebaseConfig';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { useCrops } from "@/contexts/CropContext";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -199,19 +197,34 @@ const FarmerDashboard = () => {
   useEffect(() => {
     if (!userId) return;
 
-    const readStatusQuery = query(
-      collection(db, "userReadStatus", userId, "weather")
-    );
+    const fetchReadStatus = async () => {
+      try {
+        const { db } = await import("@/firebaseConfig");
+        if (!db) {
+          console.warn('[FarmerDashboard] Database not ready, cannot fetch read status');
+          return;
+        }
 
-    const unsubscribe = onSnapshot(readStatusQuery, (snapshot) => {
-      const readStatus: Record<string, boolean> = {};
-      snapshot.forEach((doc) => {
-        readStatus[doc.id] = true;
-      });
-      setUserReadStatus(readStatus);
-    });
+        const { collection, query, onSnapshot } = await import("firebase/firestore");
+        const readStatusQuery = query(
+          collection(db, "userReadStatus", userId, "weather")
+        );
 
-    return () => unsubscribe();
+        const unsubscribe = onSnapshot(readStatusQuery, (snapshot) => {
+          const readStatus: Record<string, boolean> = {};
+          snapshot.forEach((doc) => {
+            readStatus[doc.id] = true;
+          });
+          setUserReadStatus(readStatus);
+        });
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('[FarmerDashboard] Error fetching read status:', error);
+      }
+    };
+
+    fetchReadStatus();
   }, [userId]);
 
   // Calculate unread weather alerts count

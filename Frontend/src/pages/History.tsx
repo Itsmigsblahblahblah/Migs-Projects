@@ -24,7 +24,6 @@ import {
   ChevronUp
 } from "lucide-react";
 import { collection, query, getDocs, where, deleteDoc, doc } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -111,8 +110,34 @@ const History = () => {
   const loadReportHistory = async () => {
     setLoading(true);
     try {
-      console.log("Loading report history for role:", userRole, "userId:", currentUserId);
+      console.log("[History] Loading report history for role:", userRole, "userId:", currentUserId);
 
+      // Use the getDbWhenReady helper to ensure Firebase is initialized
+      const { getDbWhenReady } = await import("@/firebaseConfig");
+      let db;
+      try {
+        db = await getDbWhenReady();
+      } catch (firebaseError) {
+        console.error('[History] Firebase initialization failed:', firebaseError);
+        toast({
+          title: "Connection Error",
+          description: "Unable to connect to database. Please ensure backend server is running.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!db) {
+        console.error('[History] Database instance is null');
+        toast({
+          title: "Database Error",
+          description: "Database connection failed. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('[History] Database ready, fetching reports...');
       const reportsRef = collection(db, "farmReports");
 
       let reports: Report[] = [];
@@ -301,6 +326,9 @@ const History = () => {
   // Handle delete report
   const handleDeleteReport = async (reportId: string) => {
     try {
+      const { getDbWhenReady } = await import("@/firebaseConfig");
+      const db = await getDbWhenReady();
+
       await deleteDoc(doc(db, "farmReports", reportId));
 
       // Remove the deleted report from the local state
@@ -333,6 +361,9 @@ const History = () => {
     if (!reportToDelete) return;
 
     try {
+      const { getDbWhenReady } = await import("@/firebaseConfig");
+      const db = await getDbWhenReady();
+
       await deleteDoc(doc(db, "farmReports", reportToDelete.id));
 
       // Remove the deleted report from the local state

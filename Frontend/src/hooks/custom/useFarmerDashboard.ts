@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useCrops } from "@/contexts/CropContext";
-import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, updateDoc, writeBatch, setDoc } from "firebase/firestore"; // Added setDoc import
-import { db, auth } from "@/firebaseConfig";
+import { collection, addDoc, Timestamp, query, where, getDocs, doc, getDoc, updateDoc, writeBatch, setDoc } from "firebase/firestore";
 import { deleteUser, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
-import { generateDeletionRequestId } from "@/lib/idUtils"; // Added import for ID generation
+import { generateDeletionRequestId } from "@/lib/idUtils";
 import { log } from "@/utils/logger";
 
 // Weather data interface
@@ -119,6 +118,12 @@ export const useFarmerDashboard = () => {
 
     const loadFarmerProfile = async (uid: string) => {
         try {
+            const { db } = await import("@/firebaseConfig");
+            if (!db) {
+                console.warn('[useFarmerDashboard] Database not ready, cannot load farmer profile');
+                return;
+            }
+
             const farmerDoc = await getDoc(doc(db, "farmers", uid));
             if (farmerDoc.exists()) {
                 const data = farmerDoc.data();
@@ -149,6 +154,12 @@ export const useFarmerDashboard = () => {
 
     const loadMonthlyReportCount = async (uid: string) => {
         try {
+            const { db } = await import("@/firebaseConfig");
+            if (!db) {
+                console.warn('[useFarmerDashboard] Database not ready, cannot load monthly reports');
+                return;
+            }
+
             const now = new Date();
             const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -177,6 +188,12 @@ export const useFarmerDashboard = () => {
 
     const checkDeletionRequest = async (uid: string) => {
         try {
+            const { db } = await import("@/firebaseConfig");
+            if (!db) {
+                console.warn('[useFarmerDashboard] Database not ready, cannot check deletion requests');
+                return;
+            }
+
             const requestsRef = collection(db, "deletionRequests");
             const q = query(requestsRef, where("userId", "==", uid));
             const querySnapshot = await getDocs(q);
@@ -535,6 +552,11 @@ export const useFarmerDashboard = () => {
 
     const handleUpdateProfile = async (profileData?: typeof editProfileData) => {
         try {
+            const { db } = await import("@/firebaseConfig");
+            if (!db) {
+                throw new Error('Database not ready. Please check backend connection.');
+            }
+
             // Use provided profile data or fallback to editProfileData
             const dataToUse = profileData || editProfileData;
             
@@ -609,6 +631,11 @@ export const useFarmerDashboard = () => {
                     // User is re-requesting after denial - delete ALL old requests
                     log("[Farmer] Deleting old denied request before creating new one...");
                     try {
+                        const { db } = await import("@/firebaseConfig");
+                        if (!db) {
+                            throw new Error("Database not ready. Please check backend connection.");
+                        }
+
                         // Query ALL requests for this user to ensure cleanup
                         const requestsRef = collection(db, "deletionRequests");
                         const q = query(requestsRef, where("userId", "==", userId));
@@ -648,6 +675,11 @@ export const useFarmerDashboard = () => {
             }
 
             // Get current user email from auth
+            const { auth } = await import("@/firebaseConfig");
+            if (!auth) {
+                throw new Error("Firebase auth not initialized. Please check backend connection.");
+            }
+
             const currentUser = auth.currentUser;
             if (!currentUser || !currentUser.email) {
                 throw new Error("Could not retrieve user email. Please log out and log in again.");
@@ -673,6 +705,11 @@ export const useFarmerDashboard = () => {
             // Generate a readable document ID using username instead of userId
             const documentId = generateDeletionRequestId(username);
             
+            const { db } = await import("@/firebaseConfig");
+            if (!db) {
+                throw new Error("Database not ready. Please check backend connection.");
+            }
+
             // Add to Firestore with custom ID
             const requestRef = doc(db, "deletionRequests", documentId);
             await setDoc(requestRef, requestData);
@@ -708,6 +745,11 @@ export const useFarmerDashboard = () => {
         }
 
         // Check if user signed in with Google (no password)
+        const { auth } = await import("@/firebaseConfig");
+        if (!auth) {
+            throw new Error("Firebase auth not initialized. Please check backend connection.");
+        }
+
         const user = auth.currentUser;
         if (!user) {
             toast({
@@ -742,6 +784,12 @@ export const useFarmerDashboard = () => {
         }
 
         try {
+            // Get db instance
+            const { db } = await import("@/firebaseConfig");
+            if (!db) {
+                throw new Error("Database not ready. Please check backend connection.");
+            }
+
             // Re-authenticate user before deletion (required by Firebase)
             // Only for email/password users
             if (!isGoogleUser) {

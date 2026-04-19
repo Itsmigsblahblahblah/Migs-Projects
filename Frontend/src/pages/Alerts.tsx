@@ -73,12 +73,12 @@ const Alerts = () => {
   const alertsPerPage = 10; // Number of alerts per page
 
   // Check if current user is admin
-  const currentUser = auth.currentUser;
+  const currentUser = auth?.currentUser || null;
   const isAdmin = currentUser && currentUser.email === 'admin@majayjay.farm';
 
   // Fetch user read status for both announcements and weather alerts
   useEffect(() => {
-    if (!userId || userId === 'default-user') return;
+    if (!userId || userId === 'default-user' || !db) return; // Skip if db not initialized
 
     // Fetch announcement read status
     const announcementReadStatusQuery = query(
@@ -134,7 +134,7 @@ const Alerts = () => {
 
   // Fetch admin messages
   useEffect(() => {
-    if (!userId || userId === 'default-user') {
+    if (!userId || userId === 'default-user' || !db) { // Skip if db not initialized
       setMessagesLoading(false);
       return;
     }
@@ -559,6 +559,7 @@ const Alerts = () => {
         });
       } else if (alertToDelete.type === 'announcement') {
         // Check if user is admin
+        if (!auth) return; // Skip if auth not initialized
         const currentUser = auth.currentUser;
         const isAdmin = currentUser && currentUser.email === 'admin@majayjay.farm';
 
