@@ -1,8 +1,12 @@
 /**
  * Service for interacting with Gemini API for crop management insights
+ * Now uses backend proxy to prevent API key exposure
  */
 
 import { getNextApiKey } from "./apiKeyRotationService";
+
+// Backend URL from environment variable or default to localhost
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
 /**
  * Get estimated harvest date for a specific crop using Gemini AI
@@ -46,33 +50,26 @@ export const getHarvestEstimate = async (
   `;
 
   try {
-    // Get the next API key in rotation
-    const apiKey = getNextApiKey();
-    
-    // Check if we have a valid API key
-    if (!apiKey) {
-      throw new Error("No valid Gemini API key available");
-    }
-    
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        }),
-      }
-    );
+    // Build request payload
+    const requestPayload = {
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }]
+    };
+
+    // Call backend proxy endpoint instead of Gemini API directly
+    const response = await fetch(`${BACKEND_URL}/gemini/generate-content`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestPayload),
+    });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
+      throw new Error(`Backend Gemini API error: ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -117,7 +114,7 @@ export const getHarvestEstimate = async (
       }
     }
   } catch (error) {
-    console.error("Error with Gemini API:", error);
+    console.error("Error with Gemini API via backend proxy:", error);
     // Fallback to default response if API fails
     const defaultDaysToHarvest = getDefaultDaysToHarvest(cropName);
     const estimatedDate = new Date(plantedDate);
@@ -144,7 +141,7 @@ export const getHarvestEstimate = async (
       ],
       weatherConsiderations: "Continue monitoring weather conditions for optimal growth"
     };
-  }
+  };
 };
 
 /**
@@ -192,33 +189,26 @@ export const getCropPriceEstimate = async (
   `;
 
   try {
-    // Get the next API key in rotation
-    const apiKey = getNextApiKey();
-    
-    // Check if we have a valid API key
-    if (!apiKey) {
-      throw new Error("No valid Gemini API key available");
-    }
-    
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        }),
-      }
-    );
+    // Build request payload
+    const requestPayload = {
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }]
+    };
+
+    // Call backend proxy endpoint instead of Gemini API directly
+    const response = await fetch(`${BACKEND_URL}/gemini/generate-content`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestPayload),
+    });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
+      throw new Error(`Backend Gemini API error: ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -234,7 +224,7 @@ export const getCropPriceEstimate = async (
     
     return result;
   } catch (error) {
-    console.error("Error with Gemini API for price estimation:", error);
+    console.error("Error with Gemini API via backend proxy for price estimation:", error);
     // Fallback to default response if API fails
     const priceChangePercentage = (Math.random() * 10) - 5; // Random change between -5% and +5%
     const estimatedPriceNextMonth = currentPrice * (1 + priceChangePercentage / 100);
@@ -320,33 +310,26 @@ export const getStepByStepInstructions = async (
   `;
 
   try {
-    // Get the next API key in rotation
-    const apiKey = getNextApiKey();
-    
-    // Check if we have a valid API key
-    if (!apiKey) {
-      throw new Error("No valid Gemini API key available");
-    }
-    
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        }),
-      }
-    );
+    // Build request payload
+    const requestPayload = {
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }]
+    };
+
+    // Call backend proxy endpoint instead of Gemini API directly
+    const response = await fetch(`${BACKEND_URL}/gemini/generate-content`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestPayload),
+    });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
+      throw new Error(`Backend Gemini API error: ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -391,7 +374,7 @@ export const getStepByStepInstructions = async (
       }
     }
   } catch (error) {
-    console.error("Error with Gemini API for step-by-step instructions:", error);
+    console.error("Error with Gemini API via backend proxy for step-by-step instructions:", error);
     // Fallback to default steps if API fails
     return [
       "Maghanda ng mga kailangang gamit at materyales para sa gawaing ito",

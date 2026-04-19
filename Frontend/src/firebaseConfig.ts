@@ -3,6 +3,8 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getFunctions } from "firebase/functions";
 
+// Firebase configuration from environment variables
+// These are safe to expose - Firebase uses server-side security rules
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -18,3 +20,6 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const functions = getFunctions(app);
+
+// Export config getter
+export const getFirebaseConfig = () => firebaseConfig;

@@ -11,6 +11,7 @@ import routes.vegetable_routes
 import routes.enhanced_soil_routes  # Add the new routes
 import routes.data_routes  # Add data routes
 import routes.auth_routes  # Add authentication routes
+import routes.gemini_routes  # Add Gemini API proxy routes
 import subprocess
 import sys
 import os
@@ -34,6 +35,7 @@ app.include_router(routes.vegetable_routes.app)
 app.include_router(routes.enhanced_soil_routes.app)  # Add the new routes
 app.include_router(routes.data_routes.app)  # Add data routes
 app.include_router(routes.auth_routes.app)  # Add authentication routes
+app.include_router(routes.gemini_routes.app)  # Add Gemini API proxy routes
 
 
 @app.on_event("startup")

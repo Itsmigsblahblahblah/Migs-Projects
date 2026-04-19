@@ -2,19 +2,12 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
-import { getNextApiKey } from "@/services/apiKeyRotationService";
 
-// Gemini API integration
+// Backend URL from environment variable or default to localhost
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+// Gemini API integration via backend proxy
 const getGeminiRecommendation = async (reportText: string) => {
-  // Use the API key from environment variables with round-robin rotation
-  const API_KEY = getNextApiKey();
-  
-  // Check if we have a valid API key
-  if (!API_KEY) {
-    console.error("No valid Gemini API key available");
-    throw new Error("No valid Gemini API key available");
-  }
-  
   // Detect language (simple approach)
   const isTagalog = /[áàâéèêíìîóòôúùûñÁÀÂÉÈÊÍÌÎÓÒÔÚÙÛÑ]/.test(reportText) || 
                     reportText.toLowerCase().includes('ng ') || 
@@ -57,26 +50,26 @@ const getGeminiRecommendation = async (reportText: string) => {
   `;
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-goog-api-key": API_KEY,
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: prompt
-            }]
-          }]
-        }),
-      }
-    );
+    // Build request payload
+    const requestPayload = {
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }]
+    };
+
+    // Call backend proxy endpoint instead of Gemini API directly
+    const response = await fetch(`${BACKEND_URL}/gemini/generate-content`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestPayload),
+    });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
+      throw new Error(`Backend Gemini API error: ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -120,7 +113,7 @@ const getGeminiRecommendation = async (reportText: string) => {
       }
     }
   } catch (error) {
-    console.error("Error with Gemini API:", error);
+    console.error("Error with Gemini API via backend proxy:", error);
     // Fallback to default response if API fails
     return {
       problem: "general",

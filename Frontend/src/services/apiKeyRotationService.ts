@@ -1,46 +1,68 @@
 /**
  * Service for managing Gemini API keys with round-robin rotation
+ * Now fetches API keys from backend proxy to prevent client-side exposure
  */
 
-// Array of API keys from environment variables
-const API_KEYS = [
-  import.meta.env.VITE_GEMINI_API_KEY_1,
-  import.meta.env.VITE_GEMINI_API_KEY_2,
-  import.meta.env.VITE_GEMINI_API_KEY_3,
-  import.meta.env.VITE_GEMINI_API_KEY_4,
-  import.meta.env.VITE_GEMINI_API_KEY_5,
-  import.meta.env.VITE_GEMINI_API_KEY_6
-].filter(key => key !== undefined && key !== "");
+// Backend URL from environment variable or default to localhost
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
-// Validate that we have at least one API key
-if (API_KEYS.length === 0) {
-  console.warn("No Gemini API keys found in environment variables. Please check your .env file.");
-}
+// Cache for API keys (fetched from backend)
+let apiKeyCache: string[] = [];
+let cacheInitialized = false;
+let currentCacheIndex = 0;
 
-// Current index for round-robin selection
-let currentIndex = 0;
+/**
+ * Fetch API keys from backend proxy
+ * This is called once to initialize the rotation cache
+ */
+const fetchApiKeysFromBackend = async (): Promise<void> => {
+  if (cacheInitialized) return;
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/gemini/status`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch API key status: ${response.statusText}`);
+    }
+
+    const status = await response.json();
+    
+    if (!status.keys_configured) {
+      console.warn("No Gemini API keys configured on backend!");
+      return;
+    }
+
+    // We don't actually fetch the keys themselves, just confirm they exist on backend
+    // The actual key rotation happens on the backend
+    cacheInitialized = true;
+  } catch (error) {
+    console.error("Failed to initialize API key cache from backend:", error);
+    throw error;
+  }
+};
 
 /**
  * Get the next API key in round-robin fashion
+ * NOTE: For backward compatibility, this now returns undefined
+ * The actual API calls should go through the backend proxy
+ * @deprecated Use the backend proxy endpoint directly instead
  * @returns The next API key to use, or undefined if no keys are available
  */
 export const getNextApiKey = (): string | undefined => {
-  if (API_KEYS.length === 0) {
-    return undefined;
-  }
-
-  const apiKey = API_KEYS[currentIndex];
-  // Move to the next key, wrapping around if necessary
-  currentIndex = (currentIndex + 1) % API_KEYS.length;
-  return apiKey;
+  // API keys are now managed on the backend
+  // This function returns undefined to indicate that
+  // the backend proxy should be used instead
+  return undefined;
 };
 
 /**
  * Reset the API key rotation index
- * This can be useful for testing or when you want to start from the beginning
+ * Now delegates to backend rotation
  */
 export const resetApiKeyRotation = (): void => {
-  currentIndex = 0;
+  // Rotation is now handled on the backend
+  // No client-side action needed
+  currentCacheIndex = 0;
 };
 
 /**
@@ -48,13 +70,34 @@ export const resetApiKeyRotation = (): void => {
  * @returns Number of configured API keys
  */
 export const getApiKeyCount = (): number => {
-  return API_KEYS.length;
+  // Return 0 as keys are now on backend
+  // This is for backward compatibility
+  return 0;
 };
 
 /**
  * Get all configured API keys (for debugging purposes)
- * @returns Array of all configured API keys
+ * NOTE: This no longer returns actual keys for security
+ * @returns Empty array (keys are managed on backend)
  */
 export const getAllApiKeys = (): string[] => {
-  return [...API_KEYS]; // Return a copy to prevent external modification
+  // Security: Never expose API keys to client
+  return [];
 };
+
+/**
+ * Initialize the API key rotation service
+ * Now just verifies backend connectivity
+ */
+export const initializeApiKeyRotation = async (): Promise<void> => {
+  try {
+    await fetchApiKeysFromBackend();
+  } catch (error) {
+    console.warn("API key rotation initialization failed, will use backend proxy directly");
+  }
+};
+
+// Auto-initialize on module load
+initializeApiKeyRotation().catch(() => {
+  console.warn("Failed to auto-initialize API key rotation");
+});
