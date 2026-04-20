@@ -284,16 +284,16 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
               value={filters.status}
               onValueChange={(value) => updateFilters({ status: value as any })}
             >
-              <SelectTrigger className="shadow-sm border border-gray-300 bg-[#FAF9F6]">
+              <SelectTrigger className="shadow-sm border border-gray-300 bg-[#FAF9F6] hover:bg-primary hover:text-white transition-colors">
                 <SelectValue placeholder="Filter by growth stage" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
-                <SelectItem value="preparation">Preparation</SelectItem>
-                <SelectItem value="planting">Planting</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
-                <SelectItem value="harvesting">Harvesting</SelectItem>
-                <SelectItem value="post-harvest">Post-Harvest</SelectItem>
+              <SelectContent className="hover:bg-white [&_[data-state=checked]]:bg-primary [&_[data-state=checked]]:text-white">
+                <SelectItem value="all" className="hover:!bg-primary hover:!text-white cursor-pointer">All Stages</SelectItem>
+                <SelectItem value="preparation" className="hover:!bg-primary hover:!text-white cursor-pointer">Preparation</SelectItem>
+                <SelectItem value="planting" className="hover:!bg-primary hover:!text-white cursor-pointer">Planting</SelectItem>
+                <SelectItem value="maintenance" className="hover:!bg-primary hover:!text-white cursor-pointer">Maintenance</SelectItem>
+                <SelectItem value="harvesting" className="hover:!bg-primary hover:!text-white cursor-pointer">Harvesting</SelectItem>
+                <SelectItem value="post-harvest" className="hover:!bg-primary hover:!text-white cursor-pointer">Post-Harvest</SelectItem>
               </SelectContent>
             </Select>
 
@@ -301,13 +301,13 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
               value={filters.crop}
               onValueChange={(value) => updateFilters({ crop: value })}
             >
-              <SelectTrigger className="shadow-sm border border-gray-300 bg-[#FAF9F6]">
+              <SelectTrigger className="shadow-sm border border-gray-300 bg-[#FAF9F6] hover:bg-primary hover:text-white transition-colors">
                 <SelectValue placeholder="Filter by crop" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Crops</SelectItem>
+              <SelectContent className="hover:bg-white [&_[data-state=checked]]:bg-primary [&_[data-state=checked]]:text-white">
+                <SelectItem value="all" className="hover:!bg-primary hover:!text-white cursor-pointer">All Crops</SelectItem>
                 {uniqueCrops.map((crop) => (
-                  <SelectItem key={crop} value={crop}>
+                  <SelectItem key={crop} value={crop} className="hover:!bg-primary hover:!text-white cursor-pointer">
                     {crop}
                   </SelectItem>
                 ))}
@@ -317,7 +317,7 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
             <Button
               variant="outline"
               onClick={clearFilters}
-              className="w-full shadow-sm border border-gray-300 bg-[#FAF9F6]"
+              className="w-full shadow-sm border border-gray-300 bg-[#FAF9F6] hover:bg-primary hover:text-white transition-colors"
             >
               Clear Filters
             </Button>

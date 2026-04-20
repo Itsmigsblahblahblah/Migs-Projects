@@ -1224,7 +1224,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                                       <td className="px-6 py-4 whitespace-nowrap">
                                         <Button 
                                           size="sm" 
-                                          className="bg-yellow-500 text-black hover:bg-yellow-600 hover:text-[#F3E5AB]"
+                                          className="bg-yellow-500 text-black hover:bg-yellow-600 hover:text-black"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             handleCropSelect({
