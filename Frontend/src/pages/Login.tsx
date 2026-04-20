@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import { Sprout, Users, ArrowLeft, AlertCircle, LogIn, UserPlus, Eye, EyeOff, Mail, Lock, User, Building2, CheckCircle, Smartphone } from "lucide-react";
-import { auth, db } from "../firebaseConfig";
+import { auth, db, getAuthWhenReady, getDbWhenReady } from "../firebaseConfig";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -355,25 +355,41 @@ const Login = () => {
   const ADMIN_EMAIL = "admin@majayjay.farm";
 
   const handleGoogleSignIn = async () => {
+    console.log('[Google Auth] Button clicked!');
     setLoading(true);
     setError("");
 
     try {
-      // Initialize Firebase and get instances in parallel
-      const { getAuthWhenReady, getDbWhenReady } = await import("@/firebaseConfig");
-      const { doc, getDoc, setDoc } = await import("firebase/firestore");
+      console.log('[Google Auth] Starting Google sign-in...');
+      console.log('[Google Auth] auth available:', !!auth);
+      console.log('[Google Auth] db available:', !!db);
       
-      // Wait for both auth and db to be ready
-      const [authInstance, dbInstance] = await Promise.all([
-        getAuthWhenReady(),
-        getDbWhenReady()
-      ]);
+      // If auth is null, try to initialize Firebase first
+      let authInstance = auth;
+      let dbInstance = db;
+      
+      if (!authInstance) {
+        console.log('[Google Auth] Auth is null, trying to initialize Firebase...');
+        // Try to force initialization
+        const { initializeFirebase, getAuthInstance, getDbWhenReady } = await import("../firebaseConfig");
+        await initializeFirebase();
+        authInstance = await getAuthInstance();
+        dbInstance = await getDbWhenReady();
+        console.log('[Google Auth] Firebase initialized:', !!authInstance, !!dbInstance);
+      }
+      
+      console.log('[Google Auth] Opening Google popup now...');
       
       // Open Google sign-in popup
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
+      
+      console.log('[Google Auth] Calling signInWithPopup...');
       const result = await signInWithPopup(authInstance, provider);
+      console.log('[Google Auth] Popup result:', result);
       const user = result.user;
+
+      console.log('[Google Auth] User signed in:', user.uid, user.email);
 
       // Check or create farmer profile
       const farmerDoc = await getDoc(doc(dbInstance, "farmers", user.uid));
@@ -381,23 +397,27 @@ const Login = () => {
       if (farmerDoc.exists()) {
         // Existing farmer - direct login
         const farmerData = farmerDoc.data();
+        console.log('[Google Auth] Existing farmer found:', farmerData.fullName);
         localStorage.setItem('userRole', 'farmer');
         localStorage.setItem('userId', user.uid);
         localStorage.setItem('username', farmerData.fullName);
         navigate('/farmer');
       } else if (user.email === ADMIN_EMAIL) {
         // Admin login
+        console.log('[Google Auth] Admin login');
         localStorage.setItem('userRole', 'admin');
         localStorage.setItem('userId', user.uid);
         localStorage.setItem('username', 'Admin');
         navigate('/admin');
       } else if (!user.emailVerified) {
         // New user but email not verified
+        console.log('[Google Auth] Email not verified');
         setError("Please verify your Google account before signing in.");
         await signOut(authInstance);
         clearMarketDemandCache();
       } else {
         // New farmer - create profile
+        console.log('[Google Auth] Creating new farmer profile');
         const displayName = user.displayName || user.email?.split('@')[0] || 'Farmer';
         await setDoc(doc(dbInstance, "farmers", user.uid), {
           email: user.email,
@@ -417,18 +437,23 @@ const Login = () => {
         navigate('/farmer');
       }
     } catch (err: any) {
-      console.error("Google sign-in error:", err);
+      console.error("[Google Auth] Error:", err);
+      console.error("[Google Auth] Error code:", err.code);
+      console.error("[Google Auth] Error message:", err.message);
+      console.error("[Google Auth] Error stack:", err.stack);
       
       if (err.code === 'auth/popup-closed-by-user') {
         setError("Sign-in cancelled. Please try again.");
       } else if (err.code === 'auth/popup-blocked') {
-        setError("Popup blocked. Please enable popups for this site.");
+        setError("Popup blocked. Please enable popups for this site and try again.");
       } else if (err.code === 'auth/unauthorized-domain') {
-        setError("This domain is not authorized for Google sign-in.");
+        setError("This domain is not authorized for Google sign-in. Please contact support.");
       } else if (err.code === 'auth/network-request-failed') {
         setError("Network error. Please check your connection.");
+      } else if (err.code === 'auth/invalid-api-key') {
+        setError("Invalid API key. Please contact support.");
       } else {
-        setError("Google sign-in failed. Please try again.");
+        setError(`Google sign-in failed: ${err.message || 'Please try again.'}`);
       }
     } finally {
       setLoading(false);

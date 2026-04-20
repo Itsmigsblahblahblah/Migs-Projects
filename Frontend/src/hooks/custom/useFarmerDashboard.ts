@@ -543,11 +543,36 @@ export const useFarmerDashboard = () => {
         }));
     };
 
-    const handleProfileImageSelection = (imagePath: string) => {
+    const handleProfileImageSelection = async (imageUrl: string) => {
+        // Update local state
         setEditProfileData(prev => ({
             ...prev,
-            photoURL: imagePath
+            photoURL: imageUrl
         }));
+
+        // Also update the main farmer profile immediately
+        setFarmerProfile(prev => ({
+            ...prev,
+            photoURL: imageUrl
+        }));
+
+        // Save to Firestore immediately
+        try {
+            const { db } = await import("@/firebaseConfig");
+            if (!db) {
+                console.warn('[Farmer] Database not ready, cannot save profile image');
+                return;
+            }
+
+            await updateDoc(doc(db, "farmers", userId), {
+                photoURL: imageUrl
+            });
+
+            console.log('[Farmer] Profile image saved to Firestore');
+        } catch (error) {
+            console.error('[Farmer] Error saving profile image to Firestore:', error);
+            // Don't show toast here as it might interfere with upload success message
+        }
     };
 
     const handleUpdateProfile = async (profileData?: typeof editProfileData) => {

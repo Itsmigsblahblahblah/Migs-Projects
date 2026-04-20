@@ -753,6 +753,7 @@ const FarmerDashboard = () => {
           handleUpdateProfile={handleUpdateProfile}
           onRequestAccountDeletion={handleDeletionButtonClick}
           username={username}
+          userId={userId}
           deletionRequest={deletionRequest}
           isDeletionButtonDisabled={isDeletionButtonDisabled()}
           getDeletionButtonText={getDeletionButtonText}

@@ -33,6 +33,7 @@ interface EditProfileDialogProps {
     handleUpdateProfile: (profileData?: FarmerProfileData) => Promise<void>;
     onRequestAccountDeletion: () => void;
     username: string;
+    userId?: string; // Added userId prop
     deletionRequest: any;
     isDeletionButtonDisabled: boolean;
     getDeletionButtonText: () => string;
@@ -47,6 +48,7 @@ const EditProfileDialog = ({
     handleUpdateProfile,
     onRequestAccountDeletion,
     username,
+    userId,
     deletionRequest,
     isDeletionButtonDisabled,
     getDeletionButtonText
@@ -294,6 +296,7 @@ const EditProfileDialog = ({
                         selectedImage={farmerProfile.photoURL || null}
                         onSelectImage={handleProfileImageSelection}
                         disabled={isSaving}
+                        userId={userId}
                     />
 
                     {/* First Name and Last Name - Grid */}

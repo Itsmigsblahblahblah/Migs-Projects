@@ -1,82 +1,166 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { User } from "lucide-react";
-import girl1 from "@/assets/girl1.png";
-import girl2 from "@/assets/girl2.png";
-import girl3 from "@/assets/girl3.png";
-import boy1 from "@/assets/boy1.png";
-import boy2 from "@/assets/boy2.png";
-import boy3 from "@/assets/boy3.png";
+import { User, Upload, Camera } from "lucide-react";
+import { uploadProfileImage, validateImage } from "@/services/cloudinaryService";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProfilePictureSelectorProps {
   selectedImage: string | null;
   onSelectImage: (imagePath: string) => void;
   disabled?: boolean;
+  userId?: string;
 }
 
-const ProfilePictureSelector = ({ selectedImage, onSelectImage, disabled }: ProfilePictureSelectorProps) => {
-  const [showOptions, setShowOptions] = useState(false);
-  
-  const profileImages = [
-    { id: "girl1", src: girl1, alt: "Girl 1" },
-    { id: "girl2", src: girl2, alt: "Girl 2" },
-    { id: "girl3", src: girl3, alt: "Girl 3" },
-    { id: "boy1", src: boy1, alt: "Boy 1" },
-    { id: "boy2", src: boy2, alt: "Boy 2" },
-    { id: "boy3", src: boy3, alt: "Boy 3" },
-  ];
+const ProfilePictureSelector = ({ selectedImage, onSelectImage, disabled, userId }: ProfilePictureSelectorProps) => {
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
-  const selectedImageObj = profileImages.find(img => img.src === selectedImage);
+  /**
+   * Handle file selection and upload
+   */
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    const validation = validateImage(file);
+    if (!validation.valid) {
+      toast({
+        title: "Invalid Image",
+        description: validation.error,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Show preview
+    const localPreview = URL.createObjectURL(file);
+    setPreviewUrl(localPreview);
+
+    // Upload to Cloudinary
+    setIsUploading(true);
+    try {
+      const imageUrl = await uploadProfileImage(file);
+      
+      // Call parent callback to save to Firestore
+      onSelectImage(imageUrl);
+      
+      toast({
+        title: "Success",
+        description: "Profile image uploaded successfully",
+      });
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload image. Please try again.",
+        variant: "destructive"
+      });
+      // Revert preview on error
+      setPreviewUrl(null);
+    } finally {
+      setIsUploading(false);
+      // Clean up preview URL
+      URL.revokeObjectURL(localPreview);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  /**
+   * Trigger file input click
+   */
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Display image (preview if uploading, otherwise selected)
+  const displayImage = previewUrl || selectedImage;
 
   return (
     <div className="space-y-2">
       <Label>Profile Picture</Label>
+      
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/webp"
+        onChange={handleFileSelect}
+        className="hidden"
+        disabled={disabled || isUploading}
+      />
+      
       <div className="flex items-center gap-4">
-        {selectedImage ? (
-          <img
-            src={selectedImage}
-            alt={selectedImageObj?.alt || "Profile"}
-            className="h-16 w-16 rounded-full object-cover"
-          />
-        ) : (
-          <div className="bg-secondary rounded-full p-4">
-            <User className="h-8 w-8 text-secondary-foreground" />
-          </div>
-        )}
+        {/* Image Display */}
+        <div className="relative">
+          {displayImage ? (
+            <img
+              src={displayImage}
+              alt="Profile"
+              className="h-16 w-16 rounded-full object-cover border-2 border-gray-200"
+            />
+          ) : (
+            <div className="bg-secondary rounded-full p-4">
+              <User className="h-8 w-8 text-secondary-foreground" />
+            </div>
+          )}
+          
+          {/* Upload overlay on hover */}
+          {displayImage && !isUploading && (
+            <div 
+              className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
+              onClick={handleButtonClick}
+            >
+              <Camera className="h-5 w-5 text-white" />
+            </div>
+          )}
+          
+          {/* Loading indicator */}
+          {isUploading && (
+            <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+            </div>
+          )}
+        </div>
+        
+        {/* Upload Button */}
         <Button
           type="button"
           variant="outline"
-          onClick={() => setShowOptions(!showOptions)}
-          disabled={disabled}
+          onClick={handleButtonClick}
+          disabled={disabled || isUploading}
+          className="flex items-center gap-2"
         >
-          {showOptions ? "Cancel" : "Select Avatar"}
+          {isUploading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent"></div>
+              Uploading...
+            </>
+          ) : selectedImage ? (
+            <>
+              <Upload className="h-4 w-4" />
+              Change Profile Image
+            </>
+          ) : (
+            <>
+              <Upload className="h-4 w-4" />
+              Upload Profile Image
+            </>
+          )}
         </Button>
       </div>
       
-      {showOptions && (
-        <div className="mt-4 p-4 border rounded-lg bg-muted">
-          <p className="text-sm text-muted-foreground mb-3">Choose an avatar:</p>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
-            {profileImages.map((image) => (
-              <div
-                key={image.id}
-                className={`aspect-square rounded-full overflow-hidden cursor-pointer transition-all duration-200 ${
-                  selectedImage === image.src
-                    ? "ring-4 ring-green-500 scale-105"
-                    : "ring-2 ring-gray-200 hover:ring-green-300"
-                } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                onClick={() => !disabled && onSelectImage(image.src)}
-              >
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Upload hint */}
+      {!selectedImage && !isUploading && (
+        <p className="text-xs text-muted-foreground">
+          Upload a profile image (JPG, PNG, or WebP, max 2MB)
+        </p>
       )}
     </div>
   );
