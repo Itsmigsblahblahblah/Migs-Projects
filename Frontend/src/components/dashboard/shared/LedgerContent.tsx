@@ -276,7 +276,7 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
                 placeholder="Search crops, locations..."
                 value={filters.searchQuery}
                 onChange={(e) => updateFilters({ searchQuery: e.target.value })}
-                className="pl-10"
+                className="pl-10 shadow-sm border border-gray-300 bg-[#FAF9F6]"
               />
             </div>
 
@@ -284,7 +284,7 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
               value={filters.status}
               onValueChange={(value) => updateFilters({ status: value as any })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="shadow-sm border border-gray-300 bg-[#FAF9F6]">
                 <SelectValue placeholder="Filter by growth stage" />
               </SelectTrigger>
               <SelectContent>
@@ -301,7 +301,7 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
               value={filters.crop}
               onValueChange={(value) => updateFilters({ crop: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="shadow-sm border border-gray-300 bg-[#FAF9F6]">
                 <SelectValue placeholder="Filter by crop" />
               </SelectTrigger>
               <SelectContent>
@@ -317,7 +317,7 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
             <Button
               variant="outline"
               onClick={clearFilters}
-              className="w-full"
+              className="w-full shadow-sm border border-gray-300 bg-[#FAF9F6]"
             >
               Clear Filters
             </Button>
