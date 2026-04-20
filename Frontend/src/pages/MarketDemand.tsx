@@ -130,8 +130,8 @@ const MarketDemand = () => {
     "July", "August", "September", "October", "November", "December"
   ];
 
-  // Generate year options based on range - always start from current year
-  const years = Array.from({ length: 6 }, (_, i) => Math.max(minForecastYear, currentYear) + i);
+  // Generate year options based on range - always start from current year minimum
+  const years = Array.from({ length: 6 }, (_, i) => Math.max(currentYear, yearRangeStart) + i);
 
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   
@@ -330,7 +330,7 @@ const MarketDemand = () => {
 
   const navigateYearRange = (direction: 'prev' | 'next') => {
     const newStart = direction === 'prev'
-      ? Math.max(minForecastYear, yearRangeStart - 6) // Minimum year is 2025
+      ? Math.max(currentYear, yearRangeStart - 6) // Don't go below current year
       : yearRangeStart + 6;
     setYearRangeStart(newStart);
   };
