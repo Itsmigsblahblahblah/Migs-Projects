@@ -909,7 +909,7 @@ const MarketDemand = () => {
                           size="sm"
                           onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                           disabled={currentPage === 1}
-                          className="h-8 px-3 text-sm flex-shrink-0"
+                          className="h-8 px-3 text-sm flex-shrink-0 hover:bg-primary hover:text-primary-foreground"
                         >
                           <span className="hidden sm:inline">Previous</span>
                           <ChevronLeft className="h-4 w-4 sm:hidden" />
@@ -927,7 +927,7 @@ const MarketDemand = () => {
                               variant={currentPage === 1 ? "default" : "outline"}
                               size="sm"
                               onClick={() => setCurrentPage(1)}
-                              className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === 1 ? "bg-primary text-primary-foreground" : ""}`}
+                              className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === 1 ? "bg-primary text-primary-foreground" : "hover:bg-primary hover:text-primary-foreground"}`}
                             >
                               1
                             </Button>
@@ -959,7 +959,7 @@ const MarketDemand = () => {
                                 variant={currentPage === i ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => setCurrentPage(i)}
-                                className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === i ? "bg-primary text-primary-foreground" : ""}`}
+                                className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === i ? "bg-primary text-primary-foreground" : "hover:bg-primary hover:text-primary-foreground"}`}
                               >
                                 {i}
                               </Button>
@@ -981,7 +981,7 @@ const MarketDemand = () => {
                                 variant={currentPage === totalPages ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => setCurrentPage(totalPages)}
-                                className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === totalPages ? "bg-primary text-primary-foreground" : ""}`}
+                                className={`h-8 w-8 p-0 text-sm flex-shrink-0 ${currentPage === totalPages ? "bg-primary text-primary-foreground" : "hover:bg-primary hover:text-primary-foreground"}`}
                               >
                                 {totalPages}
                               </Button>
@@ -996,7 +996,7 @@ const MarketDemand = () => {
                           size="sm"
                           onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredData.length / cropsPerPage)))}
                           disabled={currentPage === Math.ceil(filteredData.length / cropsPerPage)}
-                          className="h-8 px-3 text-sm flex-shrink-0"
+                          className="h-8 px-3 text-sm flex-shrink-0 hover:bg-primary hover:text-primary-foreground"
                         >
                           <span className="hidden sm:inline">Next</span>
                           <ChevronRight className="h-4 w-4 sm:hidden" />
