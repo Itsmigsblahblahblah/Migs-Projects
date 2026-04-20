@@ -31,7 +31,6 @@ import {
   Sprout,
   Filter,
   Search,
-  MapPin,
   BarChart3,
   Calendar,
   Package
@@ -350,7 +349,6 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Crop</TableHead>
-                    <TableHead>Location</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Investment</TableHead>
                     <TableHead className="text-right">Revenue</TableHead>
@@ -362,12 +360,6 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
                     <TableRow key={ledger.id}>
                       <TableCell>{formatDate(ledger.date)}</TableCell>
                       <TableCell className="font-medium">{ledger.crop}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm">
-                          <MapPin className="h-3 w-3" />
-                          {ledger.location}
-                        </div>
-                      </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(ledger.status)}>
                           {ledger.status}
