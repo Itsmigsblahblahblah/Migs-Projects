@@ -359,56 +359,51 @@ const Login = () => {
     setError("");
 
     try {
+      // Initialize Firebase and get instances in parallel
+      const { getAuthWhenReady, getDbWhenReady } = await import("@/firebaseConfig");
+      const { doc, getDoc, setDoc } = await import("firebase/firestore");
+      
+      // Wait for both auth and db to be ready
+      const [authInstance, dbInstance] = await Promise.all([
+        getAuthWhenReady(),
+        getDbWhenReady()
+      ]);
+      
+      // Open Google sign-in popup
       const provider = new GoogleAuthProvider();
-      // Force account selection every time
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      });
-      const result = await signInWithPopup(auth, provider);
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(authInstance, provider);
       const user = result.user;
 
-      // Check if admin
-      if (user.email === ADMIN_EMAIL) {
-        localStorage.setItem('userRole', 'admin');
-        localStorage.setItem('userId', user.uid);
-        localStorage.setItem('username', 'Admin');
-        navigate('/admin');
-        return;
-      }
-
-      // Check if farmer exists in Firestore
-      const farmerDoc = await getDoc(doc(db, "farmers", user.uid));
+      // Check or create farmer profile
+      const farmerDoc = await getDoc(doc(dbInstance, "farmers", user.uid));
 
       if (farmerDoc.exists()) {
-        // Existing farmer - login
+        // Existing farmer - direct login
         const farmerData = farmerDoc.data();
-        
-        // Clean the contact number by removing the +63 prefix if present
-        const rawContactNumber = farmerData.contactNumber || "";
-        const cleanContactNumber = rawContactNumber.startsWith("+63 ") 
-            ? rawContactNumber.substring(4).replace(/\s/g, '') 
-            : rawContactNumber.replace("+63", "").replace(/\s/g, '');
-        
         localStorage.setItem('userRole', 'farmer');
         localStorage.setItem('userId', user.uid);
         localStorage.setItem('username', farmerData.fullName);
         navigate('/farmer');
+      } else if (user.email === ADMIN_EMAIL) {
+        // Admin login
+        localStorage.setItem('userRole', 'admin');
+        localStorage.setItem('userId', user.uid);
+        localStorage.setItem('username', 'Admin');
+        navigate('/admin');
+      } else if (!user.emailVerified) {
+        // New user but email not verified
+        setError("Please verify your Google account before signing in.");
+        await signOut(authInstance);
+        clearMarketDemandCache();
       } else {
-        // New farmer - create profile only if email is verified (which it should be for Google)
-        if (!user.emailVerified) {
-          setError("Please verify your Google account before signing in.");
-          await signOut(auth);
-          clearMarketDemandCache(); // Clear market demand cache on logout
-          return;
-        }
-
+        // New farmer - create profile
         const displayName = user.displayName || user.email?.split('@')[0] || 'Farmer';
-
-        await setDoc(doc(db, "farmers", user.uid), {
+        await setDoc(doc(dbInstance, "farmers", user.uid), {
           email: user.email,
           fullName: displayName,
           farmAddress: `${displayName}'s Farm`,
-          contactNumber: "", // Will be added later by user in profile settings
+          contactNumber: "",
           role: "farmer",
           createdAt: new Date().toISOString(),
           uid: user.uid,
@@ -423,12 +418,17 @@ const Login = () => {
       }
     } catch (err: any) {
       console.error("Google sign-in error:", err);
+      
       if (err.code === 'auth/popup-closed-by-user') {
         setError("Sign-in cancelled. Please try again.");
       } else if (err.code === 'auth/popup-blocked') {
         setError("Popup blocked. Please enable popups for this site.");
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError("This domain is not authorized for Google sign-in.");
+      } else if (err.code === 'auth/network-request-failed') {
+        setError("Network error. Please check your connection.");
       } else {
-        setError(err.message || "Google sign-in failed");
+        setError("Google sign-in failed. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -459,9 +459,16 @@ const Login = () => {
         return;
       }
 
+      // Wait for Firebase to be ready
+      const { getAuthWhenReady, getDbWhenReady } = await import("@/firebaseConfig");
+      const authInstance = await getAuthWhenReady();
+      const dbInstance = await getDbWhenReady();
+      const { createUserWithEmailAndPassword, sendEmailVerification, signOut } = await import("firebase/auth");
+      const { doc, setDoc } = await import("firebase/firestore");
+
       // Create user in Firebase Auth
       const userCredential: UserCredential = await createUserWithEmailAndPassword(
-        auth,
+        authInstance,
         credentials.email,
         credentials.password
       );
@@ -470,7 +477,7 @@ const Login = () => {
       const fullName = `${credentials.firstName} ${credentials.lastName}`;
 
       // Store user data in Firestore immediately with emailVerified: false
-      await setDoc(doc(db, "farmers", userCredential.user.uid), {
+      await setDoc(doc(dbInstance, "farmers", userCredential.user.uid), {
         email: credentials.email,
         fullName: fullName,
         contactNumber: credentials.contactNumber ? `+63${credentials.contactNumber.replace(/\s/g, '')}` : "",
@@ -487,7 +494,7 @@ const Login = () => {
       await sendEmailVerification(userCredential.user);
 
       // Sign out user to prevent auto-login
-      await signOut(auth);
+      await signOut(authInstance);
       clearMarketDemandCache(); // Clear market demand cache on logout
 
       // Show success message

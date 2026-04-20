@@ -197,55 +197,39 @@ export const isFirebaseReady = (): boolean => {
 
 // Export a function to get db only when ready
 export const getDbWhenReady = async () => {
-  console.log('[Firebase] getDbWhenReady called, current db:', !!db);
-  
   if (!initializationPromise) {
-    console.log('[Firebase] No initialization in progress, starting now...');
     initializationPromise = initializeFirebase();
   }
   
   try {
-    console.log('[Firebase] Waiting for initialization...');
     await initializationPromise;
   } catch (error) {
-    console.error('[Firebase] Initialization failed during getDbWhenReady:', error);
     throw error;
   }
   
   if (!db) {
-    console.error('[Firebase] ❌ Database is still null after initialization');
-    console.error('[Firebase] This likely means the backend /config/firebase endpoint is not configured');
-    throw new Error('Firebase database not initialized. Please ensure backend server is running with Firebase credentials configured.');
+    throw new Error('Firebase database not initialized.');
   }
   
-  console.log('[Firebase] ✅ Database ready, returning instance');
   return db;
 };
 
 // Export a function to get auth only when ready
 export const getAuthWhenReady = async () => {
-  console.log('[Firebase] getAuthWhenReady called, current auth:', !!auth);
-  
   if (!initializationPromise) {
-    console.log('[Firebase] No initialization in progress, starting now...');
     initializationPromise = initializeFirebase();
   }
   
   try {
-    console.log('[Firebase] Waiting for initialization...');
     await initializationPromise;
   } catch (error) {
-    console.error('[Firebase] Initialization failed during getAuthWhenReady:', error);
     throw error;
   }
   
   if (!auth) {
-    console.error('[Firebase] ❌ Auth is still null after initialization');
-    console.error('[Firebase] This likely means the backend /config/firebase endpoint is not configured');
-    throw new Error('Firebase auth not initialized. Please ensure backend server is running with Firebase credentials configured.');
+    throw new Error('Firebase auth not initialized.');
   }
   
-  console.log('[Firebase] ✅ Auth ready, returning instance');
   return auth;
 };
 
