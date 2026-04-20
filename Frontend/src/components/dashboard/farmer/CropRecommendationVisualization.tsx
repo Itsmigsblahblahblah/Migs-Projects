@@ -250,7 +250,7 @@ const CropRecommendationVisualization: React.FC<CropRecommendationVisualizationP
               <div className="mt-4">
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full">
+                    <Button variant="outline" className="w-full bg-yellow-500 text-black hover:bg-yellow-600 hover:text-[#F3E5AB]">
                       <Scale className="h-4 w-4 mr-2" />
                       View Detailed Fertilizer Recommendations
                     </Button>
