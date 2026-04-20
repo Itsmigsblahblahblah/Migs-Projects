@@ -19,6 +19,7 @@ interface AdvisoryItem {
   type: string;
   read?: boolean;
   severity?: string;
+  timestamp?: number; // Add timestamp for accurate sorting
 }
 
 // Function to create a stable ID for weather alerts (copied from Alerts.tsx)
@@ -141,7 +142,8 @@ const AdvisoryContainer = () => {
         date: alertDate,
         type: 'weather',
         read: isRead,
-        severity: alert.severity
+        severity: alert.severity,
+        timestamp: (alert as any).timestamp || new Date().getTime() // Use timestamp if available
       };
     }).filter(alert => alert !== null) as AdvisoryItem[];
   };
@@ -179,7 +181,8 @@ const AdvisoryContainer = () => {
         category: 'announcement',
         date: announcementDate,
         type: 'announcement',
-        read: isRead
+        read: isRead,
+        timestamp: announcement.createdAt?.toDate().getTime() || new Date().getTime() // Use actual timestamp
       };
     }).filter(alert => alert !== null) as AdvisoryItem[];
   };
@@ -192,9 +195,12 @@ const AdvisoryContainer = () => {
     // Combine all items
     const allItems = [...weatherItems, ...announcementItems];
     
-    // Sort by date (newest first)
+    // Sort by timestamp (newest first) - use actual timestamp for accurate sorting
     allItems.sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      // Use timestamp if available, fallback to date parsing
+      const timeA = a.timestamp || new Date(a.date).getTime() || 0;
+      const timeB = b.timestamp || new Date(b.date).getTime() || 0;
+      return timeB - timeA; // Descending order (newest first)
     });
     
     setAdvisoryItems(allItems);
