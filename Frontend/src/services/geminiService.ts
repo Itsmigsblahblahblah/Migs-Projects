@@ -8,6 +8,9 @@ import { getNextApiKey } from "./apiKeyRotationService";
 // Backend URL from environment variable or default to localhost
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
+// Timeout for Gemini API calls (increased for production with lazy loading)
+const GEMINI_API_TIMEOUT = 60000; // 60 seconds (first call may be slow due to model loading)
+
 /**
  * Get estimated harvest date for a specific crop using Gemini AI
  * @param cropName Name of the crop
@@ -66,6 +69,7 @@ export const getHarvestEstimate = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestPayload),
+      signal: AbortSignal.timeout(GEMINI_API_TIMEOUT),
     });
 
     if (!response.ok) {
@@ -205,6 +209,7 @@ export const getCropPriceEstimate = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestPayload),
+      signal: AbortSignal.timeout(GEMINI_API_TIMEOUT),
     });
 
     if (!response.ok) {
@@ -326,6 +331,7 @@ export const getStepByStepInstructions = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestPayload),
+      signal: AbortSignal.timeout(GEMINI_API_TIMEOUT),
     });
 
     if (!response.ok) {
