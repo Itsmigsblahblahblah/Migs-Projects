@@ -212,17 +212,33 @@ const CropDetails = () => {
                             harvestDataKeys: cropData.harvestData ? Object.keys(cropData.harvestData) : null
                         });
                         
-                        if (cropData.plantedDate && (!cropData.harvestData || Object.keys(cropData.harvestData).length === 0)) {
+                        // SKIP API CALL if harvest data already exists in Firestore
+                        if (cropData.harvestData && Object.keys(cropData.harvestData).length > 0) {
+                            console.log('[CropDetails-Harvest] ✅ Using cached harvest data from Firestore - SKIP API CALL');
+                            if (isMounted) setHarvestData(cropData.harvestData);
+                            return; // Exit early, no API call needed!
+                        }
+                        
+                        // Only fetch if NO harvest data exists
+                        if (cropData.plantedDate) {
+                            // Declare timeoutId outside try block so it's accessible in catch
+                            let timeoutId: any = null;
+                            
                             try {
-                                console.log('[CropDetails-Harvest] Fetching new harvest estimate...');
+                                console.log('[CropDetails-Harvest] Fetching new harvest estimate (first time only)...');
                                 const plantedDate = typeof cropData.plantedDate === 'string'
                                     ? new Date(cropData.plantedDate)
                                     : cropData.plantedDate.toDate
                                         ? cropData.plantedDate.toDate()
                                         : new Date(cropData.plantedDate);
 
-                                console.log('[CropDetails-Harvest] Calling getHarvestEstimate...');
+                                // Add timeout to prevent memory issues on Render
+                                const controller = new AbortController();
+                                timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                                
+                                console.log('[CropDetails-Harvest] Calling getHarvestEstimate with timeout...');
                                 const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
+                                clearTimeout(timeoutId);
                                 console.log('[CropDetails-Harvest] Harvest info received');
 
                                 // Save harvest data to crop record
@@ -236,62 +252,62 @@ const CropDetails = () => {
                                     setHarvestData(harvestInfo);
                                 }
                             } catch (error: any) {
+                                if (timeoutId) clearTimeout(timeoutId);
                                 console.error("[CropDetails-Harvest] Error fetching harvest estimate:", error);
-                                console.error("[CropDetails-Harvest] Error details:", {
-                                    message: error.message,
-                                    stack: error.stack,
-                                    name: error.name
-                                });
-                                // Don't crash, just log and continue
+                                // Don't crash, just use empty data
+                                if (isMounted) setHarvestData(null);
                             }
-                        } else if (cropData.harvestData) {
-                            // Use existing harvest data
-                            console.log('[CropDetails-Harvest] Using existing harvest data');
-                            if (isMounted) setHarvestData(cropData.harvestData);
                         } else {
-                            console.log('[CropDetails-Harvest] No harvest data needed');
+                            console.log('[CropDetails-Harvest] No planted date available');
                         }
                     };
                     
                     const fetchMarketData = async () => {
                         if (!isMounted) return;
                         
+                        // SKIP API CALL if market data already exists in Firestore
                         if (cropData.marketData) {
-                            // Use existing market data
-                            console.log('[CropDetails-Market] Using cached marketData from Firestore');
+                            console.log('[CropDetails-Market] ✅ Using cached marketData from Firestore - SKIP API CALL');
                             if (isMounted) setMarketData(cropData.marketData);
-                        } else {
-                            // Fetch new market data
-                            console.log('[CropDetails-Market] Fetching fresh market data from API');
-                            try {
-                                console.log('[CropDetails-Market] Calling getCropInsights...');
-                                const insights = await getCropInsights(
-                                    cropData.name,
-                                    cropData.soilType,
-                                    cropData.landArea,
-                                    cropData.puhunan
-                                );
-                                console.log('[CropDetails-Market] Market data received');
+                            return; // Exit early, no API call needed!
+                        }
+                        
+                        // Only fetch if NO market data exists (first time only)
+                        console.log('[CropDetails-Market] Fetching fresh market data (first time only)...');
+                        
+                        // Declare timeoutId outside try block so it's accessible in catch
+                        let timeoutId: any = null;
+                        
+                        try {
+                            // Add timeout to prevent memory issues on Render
+                            const controller = new AbortController();
+                            timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                            
+                            console.log('[CropDetails-Market] Calling getCropInsights with timeout...');
+                            const insights = await getCropInsights(
+                                cropData.name,
+                                cropData.soilType,
+                                cropData.landArea,
+                                cropData.puhunan
+                            );
+                            clearTimeout(timeoutId);
+                            console.log('[CropDetails-Market] Market data received');
 
-                                // Save market data to crop record
-                                if (cropData.id && isMounted) {
-                                    console.log('[CropDetails-Market] Saving market data to Firestore');
-                                    await updateCrop(cropData.id, { marketData: insights });
-                                }
-
-                                if (isMounted) {
-                                    console.log('[CropDetails-Market] Setting market data state');
-                                    setMarketData(insights);
-                                }
-                            } catch (error: any) {
-                                console.error("[CropDetails-Market] Error fetching market data:", error);
-                                console.error("[CropDetails-Market] Error details:", {
-                                    message: error.message,
-                                    stack: error.stack,
-                                    name: error.name
-                                });
-                                // Don't crash, just log and continue
+                            // Save market data to crop record
+                            if (cropData.id && isMounted) {
+                                console.log('[CropDetails-Market] Saving market data to Firestore');
+                                await updateCrop(cropData.id, { marketData: insights });
                             }
+
+                            if (isMounted) {
+                                console.log('[CropDetails-Market] Setting market data state');
+                                setMarketData(insights);
+                            }
+                        } catch (error: any) {
+                            if (timeoutId) clearTimeout(timeoutId);
+                            console.error("[CropDetails-Market] Error fetching market data:", error);
+                            // Don't crash, just use empty data
+                            if (isMounted) setMarketData(null);
                         }
                     };
                     
