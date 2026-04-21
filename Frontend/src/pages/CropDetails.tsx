@@ -186,89 +186,88 @@ const CropDetails = () => {
 
                     setProductivityData(initialData);
 
-                    // Fetch all data in parallel to improve loading speed
-                    const [harvestInfo, marketInsights] = await Promise.all([
-                        // Fetch harvest estimate from Gemini API only if not already saved or if it was reset
-                        (async () => {
-                            console.log('Checking harvest data conditions:', {
-                                hasPlantedDate: !!cropData.plantedDate,
-                                hasHarvestData: !!cropData.harvestData,
-                                harvestDataKeys: cropData.harvestData ? Object.keys(cropData.harvestData) : null
-                            });
-                            
-                            if (cropData.plantedDate && (!cropData.harvestData || Object.keys(cropData.harvestData).length === 0)) {
-                                try {
-                                    const plantedDate = typeof cropData.plantedDate === 'string'
-                                        ? new Date(cropData.plantedDate)
-                                        : cropData.plantedDate.toDate
-                                            ? cropData.plantedDate.toDate()
-                                            : new Date(cropData.plantedDate);
-
-                                    console.log('Calling getHarvestEstimate with:', {
-                                        cropName: cropData.name,
-                                        plantedDate: plantedDate,
-                                        location: "Majayjay, Laguna"
-                                    });
-
-                                    const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
-                                    console.log('Harvest info received:', harvestInfo);
-
-                                    // Save harvest data to crop record
-                                    if (cropData.id) {
-                                        await updateCrop(cropData.id, { harvestData: harvestInfo });
-                                    }
-
-                                    return harvestInfo;
-                                } catch (error) {
-                                    console.error("Error fetching harvest estimate:", error);
-                                    return null;
-                                }
-                            } else if (cropData.harvestData) {
-                                // Use existing harvest data
-                                console.log('Using existing harvest data:', cropData.harvestData);
-                                return cropData.harvestData;
-                            } else {
-                                // Reset harvest data if no conditions are met
-                                console.log('No harvest data conditions met, returning null');
-                                return null;
-                            }
-                        })(),
+                    // Fetch data in background WITHOUT blocking UI rendering
+                    // This prevents page crashes when backend is slow
+                    const fetchHarvestData = async () => {
+                        console.log('Checking harvest data conditions:', {
+                            hasPlantedDate: !!cropData.plantedDate,
+                            hasHarvestData: !!cropData.harvestData,
+                            harvestDataKeys: cropData.harvestData ? Object.keys(cropData.harvestData) : null
+                        });
                         
-                        // Fetch market demand data only if not already saved or if it's outdated
-                        (async () => {
-                            if (cropData.marketData) {
-                                // Use existing market data
-                                console.log('[CropDetails] Using cached marketData from Firestore');
-                                return cropData.marketData;
-                            } else {
-                                // Fetch new market data
-                                console.log('[CropDetails] Fetching fresh market data from API');
-                                try {
-                                    const insights = await getCropInsights(
-                                        cropData.name,
-                                        cropData.soilType,
-                                        cropData.landArea,
-                                        cropData.puhunan
-                                    );
+                        if (cropData.plantedDate && (!cropData.harvestData || Object.keys(cropData.harvestData).length === 0)) {
+                            try {
+                                const plantedDate = typeof cropData.plantedDate === 'string'
+                                    ? new Date(cropData.plantedDate)
+                                    : cropData.plantedDate.toDate
+                                        ? cropData.plantedDate.toDate()
+                                        : new Date(cropData.plantedDate);
 
-                                    // Save market data to crop record
-                                    if (cropData.id) {
-                                        await updateCrop(cropData.id, { marketData: insights });
-                                    }
+                                console.log('Calling getHarvestEstimate with:', {
+                                    cropName: cropData.name,
+                                    plantedDate: plantedDate,
+                                    location: "Majayjay, Laguna"
+                                });
 
-                                    return insights;
-                                } catch (error) {
-                                    console.error("Error fetching market data:", error);
-                                    return null;
+                                const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
+                                console.log('Harvest info received:', harvestInfo);
+
+                                // Save harvest data to crop record
+                                if (cropData.id) {
+                                    await updateCrop(cropData.id, { harvestData: harvestInfo });
                                 }
-                            }
-                        })()
-                    ]);
 
-                    // Update state with fetched data
-                    console.log('Setting harvest data state:', harvestInfo);
-                    setHarvestData(harvestInfo);
-                    setMarketData(marketInsights);
+                                setHarvestData(harvestInfo);
+                            } catch (error) {
+                                console.error("Error fetching harvest estimate:", error);
+                                // Don't crash, just log and continue
+                            }
+                        } else if (cropData.harvestData) {
+                            // Use existing harvest data
+                            console.log('Using existing harvest data:', cropData.harvestData);
+                            setHarvestData(cropData.harvestData);
+                        }
+                    };
+                    
+                    const fetchMarketData = async () => {
+                        if (cropData.marketData) {
+                            // Use existing market data
+                            console.log('[CropDetails] Using cached marketData from Firestore');
+                            setMarketData(cropData.marketData);
+                        } else {
+                            // Fetch new market data
+                            console.log('[CropDetails] Fetching fresh market data from API');
+                            try {
+                                const insights = await getCropInsights(
+                                    cropData.name,
+                                    cropData.soilType,
+                                    cropData.landArea,
+                                    cropData.puhunan
+                                );
+
+                                // Save market data to crop record
+                                if (cropData.id) {
+                                    await updateCrop(cropData.id, { marketData: insights });
+                                }
+
+                                setMarketData(insights);
+                            } catch (error) {
+                                console.error("Error fetching market data:", error);
+                                // Don't crash, just log and continue
+                            }
+                        }
+                    };
+                    
+                    // Fetch in background WITHOUT blocking UI
+                    // Using Promise.allSettled to prevent one failure from crashing the other
+                    Promise.allSettled([
+                        fetchHarvestData(),
+                        fetchMarketData()
+                    ]).then(results => {
+                        console.log('Background data fetching completed:', results);
+                    }).catch(error => {
+                        console.error('Error in background data fetching:', error);
+                    });
                 }
             } catch (error) {
                 console.error("Error fetching crop:", error);
