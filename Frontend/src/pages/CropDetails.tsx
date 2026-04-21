@@ -23,15 +23,17 @@ interface ChecklistItem {
 const CropDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { getCropById, updateCrop, loadCrops } = useCrops();
+    const { getCropById, updateCrop, loadCrops, loadSingleCrop } = useCrops();
     const getCropByIdRef = useRef(getCropById);
     const loadCropsRef = useRef(loadCrops);
+    const loadSingleCropRef = useRef(loadSingleCrop);
     
     // Keep refs updated
     useEffect(() => {
         getCropByIdRef.current = getCropById;
         loadCropsRef.current = loadCrops;
-    }, [getCropById, loadCrops]);
+        loadSingleCropRef.current = loadSingleCrop;
+    }, [getCropById, loadCrops, loadSingleCrop]);
     const [crop, setCrop] = useState<any | null>(null);
     const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
     const [productivityData, setProductivityData] = useState<{ task: string; productivity: number }[]>([]);
@@ -268,40 +270,37 @@ const CropDetails = () => {
                                     
                                     // Fetch fresh data in background ONLY ONCE (not on every render)
                                     if (!cropsLoaded) {
-                                        console.log('[CropDetails] Loading fresh data in background (one-time)...');
-                                        loadCropsRef.current().then(() => {
-                                            console.log('[CropDetails] Fresh crops loaded in background');
-                                            // After fresh load, get the crop again
-                                            if (isMounted) {
-                                                const freshCrop = getCropByIdRef.current(id);
-                                                if (freshCrop) {
-                                                    console.log('[CropDetails] Fresh data loaded, updating UI');
-                                                    setCrop(freshCrop);
+                                        console.log('[CropDetails] Loading fresh crop data in background (one-time)...');
+                                        loadSingleCropRef.current(id).then((freshCrop) => {
+                                            console.log('[CropDetails] Fresh crop loaded in background');
+                                            // After fresh load, update UI
+                                            if (isMounted && freshCrop) {
+                                                console.log('[CropDetails] Fresh data loaded, updating UI');
+                                                setCrop(freshCrop);
+                                                
+                                                // Update checklist if needed
+                                                if (freshCrop.checklist && freshCrop.checklist.length > 0) {
+                                                    const updatedChecklist = ensureCompleteChecklist(freshCrop.checklist, freshCrop.name);
+                                                    setChecklist(updatedChecklist);
                                                     
-                                                    // Update checklist if needed
-                                                    if (freshCrop.checklist && freshCrop.checklist.length > 0) {
-                                                        const updatedChecklist = ensureCompleteChecklist(freshCrop.checklist, freshCrop.name);
-                                                        setChecklist(updatedChecklist);
-                                                        
-                                                        const updatedProductivityData = updatedChecklist.map(item => ({
-                                                            task: item.title,
-                                                            productivity: item.completed ? 100 : 0
-                                                        }));
-                                                        
-                                                        const updatedCompleted = updatedChecklist.filter(item => item.completed).length;
-                                                        const updatedTotal = updatedChecklist.length;
-                                                        const updatedOverallProductivity = updatedTotal > 0 ? Math.round((updatedCompleted / updatedTotal) * 100) : 0;
-                                                        
-                                                        updatedProductivityData.push({
-                                                            task: "Overall Progress",
-                                                            productivity: updatedOverallProductivity
-                                                        });
-                                                        
-                                                        setProductivityData(updatedProductivityData);
-                                                    }
+                                                    const updatedProductivityData = updatedChecklist.map(item => ({
+                                                        task: item.title,
+                                                        productivity: item.completed ? 100 : 0
+                                                    }));
+                                                    
+                                                    const updatedCompleted = updatedChecklist.filter(item => item.completed).length;
+                                                    const updatedTotal = updatedChecklist.length;
+                                                    const updatedOverallProductivity = updatedTotal > 0 ? Math.round((updatedCompleted / updatedTotal) * 100) : 0;
+                                                    
+                                                    updatedProductivityData.push({
+                                                        task: "Overall Progress",
+                                                        productivity: updatedOverallProductivity
+                                                    });
+                                                    
+                                                    setProductivityData(updatedProductivityData);
                                                 }
                                             }
-                                        }).catch(err => console.error('[CropDetails] Error loading fresh crops:', err));
+                                        }).catch(err => console.error('[CropDetails] Error loading fresh crop:', err));
                                         
                                         // Mark as loaded to prevent re-fetching
                                         setCropsLoaded(true);
@@ -429,46 +428,41 @@ const CropDetails = () => {
                 // Fallback: If no cache or crop not in cache, load from Firestore
                 console.log('[CropDetails] No valid cache, loading from Firestore...');
                 
-                // Load crops in background (non-blocking)
-                if (!cropsLoaded) {
-                    console.log('[CropDetails] Crops not loaded yet, calling loadCrops (non-blocking)...');
-                    await loadCropsRef.current();
-                    setCropsLoaded(true);
-                }
-
-                console.log('[CropDetails] Getting crop by ID:', id);
-                const cropData = getCropByIdRef.current(id);
-                console.log('[CropDetails] Crop data retrieved:', cropData ? 'Found' : 'Not found');
+                // Load ONLY THIS CROP from Firestore (not all crops)
+                console.log('[CropDetails] Loading single crop directly from Firestore...');
+                const freshCrop = await loadSingleCropRef.current(id);
                 
-                if (!cropData) {
-                    console.log('[CropDetails] Crop not found, exiting');
+                if (!freshCrop) {
+                    console.log('[CropDetails] Crop not found in Firestore, exiting');
                     if (isMounted) setLoading(false);
                     return;
                 }
+
+                console.log('[CropDetails] Crop data retrieved:', freshCrop.name);
                 
                 // Display crop data IMMEDIATELY
                 if (isMounted) {
                     console.log('[CropDetails] Setting crop data and checklist...');
-                    setCrop(cropData);
+                    setCrop(freshCrop);
 
                     let loadedChecklist: ChecklistItem[] = [];
-                    if (cropData.checklist && cropData.checklist.length > 0) {
+                    if (freshCrop.checklist && freshCrop.checklist.length > 0) {
                         console.log('[CropDetails] Using existing checklist');
-                        loadedChecklist = ensureCompleteChecklist(cropData.checklist, cropData.name);
+                        loadedChecklist = ensureCompleteChecklist(freshCrop.checklist, freshCrop.name);
 
-                        const originalLength = cropData.checklist.length;
+                        const originalLength = freshCrop.checklist.length;
                         const newLength = loadedChecklist.length;
                         if (newLength > originalLength) {
                             console.log('[CropDetails] Saving updated checklist');
                             try {
-                                await updateCrop(cropData.id, { checklist: loadedChecklist });
+                                await updateCrop(freshCrop.id, { checklist: loadedChecklist });
                             } catch (error) {
                                 console.error("[CropDetails] Error saving updated checklist:", error);
                             }
                         }
                     } else {
                         console.log('[CropDetails] Generating new checklist');
-                        loadedChecklist = generateChecklist(cropData.name);
+                        loadedChecklist = generateChecklist(freshCrop.name);
                     }
                     
                     if (isMounted) {
@@ -497,8 +491,8 @@ const CropDetails = () => {
 
                     // Fetch API data in BACKGROUND (non-blocking)
                     console.log('[CropDetails] Starting background API fetch...');
-                    fetchHarvestDataInBackground(cropData);
-                    fetchMarketDataInBackground(cropData);
+                    fetchHarvestDataInBackground(freshCrop);
+                    fetchMarketDataInBackground(freshCrop);
                 }
             } catch (error: any) {
                 console.error("[CropDetails] Error fetching crop:", error);

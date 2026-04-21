@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { collection, addDoc, updateDoc, doc, query, where, getDocs, Timestamp, orderBy, setDoc, deleteDoc } from "firebase/firestore"; // Added deleteDoc import
+import { collection, addDoc, updateDoc, doc, query, where, getDocs, getDoc, Timestamp, orderBy, setDoc, deleteDoc } from "firebase/firestore"; // Added deleteDoc import
 import { onAuthStateChanged } from "firebase/auth";
 import { db, auth } from "@/firebaseConfig";
 import { generateFarmerCropId } from "@/lib/idUtils";
@@ -36,6 +36,7 @@ interface CropContextType {
     deleteCrop: (id: string) => Promise<void>; // Add delete function
     getCropById: (id: string) => Crop | undefined;
     loadCrops: () => Promise<void>;
+    loadSingleCrop: (cropId: string) => Promise<Crop | null>;
 }
 
 const CropContext = createContext<CropContextType | undefined>(undefined);
@@ -396,12 +397,54 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const loadSingleCrop = async (cropId: string) => {
+        try {
+            const { getDbWhenReady } = await import("@/firebaseConfig");
+            const db = await getDbWhenReady();
+
+            if (!db) {
+                console.warn('[CropContext] Database is null');
+                return null;
+            }
+
+            console.log('[CropContext] Loading single crop:', cropId);
+            const cropRef = doc(db, "farmerCrops", cropId);
+            const cropSnap = await getDoc(cropRef);
+
+            if (cropSnap.exists()) {
+                const data = cropSnap.data();
+                const crop: Crop = {
+                    id: cropSnap.id,
+                    userId: data.userId,
+                    name: data.name,
+                    landArea: data.landArea,
+                    soilType: data.soilType,
+                    plantedDate: data.plantedDate,
+                    puhunan: data.puhunan,
+                    createdAt: data.createdAt,
+                    checklist: data.checklist || [],
+                    harvestData: data.harvestData || null,
+                    marketData: data.marketData || null,
+                };
+
+                console.log('[CropContext] Single crop loaded:', crop.name);
+                return crop;
+            } else {
+                console.log('[CropContext] Crop not found:', cropId);
+                return null;
+            }
+        } catch (error) {
+            console.error('[CropContext] Error loading single crop:', error);
+            return null;
+        }
+    };
+
     const getCropById = (id: string) => {
         return crops.find(crop => crop.id === id);
     };
 
     return (
-        <CropContext.Provider value={{ crops, addCrop, updateCrop, deleteCrop, getCropById, loadCrops }}>
+        <CropContext.Provider value={{ crops, addCrop, updateCrop, deleteCrop, getCropById, loadCrops, loadSingleCrop }}>
             {children}
         </CropContext.Provider>
     );
