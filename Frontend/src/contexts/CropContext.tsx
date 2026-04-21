@@ -130,24 +130,6 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 return;
             }
 
-            // OPTIMIZATION: Check localStorage cache first for instant loading
-            const cacheKey = `crops_${effectiveUserId}`;
-            const cachedCrops = localStorage.getItem(cacheKey);
-            if (cachedCrops) {
-                try {
-                    const parsedCrops = JSON.parse(cachedCrops);
-                    // Only use cache if it's less than 5 minutes old
-                    const cacheAge = Date.now() - (parsedCrops._timestamp || 0);
-                    if (cacheAge < 5 * 60 * 1000) {
-                        console.log('[CropContext] Using cached crops (instant load)');
-                        setCrops(parsedCrops.crops || []);
-                        // Still fetch fresh data in background
-                    }
-                } catch (e) {
-                    // Ignore cache parse errors
-                }
-            }
-
             console.log("[CropContext] Loading crops for userId:", effectiveUserId);
             console.log("[CropContext] Using db instance:", !!db);
 
@@ -158,6 +140,79 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                 cropsRef,
                 where("userId", "==", effectiveUserId)
             );
+
+            // OPTIMIZATION: Check localStorage cache first for instant loading
+            const cacheKey = `crops_${effectiveUserId}`;
+            const cachedCrops = localStorage.getItem(cacheKey);
+            let cacheLoaded = false;
+            
+            if (cachedCrops) {
+                try {
+                    const parsedCrops = JSON.parse(cachedCrops);
+                    // Only use cache if it's less than 5 minutes old
+                    const cacheAge = Date.now() - (parsedCrops._timestamp || 0);
+                    if (cacheAge < 5 * 60 * 1000) {
+                        console.log('[CropContext] Using cached crops (instant load)');
+                        setCrops(parsedCrops.crops || []);
+                        cacheLoaded = true;
+                    }
+                } catch (e) {
+                    // Ignore cache parse errors
+                }
+            }
+
+            // If cache was loaded, fetch fresh data in BACKGROUND (non-blocking)
+            // Don't await - let it run in background
+            if (cacheLoaded) {
+                // Use setTimeout to ensure it runs after the current render cycle
+                setTimeout(async () => {
+                    try {
+                        console.log('[CropContext] Fetching fresh data in background...');
+                        const querySnapshot = await getDocs(q);
+                        console.log('[CropContext] Fresh data fetched, docs:', querySnapshot.size);
+                        
+                        const loadedCrops: Crop[] = [];
+                        querySnapshot.forEach((doc) => {
+                            const data = doc.data();
+                            loadedCrops.push({
+                                id: doc.id,
+                                userId: data.userId,
+                                name: data.name,
+                                landArea: data.landArea,
+                                soilType: data.soilType,
+                                plantedDate: data.plantedDate,
+                                puhunan: data.puhunan,
+                                createdAt: data.createdAt,
+                                checklist: data.checklist || [],
+                                harvestData: data.harvestData || null,
+                                marketData: data.marketData || null,
+                            });
+                        });
+
+                        // Sort in memory
+                        loadedCrops.sort((a, b) => {
+                            const dateA = a.createdAt?.toDate?.() || new Date(0);
+                            const dateB = b.createdAt?.toDate?.() || new Date(0);
+                            return dateB.getTime() - dateA.getTime();
+                        });
+
+                        // Update state with fresh data
+                        setCrops(loadedCrops);
+                        
+                        // Update cache
+                        const cacheData = {
+                            crops: loadedCrops,
+                            _timestamp: Date.now()
+                        };
+                        localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+                    } catch (error) {
+                        console.error('[CropContext] Background fetch error:', error);
+                    }
+                }, 0);
+                
+                // Return early so cache shows immediately
+                return;
+            }
 
             const querySnapshot = await getDocs(q);
             console.log("[CropContext] Query executed, found docs:", querySnapshot.size);

@@ -84,12 +84,33 @@ const CropHistory = () => {
         }
 
         setUsername(user || 'Farmer');
-
-        // Don't load crops here - let CropContext handle it
-        // Just log when crops are available
-        console.log('[CropHistory] Waiting for crops to load from context...');
         
-        setLoading(false);
+        // INSTANT LOAD: Check cache first and display immediately
+        if (userId && crops.length === 0) {
+            const cacheKey = `crops_${userId}`;
+            const cachedCrops = localStorage.getItem(cacheKey);
+            if (cachedCrops) {
+                try {
+                    const parsedCrops = JSON.parse(cachedCrops);
+                    const cacheAge = Date.now() - (parsedCrops._timestamp || 0);
+                    // Use cache if less than 5 minutes old
+                    if (cacheAge < 5 * 60 * 1000) {
+                        console.log('[CropHistory] Using cached crops for instant display');
+                        // Crops already loaded by CropContext, just hide loading
+                        setLoading(false);
+                        return;
+                    }
+                } catch (e) {
+                    // Ignore cache parse errors
+                }
+            }
+        }
+        
+        // If crops are already loaded from context, hide loading
+        if (crops.length > 0) {
+            console.log('[CropHistory] Crops loaded, hiding loading');
+            setLoading(false);
+        }
     }, [navigate, crops]); // Re-run when crops change
 
     // Reset to first page when crops change
