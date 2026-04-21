@@ -396,14 +396,17 @@ export const getSeedPriceInfo = async (cropName: string) => {
     }
     
     // Default values if no data found
+    // For vegetatively propagated crops (cassava, ginger, garlic, etc.) that don't use seeds
+    // Use PHP 50 as a minimal planting material cost
     return {
-      seedPricePerKilo: 1000,
+      seedPricePerKilo: 50,
       currency: 'PHP'
     };
   } catch (error) {
     console.error('Error getting seed price info:', error);
+    // For vegetatively propagated crops or errors, use PHP 50 as minimal cost
     return {
-      seedPricePerKilo: 1000,
+      seedPricePerKilo: 50,
       currency: 'PHP'
     };
   }
@@ -494,37 +497,215 @@ export const calculateProfitProjection = async (
     const totalEstimatedYield = await calculateEstimatedYield(cropName, landArea);
     console.log('Total estimated yield:', totalEstimatedYield);
     
-    // Calculate suggested capital based on maximum yield range of the specific crop
+    // Calculate suggested capital based on realistic farming costs
     // First, get the max yield range for this crop
     const yieldRanges = await getCropYieldRanges(cropName);
     const maxYieldPer0_1Ha = yieldRanges.maxKGPer0_1Ha;
     
-    // Calculate max yield for the given land area
-    const landAreaIn0_1Ha = landArea * 10;
-    const maxTotalYield = landAreaIn0_1Ha * maxYieldPer0_1Ha;
+    // Calculate realistic farming costs per hectare
+    // Based on Philippine agricultural data and crop-specific requirements
     
-    // Base capital calculation on seed costs for maximum yield
-    // We assume that achieving maximum yield requires optimal investment
-    const seedCostPerHectare = seedInfo.seedPricePerKilo * 5; // Same as before
-    const totalSeedCost = landArea * seedCostPerHectare;
+    // Define crop-specific cost multipliers based on crop type
+    // Different crops have different requirements for fertilizer, labor, pest control, etc.
+    const cropType = cropName.toLowerCase();
     
-    // Scale the suggested capital based on the ratio of max yield to average yield
-    // This reflects that higher yields typically require more inputs
-    const avgYieldPer0_1Ha = (yieldRanges.minKGPer0_1Ha + yieldRanges.maxKGPer0_1Ha) / 2;
-    const yieldRatio = maxYieldPer0_1Ha / avgYieldPer0_1Ha;
+    // Determine crop category and apply appropriate multipliers
+    let fertilizerMultiplier = 1.0;
+    let laborMultiplier = 1.0;
+    let pestControlMultiplier = 1.0;
+    let irrigationMultiplier = 1.0;
+    let seedingRatePerHectare = 3; // Default: 3 kg per hectare
     
-    // Calculate minimum required capital and scale it based on yield ratio
-    const minimumRequiredCapital = totalSeedCost / 0.3; // If 30% goes to seed costs
-    const suggestedCapital = minimumRequiredCapital * 1.2 * yieldRatio; // Add 20% buffer and scale by yield ratio
+    // Fruiting vegetables (tomatoes, eggplant, peppers, squash, etc.)
+    // Need more fertilizer, pest control, and longer growing period
+    if (cropType.includes('tomato') || cropType.includes('kamatis') ||
+        cropType.includes('eggplant') || cropType.includes('talong') ||
+        cropType.includes('pepper') || cropType.includes('sili') || cropType.includes('bell') ||
+        cropType.includes('squash') || cropType.includes('kalabasa') ||
+        cropType.includes('ampalaya') || cropType.includes('bitter') ||
+        cropType.includes('cucumber') || cropType.includes('pipino') ||
+        cropType.includes('patola') || cropType.includes('upo') ||
+        cropType.includes('okra')) {
+      fertilizerMultiplier = 1.3;      // Need more fertilizer for fruiting
+      laborMultiplier = 1.2;           // Longer growing period, more maintenance
+      pestControlMultiplier = 1.4;     // Fruit-bearing crops are more susceptible to pests
+      irrigationMultiplier = 1.1;      // Moderate water needs
+      seedingRatePerHectare = 2.5;     // Larger seeds, spaced planting
+    }
+    // Leafy vegetables (pechay, lettuce, kangkong, mustard)
+    // Need less fertilizer but more frequent watering and shorter growing cycle
+    else if (cropType.includes('pechay') || cropType.includes('bok choy') ||
+             cropType.includes('lettuce') || cropType.includes('litsugas') ||
+             cropType.includes('mustard') || cropType.includes('mustasa')) {
+      fertilizerMultiplier = 0.8;      // Less fertilizer needed
+      laborMultiplier = 0.9;           // Shorter growing cycle (30-45 days)
+      pestControlMultiplier = 0.9;     // Less pest issues
+      irrigationMultiplier = 1.3;      // Need frequent watering
+      seedingRatePerHectare = 2;       // Small seeds, dense planting
+    }
+    // Legumes/Beans (sitao, peas, beans)
+    // Need less nitrogen (fix their own) but more phosphorus/potassium
+    else if (cropType.includes('beans') || cropType.includes('bagiw') ||
+             cropType.includes('peas') || cropType.includes('kadyos') || cropType.includes('chicharo') ||
+             cropType.includes('sitao') || cropType.includes('yardlong')) {
+      fertilizerMultiplier = 0.9;      // Less fertilizer (nitrogen-fixing)
+      laborMultiplier = 1.1;           // Trellis setup, multiple harvests
+      pestControlMultiplier = 1.1;     // Some pest issues
+      irrigationMultiplier = 1.0;      // Moderate water needs
+      seedingRatePerHectare = 4;       // More seeds needed
+    }
+    // Cabbage family (cabbage, cauliflower, broccoli)
+    // Heavy feeders, need lots of fertilizer and pest control
+    else if (cropType.includes('cabbage') || cropType.includes('repolyo') ||
+             cropType.includes('cauliflower') || cropType.includes('koliflower') ||
+             cropType.includes('broccoli')) {
+      fertilizerMultiplier = 1.4;      // Heavy feeders
+      laborMultiplier = 1.1;           // Careful handling required
+      pestControlMultiplier = 1.5;     // Very susceptible to pests
+      irrigationMultiplier = 1.1;      // Moderate to high water needs
+      seedingRatePerHectare = 1.5;     // Transplanted, fewer seeds needed
+    }
+    // Onion/Garlic
+    // Long growing period, specialized care
+    else if (cropType.includes('onion') || cropType.includes('sibuyas') ||
+             cropType.includes('garlic') || cropType.includes('bawang')) {
+      fertilizerMultiplier = 1.2;      // Moderate to high fertilizer
+      laborMultiplier = 1.3;           // Long growing period, careful harvesting
+      pestControlMultiplier = 1.2;     // Moderate pest control
+      irrigationMultiplier = 0.9;      // Less water needed as they mature
+      seedingRatePerHectare = 5;       // High seeding rate (sets/bulbs)
+    }
+    // Root crops & tubers (sweet potato, taro, cassava, yam, ginger, turmeric)
+    // Need more fertilizer for root development and specialized soil preparation
+    else if (cropType.includes('kamote') || cropType.includes('sweet potato') ||
+             cropType.includes('gabi') || cropType.includes('taro') ||
+             cropType.includes('ube') || cropType.includes('yam') ||
+             cropType.includes('cassava') || cropType.includes('kamoteng') ||
+             cropType.includes('ginger') || cropType.includes('luya') ||
+             cropType.includes('turmeric') || cropType.includes('luyang') ||
+             cropType.includes('arrowroot') || cropType.includes('araru') ||
+             cropType.includes('singkamas') || cropType.includes('jicama') ||
+             cropType.includes('potato') || cropType.includes('patatas') ||
+             cropType.includes('carrot') || cropType.includes('karot') ||
+             cropType.includes('radish') || cropType.includes('labanos')) {
+      fertilizerMultiplier = 1.3;      // More fertilizer for root/tuber growth
+      laborMultiplier = 1.2;           // Soil prep, hilling, careful harvesting
+      pestControlMultiplier = 1.1;     // Soil pests are common
+      irrigationMultiplier = 1.0;      // Moderate water needs
+      seedingRatePerHectare = 5;       // High seeding rate (tubers/cuttings)
+    }
+    // Herbs & spices (lemongrass, chives, chili)
+    // Lower input costs, easier to maintain
+    else if (cropType.includes('tanglad') || cropType.includes('lemongrass') ||
+             cropType.includes('chives') || cropType.includes('kutsay') ||
+             cropType.includes('chili') || cropType.includes('sili') ||
+             cropType.includes('labuyo')) {
+      fertilizerMultiplier = 0.9;      // Moderate fertilizer
+      laborMultiplier = 0.9;           // Low maintenance once established
+      pestControlMultiplier = 0.9;     // Natural pest resistance
+      irrigationMultiplier = 0.9;      // Drought tolerant
+      seedingRatePerHectare = 2;       // Low seeding rate
+    }
+    // Leafy greens & salad vegetables (spinach, amaranth, jute mallow, water spinach)
+    // Fast growing, need frequent watering
+    else if (cropType.includes('spinach') || cropType.includes('alugbati') ||
+             cropType.includes('amaranth') || cropType.includes('kolitis') || cropType.includes('uray') ||
+             cropType.includes('saluyot') || cropType.includes('jute') ||
+             cropType.includes('kangkong') || cropType.includes('water spinach') ||
+             cropType.includes('moringa') || cropType.includes('malunggay') ||
+             cropType.includes('fern') || cropType.includes('pako') ||
+             cropType.includes('camote tops') || cropType.includes('talbos') ||
+             cropType.includes('chayote leaves') || cropType.includes('dahon ng sayote') ||
+             cropType.includes('gabi leaves') || cropType.includes('dahon ng gabi') ||
+             cropType.includes('onion leaves') || cropType.includes('dahon ng sibuyas')) {
+      fertilizerMultiplier = 0.8;      // Less fertilizer for leafy crops
+      laborMultiplier = 0.9;           // Short growing cycle
+      pestControlMultiplier = 0.9;     // Fewer pest issues
+      irrigationMultiplier = 1.3;      // Need frequent watering
+      seedingRatePerHectare = 2;       // Small seeds, dense planting
+    }
+    // Specialty vegetables (mushroom, bamboo shoot, bean sprouts, banana blossom, squash blossom)
+    // Unique growing requirements
+    else if (cropType.includes('mushroom') ||
+             cropType.includes('bamboo') || cropType.includes('labong') ||
+             cropType.includes('sprout') || cropType.includes('togue') ||
+             cropType.includes('banana blossom') || cropType.includes('puso ng saging') ||
+             cropType.includes('squash blossom') || cropType.includes('bulaklak ng kalabasa') ||
+             cropType.includes('tamarind') || cropType.includes('sampaloc')) {
+      fertilizerMultiplier = 0.9;      // Varied requirements
+      laborMultiplier = 1.0;           // Moderate labor
+      pestControlMultiplier = 0.8;     // Controlled environment
+      irrigationMultiplier = 1.0;      // Moderate water
+      seedingRatePerHectare = 2;       // Low to moderate
+    }
+    // Rice varieties
+    // Different from vegetables - paddy field cultivation
+    else if (cropType.includes('rice') || cropType.includes('bigas')) {
+      fertilizerMultiplier = 1.1;      // Moderate fertilizer
+      laborMultiplier = 1.2;           // Transplanting, harvesting
+      pestControlMultiplier = 1.1;     // Common rice pests
+      irrigationMultiplier = 1.5;      // High water needs (paddy)
+      seedingRatePerHectare = 40;      // Very high seeding rate (kg/hectare for rice)
+    }
     
-    console.log('Calculated capital - seedCostPerHectare:', seedCostPerHectare, 'totalSeedCost:', totalSeedCost, 'minimumRequiredCapital:', minimumRequiredCapital, 'suggestedCapital:', suggestedCapital);
+    // 1. Seed/Planting Material Costs (based on actual seeding rates)
+    const seedCostPerHectare = seedInfo.seedPricePerKilo * seedingRatePerHectare;
+    
+    // 2. Fertilizer Costs (NPK + organic) - crop-specific
+    // Base: PHP 12,000 per hectare
+    const fertilizerCostPerHectare = 12000 * fertilizerMultiplier;
+    
+    // 3. Labor Costs (planting, maintenance, harvesting) - crop-specific
+    // Base: PHP 20,000 per hectare
+    const laborCostPerHectare = 20000 * laborMultiplier;
+    
+    // 4. Pest Control & Chemicals - crop-specific
+    // Base: PHP 7,500 per hectare
+    const pestControlCostPerHectare = 7500 * pestControlMultiplier;
+    
+    // 5. Irrigation & Water - crop-specific
+    // Base: PHP 4,500 per hectare
+    const irrigationCostPerHectare = 4500 * irrigationMultiplier;
+    
+    // 6. Equipment & Tools (amortized)
+    // PHP 3,500 per hectare (relatively constant)
+    const equipmentCostPerHectare = 3500;
+    
+    // 7. Miscellaneous & Contingency (10% of total)
+    const subtotalPerHectare = seedCostPerHectare + fertilizerCostPerHectare + 
+                              laborCostPerHectare + pestControlCostPerHectare + 
+                              irrigationCostPerHectare + equipmentCostPerHectare;
+    const miscellaneousCostPerHectare = subtotalPerHectare * 0.10;
+    
+    // Total realistic cost per hectare
+    const totalCostPerHectare = subtotalPerHectare + miscellaneousCostPerHectare;
+    
+    // Calculate suggested capital for the given land area
+    const suggestedCapital = totalCostPerHectare * landArea;
+    
+    // Apply a small buffer (5%) for unexpected costs
+    const suggestedCapitalWithBuffer = suggestedCapital * 1.05;
+    
+    console.log('Realistic capital calculation -', {
+      cropName,
+      seedCostPerHectare,
+      fertilizerCostPerHectare,
+      laborCostPerHectare,
+      pestControlCostPerHectare,
+      irrigationCostPerHectare,
+      equipmentCostPerHectare,
+      miscellaneousCostPerHectare,
+      totalCostPerHectare,
+      landArea,
+      suggestedCapital: suggestedCapitalWithBuffer
+    });
     
     // Calculate values based on user's investment
     // If investment is 0, yield and profit should also be 0
     const userInvestment = Number(puhunan) || 0;
     const estimatedYield = userInvestment === 0 ? 0 : 
         totalEstimatedYield * 
-        (Math.abs(userInvestment - suggestedCapital) < 0.01 || userInvestment > suggestedCapital ? 1 : (userInvestment / suggestedCapital));
+        (Math.abs(userInvestment - suggestedCapitalWithBuffer) < 0.01 || userInvestment > suggestedCapitalWithBuffer ? 1 : (userInvestment / suggestedCapitalWithBuffer));
     
     // Calculate potential revenue using predicted price
     const potentialRevenue = estimatedYield * predictedPrice; // Revenue = yield (kg) * price (PHP/kg)
@@ -547,7 +728,7 @@ export const calculateProfitProjection = async (
       profitMargin,
       marketTrend: marketData.trend,
       averageMarketPrice: predictedPrice, // Use predicted price instead of average
-      suggestedCapital: suggestedCapital
+      suggestedCapital: suggestedCapitalWithBuffer
     };
     
     console.log('Returning profit projection result:', result);
@@ -581,8 +762,9 @@ export const getCropInsights = async (
   landArea: number,
   puhunan: number
 ) => {
-  // Create cache key based on crop name and soil type (same pattern as MarketDemand)
-  const cacheKey = `${cropName.toLowerCase()}-${soilType.toLowerCase()}`;
+  // Create cache key based on crop name, soil type, AND land area
+  // IMPORTANT: landArea must be included because suggested capital and yield depend on it
+  const cacheKey = `${cropName.toLowerCase()}-${soilType.toLowerCase()}-${landArea}`;
   
   // OPTIMIZATION: Check localStorage cache first (like MarketDemand & CropPrescription)
   const cachedData = getCachedCropInsights(cacheKey);

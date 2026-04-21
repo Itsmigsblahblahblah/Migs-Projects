@@ -206,7 +206,25 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
                         <div className={`p-4 rounded-lg border ${investmentBelowSuggested ? 'bg-destructive/10 border-destructive' : 'bg-primary/10 border-primary'}`}>
                             <div className="flex justify-between items-start">
                                 <p className="text-sm text-muted-foreground mb-1">Your Investment</p>
-                                <InfoTooltip content={`The total amount you've invested in seeds, fertilizers, labor, and other expenses for this crop. This includes:\n• Seeds/Cost of planting material: ₱${(userInvestment * 0.3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Fertilizers and soil amendments: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Labor costs: ₱${(userInvestment * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Pest control and other chemicals: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n• Miscellaneous expenses: ₱${(userInvestment * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}\n\nInvestment Distribution by Stage:\n• Planting Stage: 40% (₱${(userInvestment * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})\n• Growth Stage: 45% (₱${(userInvestment * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})\n• Harvest Stage: 15% (₱${(userInvestment * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'})\n\nTotal Investment: ₱${userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+                                <InfoTooltip content={`Your Investment Breakdown for ${crop.name}:
+
+Total Investment: ₱${userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+Land Area: ${crop.landArea || 0} hectare(s)
+
+Estimated Cost Distribution:
+• Seeds/Planting material: ₱${(userInvestment * 0.02).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Fertilizers (NPK + organic): ₱${(userInvestment * 0.26).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Labor costs: ₱${(userInvestment * 0.35).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Pest control & chemicals: ₱${(userInvestment * 0.14).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Irrigation & water: ₱${(userInvestment * 0.08).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Equipment & tools: ₱${(userInvestment * 0.06).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Subtotal: ₱${(userInvestment * 0.91).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Contingency (10%): ₱${(userInvestment * 0.09).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+Investment by Growth Stage:
+• Planting Stage (35%): ₱${(userInvestment * 0.35).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Growth & Maintenance (45%): ₱${(userInvestment * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Harvest Stage (20%): ₱${(userInvestment * 0.20).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
                             </div>
                             <p className={`text-xl font-bold ${investmentBelowSuggested ? 'text-destructive' : 'text-primary'}`}>₱{userInvestment.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             {/* Show warning if investment is less than suggested capital */}
@@ -233,19 +251,25 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
                             <div className="p-4 bg-yellow-500/10 rounded-lg border border-yellow-500">
                                 <div className="flex justify-between items-start">
                                     <p className="text-sm text-muted-foreground mb-1">Est. Suggested Capital</p>
-                                    <InfoTooltip content={`The recommended minimum investment needed for optimal growth of your crop based on current market conditions. This includes:
-• Seeds/Cost of planting material: ₱${suggestedCapital ? (suggestedCapital * 0.3).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-• Fertilizers and soil amendments: ₱${suggestedCapital ? (suggestedCapital * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-• Labor costs: ₱${suggestedCapital ? (suggestedCapital * 0.25).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-• Pest control and other chemicals: ₱${suggestedCapital ? (suggestedCapital * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-• Miscellaneous expenses: ₱${suggestedCapital ? (suggestedCapital * 0.1).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                                    <InfoTooltip content={`Suggested Capital Breakdown for ${crop.name}:
 
-Investment Distribution by Stage:
-• Planting Stage: 40% (₱${suggestedCapital ? (suggestedCapital * 0.4).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'})
-• Growth Stage: 45% (₱${suggestedCapital ? (suggestedCapital * 0.45).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'})
-• Harvest Stage: 15% (₱${suggestedCapital ? (suggestedCapital * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'})
+Land Area: ${crop.landArea || 0} hectare(s)
 
-Total Suggested Capital: ₱${Number(suggestedCapital || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+Cost Components (per hectare):
+• Seeds/Planting material: ₱${((insights?.profit?.suggestedCapital || 0) / (crop.landArea || 1) * 0.02).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Fertilizers (NPK + organic): ₱${((insights?.profit?.suggestedCapital || 0) / (crop.landArea || 1) * 0.26).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Labor costs: ₱${((insights?.profit?.suggestedCapital || 0) / (crop.landArea || 1) * 0.35).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Pest control & chemicals: ₱${((insights?.profit?.suggestedCapital || 0) / (crop.landArea || 1) * 0.14).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Irrigation & water: ₱${((insights?.profit?.suggestedCapital || 0) / (crop.landArea || 1) * 0.08).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Equipment & tools: ₱${((insights?.profit?.suggestedCapital || 0) / (crop.landArea || 1) * 0.06).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Subtotal: ₱${((insights?.profit?.suggestedCapital || 0) / (crop.landArea || 1) * 0.91).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+• Contingency (10%): ₱${((insights?.profit?.suggestedCapital || 0) / (crop.landArea || 1) * 0.09).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+Total per hectare: ₱${((insights?.profit?.suggestedCapital || 0) / (crop.landArea || 1)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+Grand Total (${crop.landArea || 0} ha × ₱${((insights?.profit?.suggestedCapital || 0) / (crop.landArea || 1)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}): ₱${Number(suggestedCapital || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+Note: Costs vary by crop type based on fertilizer needs, pest susceptibility, labor requirements, and growing period.`} />
                                 </div>
                                 <p className="text-xl font-bold text-yellow-500">₱{Number(suggestedCapital || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                 {investmentExceedsSuggested && (

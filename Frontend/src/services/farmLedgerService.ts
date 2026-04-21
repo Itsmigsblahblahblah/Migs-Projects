@@ -32,7 +32,9 @@ const preFetchCropInsights = async (crops: any[]): Promise<void> => {
   for (const crop of crops) {
     const cropName = (crop.name || 'Unknown').toLowerCase();
     const soilType = (crop.soilType || 'default').toLowerCase();
-    const cacheKey = `${cropName}-${soilType}`;
+    const landArea = crop.landArea || 0;
+    // IMPORTANT: Include landArea in cache key because suggested capital and yield depend on it
+    const cacheKey = `${cropName}-${soilType}-${landArea}`;
     
     // Only fetch if not already cached or in-flight
     if (!INSIGHTS_CACHE[cacheKey] && !PENDING_REQUESTS[cacheKey]) {
@@ -71,7 +73,8 @@ const getCachedCropInsights = async (
   landArea: number,
   puhunan: number
 ): Promise<any> => {
-  const cacheKey = `${cropName.toLowerCase()}-${soilType.toLowerCase()}`;
+  // IMPORTANT: Include landArea in cache key because suggested capital and yield depend on it
+  const cacheKey = `${cropName.toLowerCase()}-${soilType.toLowerCase()}-${landArea}`;
   
   // Return from cache if available (INSTANT!)
   if (INSIGHTS_CACHE[cacheKey]) {
