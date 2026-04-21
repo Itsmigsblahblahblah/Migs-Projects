@@ -334,6 +334,12 @@ async def root():
             "auth_endpoints": "/auth/docs for authentication endpoints"}
 
 
+@app.get("/health")
+@app.head("/health")
+async def health():
+    return Response(status_code=200)
+
+
 @app.post("/train-demand-level-models")
 async def train_demand_level_models():
     """Train separate models for each demand level"""
