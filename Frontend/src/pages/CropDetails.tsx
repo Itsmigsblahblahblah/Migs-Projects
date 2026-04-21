@@ -127,27 +127,38 @@ const CropDetails = () => {
     };
 
     useEffect(() => {
+        console.log('[CropDetails] useEffect triggered, id:', id);
+        let isMounted = true; // Track if component is still mounted
+
         const fetchCrop = async () => {
+            console.log('[CropDetails] Starting fetchCrop...');
+            
             if (!id) {
-                setLoading(false);
+                console.log('[CropDetails] No ID provided, setting loading to false');
+                if (isMounted) setLoading(false);
                 return;
             }
 
             try {
                 // Wait for crops to be loaded
                 if (!cropsLoaded) {
+                    console.log('[CropDetails] Crops not loaded yet, calling loadCrops...');
                     await loadCrops();
                     setCropsLoaded(true);
                 }
 
+                console.log('[CropDetails] Getting crop by ID:', id);
                 const cropData = getCropById(id);
-                console.log('Crop data loaded:', cropData);
-                if (cropData) {
+                console.log('[CropDetails] Crop data retrieved:', cropData ? 'Found' : 'Not found');
+                
+                if (cropData && isMounted) {
+                    console.log('[CropDetails] Setting crop data');
                     setCrop(cropData);
 
                     // Load checklist from database or generate new one
                     let loadedChecklist: ChecklistItem[] = [];
                     if (cropData.checklist && cropData.checklist.length > 0) {
+                        console.log('[CropDetails] Using existing checklist');
                         // Use existing checklist from database but ensure it has all items
                         loadedChecklist = ensureCompleteChecklist(cropData.checklist, cropData.name);
 
@@ -155,41 +166,47 @@ const CropDetails = () => {
                         const originalLength = cropData.checklist.length;
                         const newLength = loadedChecklist.length;
                         if (newLength > originalLength) {
-                            // Save updated checklist to database
+                            console.log('[CropDetails] Saving updated checklist');
                             try {
                                 await updateCrop(cropData.id, { checklist: loadedChecklist });
                             } catch (error) {
-                                console.error("Error saving updated checklist to database:", error);
+                                console.error("[CropDetails] Error saving updated checklist:", error);
                             }
                         }
                     } else {
+                        console.log('[CropDetails] Generating new checklist');
                         // Generate new checklist based on crop type
                         loadedChecklist = generateChecklist(cropData.name);
                     }
-                    setChecklist(loadedChecklist);
+                    
+                    if (isMounted) {
+                        setChecklist(loadedChecklist);
 
-                    // Initialize productivity data
-                    const initialData = loadedChecklist.map(item => ({
-                        task: item.title,
-                        productivity: item.completed ? 100 : 0
-                    }));
+                        // Initialize productivity data
+                        const initialData = loadedChecklist.map(item => ({
+                            task: item.title,
+                            productivity: item.completed ? 100 : 0
+                        }));
 
-                    // Add overall productivity at the end
-                    const completed = loadedChecklist.filter(item => item.completed).length;
-                    const total = loadedChecklist.length;
-                    const overallProductivity = total > 0 ? Math.round((completed / total) * 100) : 0;
+                        // Add overall productivity at the end
+                        const completed = loadedChecklist.filter(item => item.completed).length;
+                        const total = loadedChecklist.length;
+                        const overallProductivity = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-                    initialData.push({
-                        task: "Overall Progress",
-                        productivity: overallProductivity
-                    });
+                        initialData.push({
+                            task: "Overall Progress",
+                            productivity: overallProductivity
+                        });
 
-                    setProductivityData(initialData);
+                        setProductivityData(initialData);
+                    }
 
                     // Fetch data in background WITHOUT blocking UI rendering
                     // This prevents page crashes when backend is slow
                     const fetchHarvestData = async () => {
-                        console.log('Checking harvest data conditions:', {
+                        if (!isMounted) return;
+                        
+                        console.log('[CropDetails-Harvest] Checking harvest data conditions:', {
                             hasPlantedDate: !!cropData.plantedDate,
                             hasHarvestData: !!cropData.harvestData,
                             harvestDataKeys: cropData.harvestData ? Object.keys(cropData.harvestData) : null
@@ -197,86 +214,120 @@ const CropDetails = () => {
                         
                         if (cropData.plantedDate && (!cropData.harvestData || Object.keys(cropData.harvestData).length === 0)) {
                             try {
+                                console.log('[CropDetails-Harvest] Fetching new harvest estimate...');
                                 const plantedDate = typeof cropData.plantedDate === 'string'
                                     ? new Date(cropData.plantedDate)
                                     : cropData.plantedDate.toDate
                                         ? cropData.plantedDate.toDate()
                                         : new Date(cropData.plantedDate);
 
-                                console.log('Calling getHarvestEstimate with:', {
-                                    cropName: cropData.name,
-                                    plantedDate: plantedDate,
-                                    location: "Majayjay, Laguna"
-                                });
-
+                                console.log('[CropDetails-Harvest] Calling getHarvestEstimate...');
                                 const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
-                                console.log('Harvest info received:', harvestInfo);
+                                console.log('[CropDetails-Harvest] Harvest info received');
 
                                 // Save harvest data to crop record
-                                if (cropData.id) {
+                                if (cropData.id && isMounted) {
+                                    console.log('[CropDetails-Harvest] Saving harvest data to Firestore');
                                     await updateCrop(cropData.id, { harvestData: harvestInfo });
                                 }
 
-                                setHarvestData(harvestInfo);
-                            } catch (error) {
-                                console.error("Error fetching harvest estimate:", error);
+                                if (isMounted) {
+                                    console.log('[CropDetails-Harvest] Setting harvest data state');
+                                    setHarvestData(harvestInfo);
+                                }
+                            } catch (error: any) {
+                                console.error("[CropDetails-Harvest] Error fetching harvest estimate:", error);
+                                console.error("[CropDetails-Harvest] Error details:", {
+                                    message: error.message,
+                                    stack: error.stack,
+                                    name: error.name
+                                });
                                 // Don't crash, just log and continue
                             }
                         } else if (cropData.harvestData) {
                             // Use existing harvest data
-                            console.log('Using existing harvest data:', cropData.harvestData);
-                            setHarvestData(cropData.harvestData);
+                            console.log('[CropDetails-Harvest] Using existing harvest data');
+                            if (isMounted) setHarvestData(cropData.harvestData);
+                        } else {
+                            console.log('[CropDetails-Harvest] No harvest data needed');
                         }
                     };
                     
                     const fetchMarketData = async () => {
+                        if (!isMounted) return;
+                        
                         if (cropData.marketData) {
                             // Use existing market data
-                            console.log('[CropDetails] Using cached marketData from Firestore');
-                            setMarketData(cropData.marketData);
+                            console.log('[CropDetails-Market] Using cached marketData from Firestore');
+                            if (isMounted) setMarketData(cropData.marketData);
                         } else {
                             // Fetch new market data
-                            console.log('[CropDetails] Fetching fresh market data from API');
+                            console.log('[CropDetails-Market] Fetching fresh market data from API');
                             try {
+                                console.log('[CropDetails-Market] Calling getCropInsights...');
                                 const insights = await getCropInsights(
                                     cropData.name,
                                     cropData.soilType,
                                     cropData.landArea,
                                     cropData.puhunan
                                 );
+                                console.log('[CropDetails-Market] Market data received');
 
                                 // Save market data to crop record
-                                if (cropData.id) {
+                                if (cropData.id && isMounted) {
+                                    console.log('[CropDetails-Market] Saving market data to Firestore');
                                     await updateCrop(cropData.id, { marketData: insights });
                                 }
 
-                                setMarketData(insights);
-                            } catch (error) {
-                                console.error("Error fetching market data:", error);
+                                if (isMounted) {
+                                    console.log('[CropDetails-Market] Setting market data state');
+                                    setMarketData(insights);
+                                }
+                            } catch (error: any) {
+                                console.error("[CropDetails-Market] Error fetching market data:", error);
+                                console.error("[CropDetails-Market] Error details:", {
+                                    message: error.message,
+                                    stack: error.stack,
+                                    name: error.name
+                                });
                                 // Don't crash, just log and continue
                             }
                         }
                     };
                     
+                    console.log('[CropDetails] Starting background data fetch...');
                     // Fetch in background WITHOUT blocking UI
                     // Using Promise.allSettled to prevent one failure from crashing the other
                     Promise.allSettled([
                         fetchHarvestData(),
                         fetchMarketData()
                     ]).then(results => {
-                        console.log('Background data fetching completed:', results);
+                        console.log('[CropDetails] Background data fetching completed:', results);
                     }).catch(error => {
-                        console.error('Error in background data fetching:', error);
+                        console.error('[CropDetails] Error in background data fetching:', error);
                     });
                 }
-            } catch (error) {
-                console.error("Error fetching crop:", error);
+            } catch (error: any) {
+                console.error("[CropDetails] Error fetching crop:", error);
+                console.error("[CropDetails] Error details:", {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name
+                });
+                // Don't crash, just log error
             } finally {
-                setLoading(false);
+                console.log('[CropDetails] FetchCrop completed, setting loading to false');
+                if (isMounted) setLoading(false);
             }
         };
 
         fetchCrop();
+        
+        // Cleanup function
+        return () => {
+            console.log('[CropDetails] Cleanup - component unmounting');
+            isMounted = false;
+        };
     }, [id, getCropById, loadCrops, cropsLoaded]);
 
     const toggleChecklistItem = async (itemId: string) => {
