@@ -54,7 +54,7 @@ app.include_router(routes.config_routes.app)  # Add Firebase config routes
 @app.on_event("startup")
 async def startup_event():
     """Lightweight startup - models are loaded on-demand (lazy loading).
-    
+
     Models will be loaded when first requested, not at startup.
     This ensures the server becomes ready immediately for Render deployment.
     """

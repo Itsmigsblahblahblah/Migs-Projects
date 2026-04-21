@@ -21,13 +21,14 @@ model = None
 _model_loading = False
 _model_loaded = False
 
+
 def _load_model_if_needed():
     """Lazy load the model on first use (thread-safe)"""
     global model, _model_loading, _model_loaded
-    
+
     if _model_loaded or model is not None:
         return
-    
+
     if _model_loading:
         # Another thread is already loading, wait briefly
         import time
@@ -36,7 +37,7 @@ def _load_model_if_needed():
             if _model_loaded:
                 return
         return  # Timeout, proceed anyway
-    
+
     _model_loading = True
     try:
         logger.info("Loading vegetable demand model (first request)...")
@@ -84,7 +85,7 @@ async def predict_demand(data: dict):
     try:
         # Lazy load model on first use
         _load_model_if_needed()
-        
+
         # Check if model is loaded
         if model is None:
             raise HTTPException(status_code=500, detail="Model not loaded")
@@ -142,7 +143,7 @@ async def recommend_crops(top_n: int = 10, month: int | None = None, year: int |
     try:
         # Lazy load model on first use
         _load_model_if_needed()
-        
+
         # Check if model is loaded
         if model is None:
             raise HTTPException(status_code=500, detail="Model not loaded")
@@ -319,5 +320,5 @@ async def get_vegetable_data(vegetable_name: str, vegetable_file: str = 'Data/ve
 async def health_check():
     # Lazy load model on first use
     _load_model_if_needed()
-    
+
     return {"status": "healthy", "model_loaded": model is not None}
