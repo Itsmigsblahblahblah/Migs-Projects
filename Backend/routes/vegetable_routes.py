@@ -66,7 +66,7 @@ async def predict_demand(data: dict):
 
     Expected input format:
     {
-        "vegetable_name": "CABBAGE (REPOLYO), 1 KG",
+        "vegetable_name": "Cabbage",
         "historical_prices": [73.71, 69.06, 67.27, ...],
         "historical_annual_prices": [80.68, 80.68, 80.68, ...],
         "historical_months": [1, 2, 3, ...]
@@ -74,7 +74,7 @@ async def predict_demand(data: dict):
 
     Returns:
     {
-        "vegetable": "CABBAGE (REPOLYO), 1 KG",
+        "vegetable": "Cabbage",
         "predicted_price": 75.23,
         "current_avg_price": 70.02,
         "price_change": 5.21,
@@ -129,7 +129,7 @@ async def recommend_crops(top_n: int = 10, month: int | None = None, year: int |
     {
         "recommended_crops": [
             {
-                "vegetable": "CABBAGE (REPOLYO), 1 KG",
+                "vegetable": "Cabbage",
                 "predicted_price": 75.23,
                 "current_avg_price": 70.02,
                 "price_change": 5.21,

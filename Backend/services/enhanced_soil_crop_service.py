@@ -153,9 +153,21 @@ class EnhancedSoilCropTransformer:
         # Load vegetable price data
         try:
             veg_df = pd.read_csv(vegetable_file)
-            # Skip the first row which contains the header description
-            veg_df = veg_df.iloc[1:]
-            veg_df.columns = ['Vegetable', 'Year', 'Month',
+            # Check if the first row is a header or data
+            if veg_df.columns[0] == 'PHILIPPINES' or 'Vegetable' in veg_df.columns:
+                # File already has proper headers
+                if 'Vegetable' not in veg_df.columns:
+                    # Need to rename columns
+                    veg_df.columns = ['Vegetable', 'Year', 'Month',
+                                  'Price', 'Annual_Price', 'MonthNum', 'Date']
+                else:
+                    # Rename 'Annual Price' to 'Annual_Price' if needed
+                    if 'Annual Price' in veg_df.columns:
+                        veg_df = veg_df.rename(columns={'Annual Price': 'Annual_Price'})
+            else:
+                # Skip the first row which contains the header description
+                veg_df = veg_df.iloc[1:]
+                veg_df.columns = ['Vegetable', 'Year', 'Month',
                               'Price', 'Annual_Price', 'MonthNum', 'Date']
 
             # Convert data types
@@ -324,9 +336,9 @@ class EnhancedSoilCropTransformer:
 
         # Sample vegetables
         vegetables = [
-            "REPOLYO (CABBAGE), 1 KG", "KOLIFLOWER (CAULIFLOWER), 1 KG",
-            "AMPALAYA (BITTER GOURD), 1 KG", "TALONG (EGGPLANT), (NATIVE), 1 KG",
-            "OKRA, 1 KG", "SITAW (STRING BEAN), 1 KG", "BROKOLI (BROCCOLI), 1 KG"
+            "Cabbage", "Tomato",
+            "Ampalaya (Bitter Gourd)", "Talong (Eggplant)",
+            "Okra", "Sitaw (String Beans)", "Kangkong (Water Spinach)"
         ]
 
         # Generate synthetic data

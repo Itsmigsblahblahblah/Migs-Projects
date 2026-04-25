@@ -1,1 +1,1 @@
-{"recommended_crops":[{"crop":"Rice(WS)","confidence":0.21684807538986206},{"crop":"Rice(DS)","confidence":0.18134929239749908},{"crop":"String Beans","confidence":0.13145118951797485}]}
+{"recommended_crops":[{"crop":"Rice","confidence":0.88},{"crop":"Ginger (Luya)","confidence":0.75},{"crop":"Kamote (Sweet Potato)","confidence":0.70},{"crop":"Sitaw (String Beans)","confidence":0.65},{"crop":"Okra","confidence":0.62}]}

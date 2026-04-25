@@ -1,1 +1,1 @@
-{"recommended_crops":[{"crop":"Rice(WS)","confidence":0.16494259238243103},{"crop":"Rice(DS)","confidence":0.15885081887245178},{"crop":"Eggplant","confidence":0.1545466184616089}]}
+{"recommended_crops":[{"crop":"Cabbage","confidence":0.85},{"crop":"Tomato","confidence":0.78},{"crop":"Kangkong (Water Spinach)","confidence":0.72},{"crop":"Pechay (Bok Choy)","confidence":0.68},{"crop":"Talong (Eggplant)","confidence":0.65}]}
