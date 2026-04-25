@@ -14,8 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useFarmLedger } from "@/hooks/custom/useFarmLedger";
 import { format } from "date-fns";
 import LedgerContent from "@/components/dashboard/shared/LedgerContent";
-import { collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
+import AdminCropEditDialog from "@/components/dashboard/admin/AdminCropEditDialog";
 import {
   ArrowLeft,
   User,
@@ -29,7 +30,8 @@ import {
   Sprout,
   Send,
   MessageSquare,
-  Filter
+  Filter,
+  Edit
 } from "lucide-react";
 
 interface Farmer {
@@ -91,6 +93,11 @@ const FarmerDetailPage = () => {
     crop: 'all',
     soilType: 'all'
   });
+
+  // Admin crop edit dialog state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedCrop, setSelectedCrop] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Helper function to calculate harvest date
   const calculateHarvestDate = (plantedDate: any, cropName: string) => {
@@ -670,6 +677,42 @@ const FarmerDetailPage = () => {
     }
   };
 
+  // Handle admin crop data save
+  const handleAdminDataSave = async (cropId: string, adminData: any) => {
+    setIsSaving(true);
+    try {
+      const cropRef = doc(db, "farmerCrops", cropId);
+      await updateDoc(cropRef, {
+        adminData: {
+          ...adminData,
+          enteredBy: "admin@majayjay.farm",
+          enteredAt: Timestamp.now()
+        }
+      });
+      
+      // Update local state
+      setCrops(prev => prev.map(crop => 
+        crop.id === cropId ? { ...crop, adminData: { ...adminData, enteredBy: "admin@majayjay.farm", enteredAt: Timestamp.now() } } : crop
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Crop data updated successfully",
+      });
+      
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error("Error updating crop data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update crop data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Layout>
       <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -913,6 +956,20 @@ const FarmerDetailPage = () => {
                             <span>{calculateHarvestDate(crop.plantedDate, crop.name)}</span>
                           </div>
                         </div>
+                        <div className="mt-4 pt-3 border-t">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedCrop(crop);
+                              setIsEditDialogOpen(true);
+                            }}
+                            className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit Data
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -999,6 +1056,20 @@ const FarmerDetailPage = () => {
                             <span>{calculateHarvestDate(crop.plantedDate, crop.name)}</span>
                           </div>
                         </div>
+                        <div className="mt-4 pt-3 border-t">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedCrop(crop);
+                              setIsEditDialogOpen(true);
+                            }}
+                            className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit Data
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -1067,6 +1138,14 @@ const FarmerDetailPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Admin Crop Edit Dialog */}
+      <AdminCropEditDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        crop={selectedCrop}
+        onSave={handleAdminDataSave}
+      />
     </Layout>
   );
 };

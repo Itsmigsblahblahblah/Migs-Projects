@@ -273,6 +273,7 @@ const CropDetails = () => {
                                         console.log('[CropDetails] Loading fresh crop data in background (one-time)...');
                                         loadSingleCropRef.current(id).then((freshCrop) => {
                                             console.log('[CropDetails] Fresh crop loaded in background');
+                                            console.log('[CropDetails] Fresh crop adminData:', freshCrop?.adminData);
                                             // After fresh load, update UI
                                             if (isMounted && freshCrop) {
                                                 console.log('[CropDetails] Fresh data loaded, updating UI');

@@ -27,6 +27,32 @@ interface Crop {
     checklist?: ChecklistItem[]; // Add checklist field
     harvestData?: any; // Add harvest data field
     marketData?: any; // Add market data field
+    adminData?: { // Add admin-entered data field
+        marketPrice: number;
+        suggestedCapital: number;
+        fertilizerRecommendations: {
+            nitrogen: {
+                level: string;
+                recommendations: string[];
+                detailedInfo: string;
+                amount: string;
+            };
+            phosphorus: {
+                level: string;
+                recommendations: string[];
+                detailedInfo: string;
+                amount: string;
+            };
+            potassium: {
+                level: string;
+                recommendations: string[];
+                detailedInfo: string;
+                amount: string;
+            };
+        };
+        enteredBy: string;
+        enteredAt: any;
+    };
 }
 
 interface CropContextType {
@@ -187,6 +213,7 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                                 checklist: data.checklist || [],
                                 harvestData: data.harvestData || null,
                                 marketData: data.marketData || null,
+                                adminData: data.adminData || null,
                             });
                         });
 
@@ -239,6 +266,7 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                     checklist: data.checklist || [], // Load checklist data
                     harvestData: data.harvestData || null, // Load harvest data
                     marketData: data.marketData || null,  // Load market data
+                    adminData: data.adminData || null,  // Load admin data
 
                 });
             });
@@ -303,7 +331,17 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
             // Add to local state with the auto-generated ID
             const newCrop: Crop = {
                 id: docRef.id, // Use the auto-generated ID
-                ...cleanCropData
+                userId: userId,
+                name: cropData.name,
+                landArea: cropData.landArea,
+                soilType: cropData.soilType,
+                plantedDate: cropData.plantedDate,
+                puhunan: cropData.puhunan,
+                createdAt: newCropData.createdAt,
+                checklist: cropData.checklist || [],
+                harvestData: null,
+                marketData: null,
+                adminData: null,
             };
 
             setCrops(prev => [newCrop, ...prev]);
@@ -425,6 +463,7 @@ export const CropProvider = ({ children }: { children: ReactNode }) => {
                     checklist: data.checklist || [],
                     harvestData: data.harvestData || null,
                     marketData: data.marketData || null,
+                    adminData: data.adminData || null,
                 };
 
                 console.log('[CropContext] Single crop loaded:', crop.name);

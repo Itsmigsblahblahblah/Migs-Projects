@@ -62,6 +62,80 @@ const EnhancedSalesForecastCard = ({ crop }: EnhancedSalesForecastCardProps) => 
                 setLoading(true);
                 console.log('Fetching insights for crop:', crop?.name, 'with investment:', crop?.puhunan);
 
+                // Check if admin data exists
+                const hasAdminData = crop.adminData && crop.adminData.marketPrice;
+
+                // Use admin market price and suggested capital if available
+                if (hasAdminData) {
+                    console.log('[SalesForecast] Using admin data');
+                    const adminMarketPrice = crop.adminData.marketPrice;
+                    const adminSuggestedCapital = crop.adminData.suggestedCapital;
+                    const adminFertilizer = crop.adminData.fertilizerRecommendations;
+
+                    // Calculate values for chart data
+                    const userInvestment = Number(crop.puhunan) || 0;
+                    const suggestedCapital = adminSuggestedCapital;
+                    const baseYield = crop.landArea * 2000; // Base yield estimation
+
+                    // Recalculate estimated yield based on CURRENT user investment
+                    const estimatedYield = userInvestment === 0 ? 0 :
+                        baseYield *
+                        (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 ? 1 : (userInvestment / suggestedCapital));
+                    
+                    console.log('Calculating yield - userInvestment:', userInvestment, 'suggestedCapital:', suggestedCapital, 'baseYield:', baseYield, 'calculated estimatedYield:', estimatedYield);
+
+                    // Calculate potential revenue using admin market price
+                    const marketPrice = adminMarketPrice;
+                    const potentialRevenue = estimatedYield * marketPrice;
+
+                    // Calculate net profit based on user's investment
+                    const chartNetProfit = userInvestment === 0 ? 0 : potentialRevenue - userInvestment;
+
+                    // Generate sales forecast data
+                    const forecastData: SalesData[] = [
+                        {
+                            stage: "Planting",
+                            puhunan: userInvestment * 0.4,
+                            grossSales: 0,
+                            netProfit: -userInvestment * 0.4
+                        },
+                        {
+                            stage: "Growth",
+                            puhunan: userInvestment * 0.45,
+                            grossSales: potentialRevenue * 0.5,
+                            netProfit: (potentialRevenue * 0.5) - (userInvestment * 0.85)
+                        },
+                        {
+                            stage: "Harvest",
+                            puhunan: userInvestment * 0.15,
+                            grossSales: potentialRevenue,
+                            netProfit: chartNetProfit
+                        }
+                    ];
+
+                    setSalesForecastData(forecastData);
+                    
+                    // Set insights with admin data
+                    setInsights({
+                        market: {
+                            averagePrice: adminMarketPrice,
+                            trend: 'stable'
+                        },
+                        profit: {
+                            suggestedCapital: adminSuggestedCapital,
+                            estimatedYield: baseYield,
+                            averageMarketPrice: adminMarketPrice
+                        },
+                        fertilizer: {
+                            recommendations: adminFertilizer?.nitrogen?.recommendations || [],
+                            detailedRecommendations: adminFertilizer,
+                            pH: 'N/A'
+                        }
+                    });
+                    setLoading(false);
+                    return;
+                }
+
                 // The getCropInsights function now handles caching automatically
                 // It checks localStorage cache first (2 hour expiry), then memory cache, then API
                 const cropInsights = await getCropInsights(
