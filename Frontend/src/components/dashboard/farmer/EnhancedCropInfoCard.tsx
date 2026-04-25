@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Leaf, MapPin, Wheat, Droplets, TrendingUpIcon, Calendar, Sprout, Banknote, Scale, TrendingUp, TrendingDown, Minus, CheckCircle } from "lucide-react";
+import { Leaf, MapPin, Wheat, Droplets, TrendingUpIcon, Calendar, Sprout, Banknote, Scale, TrendingUp, TrendingDown, Minus, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCropInsights } from "@/services/cropDataService";
 import InfoTooltip from "@/components/ui/info-tooltip";
@@ -22,6 +22,7 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
     const [insights, setInsights] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
 
     // Check if admin data exists
     const hasAdminData = crop.adminData && crop.adminData.marketPrice;
@@ -298,133 +299,186 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                             </div>
                             
                             {hasAdminData ? (
-                                // Show admin fertilizer recommendations - Complete N, P, K display
-                                <div className="space-y-4">
-                                    {/* Nitrogen (N) */}
-                                    <div className="bg-white rounded-lg border-2 border-green-200 overflow-hidden">
-                                        <div className="bg-green-600 text-white px-4 py-2 flex items-center justify-between">
-                                            <h3 className="font-bold text-base">Nitrogen (N)</h3>
-                                            <Badge className="bg-white text-green-700 hover:bg-green-50">
-                                                Level: {crop.adminData.fertilizerRecommendations?.nitrogen?.level || 'N/A'}
-                                            </Badge>
-                                        </div>
-                                        <div className="p-4 space-y-3">
-                                            {/* Amount & Application */}
-                                            {crop.adminData.fertilizerRecommendations?.nitrogen?.amount && (
-                                                <div className="bg-green-50 rounded-md p-3 border border-green-200">
-                                                    <p className="text-xs font-semibold text-green-800 mb-1 uppercase tracking-wide">Amount & Application</p>
-                                                    <p className="text-sm text-green-900 font-medium">{crop.adminData.fertilizerRecommendations.nitrogen.amount}</p>
-                                                </div>
-                                            )}
-                                            
-                                            {/* Recommendations */}
-                                            {crop.adminData.fertilizerRecommendations?.nitrogen?.recommendations && crop.adminData.fertilizerRecommendations.nitrogen.recommendations.length > 0 && (
-                                                <div>
-                                                    <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Recommendations</p>
-                                                    <ul className="space-y-2">
-                                                        {crop.adminData.fertilizerRecommendations.nitrogen.recommendations.map((rec: string, index: number) => (
-                                                            <li key={index} className="flex items-start gap-2 text-sm">
-                                                                <span className="text-green-600 font-bold mt-0.5">•</span>
-                                                                <span className="text-gray-800">{rec}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                            
-                                            {/* Detailed Info */}
-                                            {crop.adminData.fertilizerRecommendations?.nitrogen?.detailedInfo && (
-                                                <div className="bg-gray-50 rounded-md p-3 border border-gray-200">
-                                                    <p className="text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wide">Detailed Info</p>
-                                                    <p className="text-sm text-gray-700 leading-relaxed">{crop.adminData.fertilizerRecommendations.nitrogen.detailedInfo}</p>
-                                                </div>
+                                // Show admin fertilizer recommendations - Expandable section with N, P, K in same row
+                                <div className="bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 rounded-lg border-2 border-gray-200 overflow-hidden">
+                                    {/* Clickable Header */}
+                                    <button 
+                                        onClick={() => setIsExpanded(!isExpanded)}
+                                        className="w-full p-4 hover:bg-white/50 transition-all duration-200 cursor-pointer"
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3 className="font-bold text-base text-gray-800">NPK Fertilizer Summary</h3>
+                                            {isExpanded ? (
+                                                <ChevronUp className="h-5 w-5 text-gray-600" />
+                                            ) : (
+                                                <ChevronDown className="h-5 w-5 text-gray-600" />
                                             )}
                                         </div>
-                                    </div>
+                                        
+                                        {/* N, P, K in same row - 3 columns */}
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {/* Nitrogen */}
+                                            <div className="bg-white rounded-lg p-3 border-2 border-green-300">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs font-bold text-green-700 uppercase">Nitrogen (N)</span>
+                                                    <Badge className="bg-green-600 text-white text-xs hover:bg-green-700">
+                                                        {crop.adminData.fertilizerRecommendations?.nitrogen?.level || 'N/A'}
+                                                    </Badge>
+                                                </div>
+                                                {!isExpanded && (
+                                                    <p className="text-xs text-gray-600 line-clamp-2">
+                                                        {crop.adminData.fertilizerRecommendations?.nitrogen?.amount || 'No data'}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Phosphorus */}
+                                            <div className="bg-white rounded-lg p-3 border-2 border-blue-300">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs font-bold text-blue-700 uppercase">Phosphorus (P)</span>
+                                                    <Badge className="bg-blue-600 text-white text-xs hover:bg-blue-700">
+                                                        {crop.adminData.fertilizerRecommendations?.phosphorus?.level || 'N/A'}
+                                                    </Badge>
+                                                </div>
+                                                {!isExpanded && (
+                                                    <p className="text-xs text-gray-600 line-clamp-2">
+                                                        {crop.adminData.fertilizerRecommendations?.phosphorus?.amount || 'No data'}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Potassium */}
+                                            <div className="bg-white rounded-lg p-3 border-2 border-purple-300">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs font-bold text-purple-700 uppercase">Potassium (K)</span>
+                                                    <Badge className="bg-purple-600 text-white text-xs hover:bg-purple-700">
+                                                        {crop.adminData.fertilizerRecommendations?.potassium?.level || 'N/A'}
+                                                    </Badge>
+                                                </div>
+                                                {!isExpanded && (
+                                                    <p className="text-xs text-gray-600 line-clamp-2">
+                                                        {crop.adminData.fertilizerRecommendations?.potassium?.amount || 'No data'}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        {!isExpanded && (
+                                            <p className="text-xs text-gray-500 mt-3 text-center">Click to expand details</p>
+                                        )}
+                                    </button>
+                                    
+                                    {/* Expandable Content - Shows below but aligned with each column */}
+                                    {isExpanded && (
+                                        <div className="border-t-2 border-gray-200 bg-white">
+                                            <div className="grid grid-cols-3 gap-3 p-4">
+                                                {/* Nitrogen Details */}
+                                                <div className="border-2 border-green-200 rounded-lg overflow-hidden">
+                                                    <div className="bg-green-600 text-white px-3 py-2">
+                                                        <h3 className="font-bold text-sm">Nitrogen (N)</h3>
+                                                    </div>
+                                                    <div className="p-3 space-y-2">
+                                                        {crop.adminData.fertilizerRecommendations?.nitrogen?.amount && (
+                                                            <div className="bg-green-50 rounded-md p-2 border border-green-200">
+                                                                <p className="text-xs font-semibold text-green-800 mb-1 uppercase">Amount</p>
+                                                                <p className="text-xs text-green-900">{crop.adminData.fertilizerRecommendations.nitrogen.amount}</p>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {crop.adminData.fertilizerRecommendations?.nitrogen?.recommendations && crop.adminData.fertilizerRecommendations.nitrogen.recommendations.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-gray-700 mb-1 uppercase">Tips</p>
+                                                                <ul className="space-y-1">
+                                                                    {crop.adminData.fertilizerRecommendations.nitrogen.recommendations.map((rec: string, index: number) => (
+                                                                        <li key={index} className="flex items-start gap-1 text-xs">
+                                                                            <span className="text-green-600 font-bold">•</span>
+                                                                            <span className="text-gray-700">{rec}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {crop.adminData.fertilizerRecommendations?.nitrogen?.detailedInfo && (
+                                                            <div className="bg-gray-50 rounded-md p-2 border border-gray-200">
+                                                                <p className="text-xs text-gray-700 leading-relaxed">{crop.adminData.fertilizerRecommendations.nitrogen.detailedInfo}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
 
-                                    {/* Phosphorus (P) */}
-                                    <div className="bg-white rounded-lg border-2 border-blue-200 overflow-hidden">
-                                        <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between">
-                                            <h3 className="font-bold text-base">Phosphorus (P)</h3>
-                                            <Badge className="bg-white text-blue-700 hover:bg-blue-50">
-                                                Level: {crop.adminData.fertilizerRecommendations?.phosphorus?.level || 'N/A'}
-                                            </Badge>
-                                        </div>
-                                        <div className="p-4 space-y-3">
-                                            {/* Amount & Application */}
-                                            {crop.adminData.fertilizerRecommendations?.phosphorus?.amount && (
-                                                <div className="bg-blue-50 rounded-md p-3 border border-blue-200">
-                                                    <p className="text-xs font-semibold text-blue-800 mb-1 uppercase tracking-wide">Amount & Application</p>
-                                                    <p className="text-sm text-blue-900 font-medium">{crop.adminData.fertilizerRecommendations.phosphorus.amount}</p>
+                                                {/* Phosphorus Details */}
+                                                <div className="border-2 border-blue-200 rounded-lg overflow-hidden">
+                                                    <div className="bg-blue-600 text-white px-3 py-2">
+                                                        <h3 className="font-bold text-sm">Phosphorus (P)</h3>
+                                                    </div>
+                                                    <div className="p-3 space-y-2">
+                                                        {crop.adminData.fertilizerRecommendations?.phosphorus?.amount && (
+                                                            <div className="bg-blue-50 rounded-md p-2 border border-blue-200">
+                                                                <p className="text-xs font-semibold text-blue-800 mb-1 uppercase">Amount</p>
+                                                                <p className="text-xs text-blue-900">{crop.adminData.fertilizerRecommendations.phosphorus.amount}</p>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {crop.adminData.fertilizerRecommendations?.phosphorus?.recommendations && crop.adminData.fertilizerRecommendations.phosphorus.recommendations.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-gray-700 mb-1 uppercase">Tips</p>
+                                                                <ul className="space-y-1">
+                                                                    {crop.adminData.fertilizerRecommendations.phosphorus.recommendations.map((rec: string, index: number) => (
+                                                                        <li key={index} className="flex items-start gap-1 text-xs">
+                                                                            <span className="text-blue-600 font-bold">•</span>
+                                                                            <span className="text-gray-700">{rec}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {crop.adminData.fertilizerRecommendations?.phosphorus?.detailedInfo && (
+                                                            <div className="bg-gray-50 rounded-md p-2 border border-gray-200">
+                                                                <p className="text-xs text-gray-700 leading-relaxed">{crop.adminData.fertilizerRecommendations.phosphorus.detailedInfo}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            )}
-                                            
-                                            {/* Recommendations */}
-                                            {crop.adminData.fertilizerRecommendations?.phosphorus?.recommendations && crop.adminData.fertilizerRecommendations.phosphorus.recommendations.length > 0 && (
-                                                <div>
-                                                    <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Recommendations</p>
-                                                    <ul className="space-y-2">
-                                                        {crop.adminData.fertilizerRecommendations.phosphorus.recommendations.map((rec: string, index: number) => (
-                                                            <li key={index} className="flex items-start gap-2 text-sm">
-                                                                <span className="text-blue-600 font-bold mt-0.5">•</span>
-                                                                <span className="text-gray-800">{rec}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                            
-                                            {/* Detailed Info */}
-                                            {crop.adminData.fertilizerRecommendations?.phosphorus?.detailedInfo && (
-                                                <div className="bg-gray-50 rounded-md p-3 border border-gray-200">
-                                                    <p className="text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wide">Detailed Info</p>
-                                                    <p className="text-sm text-gray-700 leading-relaxed">{crop.adminData.fertilizerRecommendations.phosphorus.detailedInfo}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
 
-                                    {/* Potassium (K) */}
-                                    <div className="bg-white rounded-lg border-2 border-purple-200 overflow-hidden">
-                                        <div className="bg-purple-600 text-white px-4 py-2 flex items-center justify-between">
-                                            <h3 className="font-bold text-base">Potassium (K)</h3>
-                                            <Badge className="bg-white text-purple-700 hover:bg-purple-50">
-                                                Level: {crop.adminData.fertilizerRecommendations?.potassium?.level || 'N/A'}
-                                            </Badge>
+                                                {/* Potassium Details */}
+                                                <div className="border-2 border-purple-200 rounded-lg overflow-hidden">
+                                                    <div className="bg-purple-600 text-white px-3 py-2">
+                                                        <h3 className="font-bold text-sm">Potassium (K)</h3>
+                                                    </div>
+                                                    <div className="p-3 space-y-2">
+                                                        {crop.adminData.fertilizerRecommendations?.potassium?.amount && (
+                                                            <div className="bg-purple-50 rounded-md p-2 border border-purple-200">
+                                                                <p className="text-xs font-semibold text-purple-800 mb-1 uppercase">Amount</p>
+                                                                <p className="text-xs text-purple-900">{crop.adminData.fertilizerRecommendations.potassium.amount}</p>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {crop.adminData.fertilizerRecommendations?.potassium?.recommendations && crop.adminData.fertilizerRecommendations.potassium.recommendations.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-gray-700 mb-1 uppercase">Tips</p>
+                                                                <ul className="space-y-1">
+                                                                    {crop.adminData.fertilizerRecommendations.potassium.recommendations.map((rec: string, index: number) => (
+                                                                        <li key={index} className="flex items-start gap-1 text-xs">
+                                                                            <span className="text-purple-600 font-bold">•</span>
+                                                                            <span className="text-gray-700">{rec}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {crop.adminData.fertilizerRecommendations?.potassium?.detailedInfo && (
+                                                            <div className="bg-gray-50 rounded-md p-2 border border-gray-200">
+                                                                <p className="text-xs text-gray-700 leading-relaxed">{crop.adminData.fertilizerRecommendations.potassium.detailedInfo}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="p-4 space-y-3">
-                                            {/* Amount & Application */}
-                                            {crop.adminData.fertilizerRecommendations?.potassium?.amount && (
-                                                <div className="bg-purple-50 rounded-md p-3 border border-purple-200">
-                                                    <p className="text-xs font-semibold text-purple-800 mb-1 uppercase tracking-wide">Amount & Application</p>
-                                                    <p className="text-sm text-purple-900 font-medium">{crop.adminData.fertilizerRecommendations.potassium.amount}</p>
-                                                </div>
-                                            )}
-                                            
-                                            {/* Recommendations */}
-                                            {crop.adminData.fertilizerRecommendations?.potassium?.recommendations && crop.adminData.fertilizerRecommendations.potassium.recommendations.length > 0 && (
-                                                <div>
-                                                    <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Recommendations</p>
-                                                    <ul className="space-y-2">
-                                                        {crop.adminData.fertilizerRecommendations.potassium.recommendations.map((rec: string, index: number) => (
-                                                            <li key={index} className="flex items-start gap-2 text-sm">
-                                                                <span className="text-purple-600 font-bold mt-0.5">•</span>
-                                                                <span className="text-gray-800">{rec}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                            
-                                            {/* Detailed Info */}
-                                            {crop.adminData.fertilizerRecommendations?.potassium?.detailedInfo && (
-                                                <div className="bg-gray-50 rounded-md p-3 border border-gray-200">
-                                                    <p className="text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wide">Detailed Info</p>
-                                                    <p className="text-sm text-gray-700 leading-relaxed">{crop.adminData.fertilizerRecommendations.potassium.detailedInfo}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             ) : (
                                 // Show AI/dataset fertilizer recommendations
