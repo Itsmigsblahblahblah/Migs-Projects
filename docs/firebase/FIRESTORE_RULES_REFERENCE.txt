@@ -1,0 +1,197 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==========================================
+    // FARMERS COLLECTION
+    // ==========================================
+    match /farmers/{userId} {
+      // Farmers can read and write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Any authenticated user can create a farmer profile
+      allow create: if request.auth != null;
+      
+      // Admin can read any farmer profile
+      allow read: if request.auth != null && 
+                     request.auth.token.email == 'admin@majayjay.farm';
+      
+      // Admin can delete any farmer profile
+      allow delete: if request.auth != null && 
+                       request.auth.token.email == 'admin@majayjay.farm';
+
+      // Validate profile image field (Cloudinary URL)
+      allow update: if request.auth != null && request.auth.uid == userId
+        && (
+          !("profileImage" in request.resource.data) ||
+          request.resource.data.profileImage is string
+        );
+    }
+    
+    // ==========================================
+    // FARM REPORTS COLLECTION
+    // ==========================================
+    match /farmReports/{reportId} {
+      // All authenticated users can read reports
+      allow read: if request.auth != null;
+      
+      // Any authenticated user can create reports
+      allow create: if request.auth != null;
+      
+      // Only the report owner or admin can update/delete
+      allow update, delete: if request.auth != null && 
+        (resource.data.userId == request.auth.uid || 
+         request.auth.token.email == 'admin@majayjay.farm');
+    }
+    
+    // ==========================================
+    // FARMER CROPS COLLECTION
+    // ==========================================
+    match /farmerCrops/{cropId} {
+      // Users can only read their own crops
+      allow read: if request.auth != null && 
+                   resource.data.userId == request.auth.uid;
+      
+      // Users can only create crops that belong to them
+      allow create: if request.auth != null && 
+                     request.resource.data.userId == request.auth.uid;
+      
+      // Users can only update their own crops (including checklist data)
+      allow update: if request.auth != null && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Users can only delete their own crops
+      allow delete: if request.auth != null && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Admins can read all crops
+      allow read: if request.auth != null && 
+                   request.auth.token.email == 'admin@majayjay.farm';
+      
+      // Admins can delete any crop
+      allow delete: if request.auth != null && 
+                     request.auth.token.email == 'admin@majayjay.farm';
+    }
+    
+    // ==========================================
+    // RULES COLLECTION
+    // ==========================================
+    match /rules/{ruleId} {
+      // All authenticated users can read rules
+      allow read: if request.auth != null;
+      
+      // Only admin can write rules
+      allow write: if request.auth != null && 
+                     request.auth.token.email == 'admin@majayjay.farm';
+    }
+    
+    // ==========================================
+    // DELETION REQUESTS COLLECTION
+    // ==========================================
+    match /deletionRequests/{requestId} {
+      // Farmers can create their own deletion request
+      allow create: if request.auth != null && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Farmers can read their own requests
+      allow read: if request.auth != null && 
+                     resource.data.userId == request.auth.uid;
+      
+      // Admins can read, update, and DELETE all requests
+      allow read, update, delete: if request.auth != null && 
+                                     request.auth.token.email == 'admin@majayjay.farm';
+      
+      // Farmers can delete their own requests (any status)
+      // This allows cleanup of denied requests when re-requesting
+      allow delete: if request.auth != null && 
+                       resource.data.userId == request.auth.uid;
+    }
+    
+    // ==========================================
+    // MAINTENANCE CHECKLISTS COLLECTION
+    // ==========================================
+    match /maintenanceChecklists/{userId} {
+      // Users can read and write their own checklists
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Any authenticated user can create a checklist
+      allow create: if request.auth != null;
+      
+      // Admin can read all checklists
+      allow read: if request.auth != null && 
+                     request.auth.token.email == 'admin@majayjay.farm';
+      
+      // Admin can delete any checklist
+      allow delete: if request.auth != null && 
+                       request.auth.token.email == 'admin@majayjay.farm';
+    }
+    
+    // ==========================================
+    // ADMIN MESSAGES COLLECTION
+    // ==========================================
+    match /adminMessages/{messageId} {
+      // Admins can create messages for farmers
+      allow create: if request.auth != null && 
+                       request.auth.token.email == 'admin@majayjay.farm';
+      
+      // Farmers can read their own messages
+      allow read: if request.auth != null && 
+                     resource.data.receiverId == request.auth.uid;
+      
+      // Admins can read all messages
+      allow read: if request.auth != null && 
+                     request.auth.token.email == 'admin@majayjay.farm';
+      
+      // Farmers can update their messages (to mark as read)
+      allow update: if request.auth != null && 
+                       resource.data.receiverId == request.auth.uid;
+      
+      // Farmers can delete their own messages
+      allow delete: if request.auth != null && 
+                       resource.data.receiverId == request.auth.uid;
+      
+      // Admins can delete any message
+      allow delete: if request.auth != null && 
+                       request.auth.token.email == 'admin@majayjay.farm';
+    }
+    
+    // ==========================================
+    // ANNOUNCEMENTS COLLECTION
+    // ==========================================
+    match /announcements/{announcementId} {
+      // Admins can create, update, and delete announcements
+      allow create, update, delete: if request.auth != null && 
+                                   request.auth.token.email == 'admin@majayjay.farm';
+      
+      // All authenticated users can read announcements
+      allow read: if request.auth != null;
+    }
+    
+    // ==========================================
+    // USER READ STATUS COLLECTION
+    // Tracks which announcements/alerts users have read
+    // ==========================================
+    match /userReadStatus/{userId}/{alertType}/{alertId} {
+      // Users can create/read/update their own read status
+      allow create, read, update: if request.auth != null && request.auth.uid == userId;
+      
+      // Admins can read all read status records
+      allow read: if request.auth != null && 
+                     request.auth.token.email == 'admin@majayjay.farm';
+    }
+    
+    // ==========================================
+    // WEATHER ALERTS READ STATUS
+    // Allow tracking read status for weather alerts
+    // ==========================================
+    match /userReadStatus/{userId}/weather/{alertId} {
+      // Users can create/read/update/delete their own weather alert read status
+      allow create, read, update, delete: if request.auth != null && request.auth.uid == userId;
+      
+      // Admins can read all weather alert read status records
+      allow read: if request.auth != null && 
+                     request.auth.token.email == 'admin@majayjay.farm';
+    }
+  }
+}
