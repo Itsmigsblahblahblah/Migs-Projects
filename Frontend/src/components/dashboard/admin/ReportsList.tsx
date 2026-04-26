@@ -85,6 +85,11 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const { toast } = useToast();
     const reportsPerPage = 10;
 
+    // Sync localReports with parent reports when they change (e.g., when status is updated)
+    useEffect(() => {
+        setLocalReports(reports);
+    }, [reports]);
+
     // Normalize problem categories to only use the 5 standard ones
     const normalizeProblemCategory = (problem: string): string => {
         const standardCategories = ['flood', 'pest', 'drought', 'disease', 'general'];
@@ -118,20 +123,22 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         return categoryMap[normalized] || 'general';
     };
 
-    // Get unique barangays from farmers
-    const uniqueBarangays = useMemo(() => {
-        const barangays = farmers.map(farmer => farmer.homeAddress || 'Unknown').filter(Boolean);
-        return [...new Set(barangays)];
-    }, [farmers]);
-
     // Create a map of farmer IDs to their addresses
     const farmerAddressMap = useMemo(() => {
         const map: Record<string, string> = {};
         farmers.forEach(farmer => {
-            map[farmer.uid] = farmer.homeAddress || 'Unknown Barangay';
+            map[farmer.uid] = farmer.homeAddress || 'Unknown';
         });
         return map;
     }, [farmers]);
+
+    // Get unique barangays from actual reports (not all farmers)
+    const uniqueBarangays = useMemo(() => {
+        const barangays = localReports
+            .map(report => farmerAddressMap[report.userId] || 'Unknown')
+            .filter(Boolean);
+        return [...new Set(barangays)].sort();
+    }, [localReports, farmerAddressMap]);
 
     // Filter and sort reports
     const { sortedReports, stats } = useMemo(() => {
@@ -144,7 +151,10 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
             
             const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
             const matchesProblem = problemFilter === 'all' || normalizeProblemCategory(report.problem) === problemFilter;
-            const matchesBarangay = barangayFilter === 'all' || report.username.includes(barangayFilter);
+            
+            // Fix: Use farmerAddressMap to get barangay and filter correctly
+            const reportBarangay = farmerAddressMap[report.userId] || 'Unknown Barangay';
+            const matchesBarangay = selectedBarangay === 'all' || reportBarangay === selectedBarangay;
             
             return matchesSearch && matchesStatus && matchesProblem && matchesBarangay;
         });
@@ -188,7 +198,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                 problemCounts
             }
         };
-    }, [localReports, searchQuery, statusFilter, problemFilter, barangayFilter, sortBy, sortOrder]);
+    }, [localReports, searchQuery, statusFilter, problemFilter, selectedBarangay, sortBy, sortOrder, farmerAddressMap]);
 
     // Pagination calculations
     const totalPages = Math.ceil(sortedReports.length / reportsPerPage);
@@ -239,7 +249,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     // Reset to first page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, statusFilter, problemFilter, barangayFilter, sortBy, sortOrder]);
+    }, [searchQuery, statusFilter, problemFilter, selectedBarangay, sortBy, sortOrder]);
 
     // Handle page change with scroll to top
     const handlePageChange = (newPage: number) => {
@@ -410,7 +420,19 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                         <Button
                             variant={sortOption === 'barangay' ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setSortOption(sortOption === 'barangay' ? 'newest' : 'barangay')}
+                            onClick={() => {
+                                if (sortOption === 'barangay') {
+                                    // Reset to default view when closing
+                                    setSortOption('newest');
+                                    setSelectedBarangay('all');
+                                } else {
+                                    setSortOption('barangay');
+                                    // Auto-select first barangay if available
+                                    if (uniqueBarangays.length > 0) {
+                                        setSelectedBarangay(uniqueBarangays[0]);
+                                    }
+                                }
+                            }}
                             className={`text-blue-600 hover:text-white ${sortOption === 'barangay' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-blue-50'}`}
                         >
                             Group by Barangay
@@ -423,29 +445,11 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                            {selectedBarangay === 'all' ? 'All Barangays' : selectedBarangay}
+                                            {selectedBarangay || 'Select Barangay'}
                                             <ChevronDown className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-64 max-h-60 overflow-y-auto">
-                                        <DropdownMenuItem
-                                            onClick={() => setSelectedBarangay('all')}
-                                            className={`cursor-pointer ${selectedBarangay === 'all' ? "bg-blue-50 text-blue-700" : ""}`}
-                                            style={{ cursor: 'pointer', '--tw-bg-opacity': '1' } as React.CSSProperties}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.backgroundColor = '#eff6ff';
-                                                e.currentTarget.style.color = '#1d4ed8';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (selectedBarangay !== 'all') {
-                                                    e.currentTarget.style.backgroundColor = '';
-                                                    e.currentTarget.style.color = '';
-                                                }
-                                            }}
-                                        >
-                                            All Barangays
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
                                         {uniqueBarangays.map(barangay => (
                                             <DropdownMenuItem
                                                 key={barangay}
@@ -473,7 +477,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     </div>
 
                     {/* Stats display for selected barangay - shown below */}
-                    {sortOption === 'barangay' && selectedBarangay !== 'all' && (
+                    {sortOption === 'barangay' && selectedBarangay && (
                         <div className="pt-4">
                             <div className="bg-muted p-3 rounded-md">
                                 <h3 className="font-semibold">
@@ -495,92 +499,101 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     {localReports.length > 0 ? (
                         <div className="flex flex-col h-full">
                             <div className="space-y-4 flex-grow">
-                                {sortOption === 'barangay' && selectedBarangay === 'all' ? (
-                                    // Grouped by barangay view with pagination
+                                {sortOption === 'barangay' ? (
+                                    // Grouped by barangay view with pagination - TABLE FORMAT
                                     <>
-                                        {/* Since this is simplified, showing regular list for now */}
-                                        {visibleReports.map((report) => (
-                                            <div
-                                                key={report.id}
-                                                className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex flex-col">
-                                                        <div className="font-medium">{report.username}</div>
-                                                        {/* Display home address below user name */}
-                                                        <span className="text-sm text-muted-foreground">
-                                                            {farmerAddressMap[report.userId] || 'Unknown Barangay'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex flex-col items-end gap-1">
-                                                        <Badge
-                                                            variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                                                            className={
-                                                                report.status === 'resolved' ? 'bg-success text-success-foreground' :
-                                                                    report.status === 'processed' ? 'bg-yellow-500 text-yellow-foreground' :
-                                                                        ''
-                                                            }
-                                                        >
-                                                            {report.status}
-                                                        </Badge>
-                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                            <Calendar className="h-4 w-4" />
-                                                            {report.createdAt?.toDate().toLocaleDateString()}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex flex-col gap-1 text-sm mb-3">
-                                                    <div>
-                                                        <span className="text-muted-foreground">Problem: </span>
-                                                        <span className="capitalize">{normalizeProblemCategory(report.problem)}</span>
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <div className="flex items-center justify-between">
-                                                            <div>
-                                                                <span className="text-muted-foreground">Affected Crop: </span>
-                                                                <span className="capitalize">{report.affectedCrop}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex gap-2 mt-2 md:mt-0 md:justify-end w-full md:w-auto">
-                                                            {report.status !== 'resolved' && (
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => onUpdateStatus(report.id, 'resolved')}
-                                                                    className="text-green-600 hover:text-green-700 hover:bg-green-50 w-full md:w-auto"
-                                                                >
-                                                                    <CheckCircle className="h-4 w-4" />
-                                                                    <span className="hidden md:inline ml-1">Mark Resolved</span>
-                                                                </Button>
-                                                            )}
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => openReportDetail(report)}
-                                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-full md:w-auto"
+                                        <div className="overflow-x-auto rounded-lg border">
+                                            <table className="w-full border-collapse">
+                                                <thead>
+                                                    <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200">
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">#</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Barangay</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Problem</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Affected Crop</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Date</th>
+                                                        <th className="text-center p-3 font-semibold text-gray-700 text-sm">Status</th>
+                                                        <th className="text-center p-3 font-semibold text-gray-700 text-sm">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {visibleReports.map((report, index) => {
+                                                        const rowNumber = startIndex + index + 1;
+                                                        return (
+                                                            <tr
+                                                                key={report.id}
+                                                                className="border-b hover:bg-blue-50/50 transition-colors"
                                                             >
-                                                                <Eye className="h-4 w-4" />
-                                                                <span className="hidden md:inline ml-1">View Details</span>
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handleDeleteRequest(report)}
-                                                                className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full md:w-auto"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                                <span className="hidden md:inline ml-1">Delete</span>
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                                                <td className="p-3 text-sm text-gray-600 font-medium">{rowNumber}</td>
+                                                                <td className="p-3">
+                                                                    <div className="font-medium text-gray-900">{report.username}</div>
+                                                                </td>
+                                                                <td className="p-3 text-sm text-gray-700">
+                                                                    {farmerAddressMap[report.userId] || 'Unknown Barangay'}
+                                                                </td>
+                                                                <td className="p-3">
+                                                                    <Badge variant="outline" className="capitalize text-xs">
+                                                                        {normalizeProblemCategory(report.problem)}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="p-3 text-sm text-gray-700 capitalize">{report.affectedCrop || 'N/A'}</td>
+                                                                <td className="p-3 text-sm text-gray-700">
+                                                                    {report.createdAt?.toDate().toLocaleDateString()}
+                                                                </td>
+                                                                <td className="p-3 text-center">
+                                                                    <Badge
+                                                                        variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                                                                        className={
+                                                                            report.status === 'resolved' ? 'bg-green-600 text-white' :
+                                                                            report.status === 'processed' ? 'bg-yellow-500 text-white' :
+                                                                            'bg-gray-400 text-white'
+                                                                        }
+                                                                    >
+                                                                        {report.status}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="p-3">
+                                                                    <div className="flex items-center justify-center gap-2">
+                                                                        {report.status !== 'resolved' && (
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                                                className="text-green-600 hover:text-green-700 hover:bg-green-50 h-8 w-8 p-0"
+                                                                                title="Mark Resolved"
+                                                                            >
+                                                                                <CheckCircle className="h-4 w-4" />
+                                                                            </Button>
+                                                                        )}
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() => openReportDetail(report)}
+                                                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
+                                                                            title="View Details"
+                                                                        >
+                                                                            <Eye className="h-4 w-4" />
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() => handleDeleteRequest(report)}
+                                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                                                                            title="Delete"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
 
                                         {/* Pagination Controls - Match FarmersList design */}
-                                        {(sortOption !== 'barangay' || selectedBarangay !== 'all') && (
-                                            <div className="border-t pt-4 mt-auto">
+                                        <div className="border-t pt-4 mt-auto">
                                                 {/* Desktop layout - text on left, pagination on right */}
                                                 <div className="hidden md:flex items-center justify-between">
                                                     <div className="text-sm text-muted-foreground">
@@ -781,93 +794,102 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                     </div>
                                                 </div>
                                             </div>
-                                        )}
                                     </>
                                 ) : (
-                                    // Regular list view or filtered barangay view
+                                    // Regular list view or filtered barangay view - TABLE FORMAT
                                     <>
-                                        {visibleReports.map((report) => (
-                                            <div
-                                                key={report.id}
-                                                className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex flex-col">
-                                                        <div className="font-medium">{report.username}</div>
-                                                        {/* Display home address below user name */}
-                                                        <span className="text-sm text-muted-foreground">
-                                                            {farmerAddressMap[report.userId] || 'Unknown Barangay'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex flex-col items-end gap-1">
-                                                        <Badge
-                                                            variant={report.status === 'resolved' ? 'default' : 'secondary'}
-                                                            className={
-                                                                report.status === 'resolved' ? 'bg-success text-success-foreground' :
-                                                                    report.status === 'processed' ? 'bg-yellow-500 text-yellow-foreground' :
-                                                                        ''
-                                                            }
-                                                        >
-                                                            {report.status}
-                                                        </Badge>
-                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                            <Calendar className="h-4 w-4" />
-                                                            {report.createdAt?.toDate().toLocaleDateString()}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex flex-col gap-1 text-sm mb-3">
-                                                    <div>
-                                                        <span className="text-muted-foreground">Problem: </span>
-                                                        <span className="capitalize">{normalizeProblemCategory(report.problem)}</span>
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <div className="flex items-center justify-between">
-                                                            <div>
-                                                                <span className="text-muted-foreground">Affected Crop: </span>
-                                                                <span className="capitalize">{report.affectedCrop}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex gap-2 mt-2 md:mt-0 md:justify-end w-full md:w-auto">
-                                                            {report.status !== 'resolved' && (
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() => onUpdateStatus(report.id, 'resolved')}
-                                                                    className="text-green-600 hover:text-green-700 hover:bg-green-50 w-full md:w-auto"
-                                                                >
-                                                                    <CheckCircle className="h-4 w-4" />
-                                                                    <span className="hidden md:inline ml-1">Mark Resolved</span>
-                                                                </Button>
-                                                            )}
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => openReportDetail(report)}
-                                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-full md:w-auto"
+                                        <div className="overflow-x-auto rounded-lg border">
+                                            <table className="w-full border-collapse">
+                                                <thead>
+                                                    <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200">
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">#</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Barangay</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Problem</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Affected Crop</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Date</th>
+                                                        <th className="text-center p-3 font-semibold text-gray-700 text-sm">Status</th>
+                                                        <th className="text-center p-3 font-semibold text-gray-700 text-sm">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {visibleReports.map((report, index) => {
+                                                        const rowNumber = startIndex + index + 1;
+                                                        return (
+                                                            <tr
+                                                                key={report.id}
+                                                                className="border-b hover:bg-blue-50/50 transition-colors"
                                                             >
-                                                                <Eye className="h-4 w-4" />
-                                                                <span className="hidden md:inline ml-1">View Details</span>
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => handleDeleteRequest(report)}
-                                                                className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full md:w-auto"
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                                <span className="hidden md:inline ml-1">Delete</span>
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                                                <td className="p-3 text-sm text-gray-600 font-medium">{rowNumber}</td>
+                                                                <td className="p-3">
+                                                                    <div className="font-medium text-gray-900">{report.username}</div>
+                                                                </td>
+                                                                <td className="p-3 text-sm text-gray-700">
+                                                                    {farmerAddressMap[report.userId] || 'Unknown Barangay'}
+                                                                </td>
+                                                                <td className="p-3">
+                                                                    <Badge variant="outline" className="capitalize text-xs">
+                                                                        {normalizeProblemCategory(report.problem)}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="p-3 text-sm text-gray-700 capitalize">{report.affectedCrop || 'N/A'}</td>
+                                                                <td className="p-3 text-sm text-gray-700">
+                                                                    {report.createdAt?.toDate().toLocaleDateString()}
+                                                                </td>
+                                                                <td className="p-3 text-center">
+                                                                    <Badge
+                                                                        variant={report.status === 'resolved' ? 'default' : 'secondary'}
+                                                                        className={
+                                                                            report.status === 'resolved' ? 'bg-green-600 text-white' :
+                                                                            report.status === 'processed' ? 'bg-yellow-500 text-white' :
+                                                                            'bg-gray-400 text-white'
+                                                                        }
+                                                                    >
+                                                                        {report.status}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="p-3">
+                                                                    <div className="flex items-center justify-center gap-2">
+                                                                        {report.status !== 'resolved' && (
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                                                                className="text-green-600 hover:text-green-700 hover:bg-green-50 h-8 w-8 p-0"
+                                                                                title="Mark Resolved"
+                                                                            >
+                                                                                <CheckCircle className="h-4 w-4" />
+                                                                            </Button>
+                                                                        )}
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() => openReportDetail(report)}
+                                                                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8 p-0"
+                                                                            title="View Details"
+                                                                        >
+                                                                            <Eye className="h-4 w-4" />
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() => handleDeleteRequest(report)}
+                                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                                                                            title="Delete"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
 
                                         {/* Pagination Controls - Match FarmersList design */}
-                                        {(sortOption !== 'barangay' || selectedBarangay !== 'all') && (
-                                            <div className="border-t pt-4 mt-auto">
+                                        <div className="border-t pt-4 mt-auto">
                                                 {/* Desktop layout - text on left, pagination on right */}
                                                 <div className="hidden md:flex items-center justify-between">
                                                     <div className="text-sm text-muted-foreground">
@@ -1068,7 +1090,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                     </div>
                                                 </div>
                                             </div>
-                                        )}
                                     </>
                                 )}
                             </div>

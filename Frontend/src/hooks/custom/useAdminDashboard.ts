@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { collection, query, getDocs, orderBy, Timestamp, updateDoc, doc, deleteDoc, writeBatch } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { db, getDb } from "@/firebaseConfig";
 import { HARDCODED_CROPS } from "@/utils/cropUtils";
 import { log } from "@/utils/logger";
 
@@ -94,10 +94,18 @@ export const useAdminDashboard = () => {
     const loadDashboardData = async () => {
         setLoading(true);
         try {
+            // Wait for Firebase to be ready
+            const firestoreDb = await getDb();
+            
+            if (!firestoreDb) {
+                console.error("Firebase db could not be initialized");
+                throw new Error("Firebase database not initialized");
+            }
+
             log("Loading dashboard data...");
 
             // Load all reports - Query without orderBy to get ALL data including old records
-            const reportsRef = collection(db, "farmReports");
+            const reportsRef = collection(firestoreDb, "farmReports");
             const reportsQuery = query(reportsRef);
             const reportsSnapshot = await getDocs(reportsQuery);
 
@@ -244,7 +252,14 @@ export const useAdminDashboard = () => {
     const calculateCropRecommendations = async (reportsData: Report[]) => {
         try {
             // Load farmer crops data to count actual crops planted
-            const cropsRef = collection(db, "farmerCrops");
+            const firestoreDb = await getDb();
+            
+            if (!firestoreDb) {
+                console.error("Firebase db could not be initialized");
+                return;
+            }
+            
+            const cropsRef = collection(firestoreDb, "farmerCrops");
             const cropsSnapshot = await getDocs(cropsRef);
             
             // Create a frequency map for the hardcoded crops
@@ -318,7 +333,14 @@ export const useAdminDashboard = () => {
 
     const loadFarmers = async () => {
         try {
-            const farmersRef = collection(db, "farmers");
+            const firestoreDb = await getDb();
+            
+            if (!firestoreDb) {
+                console.error("Firebase db could not be initialized");
+                return;
+            }
+            
+            const farmersRef = collection(firestoreDb, "farmers");
             const farmersSnapshot = await getDocs(farmersRef);
 
             const farmersData: Farmer[] = [];
@@ -358,8 +380,15 @@ export const useAdminDashboard = () => {
 
     const loadDeletionRequests = async () => {
         try {
+            const firestoreDb = await getDb();
+            
+            if (!firestoreDb) {
+                console.error("Firebase db could not be initialized");
+                return;
+            }
+            
             log("[Admin] Loading deletion requests...");
-            const requestsRef = collection(db, "deletionRequests");
+            const requestsRef = collection(firestoreDb, "deletionRequests");
             const requestsSnapshot = await getDocs(requestsRef);
 
             log("[Admin] Found", requestsSnapshot.size, "deletion request(s)");
@@ -404,7 +433,10 @@ export const useAdminDashboard = () => {
 
     const handleDeletionRequestAction = async (requestId: string, action: 'approved' | 'denied') => {
         try {
-            const requestRef = doc(db, "deletionRequests", requestId);
+            const firestoreDb = await getDb();
+            if (!firestoreDb) throw new Error("Firebase not initialized");
+            
+            const requestRef = doc(firestoreDb, "deletionRequests", requestId);
             await updateDoc(requestRef, {
                 status: action,
                 reviewedAt: Timestamp.now(),
@@ -457,10 +489,13 @@ export const useAdminDashboard = () => {
 
         try {
             log("[Admin] Deleting requests:", selectedRequests);
-            const batch = writeBatch(db);
+            const firestoreDb = await getDb();
+            if (!firestoreDb) throw new Error("Firebase not initialized");
+            
+            const batch = writeBatch(firestoreDb);
 
             selectedRequests.forEach(requestId => {
-                const requestRef = doc(db, "deletionRequests", requestId);
+                const requestRef = doc(firestoreDb, "deletionRequests", requestId);
                 batch.delete(requestRef);
             });
 
@@ -489,7 +524,10 @@ export const useAdminDashboard = () => {
 
     const updateReportStatus = async (reportId: string, newStatus: string) => {
         try {
-            const reportRef = doc(db, "farmReports", reportId);
+            const firestoreDb = await getDb();
+            if (!firestoreDb) throw new Error("Firebase not initialized");
+            
+            const reportRef = doc(firestoreDb, "farmReports", reportId);
             await updateDoc(reportRef, {
                 status: newStatus,
                 updatedAt: Timestamp.now()

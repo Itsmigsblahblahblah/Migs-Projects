@@ -348,7 +348,10 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                 {report.status !== 'resolved' && (
                                     <Button
                                         variant="default"
-                                        onClick={() => onUpdateStatus(report.id, 'resolved')}
+                                        onClick={async () => {
+                                            await onUpdateStatus(report.id, 'resolved');
+                                            onClose(); // Auto-close after marking as resolved
+                                        }}
                                         className="text-green-600 hover:text-green-700 hover:bg-green-50 bg-white border border-green-300"
                                     >
                                         <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
@@ -359,7 +362,10 @@ const ReportDetailView = ({ report, onClose, onUpdateStatus, isAdminView = true 
                                 {report.status === 'resolved' && (
                                     <Button
                                         variant="outline"
-                                        onClick={() => onUpdateStatus(report.id, 'pending')}
+                                        onClick={async () => {
+                                            await onUpdateStatus(report.id, 'pending');
+                                            onClose(); // Auto-close after reopening
+                                        }}
                                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                     >
                                         <Clock className="h-4 w-4 mr-2 text-yellow-500" />
