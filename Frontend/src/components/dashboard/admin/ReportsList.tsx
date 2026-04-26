@@ -82,6 +82,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const contentRef = useRef<HTMLDivElement>(null);
     const [reportToDelete, setReportToDelete] = useState<Report | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleteMode, setDeleteMode] = useState(false);
+    const [selectedReports, setSelectedReports] = useState<string[]>([]);
     const { toast } = useToast();
     const reportsPerPage = 10;
 
@@ -305,6 +307,69 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         }
     };
 
+    // Batch delete functions
+    const toggleDeleteMode = () => {
+        setDeleteMode(!deleteMode);
+        setSelectedReports([]); // Clear selections when toggling mode
+    };
+
+    const toggleReportSelection = (reportId: string) => {
+        setSelectedReports(prev => 
+            prev.includes(reportId) 
+                ? prev.filter(id => id !== reportId)
+                : [...prev, reportId]
+        );
+    };
+
+    const selectAllReports = () => {
+        if (selectedReports.length === visibleReports.length) {
+            setSelectedReports([]); // Deselect all if all are selected
+        } else {
+            setSelectedReports(visibleReports.map(report => report.id));
+        }
+    };
+
+    const handleBatchDelete = async () => {
+        if (selectedReports.length === 0) {
+            toast({
+                title: "No Reports Selected",
+                description: "Please select reports to delete.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        try {
+            // Remove from local state immediately for instant UI update
+            setLocalReports(prevReports =>
+                prevReports.filter(report => !selectedReports.includes(report.id))
+            );
+
+            // Delete all selected reports from Firestore
+            const deletePromises = selectedReports.map(reportId => 
+                deleteDoc(doc(db, "farmReports", reportId))
+            );
+            await Promise.all(deletePromises);
+
+            // Show success toast
+            toast({
+                title: "Reports Deleted",
+                description: `Successfully deleted ${selectedReports.length} report(s).`,
+            });
+
+            // Exit delete mode and clear selections
+            setDeleteMode(false);
+            setSelectedReports([]);
+        } catch (error) {
+            console.error("Error deleting reports:", error);
+            toast({
+                title: "Error",
+                description: "Failed to delete reports. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
     return (
         <>
             <Card className="shadow-card h-full flex flex-col">
@@ -314,15 +379,42 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             <CardTitle>Farmer Reports</CardTitle>
                             <CardDescription>Latest submissions from farmers ({localReports.length} total)</CardDescription>
                         </div>
-                        <Button
-                            variant="outline"
-                            onClick={onExport}
-                            disabled={localReports.length === 0}
-                            className="hover:bg-blue-50 hover:text-blue-700"
-                        >
-                            <Download className="h-4 w-4 mr-2" />
-                            Export All
-                        </Button>
+                        <div className="flex gap-2">
+                            {deleteMode && (
+                                <Button
+                                    variant="destructive"
+                                    onClick={handleBatchDelete}
+                                    disabled={selectedReports.length === 0}
+                                    className="bg-red-600 hover:bg-red-700"
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Selected ({selectedReports.length})
+                                </Button>
+                            )}
+                            <Button
+                                variant={deleteMode ? "default" : "outline"}
+                                onClick={toggleDeleteMode}
+                                className={deleteMode ? "bg-blue-600 hover:bg-blue-700" : "hover:bg-blue-50 hover:text-blue-700"}
+                            >
+                                {deleteMode ? (
+                                    <>Cancel</>
+                                ) : (
+                                    <>
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Batch Delete
+                                    </>
+                                )}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={onExport}
+                                disabled={localReports.length === 0}
+                                className="hover:bg-blue-50 hover:text-blue-700"
+                            >
+                                <Download className="h-4 w-4 mr-2" />
+                                Export All
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Sorting Options - Replace buttons with dropdown */}
@@ -506,6 +598,16 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                             <table className="w-full border-collapse">
                                                 <thead>
                                                     <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200">
+                                                        {deleteMode && (
+                                                            <th className="text-center p-3 font-semibold text-gray-700 text-sm w-16">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedReports.length === visibleReports.length && visibleReports.length > 0}
+                                                                    onChange={selectAllReports}
+                                                                    className="w-4 h-4 cursor-pointer"
+                                                                />
+                                                            </th>
+                                                        )}
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">#</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Barangay</th>
@@ -522,8 +624,24 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         return (
                                                             <tr
                                                                 key={report.id}
-                                                                className="border-b hover:bg-blue-50/50 transition-colors"
+                                                                className={`border-b transition-colors ${
+                                                                    deleteMode 
+                                                                        ? selectedReports.includes(report.id)
+                                                                            ? 'bg-blue-100 hover:bg-blue-200'
+                                                                            : 'hover:bg-gray-50'
+                                                                        : 'hover:bg-blue-50/50'
+                                                                }`}
                                                             >
+                                                                {deleteMode && (
+                                                                    <td className="p-3 text-center">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={selectedReports.includes(report.id)}
+                                                                            onChange={() => toggleReportSelection(report.id)}
+                                                                            className="w-4 h-4 cursor-pointer"
+                                                                        />
+                                                                    </td>
+                                                                )}
                                                                 <td className="p-3 text-sm text-gray-600 font-medium">{rowNumber}</td>
                                                                 <td className="p-3">
                                                                     <div className="font-medium text-gray-900">{report.username}</div>
@@ -802,6 +920,16 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                             <table className="w-full border-collapse">
                                                 <thead>
                                                     <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200">
+                                                        {deleteMode && (
+                                                            <th className="text-center p-3 font-semibold text-gray-700 text-sm w-16">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedReports.length === visibleReports.length && visibleReports.length > 0}
+                                                                    onChange={selectAllReports}
+                                                                    className="w-4 h-4 cursor-pointer"
+                                                                />
+                                                            </th>
+                                                        )}
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">#</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Barangay</th>
@@ -818,8 +946,24 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         return (
                                                             <tr
                                                                 key={report.id}
-                                                                className="border-b hover:bg-blue-50/50 transition-colors"
+                                                                className={`border-b transition-colors ${
+                                                                    deleteMode 
+                                                                        ? selectedReports.includes(report.id)
+                                                                            ? 'bg-blue-100 hover:bg-blue-200'
+                                                                            : 'hover:bg-gray-50'
+                                                                        : 'hover:bg-blue-50/50'
+                                                                }`}
                                                             >
+                                                                {deleteMode && (
+                                                                    <td className="p-3 text-center">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={selectedReports.includes(report.id)}
+                                                                            onChange={() => toggleReportSelection(report.id)}
+                                                                            className="w-4 h-4 cursor-pointer"
+                                                                        />
+                                                                    </td>
+                                                                )}
                                                                 <td className="p-3 text-sm text-gray-600 font-medium">{rowNumber}</td>
                                                                 <td className="p-3">
                                                                     <div className="font-medium text-gray-900">{report.username}</div>
