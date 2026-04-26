@@ -472,126 +472,187 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                                     )}
                                 </div>
                             ) : (
-                                // Show AI/dataset fertilizer recommendations
-                                <ul className="text-sm space-y-1">
-                                    {insights.fertilizer.recommendations.slice(0, 2).map((rec: string, index: number) => (
-                                        <li key={index} className="flex items-start gap-2">
-                                            <span className="text-primary">•</span>
-                                            <span>{rec}</span>
-                                        </li>
-                                    ))}
-                                    {insights.fertilizer.recommendations.length > 2 && (
-                                        <li className="flex items-start gap-2">
-                                            <span className="text-primary">•</span>
-                                            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                                                <DialogTrigger asChild>
-                                                    <Button variant="link" className="h-auto p-0 text-primary underline">
-                                                        See more recommendations...
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                                                    <DialogHeader>
-                                                        <DialogTitle className="flex items-center gap-2">
-                                                            <Scale className="h-5 w-5 text-primary" />
-                                                            Detailed Fertilizer Recommendations
-                                                        </DialogTitle>
-                                                        <DialogDescription>
-                                                            Specific fertilizer recommendations based on your soil analysis for {crop.name}
-                                                        </DialogDescription>
-                                                    </DialogHeader>
-                                                    <div className="space-y-6">
-                                                        {insights.fertilizer.detailedRecommendations && (
-                                                            <>
-                                                                <div className="space-y-4">
-                                                                    <h3 className="font-medium text-lg">Nitrogen (N) - Level: {insights.fertilizer.detailedRecommendations.nitrogen.level}</h3>
-                                                                    <div className="p-3 bg-green-50 rounded-lg">
-                                                                        <p className="text-sm text-muted-foreground mb-2">
-                                                                            {insights.fertilizer.detailedRecommendations.nitrogen.detailedInfo}
-                                                                        </p>
-                                                                        {insights.fertilizer.detailedRecommendations.nitrogen.amount && (
-                                                                            <div className="p-2 bg-white rounded-md border border-green-200 mb-2">
-                                                                                <p className="text-sm font-semibold text-green-800">💡 Recommended Amount:</p>
-                                                                                <p className="text-sm text-green-700">{insights.fertilizer.detailedRecommendations.nitrogen.amount}</p>
-                                                                            </div>
-                                                                        )}
-                                                                        <ul className="text-sm space-y-1">
-                                                                            {insights.fertilizer.detailedRecommendations.nitrogen.recommendations.map((rec: string, index: number) => (
-                                                                                <li key={index} className="flex items-start gap-2">
-                                                                                    <span className="text-primary">•</span>
-                                                                                    <span>{rec}</span>
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="space-y-4">
-                                                                    <h3 className="font-medium text-lg">Phosphorus (P) - Level: {insights.fertilizer.detailedRecommendations.phosphorus.level}</h3>
-                                                                    <div className="p-3 bg-green-50 rounded-lg">
-                                                                        <p className="text-sm text-muted-foreground mb-2">
-                                                                            {insights.fertilizer.detailedRecommendations.phosphorus.detailedInfo}
-                                                                        </p>
-                                                                        {insights.fertilizer.detailedRecommendations.phosphorus.amount && (
-                                                                            <div className="p-2 bg-white rounded-md border border-green-200 mb-2">
-                                                                                <p className="text-sm font-semibold text-green-800">💡 Recommended Amount:</p>
-                                                                                <p className="text-sm text-green-700">{insights.fertilizer.detailedRecommendations.phosphorus.amount}</p>
-                                                                            </div>
-                                                                        )}
-                                                                        <ul className="text-sm space-y-1">
-                                                                            {insights.fertilizer.detailedRecommendations.phosphorus.recommendations.map((rec: string, index: number) => (
-                                                                                <li key={index} className="flex items-start gap-2">
-                                                                                    <span className="text-primary">•</span>
-                                                                                    <span>{rec}</span>
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div className="space-y-4">
-                                                                    <h3 className="font-medium text-lg">Potassium (K) - Level: {insights.fertilizer.detailedRecommendations.potassium.level}</h3>
-                                                                    <div className="p-3 bg-purple-50 rounded-lg">
-                                                                        <p className="text-sm text-muted-foreground mb-2">
-                                                                            {insights.fertilizer.detailedRecommendations.potassium.detailedInfo}
-                                                                        </p>
-                                                                        {insights.fertilizer.detailedRecommendations.potassium.amount && (
-                                                                            <div className="p-2 bg-white rounded-md border border-purple-200 mb-2">
-                                                                                <p className="text-sm font-semibold text-purple-800">💡 Recommended Amount:</p>
-                                                                                <p className="text-sm text-purple-700">{insights.fertilizer.detailedRecommendations.potassium.amount}</p>
-                                                                            </div>
-                                                                        )}
-                                                                        <ul className="text-sm space-y-1">
-                                                                            {insights.fertilizer.detailedRecommendations.potassium.recommendations.map((rec: string, index: number) => (
-                                                                                <li key={index} className="flex items-start gap-2">
-                                                                                    <span className="text-primary">•</span>
-                                                                                    <span>{rec}</span>
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
-                                                                    </div>
-                                                                </div>
-                                                            </>
+                                // Show AI/dataset fertilizer recommendations - Same UI as admin verified
+                                <div className="bg-gradient-to-r from-green-50 via-blue-50 to-purple-50 rounded-lg border-2 border-gray-200 overflow-hidden">
+                                    {/* Clickable Header */}
+                                    <button 
+                                        onClick={() => setIsExpanded(!isExpanded)}
+                                        className="w-full p-4 hover:bg-white/50 transition-all duration-200 cursor-pointer"
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3 className="font-bold text-base text-gray-800">NPK Fertilizer Summary</h3>
+                                            {isExpanded ? (
+                                                <ChevronUp className="h-5 w-5 text-gray-600" />
+                                            ) : (
+                                                <ChevronDown className="h-5 w-5 text-gray-600" />
+                                            )}
+                                        </div>
+                                        
+                                        {/* N, P, K in same row - 3 columns */}
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {/* Nitrogen */}
+                                            <div className="bg-white rounded-lg p-3 border-2 border-green-300">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs font-bold text-green-700 uppercase">Nitrogen (N)</span>
+                                                    <Badge className="bg-green-600 text-white text-xs hover:bg-green-700">
+                                                        {insights.fertilizer.detailedRecommendations?.nitrogen?.level || 'N/A'}
+                                                    </Badge>
+                                                </div>
+                                                {!isExpanded && (
+                                                    <p className="text-xs text-gray-600 line-clamp-2">
+                                                        {insights.fertilizer.detailedRecommendations?.nitrogen?.amount || 'No data'}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Phosphorus */}
+                                            <div className="bg-white rounded-lg p-3 border-2 border-blue-300">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs font-bold text-blue-700 uppercase">Phosphorus (P)</span>
+                                                    <Badge className="bg-blue-600 text-white text-xs hover:bg-blue-700">
+                                                        {insights.fertilizer.detailedRecommendations?.phosphorus?.level || 'N/A'}
+                                                    </Badge>
+                                                </div>
+                                                {!isExpanded && (
+                                                    <p className="text-xs text-gray-600 line-clamp-2">
+                                                        {insights.fertilizer.detailedRecommendations?.phosphorus?.amount || 'No data'}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            
+                                            {/* Potassium */}
+                                            <div className="bg-white rounded-lg p-3 border-2 border-purple-300">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-xs font-bold text-purple-700 uppercase">Potassium (K)</span>
+                                                    <Badge className="bg-purple-600 text-white text-xs hover:bg-purple-700">
+                                                        {insights.fertilizer.detailedRecommendations?.potassium?.level || 'N/A'}
+                                                    </Badge>
+                                                </div>
+                                                {!isExpanded && (
+                                                    <p className="text-xs text-gray-600 line-clamp-2">
+                                                        {insights.fertilizer.detailedRecommendations?.potassium?.amount || 'No data'}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        {!isExpanded && (
+                                            <p className="text-xs text-gray-500 mt-3 text-center">Click to expand details</p>
+                                        )}
+                                    </button>
+                                    
+                                    {/* Expandable Content - Shows below but aligned with each column */}
+                                    {isExpanded && (
+                                        <div className="border-t-2 border-gray-200 bg-white">
+                                            <div className="grid grid-cols-3 gap-3 p-4">
+                                                {/* Nitrogen Details */}
+                                                <div className="border-2 border-green-200 rounded-lg overflow-hidden">
+                                                    <div className="bg-green-600 text-white px-3 py-2">
+                                                        <h3 className="font-bold text-sm">Nitrogen (N)</h3>
+                                                    </div>
+                                                    <div className="p-3 space-y-2">
+                                                        {insights.fertilizer.detailedRecommendations?.nitrogen?.amount && (
+                                                            <div className="bg-green-50 rounded-md p-2 border border-green-200">
+                                                                <p className="text-xs font-semibold text-green-800 mb-1 uppercase">Amount</p>
+                                                                <p className="text-xs text-green-900">{insights.fertilizer.detailedRecommendations.nitrogen.amount}</p>
+                                                            </div>
                                                         )}
-
-                                                        <div className="space-y-4">
-                                                            <h3 className="font-medium text-lg">General Recommendations</h3>
-                                                            <div className="p-3 bg-yellow-50 rounded-lg">
-                                                                <ul className="text-sm space-y-1">
-                                                                    {insights.fertilizer.recommendations.map((rec: string, index: number) => (
-                                                                        <li key={index} className="flex items-start gap-2">
-                                                                            <span className="text-primary">•</span>
-                                                                            <span>{rec}</span>
+                                                        
+                                                        {insights.fertilizer.detailedRecommendations?.nitrogen?.recommendations && insights.fertilizer.detailedRecommendations.nitrogen.recommendations.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-gray-700 mb-1 uppercase">Tips</p>
+                                                                <ul className="space-y-1">
+                                                                    {insights.fertilizer.detailedRecommendations.nitrogen.recommendations.map((rec: string, index: number) => (
+                                                                        <li key={index} className="flex items-start gap-1 text-xs">
+                                                                            <span className="text-green-600 font-bold">•</span>
+                                                                            <span className="text-gray-700">{rec}</span>
                                                                         </li>
                                                                     ))}
                                                                 </ul>
                                                             </div>
-                                                        </div>
+                                                        )}
+                                                        
+                                                        {insights.fertilizer.detailedRecommendations?.nitrogen?.detailedInfo && (
+                                                            <div className="bg-gray-50 rounded-md p-2 border border-gray-200">
+                                                                <p className="text-xs text-gray-700 leading-relaxed">{insights.fertilizer.detailedRecommendations.nitrogen.detailedInfo}</p>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                </DialogContent>
-                                            </Dialog>
-                                        </li>
+                                                </div>
+
+                                                {/* Phosphorus Details */}
+                                                <div className="border-2 border-blue-200 rounded-lg overflow-hidden">
+                                                    <div className="bg-blue-600 text-white px-3 py-2">
+                                                        <h3 className="font-bold text-sm">Phosphorus (P)</h3>
+                                                    </div>
+                                                    <div className="p-3 space-y-2">
+                                                        {insights.fertilizer.detailedRecommendations?.phosphorus?.amount && (
+                                                            <div className="bg-blue-50 rounded-md p-2 border border-blue-200">
+                                                                <p className="text-xs font-semibold text-blue-800 mb-1 uppercase">Amount</p>
+                                                                <p className="text-xs text-blue-900">{insights.fertilizer.detailedRecommendations.phosphorus.amount}</p>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {insights.fertilizer.detailedRecommendations?.phosphorus?.recommendations && insights.fertilizer.detailedRecommendations.phosphorus.recommendations.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-gray-700 mb-1 uppercase">Tips</p>
+                                                                <ul className="space-y-1">
+                                                                    {insights.fertilizer.detailedRecommendations.phosphorus.recommendations.map((rec: string, index: number) => (
+                                                                        <li key={index} className="flex items-start gap-1 text-xs">
+                                                                            <span className="text-blue-600 font-bold">•</span>
+                                                                            <span className="text-gray-700">{rec}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {insights.fertilizer.detailedRecommendations?.phosphorus?.detailedInfo && (
+                                                            <div className="bg-gray-50 rounded-md p-2 border border-gray-200">
+                                                                <p className="text-xs text-gray-700 leading-relaxed">{insights.fertilizer.detailedRecommendations.phosphorus.detailedInfo}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Potassium Details */}
+                                                <div className="border-2 border-purple-200 rounded-lg overflow-hidden">
+                                                    <div className="bg-purple-600 text-white px-3 py-2">
+                                                        <h3 className="font-bold text-sm">Potassium (K)</h3>
+                                                    </div>
+                                                    <div className="p-3 space-y-2">
+                                                        {insights.fertilizer.detailedRecommendations?.potassium?.amount && (
+                                                            <div className="bg-purple-50 rounded-md p-2 border border-purple-200">
+                                                                <p className="text-xs font-semibold text-purple-800 mb-1 uppercase">Amount</p>
+                                                                <p className="text-xs text-purple-900">{insights.fertilizer.detailedRecommendations.potassium.amount}</p>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {insights.fertilizer.detailedRecommendations?.potassium?.recommendations && insights.fertilizer.detailedRecommendations.potassium.recommendations.length > 0 && (
+                                                            <div>
+                                                                <p className="text-xs font-semibold text-gray-700 mb-1 uppercase">Tips</p>
+                                                                <ul className="space-y-1">
+                                                                    {insights.fertilizer.detailedRecommendations.potassium.recommendations.map((rec: string, index: number) => (
+                                                                        <li key={index} className="flex items-start gap-1 text-xs">
+                                                                            <span className="text-purple-600 font-bold">•</span>
+                                                                            <span className="text-gray-700">{rec}</span>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {insights.fertilizer.detailedRecommendations?.potassium?.detailedInfo && (
+                                                            <div className="bg-gray-50 rounded-md p-2 border border-gray-200">
+                                                                <p className="text-xs text-gray-700 leading-relaxed">{insights.fertilizer.detailedRecommendations.potassium.detailedInfo}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     )}
-                                </ul>
+                                </div>
                             )}
                         </div>
                     </div>
