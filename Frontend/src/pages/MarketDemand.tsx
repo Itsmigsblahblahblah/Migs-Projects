@@ -244,13 +244,15 @@ const MarketDemand = () => {
 
       // Check if we have cached data for these parameters
       const cachedData = getCachedMarketDemandData(cacheKey);
-      if (cachedData) {
-        console.log('Using cached market data');
+      if (cachedData && cachedData.data && cachedData.data.length > 0) {
+        console.log('Using cached market data with', cachedData.data.length, 'items');
         // Even for cached data, show loading animation for a short time to maintain consistent UX
         await new Promise(resolve => setTimeout(resolve, 300)); // 300ms loading animation
         setMarketData(cachedData.data);
         setLoading(false);
         return;
+      } else {
+        console.log('Cache empty or invalid, fetching fresh data from API...');
       }
 
       // Use relative URL for proxy or full URL for production
@@ -283,8 +285,14 @@ const MarketDemand = () => {
       console.log('Processed marketData:', marketData);
       console.log('Processed marketData length:', marketData.length);
 
-      // Cache the data with the specific parameters
-      setCachedMarketDemandData({ data: marketData }, cacheKey);
+      // Only cache if we have valid data
+      if (marketData.length > 0) {
+        // Cache the data with the specific parameters
+        setCachedMarketDemandData({ data: marketData }, cacheKey);
+        console.log('Cached market data with', marketData.length, 'items');
+      } else {
+        console.warn('API returned empty data, not caching');
+      }
 
       console.log('About to set marketData state with', marketData.length, 'items');
       setMarketData([...marketData]); // Force a new array reference
