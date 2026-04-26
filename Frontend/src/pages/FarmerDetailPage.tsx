@@ -17,6 +17,7 @@ import LedgerContent from "@/components/dashboard/shared/LedgerContent";
 import { collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import AdminCropEditDialog from "@/components/dashboard/admin/AdminCropEditDialog";
+import AdminCropViewDialog from "@/components/dashboard/admin/AdminCropViewDialog";
 import {
   ArrowLeft,
   User,
@@ -31,7 +32,8 @@ import {
   Send,
   MessageSquare,
   Filter,
-  Edit
+  Edit,
+  Eye
 } from "lucide-react";
 
 interface Farmer {
@@ -96,6 +98,7 @@ const FarmerDetailPage = () => {
 
   // Admin crop edit dialog state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedCrop, setSelectedCrop] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -394,6 +397,7 @@ const FarmerDetailPage = () => {
           plantedDate: data.plantedDate,
           createdAt: data.createdAt,
           checklist: data.checklist || [],
+          adminData: data.adminData || null,
           status: data.status || determineCropStatus(data.plantedDate, data.checklist)
         });
       });
@@ -405,6 +409,7 @@ const FarmerDetailPage = () => {
         return dateB.getTime() - dateA.getTime();
       });
 
+      console.log('Loaded crops with adminData:', farmerCrops.map(c => ({ id: c.id, name: c.name, hasAdminData: !!c.adminData })));
       setCrops(farmerCrops);
     } catch (error) {
       console.error("Error loading farmer details:", error);
@@ -956,7 +961,19 @@ const FarmerDetailPage = () => {
                             <span>{calculateHarvestDate(crop.plantedDate, crop.name)}</span>
                           </div>
                         </div>
-                        <div className="mt-4 pt-3 border-t">
+                        <div className="mt-4 pt-3 border-t flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedCrop(crop);
+                              setIsViewDialogOpen(true);
+                            }}
+                            className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View Data
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -964,7 +981,7 @@ const FarmerDetailPage = () => {
                               setSelectedCrop(crop);
                               setIsEditDialogOpen(true);
                             }}
-                            className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                           >
                             <Edit className="h-4 w-4 mr-1" />
                             Edit Data
@@ -1056,7 +1073,19 @@ const FarmerDetailPage = () => {
                             <span>{calculateHarvestDate(crop.plantedDate, crop.name)}</span>
                           </div>
                         </div>
-                        <div className="mt-4 pt-3 border-t">
+                        <div className="mt-4 pt-3 border-t flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedCrop(crop);
+                              setIsViewDialogOpen(true);
+                            }}
+                            className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View Data
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -1064,7 +1093,7 @@ const FarmerDetailPage = () => {
                               setSelectedCrop(crop);
                               setIsEditDialogOpen(true);
                             }}
-                            className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                           >
                             <Edit className="h-4 w-4 mr-1" />
                             Edit Data
@@ -1138,6 +1167,13 @@ const FarmerDetailPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Admin Crop View Dialog */}
+      <AdminCropViewDialog
+        open={isViewDialogOpen}
+        onOpenChange={setIsViewDialogOpen}
+        crop={selectedCrop}
+      />
 
       {/* Admin Crop Edit Dialog */}
       <AdminCropEditDialog

@@ -243,18 +243,9 @@ const EnhancedCropInfoCard = ({ crop }: EnhancedCropInfoCardProps) => {
                         </p>
                     </div>
 
-                    {insights?.fertilizer && (
-                        <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Sprout className="h-4 w-4 text-primary" />
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Soil pH</p>
-                                <InfoTooltip content="The acidity or alkalinity level of your soil, affecting nutrient availability for the crop" />
-                            </div>
-                            <p className="font-bold text-lg">{insights.fertilizer.pH}</p>
-                        </div>
-                    )}
 
-                    {insights?.market && (
+
+                    {(insights?.market || hasAdminData) && (
                         <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
                             <div className="flex items-center gap-2 mb-2">
                                 <Banknote className="h-4 w-4 text-primary" />
