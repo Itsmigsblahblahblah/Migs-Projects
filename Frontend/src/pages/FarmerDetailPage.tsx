@@ -412,8 +412,17 @@ const FarmerDetailPage = () => {
 
       console.log('Crops snapshot size:', cropsSnapshot.size);
       const farmerCrops: any[] = [];
+      const cropsNeedingStatusUpdate: Array<{id: string, status: string}> = [];
+      
       cropsSnapshot.forEach((doc) => {
         const data = doc.data();
+        const status = data.status || determineCropStatus(data.plantedDate, data.checklist);
+        
+        // If status doesn't exist in Firestore, mark for update
+        if (!data.status) {
+          cropsNeedingStatusUpdate.push({ id: doc.id, status });
+        }
+        
         farmerCrops.push({
           id: doc.id,
           userId: data.userId,
@@ -425,9 +434,45 @@ const FarmerDetailPage = () => {
           createdAt: data.createdAt,
           checklist: data.checklist || [],
           adminData: data.adminData || null,
-          status: data.status || determineCropStatus(data.plantedDate, data.checklist)
+          status: status
         });
       });
+      
+      // Update crops that don't have status in Firestore
+      if (cropsNeedingStatusUpdate.length > 0) {
+        console.log(`[FarmerDetailPage] Updating ${cropsNeedingStatusUpdate.length} crops with calculated status...`);
+        for (const { id, status } of cropsNeedingStatusUpdate) {
+          try {
+            const cropRef = doc(firestoreDb, "farmerCrops", id);
+            await updateDoc(cropRef, { status });
+            console.log(`[FarmerDetailPage]   ✓ Updated crop ${id} to status: "${status}"`);
+          } catch (error) {
+            console.error(`[FarmerDetailPage] Error updating crop ${id}:`, error);
+          }
+        }
+      }
+      
+      // Also reset crops that were incorrectly marked as post-harvest based on old time-based logic
+      // If crop has no checklist and is marked as post-harvest, reset to preparation
+      const resetPromises = cropsSnapshot.docs
+        .filter(doc => {
+          const data = doc.data();
+          return data.status === 'post-harvest' && (!data.checklist || data.checklist.length === 0);
+        })
+        .map(async (cropDoc) => {
+          try {
+            const cropRef = doc(firestoreDb, "farmerCrops", cropDoc.id);
+            await updateDoc(cropRef, { status: 'preparation' });
+            console.log(`[FarmerDetailPage]   ↺ Reset crop ${cropDoc.id} (${cropDoc.data().name}) from post-harvest to preparation (no checklist)`);
+          } catch (error) {
+            console.error(`[FarmerDetailPage] Error resetting crop ${cropDoc.id}:`, error);
+          }
+        });
+      
+      if (resetPromises.length > 0) {
+        console.log(`[FarmerDetailPage] Resetting ${resetPromises.length} incorrectly marked post-harvest crops...`);
+        await Promise.all(resetPromises);
+      }
 
       // Sort crops by createdAt (newest first)
       farmerCrops.sort((a, b) => {
@@ -501,38 +546,101 @@ const FarmerDetailPage = () => {
     }
 
     // Fallback to time-based if no checklist
-    try {
-      let planted: Date;
-
-      if (typeof plantedDate === 'string') {
-        planted = new Date(plantedDate);
-      } else if (plantedDate?.toDate) {
-        planted = plantedDate.toDate();
-      } else if (plantedDate instanceof Date) {
-        planted = plantedDate;
-      } else {
-        return "preparation";
-      }
-
-      if (isNaN(planted.getTime())) {
-        return "preparation";
-      }
-
-      const now = new Date();
-      const daysDiff = Math.floor((now.getTime() - planted.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysDiff > 90) return "post-harvest";
-      if (daysDiff > 60) return "harvesting";
-      if (daysDiff > 30) return "maintenance";
-      if (daysDiff > 14) return "planting";
-      return "preparation";
-    } catch {
-      return "preparation";
-    }
+    // NOTE: Without checklist, we cannot determine actual progress, so default to "preparation"
+    return "preparation";
   };
 
   const getCropsByStatus = (status: string) => {
     return crops.filter(crop => crop.status === status);
+  };
+
+  // Helper function to calculate dynamic status based on checklist
+  const getCropDynamicStatus = (crop: any) => {
+    const checklist = crop.checklist;
+    if (!checklist || checklist.length === 0) {
+      return crop.status || 'preparation';
+    }
+
+    try {
+      const categories = ['Preparation', 'Planting', 'Maintenance', 'Harvesting', 'Post-Harvest'];
+      const categoryProgress = categories.map(category => {
+        const itemsInCategory = checklist.filter((item: any) => item.category === category);
+        const completedItems = itemsInCategory.filter((item: any) => item.completed);
+        return {
+          category,
+          total: itemsInCategory.length,
+          completed: completedItems.length,
+          percentage: itemsInCategory.length > 0 ? (completedItems.length / itemsInCategory.length) * 100 : 0
+        };
+      });
+
+      // Determine status based on completion
+      const postHarvest = categoryProgress.find(c => c.category === 'Post-Harvest');
+      if (postHarvest && postHarvest.percentage === 100) return 'post-harvest';
+
+      const harvesting = categoryProgress.find(c => c.category === 'Harvesting');
+      if (harvesting && harvesting.percentage === 100) return 'harvesting';
+
+      const maintenance = categoryProgress.find(c => c.category === 'Maintenance');
+      if (maintenance && maintenance.percentage === 100) return 'harvesting';
+
+      const planting = categoryProgress.find(c => c.category === 'Planting');
+      if (planting && planting.percentage === 100) return 'maintenance';
+
+      const preparation = categoryProgress.find(c => c.category === 'Preparation');
+      if (preparation && preparation.percentage === 100) return 'planting';
+
+      return 'preparation';
+    } catch {
+      return crop.status || 'preparation';
+    }
+  };
+
+  // Helper function to calculate harvest date with checklist awareness
+  const getCropHarvestDate = (crop: any) => {
+    const checklist = crop.checklist;
+    
+    // Check if all Maintenance items are completed
+    const maintenanceItems = checklist?.filter((item: any) => item.category === 'Maintenance') || [];
+    const allMaintenanceCompleted = maintenanceItems.length > 0 && maintenanceItems.every((item: any) => item.completed);
+    
+    // If all maintenance is completed, get the date of the last completed item
+    if (allMaintenanceCompleted) {
+      const completedWithDates = maintenanceItems.filter((item: any) => 
+        item.completed && item.completedAt
+      );
+      
+      if (completedWithDates.length > 0) {
+        const latestDate = completedWithDates.reduce((latest: Date, item: any) => {
+          let itemDate: Date;
+          if (typeof item.completedAt === 'string') {
+            itemDate = new Date(item.completedAt);
+          } else if (item.completedAt?.toDate) {
+            itemDate = item.completedAt.toDate();
+          } else if (item.completedAt instanceof Date) {
+            itemDate = item.completedAt;
+          } else {
+            itemDate = new Date(0);
+          }
+          return itemDate > latest ? itemDate : latest;
+        }, new Date(0));
+        
+        return {
+          date: latestDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }),
+          label: 'Actual Harvest'
+        };
+      }
+    }
+    
+    // Otherwise, return the calculated estimated date
+    return {
+      date: calculateHarvestDate(crop.plantedDate, crop.name),
+      label: 'Est. Harvest'
+    };
   };
 
   const formatDate = (dateString: string) => {
@@ -644,16 +752,18 @@ const FarmerDetailPage = () => {
     );
   }
 
-  // Group crops by status
+  // Group crops by dynamic status (calculated from checklist completion)
   // Active crops: preparation, planting, maintenance, harvesting
-  const inProgressCrops = crops.filter(crop => 
-    ['preparation', 'planting', 'maintenance', 'harvesting'].includes(crop.status)
-  );
+  const inProgressCrops = crops.filter(crop => {
+    const dynamicStatus = getCropDynamicStatus(crop);
+    return ['preparation', 'planting', 'maintenance', 'harvesting'].includes(dynamicStatus);
+  });
   
   // Harvested crops: post-harvest
-  const harvestedCrops = crops.filter(crop => 
-    crop.status === 'post-harvest'
-  );
+  const harvestedCrops = crops.filter(crop => {
+    const dynamicStatus = getCropDynamicStatus(crop);
+    return dynamicStatus === 'post-harvest';
+  });
 
   // Apply filtering to crops
   const filteredInProgressCrops = filterCrops(inProgressCrops, inProgressFilters);
@@ -732,17 +842,33 @@ const FarmerDetailPage = () => {
       }
       
       const cropRef = doc(firestoreDb, "farmerCrops", cropId);
-      await updateDoc(cropRef, {
+      
+      // Extract status from adminData if it exists
+      const { status, ...otherAdminData } = adminData;
+      
+      // Prepare update data
+      const updateData: any = {
         adminData: {
-          ...adminData,
+          ...otherAdminData,
           enteredBy: "admin@majayjay.farm",
           enteredAt: Timestamp.now()
         }
-      });
+      };
+      
+      // If status is provided and different from current, add it to update
+      if (status) {
+        updateData.status = status;
+      }
+      
+      await updateDoc(cropRef, updateData);
       
       // Update local state
       setCrops(prev => prev.map(crop => 
-        crop.id === cropId ? { ...crop, adminData: { ...adminData, enteredBy: "admin@majayjay.farm", enteredAt: Timestamp.now() } } : crop
+        crop.id === cropId ? { 
+          ...crop, 
+          status: status || crop.status,
+          adminData: { ...otherAdminData, enteredBy: "admin@majayjay.farm", enteredAt: Timestamp.now() } 
+        } : crop
       ));
       
       toast({
@@ -977,12 +1103,16 @@ const FarmerDetailPage = () => {
               <CardContent>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {paginatedInProgressCrops.map((crop) => (
+                  {paginatedInProgressCrops.map((crop) => {
+                    const dynamicStatus = getCropDynamicStatus(crop);
+                    const harvestDateInfo = getCropHarvestDate(crop);
+                    
+                    return (
                     <Card key={crop.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
                           <h3 className="font-semibold">{crop.name}</h3>
-                          <Badge variant="secondary">{crop.status}</Badge>
+                          <Badge variant="secondary">{dynamicStatus}</Badge>
                         </div>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
@@ -1002,8 +1132,8 @@ const FarmerDetailPage = () => {
                             <span>{formatTimestamp(crop.plantedDate)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Est. Harvest:</span>
-                            <span>{calculateHarvestDate(crop.plantedDate, crop.name)}</span>
+                            <span className="text-muted-foreground">{harvestDateInfo.label}:</span>
+                            <span>{harvestDateInfo.date}</span>
                           </div>
                         </div>
                         <div className="mt-4 pt-3 border-t flex gap-2">
@@ -1022,7 +1152,8 @@ const FarmerDetailPage = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Pagination for In Progress Crops */}
@@ -1077,12 +1208,16 @@ const FarmerDetailPage = () => {
               <CardContent>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {paginatedHarvestedCrops.map((crop) => (
+                  {paginatedHarvestedCrops.map((crop) => {
+                    const dynamicStatus = getCropDynamicStatus(crop);
+                    const harvestDateInfo = getCropHarvestDate(crop);
+                    
+                    return (
                     <Card key={crop.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
                           <h3 className="font-semibold">{crop.name}</h3>
-                          <Badge variant="default">{crop.status}</Badge>
+                          <Badge variant="default">{dynamicStatus}</Badge>
                         </div>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
@@ -1102,8 +1237,8 @@ const FarmerDetailPage = () => {
                             <span>{formatTimestamp(crop.plantedDate)}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Est. Harvest:</span>
-                            <span>{calculateHarvestDate(crop.plantedDate, crop.name)}</span>
+                            <span className="text-muted-foreground">{harvestDateInfo.label}:</span>
+                            <span>{harvestDateInfo.date}</span>
                           </div>
                         </div>
                         <div className="mt-4 pt-3 border-t flex gap-2">
@@ -1122,7 +1257,8 @@ const FarmerDetailPage = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Pagination for Harvested Crops */}

@@ -16,7 +16,7 @@ interface ChecklistItem {
     title: string;
     completed: boolean;
     category: string;
-    completedAt?: string; // Add timestamp for completion
+    completedAt?: any; // Timestamp for completion (can be string or Firestore Timestamp)
     detailedInstructions?: string[]; // Add detailed instructions property
 }
 
@@ -844,8 +844,54 @@ const CropDetails = () => {
     }
 
     const growthStage = calculateGrowthStage(crop.plantedDate, checklist);
+    
+    // Check if all Maintenance items are completed
+    const maintenanceItems = checklist.filter(item => item.category === 'Maintenance');
+    const allMaintenanceCompleted = maintenanceItems.length > 0 && maintenanceItems.every(item => item.completed);
+    
+    // Get the date of the last completed Maintenance item
+    const getLastMaintenanceDate = () => {
+        if (!allMaintenanceCompleted || maintenanceItems.length === 0) return null;
+        
+        // Find all completed maintenance items with dates
+        const completedWithDates = maintenanceItems.filter(item => 
+            item.completed && item.completedAt
+        );
+        
+        if (completedWithDates.length === 0) return null;
+        
+        // Get the latest completed date
+        const latestDate = completedWithDates.reduce((latest, item) => {
+            let itemDate: Date;
+            if (typeof item.completedAt === 'string') {
+                itemDate = new Date(item.completedAt);
+            } else if (item.completedAt?.toDate) {
+                itemDate = item.completedAt.toDate();
+            } else if (item.completedAt instanceof Date) {
+                itemDate = item.completedAt;
+            } else {
+                itemDate = new Date(0);
+            }
+            return itemDate > latest ? itemDate : latest;
+        }, new Date(0));
+        
+        return latestDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+    
+    const lastMaintenanceDate = getLastMaintenanceDate();
+    
+    // Use actual harvest date if all maintenance is completed, otherwise use estimated
+    const harvestDateRange = allMaintenanceCompleted && lastMaintenanceDate 
+        ? lastMaintenanceDate 
+        : calculateHarvestDateRange(crop.plantedDate, crop.name);
+    
+    const harvestLabel = allMaintenanceCompleted ? 'Actual Harvest' : 'Est. Harvest';
+    
     const harvestDate = calculateHarvestDate(crop.plantedDate, crop.name);
-    const harvestDateRange = calculateHarvestDateRange(crop.plantedDate, crop.name);
     const productivity = calculateProductivity();
     const checklistProductivity = productivity;
 
@@ -959,7 +1005,7 @@ const CropDetails = () => {
                                 <Sun className="h-5 w-5 text-green-500" />
                             </div>
                             <div>
-                                <p className="text-sm text-muted-foreground">Est. Harvest</p>
+                                <p className="text-sm text-muted-foreground">{harvestLabel}</p>
                                 <p className="font-medium">{harvestDateRange}</p>
                             </div>
                         </div>
@@ -973,7 +1019,7 @@ const CropDetails = () => {
                 <div className="w-full">
                     <GrowthInsightsCard
                         growthStage={growthStage}
-                        harvestDate={harvestDateRange}
+                        harvestDate={harvestLabel === 'Actual Harvest' ? `${harvestLabel}: ${harvestDateRange}` : harvestDateRange}
                         productivity={productivity}
                         scrollToMaintenance={() => {
                             if (maintenanceRef.current) {

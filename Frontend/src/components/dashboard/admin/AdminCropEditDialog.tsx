@@ -36,6 +36,7 @@ interface AdminCropEditDialogProps {
         plantedDate: any;
         status: string;
         adminData?: any;
+        checklist?: any[];
     } | null;
     onSave: (cropId: string, adminData: any) => Promise<void>;
 }
@@ -46,6 +47,7 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
     const [insights, setInsights] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [status, setStatus] = useState<string>("preparation");
     
     // Section edit mode state
     const [marketPriceEditing, setMarketPriceEditing] = useState(false);
@@ -56,6 +58,9 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
     
     // Initialize form state with AI data when dialog opens
     const initializeFormState = () => {
+        // Set status from current crop
+        setStatus(crop.status || "preparation");
+        
         // Initialize with admin data if exists, otherwise use AI-generated data
         const mp = crop.adminData?.marketPrice || insights?.profit?.averageMarketPrice || 0;
         const sc = crop.adminData?.suggestedCapital || insights?.profit?.suggestedCapital || 0;
@@ -163,6 +168,9 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
         console.log('[AdminCropEditDialog] Initializing form with insights:', cropInsights);
         console.log('[AdminCropEditDialog] Crop admin data:', crop.adminData);
         
+        // Set status from current crop
+        setStatus(crop.status || "preparation");
+        
         // Initialize with admin data if exists, otherwise use AI-generated data
         const mp = crop.adminData?.marketPrice || cropInsights?.profit?.averageMarketPrice || 0;
         const sc = crop.adminData?.suggestedCapital || cropInsights?.profit?.suggestedCapital || 0;
@@ -215,6 +223,7 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
     };
 
     const resetForm = () => {
+        setStatus("preparation");
         setMarketPrice("");
         setSuggestedCapital("");
         setNitrogenLevel("M");
@@ -257,6 +266,7 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
 
         try {
             const adminData = {
+                status: status,
                 marketPrice: parseFloat(marketPrice),
                 suggestedCapital: parseFloat(suggestedCapital),
                 fertilizerRecommendations: {
@@ -356,7 +366,59 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
         }
     };
 
-    // Calculate harvest date helper
+    // Calculate crop status based on checklist completion
+    const calculateCropStatus = () => {
+        const checklist = crop.checklist;
+        if (!checklist || checklist.length === 0) {
+            return crop.status || 'preparation';
+        }
+
+        try {
+            const categories = ['Preparation', 'Planting', 'Maintenance', 'Harvesting', 'Post-Harvest'];
+            const categoryProgress = categories.map(category => {
+                const itemsInCategory = checklist.filter((item: any) => item.category === category);
+                const completedItems = itemsInCategory.filter((item: any) => item.completed);
+                return {
+                    category,
+                    total: itemsInCategory.length,
+                    completed: completedItems.length,
+                    percentage: itemsInCategory.length > 0 ? (completedItems.length / itemsInCategory.length) * 100 : 0
+                };
+            });
+
+            // Determine status based on completion
+            const postHarvest = categoryProgress.find(c => c.category === 'Post-Harvest');
+            if (postHarvest && postHarvest.percentage === 100) {
+                return 'post-harvest';
+            }
+
+            const harvesting = categoryProgress.find(c => c.category === 'Harvesting');
+            if (harvesting && harvesting.percentage === 100) {
+                return 'harvesting';
+            }
+
+            const maintenance = categoryProgress.find(c => c.category === 'Maintenance');
+            if (maintenance && maintenance.percentage === 100) {
+                return 'harvesting';
+            }
+
+            const planting = categoryProgress.find(c => c.category === 'Planting');
+            if (planting && planting.percentage === 100) {
+                return 'maintenance';
+            }
+
+            const preparation = categoryProgress.find(c => c.category === 'Preparation');
+            if (preparation && preparation.percentage === 100) {
+                return 'planting';
+            }
+
+            return 'preparation';
+        } catch {
+            return crop.status || 'preparation';
+        }
+    };
+
+    // Calculate harvest date helper - MUST be before other functions that use it
     const calculateHarvestDate = (plantedDate: any, cropName: string) => {
         try {
             let planted: Date;
@@ -406,6 +468,56 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
         }
     };
 
+    // Calculate harvest date based on checklist completion
+    const calculateHarvestDateWithChecklist = () => {
+        const checklist = crop.checklist;
+        
+        // Check if all Maintenance items are completed
+        const maintenanceItems = checklist?.filter((item: any) => item.category === 'Maintenance') || [];
+        const allMaintenanceCompleted = maintenanceItems.length > 0 && maintenanceItems.every((item: any) => item.completed);
+        
+        // If all maintenance is completed, get the date of the last completed item
+        if (allMaintenanceCompleted) {
+            const completedWithDates = maintenanceItems.filter((item: any) => 
+                item.completed && item.completedAt
+            );
+            
+            if (completedWithDates.length > 0) {
+                const latestDate = completedWithDates.reduce((latest: Date, item: any) => {
+                    let itemDate: Date;
+                    if (typeof item.completedAt === 'string') {
+                        itemDate = new Date(item.completedAt);
+                    } else if (item.completedAt?.toDate) {
+                        itemDate = item.completedAt.toDate();
+                    } else if (item.completedAt instanceof Date) {
+                        itemDate = item.completedAt;
+                    } else {
+                        itemDate = new Date(0);
+                    }
+                    return itemDate > latest ? itemDate : latest;
+                }, new Date(0));
+                
+                return {
+                    date: latestDate.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    }),
+                    label: 'Actual Harvest Date'
+                };
+            }
+        }
+        
+        // Otherwise, return the calculated estimated date
+        return {
+            date: calculateHarvestDate(crop.plantedDate, crop.name),
+            label: 'Est. Harvest Date'
+        };
+    };
+    
+    const currentStatus = calculateCropStatus();
+    const harvestDateInfo = calculateHarvestDateWithChecklist();
+
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -434,8 +546,8 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Status</p>
-                                <Badge variant={crop.status === 'post-harvest' ? 'default' : 'secondary'}>
-                                    {crop.status}
+                                <Badge variant={currentStatus === 'post-harvest' ? 'default' : 'secondary'}>
+                                    {currentStatus}
                                 </Badge>
                             </div>
                             <div>
@@ -455,8 +567,8 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
                                 <p className="font-semibold">{formatTimestamp(crop.plantedDate)}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-muted-foreground">Est. Harvest Date</p>
-                                <p className="font-semibold">{calculateHarvestDate(crop.plantedDate, crop.name)}</p>
+                                <p className="text-sm text-muted-foreground">{harvestDateInfo.label}</p>
+                                <p className="font-semibold">{harvestDateInfo.date}</p>
                             </div>
                         </div>
 

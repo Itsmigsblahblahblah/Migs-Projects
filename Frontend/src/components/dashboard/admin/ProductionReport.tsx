@@ -57,12 +57,12 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
         const fetchProductionData = async () => {
             try {
                 setLoading(true);
-                console.log('[ProductionReport] Starting to fetch data...');
+                console.log('[ProductionReport] Starting to fetch production data...');
                 
                 // Step 1: Fetch all farmers
                 const farmersRef = collection(db, "farmers");
                 const farmersSnapshot = await getDocs(farmersRef);
-                console.log('[ProductionReport] Total farmers fetched:', farmersSnapshot.size);
+                console.log('[ProductionReport] Total farmers found:', farmersSnapshot.size);
                 
                 const records: ProductionRecord[] = [];
                 
@@ -73,53 +73,100 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                     const farmerName = farmerData.fullName || 'Unknown Farmer';
                     const barangay = farmerData.homeAddress || farmerData.farmAddress || 'Unknown Barangay';
                     
-                    console.log(`[ProductionReport] Checking farmer: ${farmerName} (${farmerId})`);
+                    console.log(`[ProductionReport] Fetching crops for farmer: ${farmerName} (${farmerId})`);
                     
                     // Fetch this farmer's crops (same as FarmerDetailPage)
                     const cropsRef = collection(db, "farmerCrops");
                     const cropsQuery = query(cropsRef, where("userId", "==", farmerId));
                     const cropsSnapshot = await getDocs(cropsQuery);
                     
-                    console.log(`[ProductionReport]   - Found ${cropsSnapshot.size} crops for ${farmerName}`);
+                    console.log(`[ProductionReport]   Total crops for ${farmerName}:`, cropsSnapshot.size);
                     
                     // Step 3: Check each crop for post-harvest status
                     for (const cropDoc of cropsSnapshot.docs) {
                         const cropData = cropDoc.data();
-                        
-                        // ONLY use the explicit status field from Firestore
                         const status = cropData.status;
                         
-                        console.log(`[ProductionReport]   - Crop: ${cropData.name}`);
-                        console.log(`[ProductionReport]     Raw Status: "${status}" | Type: ${typeof status} | Is undefined: ${status === undefined}`);
-                        console.log(`[ProductionReport]     Is "post-harvest": ${status === 'post-harvest'}`);
-                        console.log(`[ProductionReport]     Is "harvested": ${status === 'harvested'}`);
-                        console.log(`[ProductionReport]     Strict check === 'post-harvest': ${status === 'post-harvest'}`);
+                        console.log(`[ProductionReport]     Crop: ${cropData.name}`);
+                        console.log(`[ProductionReport]       Status in Firestore: "${status}"`);
+                        console.log(`[ProductionReport]       Has checklist: ${!!cropData.checklist}`);
+                        console.log(`[ProductionReport]       plantedDate:`, cropData.plantedDate);
                         
-                        // STRICTLY include ONLY if status is exactly 'post-harvest'
-                        if (status === 'post-harvest') {
-                            console.log(`[ProductionReport]     ✓✓✓ INCLUDED - ${cropData.name} is POST-HARVEST`);
+                        // Check if crop is post-harvest using dynamic status (from checklist completion)
+                        const isPostHarvest = (() => {
+                            // If status is explicitly set to post-harvest or harvested in Firestore
+                            if (status === 'post-harvest' || status === 'harvested') {
+                                return true;
+                            }
+                            
+                            // Check if all Maintenance checklist items are completed
+                            const checklist = cropData.checklist;
+                            if (checklist && checklist.length > 0) {
+                                const maintenanceItems = checklist.filter((item: any) => item.category === 'Maintenance');
+                                if (maintenanceItems.length > 0 && maintenanceItems.every((item: any) => item.completed)) {
+                                    return true; // All maintenance completed = ready for post-harvest
+                                }
+                            }
+                            
+                            return false;
+                        })();
+                        
+                        if (isPostHarvest) {
+                            console.log(`[ProductionReport]       ✓ INCLUDING - Crop is post-harvest (status: "${status}", maintenance: complete)`);
                             
                             // Calculate yield (quantity per land area)
                             const quantity = cropData.harvestData?.quantity || cropData.puhunan || 0;
                             const landArea = cropData.landArea || 1;
                             const yieldPerHectare = landArea > 0 ? (quantity / landArea) : 0;
 
-                            // Get harvest date
+                            // Get harvest date - use actual completion date if all maintenance is done
                             let harvestDate = new Date().toISOString().split('T')[0];
-                            if (cropData.harvestData?.harvestedDate) {
-                                harvestDate = cropData.harvestData.harvestedDate.toDate ? 
-                                    cropData.harvestData.harvestedDate.toDate().toISOString().split('T')[0] :
-                                    new Date(cropData.harvestData.harvestedDate).toISOString().split('T')[0];
-                            } else if (cropData.createdAt?.toDate) {
-                                harvestDate = cropData.createdAt.toDate().toISOString().split('T')[0];
-                            } else if (cropData.createdAt) {
-                                harvestDate = new Date(cropData.createdAt).toISOString().split('T')[0];
+                            
+                            // First try to get the last maintenance completion date
+                            const checklist = cropData.checklist;
+                            if (checklist && checklist.length > 0) {
+                                const maintenanceItems = checklist.filter((item: any) => item.category === 'Maintenance');
+                                const allMaintenanceCompleted = maintenanceItems.length > 0 && maintenanceItems.every((item: any) => item.completed);
+                                
+                                if (allMaintenanceCompleted) {
+                                    // Get the date of the last completed maintenance item
+                                    const completedWithDates = maintenanceItems.filter((item: any) => item.completed && item.completedAt);
+                                    if (completedWithDates.length > 0) {
+                                        const latestDate = completedWithDates.reduce((latest: Date, item: any) => {
+                                            let itemDate: Date;
+                                            if (typeof item.completedAt === 'string') {
+                                                itemDate = new Date(item.completedAt);
+                                            } else if (item.completedAt?.toDate) {
+                                                itemDate = item.completedAt.toDate();
+                                            } else if (item.completedAt instanceof Date) {
+                                                itemDate = item.completedAt;
+                                            } else {
+                                                itemDate = new Date(0);
+                                            }
+                                            return itemDate > latest ? itemDate : latest;
+                                        }, new Date(0));
+                                        harvestDate = latestDate.toISOString().split('T')[0];
+                                    }
+                                }
+                            }
+                            
+                            // Fallback to harvestData or createdAt
+                            if (harvestDate === new Date().toISOString().split('T')[0]) {
+                                if (cropData.harvestData?.harvestedDate) {
+                                    harvestDate = cropData.harvestData.harvestedDate.toDate ? 
+                                        cropData.harvestData.harvestedDate.toDate().toISOString().split('T')[0] :
+                                        new Date(cropData.harvestData.harvestedDate).toISOString().split('T')[0];
+                                } else if (cropData.createdAt?.toDate) {
+                                    harvestDate = cropData.createdAt.toDate().toISOString().split('T')[0];
+                                } else if (cropData.createdAt) {
+                                    harvestDate = new Date(cropData.createdAt).toISOString().split('T')[0];
+                                }
                             }
 
                             records.push({
                                 id: cropDoc.id,
-                                farmerName, // Direct from farmer doc
-                                barangay, // Direct from farmer doc
+                                farmerName,
+                                barangay,
                                 harvestedCrop: cropData.name || 'Unknown Crop',
                                 quantity: quantity,
                                 unit: 'kg',
@@ -127,17 +174,19 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                 landArea,
                                 yield: Math.round(yieldPerHectare * 100) / 100
                             });
-                            console.log(`[ProductionReport]     Record added. Total records now: ${records.length}`);
                         } else {
-                            console.log(`[ProductionReport]     ✗ EXCLUDED - ${cropData.name} (status: "${status}")`);
+                            console.log(`[ProductionReport]       ✗ EXCLUDED - Not post-harvest (status: "${status}")`);
                         }
                     }
                 }
 
+                console.log('[ProductionReport] ===== FINAL RESULTS =====');
+                console.log('[ProductionReport] Total production records:', records.length);
+                console.log('[ProductionReport] Records:', records.map(r => `${r.harvestedCrop} (${r.farmerName})`));
+
                 // Sort by harvest date (newest first)
                 records.sort((a, b) => new Date(b.harvestDate).getTime() - new Date(a.harvestDate).getTime());
 
-                console.log('[ProductionReport] Total harvested records:', records.length);
                 setProductionData(records);
             } catch (error) {
                 console.error('[ProductionReport] Error fetching production data:', error);

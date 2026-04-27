@@ -219,6 +219,7 @@ export const useCropManagement = () => {
                 landArea: parseFloat(newCrop.landArea),
                 plantedDate: newCrop.plantedDate, // This is already a string in YYYY-MM-DD format
                 puhunan: parseFloat(newCrop.puhunan),
+                status: "preparation", // Default status when crop is first added
                 ...(checklistToCopy && { checklist: checklistToCopy })
             };
 
