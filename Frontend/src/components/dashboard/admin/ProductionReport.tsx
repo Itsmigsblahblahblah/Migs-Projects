@@ -1,8 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Download, ChevronLeft, ChevronRight, Wheat, Calendar, TrendingUp } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
+import StatsCard from "@/components/shared/StatsCard";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 
 interface ProductionRecord {
     id: string;
@@ -16,52 +20,177 @@ interface ProductionRecord {
     yield: number;
 }
 
+interface Farmer {
+    uid: string;
+    fullName: string;
+    homeAddress?: string;
+    farmAddress?: string;
+}
+
+interface Crop {
+    id: string;
+    userId: string;
+    name: string;
+    landArea: number;
+    plantedDate: any;
+    puhunan: number;
+    createdAt: any;
+    harvestData?: any;
+    status?: string;
+}
+
 interface ProductionReportProps {
     onExport: () => void;
 }
 
 const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const [currentPage, setCurrentPage] = useState(1);
+    const [productionData, setProductionData] = useState<ProductionRecord[]>([]);
+    const [loading, setLoading] = useState(true);
     const recordsPerPage = 10;
 
-    // Mock production data - you can replace this with actual data from Firestore
-    const mockProductionData: ProductionRecord[] = [
-        {
-            id: "1",
-            farmerName: "Juan Dela Cruz",
-            barangay: "Barangay 1",
-            harvestedCrop: "Rice",
-            quantity: 150,
-            unit: "kg",
-            harvestDate: "2024-03-15",
-            landArea: 2.5,
-            yield: 60
-        },
-        {
-            id: "2",
-            farmerName: "Maria Santos",
-            barangay: "Barangay 3",
-            harvestedCrop: "Corn",
-            quantity: 200,
-            unit: "kg",
-            harvestDate: "2024-03-20",
-            landArea: 3.0,
-            yield: 66.67
-        },
-        {
-            id: "3",
-            farmerName: "Pedro Reyes",
-            barangay: "Barangay 2",
-            harvestedCrop: "Tomatoes",
-            quantity: 80,
-            unit: "kg",
-            harvestDate: "2024-03-25",
-            landArea: 1.5,
-            yield: 53.33
-        },
-    ];
+    // Color palette for crop bar chart (same as Problem Type Distribution)
+    const CROP_COLORS = ['#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#10b981', '#f59e0b', '#06b6d4', '#ec4899'];
 
-    const [productionData] = useState<ProductionRecord[]>(mockProductionData);
+    // Fetch real data from Firestore - Farmer Profile approach
+    useEffect(() => {
+        const fetchProductionData = async () => {
+            try {
+                setLoading(true);
+                console.log('[ProductionReport] Starting to fetch data...');
+                
+                // Step 1: Fetch all farmers
+                const farmersRef = collection(db, "farmers");
+                const farmersSnapshot = await getDocs(farmersRef);
+                console.log('[ProductionReport] Total farmers fetched:', farmersSnapshot.size);
+                
+                const records: ProductionRecord[] = [];
+                
+                // Step 2: For EACH farmer, fetch their crops (like Farmer Profile page)
+                for (const farmerDoc of farmersSnapshot.docs) {
+                    const farmerId = farmerDoc.id;
+                    const farmerData = farmerDoc.data();
+                    const farmerName = farmerData.fullName || 'Unknown Farmer';
+                    const barangay = farmerData.homeAddress || farmerData.farmAddress || 'Unknown Barangay';
+                    
+                    console.log(`[ProductionReport] Checking farmer: ${farmerName} (${farmerId})`);
+                    
+                    // Fetch this farmer's crops (same as FarmerDetailPage)
+                    const cropsRef = collection(db, "farmerCrops");
+                    const cropsQuery = query(cropsRef, where("userId", "==", farmerId));
+                    const cropsSnapshot = await getDocs(cropsQuery);
+                    
+                    console.log(`[ProductionReport]   - Found ${cropsSnapshot.size} crops for ${farmerName}`);
+                    
+                    // Step 3: Check each crop for post-harvest status
+                    for (const cropDoc of cropsSnapshot.docs) {
+                        const cropData = cropDoc.data();
+                        
+                        // ONLY use the explicit status field from Firestore
+                        const status = cropData.status;
+                        
+                        console.log(`[ProductionReport]   - Crop: ${cropData.name}`);
+                        console.log(`[ProductionReport]     Raw Status: "${status}" | Type: ${typeof status} | Is undefined: ${status === undefined}`);
+                        console.log(`[ProductionReport]     Is "post-harvest": ${status === 'post-harvest'}`);
+                        console.log(`[ProductionReport]     Is "harvested": ${status === 'harvested'}`);
+                        console.log(`[ProductionReport]     Strict check === 'post-harvest': ${status === 'post-harvest'}`);
+                        
+                        // STRICTLY include ONLY if status is exactly 'post-harvest'
+                        if (status === 'post-harvest') {
+                            console.log(`[ProductionReport]     ✓✓✓ INCLUDED - ${cropData.name} is POST-HARVEST`);
+                            
+                            // Calculate yield (quantity per land area)
+                            const quantity = cropData.harvestData?.quantity || cropData.puhunan || 0;
+                            const landArea = cropData.landArea || 1;
+                            const yieldPerHectare = landArea > 0 ? (quantity / landArea) : 0;
+
+                            // Get harvest date
+                            let harvestDate = new Date().toISOString().split('T')[0];
+                            if (cropData.harvestData?.harvestedDate) {
+                                harvestDate = cropData.harvestData.harvestedDate.toDate ? 
+                                    cropData.harvestData.harvestedDate.toDate().toISOString().split('T')[0] :
+                                    new Date(cropData.harvestData.harvestedDate).toISOString().split('T')[0];
+                            } else if (cropData.createdAt?.toDate) {
+                                harvestDate = cropData.createdAt.toDate().toISOString().split('T')[0];
+                            } else if (cropData.createdAt) {
+                                harvestDate = new Date(cropData.createdAt).toISOString().split('T')[0];
+                            }
+
+                            records.push({
+                                id: cropDoc.id,
+                                farmerName, // Direct from farmer doc
+                                barangay, // Direct from farmer doc
+                                harvestedCrop: cropData.name || 'Unknown Crop',
+                                quantity: quantity,
+                                unit: 'kg',
+                                harvestDate,
+                                landArea,
+                                yield: Math.round(yieldPerHectare * 100) / 100
+                            });
+                            console.log(`[ProductionReport]     Record added. Total records now: ${records.length}`);
+                        } else {
+                            console.log(`[ProductionReport]     ✗ EXCLUDED - ${cropData.name} (status: "${status}")`);
+                        }
+                    }
+                }
+
+                // Sort by harvest date (newest first)
+                records.sort((a, b) => new Date(b.harvestDate).getTime() - new Date(a.harvestDate).getTime());
+
+                console.log('[ProductionReport] Total harvested records:', records.length);
+                setProductionData(records);
+            } catch (error) {
+                console.error('[ProductionReport] Error fetching production data:', error);
+                setProductionData([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProductionData();
+    }, []);
+
+    // Calculate analytics data
+    const analyticsData = useMemo(() => {
+        // Total harvest (count of harvest records)
+        const totalHarvest = productionData.length;
+
+        // Monthly harvest (current month - count of harvests)
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        
+        const monthlyHarvest = productionData
+            .filter(record => {
+                const harvestDate = new Date(record.harvestDate);
+                return harvestDate.getMonth() === currentMonth && harvestDate.getFullYear() === currentYear;
+            }).length;
+
+        // Total harvest per crop (count of harvest records per crop)
+        const harvestPerCrop = productionData.reduce((acc, record) => {
+            const cropName = record.harvestedCrop.toLowerCase();
+            if (acc[cropName]) {
+                acc[cropName] += 1; // Count the number of harvests, not quantity
+            } else {
+                acc[cropName] = 1;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+
+        // Convert to array format for chart
+        const cropChartData = Object.entries(harvestPerCrop)
+            .map(([name, count]) => ({
+                name: name.charAt(0).toUpperCase() + name.slice(1),
+                count: count
+            }))
+            .sort((a, b) => b.count - a.count); // Sort by count descending
+
+        return {
+            totalHarvest,
+            monthlyHarvest,
+            cropChartData
+        };
+    }, [productionData]);
 
     // Pagination calculations
     const totalPages = Math.ceil(productionData.length / recordsPerPage);
@@ -75,7 +204,62 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     };
 
     return (
-        <Card className="shadow-card h-full flex flex-col">
+        <div className="space-y-6">
+            {/* Analytics Containers */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <StatsCard
+                    title="Total Harvest"
+                    value={analyticsData.totalHarvest}
+                    icon={<Wheat className="h-5 w-5 text-primary" />}
+                    description="Total crops harvested across all records"
+                />
+                <StatsCard
+                    title="Monthly Harvest"
+                    value={analyticsData.monthlyHarvest}
+                    icon={<Calendar className="h-5 w-5 text-success" />}
+                    description={`Crops harvested in ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`}
+                />
+            </div>
+
+            {/* Bar Graph - Total Harvest Per Crop */}
+            <Card className="shadow-card">
+                <CardHeader>
+                    <CardTitle>Harvest Distribution by Crop</CardTitle>
+                    <CardDescription>Total harvest quantity per crop type</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={analyticsData.cropChartData.length > 0 ? analyticsData.cropChartData : [{ name: 'No Data', count: 0 }]}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip 
+                                formatter={(value) => [`${value} harvests`, 'Count']}
+                            />
+                            <Legend />
+                            <Bar
+                                dataKey="count"
+                                fill="hsl(var(--primary))"
+                                name="Number of Harvests"
+                            >
+                                {analyticsData.cropChartData.length > 0 ? (
+                                    analyticsData.cropChartData.map((entry, index) => (
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={CROP_COLORS[index % CROP_COLORS.length]}
+                                        />
+                                    ))
+                                ) : (
+                                    <Cell fill="#e5e7eb" />
+                                )}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </CardContent>
+            </Card>
+
+            {/* Production Report Table */}
+            <Card className="shadow-card h-full flex flex-col">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div>
@@ -96,7 +280,14 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 </div>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col">
-                {productionData.length > 0 ? (
+                {loading ? (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                            <p className="text-muted-foreground">Loading production data...</p>
+                        </div>
+                    </div>
+                ) : productionData.length > 0 ? (
                     <div className="flex flex-col h-full">
                         <div className="space-y-4 flex-grow">
                             <div className="overflow-x-auto rounded-lg border">
@@ -267,11 +458,12 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                     </div>
                 ) : (
                     <div className="flex items-center justify-center h-64">
-                        <p className="text-muted-foreground">No production records available</p>
+                        <p className="text-muted-foreground">No production records available. Production data appears when farmers harvest their crops.</p>
                     </div>
                 )}
             </CardContent>
         </Card>
+        </div>
     );
 };
 
