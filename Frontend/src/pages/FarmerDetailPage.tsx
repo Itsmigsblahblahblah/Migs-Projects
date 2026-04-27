@@ -15,7 +15,7 @@ import { useFarmLedger } from "@/hooks/custom/useFarmLedger";
 import { format } from "date-fns";
 import LedgerContent from "@/components/dashboard/shared/LedgerContent";
 import { collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, updateDoc } from "firebase/firestore";
-import { db } from "@/firebaseConfig";
+import { db, getDbWhenReady, isFirebaseReady } from "@/firebaseConfig";
 import AdminCropEditDialog from "@/components/dashboard/admin/AdminCropEditDialog";
 import {
   ArrowLeft,
@@ -72,6 +72,8 @@ const FarmerDetailPage = () => {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
   const [showMessageForm, setShowMessageForm] = useState(false);
+  // Track if data has been loaded to prevent showing "not found" during initial load
+  const [hasLoaded, setHasLoaded] = useState(false);
   // Add pagination state
   const [inProgressCurrentPage, setInProgressCurrentPage] = useState(1);
   const [harvestedCurrentPage, setHarvestedCurrentPage] = useState(1);
@@ -335,29 +337,54 @@ const FarmerDetailPage = () => {
 
   useEffect(() => {
     const role = localStorage.getItem('userRole');
+    const userId = localStorage.getItem('userId');
+    
+    console.log('FarmerDetailPage useEffect - Role:', role, 'UserId:', userId, 'FarmerId:', farmerId);
+    
     if (role !== 'admin') {
+      console.warn('User is not admin, redirecting to home');
       navigate('/');
       return;
     }
 
-    if (farmerId) {
+    // Only load if farmerId is available and not already loaded
+    if (farmerId && farmerId.trim() && (!farmer || farmer.uid !== farmerId)) {
+      console.log('useEffect triggered with farmerId:', farmerId);
       loadFarmerDetails(farmerId);
     }
-  }, [farmerId, navigate]);
+  }, [farmerId]);
 
   const loadFarmerDetails = async (uid: string) => {
+    if (!uid || !uid.trim()) {
+      console.error('No farmer ID provided');
+      return;
+    }
+
     setLoading(true);
     try {
+      // Ensure Firebase is ready before making Firestore calls
+      let firestoreDb;
+      if (!isFirebaseReady()) {
+        console.log('Firebase not ready, waiting for initialization...');
+        firestoreDb = await getDbWhenReady();
+      } else {
+        firestoreDb = db;
+      }
+      
       // Load farmer profile
-      const farmerDoc = await getDoc(doc(db, "farmers", uid));
+      console.log('Loading farmer details for ID:', uid);
+      const farmerDoc = await getDoc(doc(firestoreDb, "farmers", uid));
 
       if (!farmerDoc.exists()) {
+        console.warn('Farmer document does not exist for ID:', uid);
+        setHasLoaded(true);
         toast({
           title: "Error",
           description: "Farmer not found.",
           variant: "destructive",
         });
-        navigate('/admin');
+        // Use setTimeout to ensure navigation happens after render
+        setTimeout(() => navigate('/admin'), 100);
         return;
       }
 
@@ -378,10 +405,12 @@ const FarmerDetailPage = () => {
       setFarmer(farmerData);
 
       // Load farmer's crops
-      const cropsRef = collection(db, "farmerCrops");
+      console.log('Loading crops for farmer ID:', uid);
+      const cropsRef = collection(firestoreDb, "farmerCrops");
       const cropsQuery = query(cropsRef, where("userId", "==", uid));
       const cropsSnapshot = await getDocs(cropsQuery);
 
+      console.log('Crops snapshot size:', cropsSnapshot.size);
       const farmerCrops: any[] = [];
       cropsSnapshot.forEach((doc) => {
         const data = doc.data();
@@ -409,8 +438,10 @@ const FarmerDetailPage = () => {
 
       console.log('Loaded crops with adminData:', farmerCrops.map(c => ({ id: c.id, name: c.name, hasAdminData: !!c.adminData })));
       setCrops(farmerCrops);
+      setHasLoaded(true);
     } catch (error) {
       console.error("Error loading farmer details:", error);
+      setHasLoaded(true); // Set to true even on error to prevent infinite loading
       toast({
         title: "Error",
         description: "Failed to load farmer details.",
@@ -648,8 +679,16 @@ const FarmerDetailPage = () => {
 
     setIsSendingMessage(true);
     try {
+      // Ensure Firebase is ready
+      let firestoreDb;
+      if (!isFirebaseReady()) {
+        firestoreDb = await getDbWhenReady();
+      } else {
+        firestoreDb = db;
+      }
+      
       // Save message to Firestore
-      await addDoc(collection(db, "adminMessages"), {
+      await addDoc(collection(firestoreDb, "adminMessages"), {
         reportId: null, // No specific report associated with this message
         senderId: "admin", // In a real app, this would be the actual admin ID
         receiverId: farmer.uid, // Send to the farmer
@@ -684,7 +723,15 @@ const FarmerDetailPage = () => {
   const handleAdminDataSave = async (cropId: string, adminData: any) => {
     setIsSaving(true);
     try {
-      const cropRef = doc(db, "farmerCrops", cropId);
+      // Ensure Firebase is ready
+      let firestoreDb;
+      if (!isFirebaseReady()) {
+        firestoreDb = await getDbWhenReady();
+      } else {
+        firestoreDb = db;
+      }
+      
+      const cropRef = doc(firestoreDb, "farmerCrops", cropId);
       await updateDoc(cropRef, {
         adminData: {
           ...adminData,

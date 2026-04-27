@@ -118,7 +118,7 @@ const App = () => {
                     path="/admin/farmer/:farmerId" 
                     element={
                       <ProtectedRoute requiredRole="admin">
-                        <FarmerDetailPage />
+                        <FarmerDetailPage key={window.location.pathname} />
                       </ProtectedRoute>
                     } 
                   />
