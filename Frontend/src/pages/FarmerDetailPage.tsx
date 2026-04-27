@@ -17,7 +17,6 @@ import LedgerContent from "@/components/dashboard/shared/LedgerContent";
 import { collection, query, where, getDocs, doc, getDoc, addDoc, Timestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import AdminCropEditDialog from "@/components/dashboard/admin/AdminCropEditDialog";
-import AdminCropViewDialog from "@/components/dashboard/admin/AdminCropViewDialog";
 import {
   ArrowLeft,
   User,
@@ -98,7 +97,6 @@ const FarmerDetailPage = () => {
 
   // Admin crop edit dialog state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedCrop, setSelectedCrop] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -950,7 +948,7 @@ const FarmerDetailPage = () => {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Investment:</span>
-                            <span>₱{crop.puhunan?.toLocaleString()}</span>
+                            <span>₱{Number(crop.puhunan).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Planted:</span>
@@ -967,24 +965,12 @@ const FarmerDetailPage = () => {
                             variant="outline"
                             onClick={() => {
                               setSelectedCrop(crop);
-                              setIsViewDialogOpen(true);
-                            }}
-                            className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View Data
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedCrop(crop);
                               setIsEditDialogOpen(true);
                             }}
                             className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                           >
                             <Edit className="h-4 w-4 mr-1" />
-                            Edit Data
+                            Edit
                           </Button>
                         </div>
                       </CardContent>
@@ -1062,7 +1048,7 @@ const FarmerDetailPage = () => {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Investment:</span>
-                            <span>₱{crop.puhunan?.toLocaleString()}</span>
+                            <span>₱{Number(crop.puhunan).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Planted:</span>
@@ -1079,24 +1065,12 @@ const FarmerDetailPage = () => {
                             variant="outline"
                             onClick={() => {
                               setSelectedCrop(crop);
-                              setIsViewDialogOpen(true);
-                            }}
-                            className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-50"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View Data
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedCrop(crop);
                               setIsEditDialogOpen(true);
                             }}
                             className="flex-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                           >
                             <Edit className="h-4 w-4 mr-1" />
-                            Edit Data
+                            Edit
                           </Button>
                         </div>
                       </CardContent>
@@ -1167,13 +1141,6 @@ const FarmerDetailPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Admin Crop View Dialog */}
-      <AdminCropViewDialog
-        open={isViewDialogOpen}
-        onOpenChange={setIsViewDialogOpen}
-        crop={selectedCrop}
-      />
 
       {/* Admin Crop Edit Dialog */}
       <AdminCropEditDialog
