@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, CheckCircle, Eye, Download, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
+import ProductionReport from "./ProductionReport";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,6 +17,12 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs";
 
 import ReportDetailView from "./ReportDetailView";
 import {
@@ -84,6 +91,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteMode, setDeleteMode] = useState(false);
     const [selectedReports, setSelectedReports] = useState<string[]>([]);
+    const [activeTab, setActiveTab] = useState<'complaints' | 'production'>('complaints');
     const { toast } = useToast();
     const reportsPerPage = 10;
 
@@ -371,14 +379,20 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     };
 
     return (
-        <>
-            <Card className="shadow-card h-full flex flex-col">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Farmer Reports</CardTitle>
-                            <CardDescription>Latest submissions from farmers ({localReports.length} total)</CardDescription>
-                        </div>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'complaints' | 'production')} className="w-full space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="complaints">Complaints Report</TabsTrigger>
+                <TabsTrigger value="production">Production Report</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="complaints" className="space-y-6">
+                <Card className="shadow-card h-full flex flex-col">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Complaints Report</CardTitle>
+                                <CardDescription>Latest submissions from farmers ({localReports.length} total)</CardDescription>
+                            </div>
                         <div className="flex gap-2">
                             {deleteMode && (
                                 <Button
@@ -442,11 +456,11 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                             </span>
                                         </AccordionTrigger>
                                         <AccordionContent className="pb-0">
-                                            <DropdownMenuItem onClick={() => handleSortChange("date", "desc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ '--tw-bg-opacity': '1' } as React.CSSProperties} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                            <DropdownMenuItem onClick={() => handleSortChange("date", "desc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 <ArrowDown className="h-4 w-4 mr-2" />
                                                 Newest
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleSortChange("date", "asc")} className="hover:bg-blue-50 hover:text-blue-700" onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                            <DropdownMenuItem onClick={() => handleSortChange("date", "asc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 <ArrowUp className="h-4 w-4 mr-2" />
                                                 Oldest
                                             </DropdownMenuItem>
@@ -463,11 +477,11 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                             </span>
                                         </AccordionTrigger>
                                         <AccordionContent className="pb-0">
-                                            <DropdownMenuItem onClick={() => handleSortChange("status", "desc")} className="hover:bg-blue-50 hover:text-blue-700" onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                            <DropdownMenuItem onClick={() => handleSortChange("status", "desc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 <ArrowDown className="h-4 w-4 mr-2" />
                                                 Resolved
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleSortChange("status", "asc")} className="hover:bg-blue-50 hover:text-blue-700" onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                            <DropdownMenuItem onClick={() => handleSortChange("status", "asc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 <ArrowUp className="h-4 w-4 mr-2" />
                                                 Processed
                                             </DropdownMenuItem>
@@ -485,22 +499,22 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                             </span>
                                         </AccordionTrigger>
                                         <AccordionContent className="pb-0">
-                                            <DropdownMenuItem onClick={() => setProblemFilter('general')} className="hover:bg-blue-50 hover:text-blue-700">
+                                            <DropdownMenuItem onClick={() => setProblemFilter('general')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 General
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setProblemFilter('flood')} className="hover:bg-blue-50 hover:text-blue-700">
+                                            <DropdownMenuItem onClick={() => setProblemFilter('flood')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 Flood
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setProblemFilter('pest')} className="hover:bg-blue-50 hover:text-blue-700">
+                                            <DropdownMenuItem onClick={() => setProblemFilter('pest')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 Pest
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setProblemFilter('disease')} className="hover:bg-blue-50 hover:text-blue-700">
+                                            <DropdownMenuItem onClick={() => setProblemFilter('disease')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 Disease
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setProblemFilter('drought')} className="hover:bg-blue-50 hover:text-blue-700">
+                                            <DropdownMenuItem onClick={() => setProblemFilter('drought')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 Drought
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setProblemFilter('all')} className="hover:bg-blue-50 hover:text-blue-700">
+                                            <DropdownMenuItem onClick={() => setProblemFilter('all')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                                 All Problems
                                             </DropdownMenuItem>
                                         </AccordionContent>
@@ -509,63 +523,69 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <Button
-                            variant={sortOption === 'barangay' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => {
-                                if (sortOption === 'barangay') {
-                                    // Reset to default view when closing
-                                    setSortOption('newest');
-                                    setSelectedBarangay('all');
-                                } else {
-                                    setSortOption('barangay');
-                                    // Auto-select first barangay if available
-                                    if (uniqueBarangays.length > 0) {
-                                        setSelectedBarangay(uniqueBarangays[0]);
-                                    }
-                                }
-                            }}
-                            className={`text-blue-600 hover:text-white ${sortOption === 'barangay' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-blue-50'}`}
-                        >
-                            Group by Barangay
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                    Group by Barangay
+                                    <ChevronDown className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64 max-h-60 overflow-y-auto">
+                                {uniqueBarangays.length > 0 ? (
+                                    uniqueBarangays.map(barangay => (
+                                        <DropdownMenuItem
+                                            key={barangay}
+                                            onClick={() => {
+                                                setSelectedBarangay(barangay);
+                                                setSortOption('barangay');
+                                            }}
+                                            className={`cursor-pointer ${selectedBarangay === barangay ? "bg-blue-50 text-blue-700" : ""}`}
+                                            style={{ cursor: 'pointer' }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#eff6ff';
+                                                e.currentTarget.style.color = '#1d4ed8';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (selectedBarangay !== barangay) {
+                                                    e.currentTarget.style.backgroundColor = '';
+                                                    e.currentTarget.style.color = '';
+                                                }
+                                            }}
+                                        >
+                                            {barangay}
+                                        </DropdownMenuItem>
+                                    ))
+                                ) : (
+                                    <DropdownMenuItem disabled className="text-muted-foreground">
+                                        No barangays available
+                                    </DropdownMenuItem>
+                                )}
+                                {selectedBarangay !== 'all' && sortOption === 'barangay' && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onClick={() => {
+                                                setSelectedBarangay('all');
+                                                setSortOption('newest');
+                                            }}
+                                            className="cursor-pointer text-red-600 hover:bg-red-50"
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#fef2f2';
+                                                e.currentTarget.style.color = '#dc2626';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = '';
+                                                e.currentTarget.style.color = '';
+                                            }}
+                                        >
+                                            Clear Filter
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
-                        {/* Filter by Barangay dropdown - shown to the right when grouping is active */}
-                        {sortOption === 'barangay' && (
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium whitespace-nowrap">Filter by Barangay:</span>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                            {selectedBarangay || 'Select Barangay'}
-                                            <ChevronDown className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-64 max-h-60 overflow-y-auto">
-                                        {uniqueBarangays.map(barangay => (
-                                            <DropdownMenuItem
-                                                key={barangay}
-                                                onClick={() => setSelectedBarangay(barangay)}
-                                                className={`cursor-pointer ${selectedBarangay === barangay ? "bg-blue-50 text-blue-700" : ""}`}
-                                                style={{ cursor: 'pointer', '--tw-bg-opacity': '1' } as React.CSSProperties}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#eff6ff';
-                                                    e.currentTarget.style.color = '#1d4ed8';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    if (selectedBarangay !== barangay) {
-                                                        e.currentTarget.style.backgroundColor = '';
-                                                        e.currentTarget.style.color = '';
-                                                    }
-                                                }}
-                                            >
-                                                {barangay}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        )}
+
                     </div>
 
                     {/* Stats display for selected barangay - shown below */}
@@ -1283,7 +1303,12 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+            </TabsContent>
+
+            <TabsContent value="production" className="mt-0">
+                <ProductionReport onExport={onExport} />
+            </TabsContent>
+        </Tabs>
     );
 };
 

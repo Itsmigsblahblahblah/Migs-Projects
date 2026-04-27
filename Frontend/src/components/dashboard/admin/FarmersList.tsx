@@ -273,13 +273,13 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                                         </span>
                                     </AccordionTrigger>
                                     <AccordionContent className="pb-0">
-                                        <DropdownMenuItem onClick={() => handleSortChange("date", "desc")} className="hover:bg-blue-50 hover:text-blue-700">
+                                        <DropdownMenuItem onClick={() => handleSortChange("date", "desc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                             <ArrowDown className="h-4 w-4 mr-2" />
-                                            Newest First
+                                            Newest
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleSortChange("date", "asc")} className="hover:bg-blue-50 hover:text-blue-700">
+                                        <DropdownMenuItem onClick={() => handleSortChange("date", "asc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                             <ArrowUp className="h-4 w-4 mr-2" />
-                                            Oldest First
+                                            Oldest
                                         </DropdownMenuItem>
                                     </AccordionContent>
                                 </AccordionItem>
@@ -293,11 +293,11 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                                         </span>
                                     </AccordionTrigger>
                                     <AccordionContent className="pb-0">
-                                        <DropdownMenuItem onClick={() => handleSortChange("barangay", "asc")} className="hover:bg-blue-50 hover:text-blue-700">
+                                        <DropdownMenuItem onClick={() => handleSortChange("barangay", "asc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                             <ArrowUp className="h-4 w-4 mr-2" />
                                             A - Z
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleSortChange("barangay", "desc")} className="hover:bg-blue-50 hover:text-blue-700">
+                                        <DropdownMenuItem onClick={() => handleSortChange("barangay", "desc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
                                             <ArrowDown className="h-4 w-4 mr-2" />
                                             Z - A
                                         </DropdownMenuItem>
@@ -307,44 +307,69 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                         </DropdownMenuContent>
                     </DropdownMenu>
 
-                    <Button
-                        variant={groupByBarangay ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setGroupByBarangay(!groupByBarangay)}
-                        className={`text-blue-600 hover:text-white ${groupByBarangay ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-blue-50'}`}
-                    >
-                        Group by Barangay
-                    </Button>
-
-                    {/* Filter by Barangay dropdown - shown when grouping is active */}
-                    {groupByBarangay && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                    {selectedBarangay === 'all' ? 'All Barangays' : selectedBarangay}
-                                    <ChevronDown className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64 max-h-60 overflow-y-auto">
-                                <DropdownMenuItem
-                                    onClick={() => setSelectedBarangay('all')}
-                                    className={`cursor-pointer ${selectedBarangay === 'all' ? "bg-blue-50 text-blue-700" : ""}`}
-                                >
-                                    All Barangays
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {uniqueBarangays.map(barangay => (
+                    {/* Group by Barangay Dropdown */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                Group by Barangay
+                                <ChevronDown className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-64 max-h-60 overflow-y-auto">
+                            {uniqueBarangays.length > 0 ? (
+                                uniqueBarangays.map(barangay => (
                                     <DropdownMenuItem
                                         key={barangay}
-                                        onClick={() => setSelectedBarangay(barangay)}
-                                        className={`cursor-pointer ${selectedBarangay === barangay ? "bg-blue-50 text-blue-700" : ""}`}
+                                        onClick={() => {
+                                            setSelectedBarangay(barangay);
+                                            setGroupByBarangay(true);
+                                        }}
+                                        className={`cursor-pointer ${groupByBarangay && selectedBarangay === barangay ? "bg-blue-50 text-blue-700" : ""}`}
+                                        style={{ cursor: 'pointer' }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#eff6ff';
+                                            e.currentTarget.style.color = '#1d4ed8';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (!(groupByBarangay && selectedBarangay === barangay)) {
+                                                e.currentTarget.style.backgroundColor = '';
+                                                e.currentTarget.style.color = '';
+                                            }
+                                        }}
                                     >
                                         {barangay}
                                     </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    )}
+                                ))
+                            ) : (
+                                <DropdownMenuItem disabled className="text-muted-foreground">
+                                    No barangays available
+                                </DropdownMenuItem>
+                            )}
+                            {groupByBarangay && selectedBarangay !== 'all' && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setSelectedBarangay('all');
+                                            setGroupByBarangay(false);
+                                        }}
+                                        className="cursor-pointer text-red-600 hover:bg-red-50"
+                                        style={{ cursor: 'pointer' }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.backgroundColor = '#fef2f2';
+                                            e.currentTarget.style.color = '#dc2626';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.backgroundColor = '';
+                                            e.currentTarget.style.color = '';
+                                        }}
+                                    >
+                                        Clear Filter
+                                    </DropdownMenuItem>
+                                </>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Sprout, User, LogOut, Bell, Sprout as SproutIcon, Leaf, TrendingUp, History, Menu, X } from "lucide-react";
+import { Sprout, User, LogOut, Bell, Sprout as SproutIcon, Leaf, TrendingUp, History, Menu, X, Users, FileText, BarChart3 } from "lucide-react";
 import { clearMarketDemandCache } from "@/services/marketDemandMultiCacheService";
 import { clearRecommendationCache } from "@/services/recommendationSessionCache";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -240,7 +240,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             {/* Logo - now acts as Dashboard link */}
             <div
               className="flex items-center gap-3 cursor-pointer"
-              onClick={() => navigate(isFarmer ? '/farmer' : '/admin')}
+              onClick={() => {
+                if (isFarmer) {
+                  navigate('/farmer');
+                } else if (isAdmin) {
+                  navigate('/admin#analytics');
+                }
+              }}
             >
               <div className={`p-2 rounded-lg ${isAdmin ? 'bg-blue-600' : 'bg-gradient-primary'}`}>
                 <Sprout className={`h-6 w-6 ${isAdmin ? 'text-white' : 'text-primary-foreground'}`} />
@@ -283,6 +289,55 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 >
                   <span className="relative z-10">Reports</span>
                   <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-yellow-500 transition-all duration-300 ${isActive('/history') ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                </button>
+              </nav>
+            )}
+
+            {/* Desktop Navigation - for admin role */}
+            {isAdmin && (
+              <nav className="hidden md:flex items-center space-x-4">
+                <button
+                  onClick={() => {
+                    console.log('Navigating to Farmers');
+                    navigate('/admin#farmers');
+                  }}
+                  className={`group text-foreground hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${location.hash === '#farmers' ? 'text-blue-600' : ''}`}
+                >
+                  <span className="relative z-10">Registered Farmers</span>
+                  <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-blue-600 transition-all duration-300 ${location.hash === '#farmers' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    console.log('Navigating to Deletion Requests');
+                    navigate('/admin#deletion-requests');
+                  }}
+                  className={`group text-foreground hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${location.hash === '#deletion-requests' ? 'text-blue-600' : ''}`}
+                >
+                  <span className="relative z-10">Deletion Requests</span>
+                  <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-blue-600 transition-all duration-300 ${location.hash === '#deletion-requests' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    console.log('Navigating to Reports');
+                    navigate('/admin#reports');
+                  }}
+                  className={`group text-foreground hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${location.hash === '#reports' ? 'text-blue-600' : ''}`}
+                >
+                  <span className="relative z-10">Reports</span>
+                  <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-blue-600 transition-all duration-300 ${location.hash === '#reports' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    console.log('Navigating to Announcements');
+                    navigate('/admin#announcements');
+                  }}
+                  className={`group text-foreground hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${location.hash === '#announcements' ? 'text-blue-600' : ''}`}
+                >
+                  <span className="relative z-10">Announcements</span>
+                  <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-blue-600 transition-all duration-300 ${location.hash === '#announcements' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
                 </button>
               </nav>
             )}
@@ -386,6 +441,24 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   </Button>
                 </div>
               )}
+              
+              {/* Mobile menu button for admin role - visible only on mobile */}
+              {isAdmin && (
+                <div className="md:hidden">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    aria-label="Toggle navigation menu"
+                  >
+                    {isMobileMenuOpen ? (
+                      <X className="h-6 w-6" />
+                    ) : (
+                      <Menu className="h-6 w-6" />
+                    )}
+                  </Button>
+                </div>
+              )}
 
               {/* Mobile profile icon for admin role - visible only on mobile */}
               {isAdmin && (
@@ -457,6 +530,50 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-yellow-500 ${isActive('/history') ? 'text-yellow-500' : 'text-foreground'}`}
               >
                 Reports
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Navigation Menu - shown when menu is open for admin role */}
+        {isAdmin && isMobileMenuOpen && (
+          <div className="md:hidden bg-card border-b border-border">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              <button
+                onClick={() => {
+                  navigate('/admin#farmers');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-blue-600 ${location.hash === '#farmers' ? 'text-blue-600' : 'text-foreground'}`}
+              >
+                Registered Farmers
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/admin#deletion-requests');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-blue-600 ${location.hash === '#deletion-requests' ? 'text-blue-600' : 'text-foreground'}`}
+              >
+                Deletion Requests
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/admin#reports');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-blue-600 ${location.hash === '#reports' ? 'text-blue-600' : 'text-foreground'}`}
+              >
+                Reports
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/admin#announcements');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-blue-600 ${location.hash === '#announcements' ? 'text-blue-600' : 'text-foreground'}`}
+              >
+                Announcements
               </button>
             </div>
           </div>

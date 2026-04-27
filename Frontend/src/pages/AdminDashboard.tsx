@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
-import { Settings, Users, FileText, BarChart3, Bell } from "lucide-react";
 import AdminStatsOverview from "@/components/dashboard/admin/AdminStatsOverview";
 import FarmersList from "@/components/dashboard/admin/FarmersList";
 import DeletionRequests from "@/components/dashboard/admin/DeletionRequests";
@@ -63,17 +60,37 @@ const AdminDashboard = () => {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
+      console.log('Hash changed to:', hash);
       if (hash && ['farmers', 'deletion-requests', 'analytics', 'reports', 'announcements'].includes(hash)) {
         setActiveSection(hash);
+        localStorage.setItem('adminActiveSection', hash);
       }
     };
 
-    // Check initial hash
+    // Check initial hash on mount
     handleHashChange();
 
+    // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    
+    // Also listen for popstate (browser back/forward)
+    window.addEventListener('popstate', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+    };
   }, []);
+
+  // Also sync with location from React Router
+  useEffect(() => {
+    const hash = location.hash.replace('#', '');
+    console.log('Location hash from router:', hash);
+    if (hash && ['farmers', 'deletion-requests', 'analytics', 'reports', 'announcements'].includes(hash)) {
+      setActiveSection(hash);
+      localStorage.setItem('adminActiveSection', hash);
+    }
+  }, [location.hash]);
 
   // Load user data
   useEffect(() => {
@@ -100,89 +117,69 @@ const AdminDashboard = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="bg-blue-600 rounded-lg p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              <p className="text-white/90">
-                Welcome back, {username}. Here's your farm management overview.
-              </p>
+        {/* Header - Only show on Analytics page */}
+        {activeSection === "analytics" && (
+          <>
+            <div className="bg-blue-600 rounded-lg p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+                  <p className="text-white/90">
+                    Welcome back, {username}. Here's your farm management overview.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Stats Overview */}
-        <AdminStatsOverview stats={stats} />
-
-        {/* Quick Actions Style Navigation */}
-        <Card className="shadow-card border-blue-200">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-              <Button
-                variant={activeSection === "farmers" ? "default" : "outline"}
-                className={`h-20 flex flex-col gap-2 ${activeSection === "farmers" ? "bg-blue-600 hover:bg-blue-700 text-white" : "hover:bg-blue-50"}`}
-                onClick={() => handleSetActiveSection("farmers")}
-              >
-                <Users className="h-5 w-5" />
-                <span>Registered Farmers</span>
-              </Button>
-              <Button
-                variant={activeSection === "deletion-requests" ? "default" : "outline"}
-                className={`h-20 flex flex-col gap-2 ${activeSection === "deletion-requests" ? "bg-blue-600 hover:bg-blue-700 text-white" : "hover:bg-blue-50"}`}
-                onClick={() => handleSetActiveSection("deletion-requests")}
-              >
-                <FileText className="h-5 w-5" />
-                <span>Deletion Requests</span>
-              </Button>
-              <Button
-                variant={activeSection === "analytics" ? "default" : "outline"}
-                className={`h-20 flex flex-col gap-2 ${activeSection === "analytics" ? "bg-blue-600 hover:bg-blue-700 text-white" : "hover:bg-blue-50"}`}
-                onClick={() => handleSetActiveSection("analytics")}
-              >
-                <BarChart3 className="h-5 w-5" />
-                <span>Analytics</span>
-              </Button>
-              <Button
-                variant={activeSection === "reports" ? "default" : "outline"}
-                className={`h-20 flex flex-col gap-2 ${activeSection === "reports" ? "bg-blue-600 hover:bg-blue-700 text-white" : "hover:bg-blue-50"}`}
-                onClick={() => handleSetActiveSection("reports")}
-              >
-                <FileText className="h-5 w-5" />
-                <span>Reports</span>
-              </Button>
-              <Button
-                variant={activeSection === "announcements" ? "default" : "outline"}
-                className={`h-20 flex flex-col gap-2 ${activeSection === "announcements" ? "bg-blue-600 hover:bg-blue-700 text-white" : "hover:bg-blue-50"}`}
-                onClick={() => handleSetActiveSection("announcements")}
-              >
-                <Bell className="h-5 w-5" />
-                <span>Announcements</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Stats Overview - Only for Analytics */}
+            <AdminStatsOverview stats={stats} />
+          </>
+        )}
 
         {/* Section Content */}
         <div className="space-y-6">
           {/* Registered Farmers Section */}
           {activeSection === "farmers" && (
-            <FarmersList farmers={farmers} />
+            <>
+              <div className="bg-blue-600 rounded-lg p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold">Registered Farmers</h1>
+                    <p className="text-white/90">
+                      View and manage all registered farmers in the system.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <FarmersList farmers={farmers} />
+            </>
           )}
 
           {/* Deletion Requests Section */}
           {activeSection === "deletion-requests" && (
-            <DeletionRequests
-              deletionRequests={deletionRequests}
-              deleteMode={deleteMode}
-              selectedRequests={selectedRequests}
-              onDeleteModeToggle={toggleDeleteMode}
-              onRefresh={loadDashboardData}
-              onBulkDelete={handleBulkDelete}
-              onRequestSelect={toggleRequestSelection}
-              onApproveRequest={(id) => handleDeletionRequestAction(id, 'approved')}
-              onDenyRequest={(id) => handleDeletionRequestAction(id, 'denied')}
-            />
+            <>
+              <div className="bg-blue-600 rounded-lg p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold">Deletion Requests</h1>
+                    <p className="text-white/90">
+                      Review and manage farmer account deletion requests.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <DeletionRequests
+                deletionRequests={deletionRequests}
+                deleteMode={deleteMode}
+                selectedRequests={selectedRequests}
+                onDeleteModeToggle={toggleDeleteMode}
+                onRefresh={loadDashboardData}
+                onBulkDelete={handleBulkDelete}
+                onRequestSelect={toggleRequestSelection}
+                onApproveRequest={(id) => handleDeletionRequestAction(id, 'approved')}
+                onDenyRequest={(id) => handleDeletionRequestAction(id, 'denied')}
+              />
+            </>
           )}
 
           {/* Analytics Section */}
@@ -199,17 +196,41 @@ const AdminDashboard = () => {
 
           {/* Reports Section */}
           {activeSection === "reports" && (
-            <ReportsList
-              reports={reports}
-              farmers={farmers} // Pass farmers data to get barangay information
-              onExport={() => exportData('reports')}
-              onUpdateStatus={updateReportStatus}
-            />
+            <>
+              <div className="bg-blue-600 rounded-lg p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold">Reports</h1>
+                    <p className="text-white/90">
+                      View and manage all farmer reports and submissions.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <ReportsList
+                reports={reports}
+                farmers={farmers} // Pass farmers data to get barangay information
+                onExport={() => exportData('reports')}
+                onUpdateStatus={updateReportStatus}
+              />
+            </>
           )}
 
           {/* Announcements Section */}
           {activeSection === "announcements" && (
-            <AdminAnnouncements />
+            <>
+              <div className="bg-blue-600 rounded-lg p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold">Announcements</h1>
+                    <p className="text-white/90">
+                      Create and manage system-wide announcements for farmers.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <AdminAnnouncements />
+            </>
           )}
 
         </div>
