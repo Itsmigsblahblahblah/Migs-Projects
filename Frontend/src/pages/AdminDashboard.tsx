@@ -8,6 +8,7 @@ import DeletionRequests from "@/components/dashboard/admin/DeletionRequests";
 import AnalyticsCharts from "@/components/dashboard/admin/AnalyticsCharts";
 import ReportsList from "@/components/dashboard/admin/ReportsList";
 import AdminAnnouncements from "@/components/dashboard/admin/AdminAnnouncements";
+import AIRecommendations from "@/components/dashboard/admin/AIRecommendations";
 import { useAdminDashboard } from "@/hooks/custom/useAdminDashboard";
 
 const AdminDashboard = () => {
@@ -133,6 +134,9 @@ const AdminDashboard = () => {
 
             {/* Stats Overview - Only for Analytics */}
             <AdminStatsOverview stats={stats} />
+            
+            {/* AI-Powered Recommendations */}
+            <AIRecommendations reports={reports} />
           </>
         )}
 
