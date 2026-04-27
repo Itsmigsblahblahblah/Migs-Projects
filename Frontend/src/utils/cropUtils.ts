@@ -1,27 +1,49 @@
-// Hard-coded list of approved crops (31 unique crops)
+// Hard-coded list of approved crops - Categorized to match Market Demand Forecast
 export const HARDCODED_CROPS = [
     // Leafy Vegetables
-    "Pechay (Bok Choy)", "Kangkong (Water Spinach)", "Mustasa (Mustard Greens)", 
-    "Lettuce", "Cabbage", "Spinach", "Pak Choi",
+    "Pechay", "Mustasa", "Lettuce", "Cabbage", "Spinach", "Pak choi",
     
     // Fruiting / Lowland Vegetables
-    "Ampalaya (Bitter Gourd)", "Okra", "Tomato", "Upo (Bottle Gourd)", 
-    "Patola (Sponge Gourd)", "Sitaw (String Beans)", "Beans", "Cucumber", 
-    "Squash (Kalabasa)", "Chili (Siling Labuyo)", "Siling Haba", "Sayote", 
-    "Labanos (Radish)", "Talong (Eggplant)", "Sweet Pepper (Bell Pepper)",
+    "Ampalaya", "Okra", "Tomato", "Upo", "Patola", "Sitaw", 
+    "Beans", "Cucumber", "Squash", "Siling Labuyo", "Siling Haba", 
+    "Sayote", "Labanos", "Talong", "Pipino",
     
     // High-Value / Upland Vegetables
-    "Celery",
+    "Celery", "Kangkong",
     
     // Root Crops
-    "Gabi (Taro)", "Kamote (Sweet Potato)", "Kamoteng Kahoy (Cassava)", "Ube (Purple Yam)",
+    "Gabi", "Kamote", "Cassava", "Ube",
     
     // Grains
     "Rice",
     
     // Herbs
-    "Ginger (Luya)", "Luyang Dilaw (Turmeric)"
+    "Ginger", "Turmeric"
 ];
+
+// Categorized crop options for better UI organization
+export const HARDCODED_CROPS_BY_CATEGORY = {
+    "Leafy Vegetables": [
+        "Pechay", "Mustasa", "Lettuce", "Cabbage", "Spinach", "Pak choi"
+    ],
+    "Fruiting / Lowland Vegetables": [
+        "Ampalaya", "Okra", "Tomato", "Upo", "Patola", "Sitaw",
+        "Beans", "Cucumber", "Squash", "Siling Labuyo", "Siling Haba",
+        "Sayote", "Labanos", "Talong", "Pipino"
+    ],
+    "High-Value / Upland Vegetables": [
+        "Celery", "Kangkong"
+    ],
+    "Root Crops": [
+        "Gabi", "Kamote", "Cassava", "Ube"
+    ],
+    "Grains": [
+        "Rice"
+    ],
+    "Herbs": [
+        "Ginger", "Turmeric"
+    ]
+};
 
 // Format crop name to have only first letter of each word capitalized
 export const formatCropName = (name: string) => {
