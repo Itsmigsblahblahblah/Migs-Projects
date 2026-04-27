@@ -189,10 +189,12 @@ async def get_vegetable_data(vegetable_name: str, vegetable_file: str = 'Data/ve
         # Load vegetable price data
         try:
             veg_df = pd.read_csv(vegetable_file)
-            # Skip the first row which contains the header description
-            veg_df = veg_df.iloc[1:]
-            veg_df.columns = ['Vegetable', 'Year', 'Month',
-                              'Price', 'Annual_Price', 'MonthNum', 'Date']
+            # Check if this is the new cleaned format (no header description row)
+            if veg_df.columns[0] != 'Vegetable':
+                # Old format - skip first row and rename
+                veg_df = veg_df.iloc[1:]
+                veg_df.columns = ['Vegetable', 'Year', 'Month',
+                                  'Price', 'Annual_Price', 'MonthNum', 'Date']
         except Exception as e:
             logger.warning(
                 f"Could not load vegetable data from {vegetable_file}: {e}")

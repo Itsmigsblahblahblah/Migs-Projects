@@ -92,6 +92,7 @@ class EnhancedSoilCropTransformer:
         self.hyperparams = hyperparams or HYPERPARAMETERS
         self.model = None
         self.crop_label_encoder = LabelEncoder()
+        self.soil_label_encoder = LabelEncoder()  # For backward compatibility
         self.scaler = StandardScaler()
         self.feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium',
                                 'temperature', 'humidity', 'precipitation_probability',
@@ -99,6 +100,9 @@ class EnhancedSoilCropTransformer:
         # For backward compatibility with soil-only data
         self.soil_feature_columns = [
             'pH', 'Nitrogen', 'Phosphorus', 'Potassium']
+        self.feature_columns = ['pH', 'Nitrogen', 'Phosphorus', 'Potassium',
+                                'temperature', 'humidity', 'precipitation_probability',
+                                'wind_speed', 'uv_index', 'market_demand_score']
         self.preprocessor = None
         # Add cache for predictions with LRU eviction policy
         self._prediction_cache = OrderedDict()
@@ -109,6 +113,8 @@ class EnhancedSoilCropTransformer:
         self.cache_warming_complete = False
         # Add threading lock for cache operations
         self._cache_lock = threading.Lock()
+        # Add prewarmed flag
+        self.prewarmed = False
 
     def load_and_preprocess_data(self, soil_file='Data/brgy_soil_dataset.csv',
                                  vegetable_file='Data/vegetable_prices.csv'):
@@ -153,22 +159,12 @@ class EnhancedSoilCropTransformer:
         # Load vegetable price data
         try:
             veg_df = pd.read_csv(vegetable_file)
-            # Check if the first row is a header or data
-            if veg_df.columns[0] == 'PHILIPPINES' or 'Vegetable' in veg_df.columns:
-                # File already has proper headers
-                if 'Vegetable' not in veg_df.columns:
-                    # Need to rename columns
-                    veg_df.columns = ['Vegetable', 'Year', 'Month',
-                                  'Price', 'Annual_Price', 'MonthNum', 'Date']
-                else:
-                    # Rename 'Annual Price' to 'Annual_Price' if needed
-                    if 'Annual Price' in veg_df.columns:
-                        veg_df = veg_df.rename(columns={'Annual Price': 'Annual_Price'})
-            else:
-                # Skip the first row which contains the header description
+            # Check if this is the new cleaned format (no header description row)
+            if veg_df.columns[0] != 'Vegetable':
+                # Old format - skip first row and rename
                 veg_df = veg_df.iloc[1:]
                 veg_df.columns = ['Vegetable', 'Year', 'Month',
-                              'Price', 'Annual_Price', 'MonthNum', 'Date']
+                                  'Price', 'Annual_Price', 'MonthNum', 'Date']
 
             # Convert data types
             veg_df['Price'] = pd.to_numeric(veg_df['Price'], errors='coerce')
@@ -336,9 +332,9 @@ class EnhancedSoilCropTransformer:
 
         # Sample vegetables
         vegetables = [
-            "Cabbage", "Tomato",
-            "Ampalaya (Bitter Gourd)", "Talong (Eggplant)",
-            "Okra", "Sitaw (String Beans)", "Kangkong (Water Spinach)"
+            "REPOLYO (CABBAGE), 1 KG", "KOLIFLOWER (CAULIFLOWER), 1 KG",
+            "AMPALAYA (BITTER GOURD), 1 KG", "TALONG (EGGPLANT), (NATIVE), 1 KG",
+            "OKRA, 1 KG", "SITAW (STRING BEAN), 1 KG", "BROKOLI (BROCCOLI), 1 KG"
         ]
 
         # Generate synthetic data
@@ -855,9 +851,16 @@ class EnhancedSoilCropTransformer:
         logger.info(
             f"Preprocessing pipeline loaded successfully in {preprocessor_load_time:.4f} seconds")
 
-        # Restore components
-        self.soil_label_encoder = self.preprocessor['soil_label_encoder']
-        self.crop_label_encoder = self.preprocessor['crop_label_encoder']
+        # Restore components - handle both old and new model formats
+        # New format (after retraining with cleaned data)
+        if 'crop_label_encoder' in self.preprocessor:
+            self.crop_label_encoder = self.preprocessor['crop_label_encoder']
+        # Old format compatibility (if it exists)
+        elif 'soil_label_encoder' in self.preprocessor:
+            self.soil_label_encoder = self.preprocessor['soil_label_encoder']
+            self.crop_label_encoder = self.preprocessor.get(
+                'crop_label_encoder', self.soil_label_encoder)
+
         self.scaler = self.preprocessor['scaler']
         self.feature_columns = self.preprocessor['feature_columns']
 
