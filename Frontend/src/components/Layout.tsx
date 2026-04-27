@@ -179,6 +179,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('username');
     localStorage.removeItem('userId');
 
+    // Clear admin section preference so it resets to Analytics on next login
+    localStorage.removeItem('adminActiveSection');
+    
+    // Clear URL hash if present
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+
     // Clear market demand cache
     clearMarketDemandCache();
   
