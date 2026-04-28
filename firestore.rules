@@ -197,5 +197,18 @@ service cloud.firestore {
       allow read: if request.auth != null && 
                      request.auth.token.email == 'admin@majayjay.farm';
     }
+    
+    // ==========================================
+    // ADMIN RECOMMENDATIONS COLLECTION
+    // Admin-verified crop prescriptions
+    // ==========================================
+    match /adminRecommendations/{recommendationId} {
+      // Admins can create, update, delete
+      allow create, update, delete: if request.auth != null && 
+                                     request.auth.token.email == 'admin@majayjay.farm';
+      
+      // All authenticated users can read
+      allow read: if request.auth != null;
+    }
   }
 }

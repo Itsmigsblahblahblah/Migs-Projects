@@ -21,13 +21,20 @@ import {
   DollarSign,
   Eye,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Bot,
+  Shield,
+  CheckCircle,
+  XCircle,
+  AlertTriangle
 } from "lucide-react";
 import CropRecommendationVisualization from "@/components/dashboard/farmer/CropRecommendationVisualization";
 import AddCropDialog from "@/components/dashboard/farmer/AddCropDialog";
 import { useCropManagement } from "@/hooks/custom/useCropManagement";
 import { getCachedRecommendationData, setCachedRecommendationData, clearRecommendationCache } from '@/services/recommendationSessionCache';
 import SplashScreen from "@/components/SplashScreen";
+import { getDb } from '@/firebaseConfig';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 // Add this interface for the API response
 interface CropRecommendation {
@@ -142,6 +149,10 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   // Add state for quick loading - for immediate feedback
   const [quickLoading, setQuickLoading] = useState(false);
 
+  // Add state for admin recommendations
+  const [adminRecommendation, setAdminRecommendation] = useState<any | null>(null);
+  const [loadingAdminData, setLoadingAdminData] = useState(false);
+
   // Wrapper function for handleAddCrop that returns a boolean and captures the crop ID
   const handleAddCropWrapper = async (): Promise<boolean> => {
     const result = await handleAddCrop();
@@ -174,6 +185,137 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     }
     console.log('No match found, returning farm address:', farmAddress);
     return farmAddress; // fallback to the full address if no match
+  };
+
+  // Soil matching logic - more flexible to show admin recommendations
+  const matchesSoilData = (adminSoil: any, userSoil: SoilData): boolean => {
+    const phTolerance = 1.5; // Increased tolerance for better matching
+    const phMatch = Math.abs(adminSoil.pH - userSoil.pH) <= phTolerance;
+    
+    // Map admin values to user values
+    const nitrogenMap: any = { 'Low': 'L', 'Medium': 'M', 'High': 'H' };
+    const nMatch = nitrogenMap[adminSoil.nitrogen] === userSoil.Nitrogen;
+    const pMatch = nitrogenMap[adminSoil.phosphorus] === userSoil.Phosphorus;
+    const kMatch = nitrogenMap[adminSoil.potassium] === userSoil.Potassium;
+    
+    // Very flexible: show if pH matches OR at least 1 nutrient matches
+    const nutrientMatches = [nMatch, pMatch, kMatch].filter(Boolean).length;
+    
+    // If pH is close, show it. Or if at least 1 nutrient matches
+    const matches = phMatch || nutrientMatches >= 1;
+    
+    console.log('Soil matching:', {
+      adminSoil,
+      userSoil,
+      adminNitrogen: adminSoil.nitrogen,
+      mappedNitrogen: nitrogenMap[adminSoil.nitrogen],
+      userNitrogen: userSoil.Nitrogen,
+      phMatch,
+      nMatch,
+      pMatch,
+      kMatch,
+      nutrientMatches,
+      finalMatch: matches
+    });
+    
+    return matches;
+  };
+
+  // Fetch admin recommendations
+  const fetchAdminRecommendations = async (cropName: string, soilData: SoilData) => {
+    try {
+      setLoadingAdminData(true);
+      console.log('========== FETCH ADMIN RECOMMENDATIONS ==========');
+      console.log('Crop name:', cropName);
+      console.log('User soil data:', soilData);
+      
+      const db = await getDb();
+      if (!db) {
+        console.error('Firestore database not initialized!');
+        setAdminRecommendation(null);
+        setLoadingAdminData(false);
+        return;
+      }
+      
+      const recommendationsRef = collection(db, 'adminRecommendations');
+      const q = query(recommendationsRef, where('isActive', '==', true));
+      const snapshot = await getDocs(q);
+      
+      console.log('Total active admin recommendations in Firestore:', snapshot.size);
+      
+      // Get all recommendations
+      const allRecs: any[] = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Admin rec from Firestore:', doc.id, data);
+        return { id: doc.id, ...data };
+      });
+      
+      if (allRecs.length === 0) {
+        console.log('⚠️ NO admin recommendations found in Firestore!');
+        console.log('Please add admin recommendations first at /admin/crop-prescription');
+        setAdminRecommendation(null);
+        setLoadingAdminData(false);
+        return;
+      }
+      
+      console.log('All admin recommendations:', allRecs.map((r: any) => ({
+        crop: r.cropName,
+        soil: r.soilAnalysis,
+        isActive: r.isActive
+      })));
+      
+      // Try to find matching recommendations
+      const matchingRecs = allRecs.filter((rec: any) => {
+        // Flexible crop name matching
+        const cropMatch = rec.cropName.toLowerCase().includes(cropName.toLowerCase()) || 
+                         cropName.toLowerCase().includes(rec.cropName.toLowerCase());
+        
+        console.log(`Checking "${rec.cropName}" vs "${cropName}":`, { cropMatch });
+        
+        if (!cropMatch) return false;
+        
+        // Soil matching
+        const soilMatch = matchesSoilData(rec.soilAnalysis, soilData);
+        
+        console.log(`Soil match for "${rec.cropName}":`, soilMatch);
+        
+        return cropMatch && soilMatch;
+      });
+      
+      console.log('Matched recommendations (crop + soil):', matchingRecs.length);
+      
+      // If no match with soil, try crop name only
+      let finalRecs = matchingRecs;
+      if (matchingRecs.length === 0) {
+        console.log('No soil match, falling back to crop name only...');
+        finalRecs = allRecs.filter((rec: any) => {
+          const cropMatch = rec.cropName.toLowerCase().includes(cropName.toLowerCase()) || 
+                           cropName.toLowerCase().includes(rec.cropName.toLowerCase());
+          console.log(`Fallback crop match "${rec.cropName}":`, cropMatch);
+          return cropMatch;
+        });
+        console.log('Fallback matches (crop name only):', finalRecs.length);
+      }
+      
+      // Set the first matching recommendation
+      if (finalRecs.length > 0) {
+        setAdminRecommendation(finalRecs[0]);
+        console.log('✅ SUCCESS! Set admin recommendation:', finalRecs[0].cropName);
+        console.log('Full admin recommendation:', finalRecs[0]);
+      } else {
+        setAdminRecommendation(null);
+        console.log('❌ NO MATCH FOUND for crop:', cropName);
+        console.log('Available crops:', allRecs.map((r: any) => r.cropName));
+      }
+      
+      console.log('========== END FETCH ADMIN RECOMMENDATIONS ==========');
+    } catch (error) {
+      console.error('❌ Error fetching admin recommendations:', error);
+      console.error('Error details:', error instanceof Error ? error.message : error);
+      setAdminRecommendation(null);
+    } finally {
+      setLoadingAdminData(false);
+    }
   };
 
   // Function to fetch soil data by barangay
@@ -538,6 +680,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     
     // Fetch market demand data for the selected crop
     const marketDemand = await fetchMarketDemand(crop.crop);
+
+    // Fetch admin recommendation
+    await fetchAdminRecommendations(crop.crop, inputSoilData);
 
     // Update the crop object with market demand data and dynamic values
     const updatedCrop = {
@@ -1311,12 +1456,13 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
               </div>
 
               {/* Selected Crop Details */}
-              <Card className="shadow-card">
+              {/* AI Recommendation Card */}
+              <Card className="shadow-card border-2 border-blue-200 bg-blue-50/30">
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <CardTitle className="flex items-center gap-2">
-                      <Leaf className="h-6 w-6 text-primary" />
-                      {selectedCrop.crop} Prescription
+                    <CardTitle className="flex items-center gap-2 text-blue-700">
+                      <Bot className="h-6 w-6" />
+                      AI Recommendation (Dynamic)
                     </CardTitle>
                     <Badge variant="secondary" className="w-fit">
                       Confidence: {selectedCrop.confidence}%
@@ -1324,8 +1470,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="p-4 bg-accent/10 rounded-lg border">
-                    <p className="text-lg">{selectedCrop.reason}</p>
+                  <div className="p-4 bg-blue-100/50 rounded-lg border">
+                    <p className="text-sm">{selectedCrop.reason}</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1334,7 +1480,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                         <Calendar className="h-4 w-4" />
                         Planting Season
                       </h4>
-                      <p>{getPlantingSeason(selectedCrop.crop, inputSoilData, effectiveWeatherData)}</p>
+                      <p className="text-sm">{getPlantingSeason(selectedCrop.crop, inputSoilData, effectiveWeatherData)}</p>
                     </div>
 
                     <div>
@@ -1342,7 +1488,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                         <TrendingUp className="h-4 w-4" />
                         Market Trend
                       </h4>
-                      <p>{getMarketTrend(selectedCrop.marketDemand)}</p>
+                      <p className="text-sm">{getMarketTrend(selectedCrop.marketDemand)}</p>
                     </div>
 
                     <div>
@@ -1350,7 +1496,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                         <MapPin className="h-4 w-4" />
                         Soil Type
                       </h4>
-                      <p>{getSoilType(inputSoilData)}</p>
+                      <p className="text-sm">{getSoilType(inputSoilData)}</p>
                     </div>
 
                     <div>
@@ -1358,14 +1504,14 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                         <Sun className="h-4 w-4" />
                         Weather Condition
                       </h4>
-                      <p>{getWeatherCondition(effectiveWeatherData)}</p>
+                      <p className="text-sm">{getWeatherCondition(effectiveWeatherData)}</p>
                     </div>
 
                     {/* Market Demand Information */}
                     {selectedCrop.marketDemand && (
-                      <div className="p-4 bg-primary/5 rounded-lg border md:col-span-2">
+                      <div className="p-4 bg-blue-100/50 rounded-lg border md:col-span-2">
                         <h4 className="font-medium mb-2 flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4" />
+                          <DollarSign className="h-4 w-4" />
                           Market Demand Forecast
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
@@ -1397,7 +1543,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
 
                   <Separator />
 
-                  {/* Recommendations */}
+                  {/* AI Recommendations */}
                   <div>
                     <h4 className="font-medium mb-3 flex items-center gap-2">
                       <Sprout className="h-4 w-4 text-success" />
@@ -1405,7 +1551,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                     </h4>
                     <ul className="space-y-2">
                       {getCropRecommendations(selectedCrop.crop, inputSoilData, effectiveWeatherData, selectedCrop.marketDemand).map((rec, index) => (
-                        <li key={index} className="flex items-start gap-2">
+                        <li key={index} className="flex items-start gap-2 text-sm">
                           <span className="mt-1 w-2 h-2 rounded-full bg-success flex-shrink-0"></span>
                           <span>{rec}</span>
                         </li>
@@ -1416,12 +1562,12 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                   {/* Things to Avoid */}
                   <div>
                     <h4 className="font-medium mb-3 flex items-center gap-2">
-                      <span className="text-destructive">⚠️</span>
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
                       Things to Avoid
                     </h4>
                     <ul className="space-y-2">
                       {getThingsToAvoid(selectedCrop.crop, inputSoilData, effectiveWeatherData).map((item, index) => (
-                        <li key={index} className="flex items-start gap-2">
+                        <li key={index} className="flex items-start gap-2 text-sm">
                           <span className="mt-1 w-2 h-2 rounded-full bg-destructive flex-shrink-0"></span>
                           <span>{item}</span>
                         </li>
@@ -1430,6 +1576,158 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Admin Recommendation Card (if exists) */}
+              {loadingAdminData && (
+                <Card className="shadow-card border-2 border-green-200 bg-green-50/30">
+                  <CardContent className="py-8">
+                    <div className="flex justify-center items-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mr-3"></div>
+                      <p className="text-green-700">Loading admin-verified recommendation...</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {!loadingAdminData && adminRecommendation && (
+                <Card className="shadow-card border-2 border-green-200 bg-green-50/30">
+                  <CardHeader>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <CardTitle className="flex items-center gap-2 text-green-700">
+                        <Shield className="h-6 w-6" />
+                        Admin-Verified Recommendation
+                      </CardTitle>
+                      <Badge variant="default" className="bg-green-600 w-fit">Verified</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Soil Analysis */}
+                    <div className="p-4 bg-green-100/50 rounded-lg border">
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <FlaskConical className="h-4 w-4" />
+                        Soil Analysis
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">pH Level</p>
+                          <p className="font-medium">{adminRecommendation.soilAnalysis.pH}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Nitrogen</p>
+                          <p className="font-medium">{adminRecommendation.soilAnalysis.nitrogen}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Phosphorus</p>
+                          <p className="font-medium">{adminRecommendation.soilAnalysis.phosphorus}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Potassium</p>
+                          <p className="font-medium">{adminRecommendation.soilAnalysis.potassium}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Planting Season, Market Trend, Weather */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Planting Season
+                        </h4>
+                        <p className="text-sm">{adminRecommendation.plantingSeason}</p>
+                      </div>
+
+                      <div>
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4" />
+                          Market Trend
+                        </h4>
+                        <p className="text-sm">{adminRecommendation.marketTrend}</p>
+                      </div>
+
+                      <div>
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <Sun className="h-4 w-4" />
+                          Weather Condition
+                        </h4>
+                        <p className="text-sm">{adminRecommendation.weatherCondition}</p>
+                      </div>
+                    </div>
+
+                    {/* Market Demand Forecast */}
+                    {adminRecommendation.marketDemandForecast && (
+                      <div className="p-4 bg-green-100/50 rounded-lg border">
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          Market Demand Forecast
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm mt-2">
+                          <div>
+                            <p className="text-muted-foreground">Seasonal Avg Price</p>
+                            <p className="font-medium">₱{adminRecommendation.marketDemandForecast.seasonalAvgPrice.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Predicted Price</p>
+                            <p className="font-medium">₱{adminRecommendation.marketDemandForecast.predictedPrice.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Price Change</p>
+                            <p className="font-medium">
+                              {adminRecommendation.marketDemandForecast.priceChange >= 0 ? '+' : ''}
+                              {adminRecommendation.marketDemandForecast.priceChange.toFixed(2)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Price Change %</p>
+                            <p className={`font-medium ${adminRecommendation.marketDemandForecast.priceChangePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {adminRecommendation.marketDemandForecast.priceChangePercent >= 0 ? '+' : ''}
+                              {adminRecommendation.marketDemandForecast.priceChangePercent.toFixed(2)}%
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Demand Level</p>
+                            <p className="font-medium">{adminRecommendation.marketDemandForecast.demandLevel}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <Separator />
+
+                    {/* Admin Recommendations */}
+                    <div>
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <Sprout className="h-4 w-4 text-green-600" />
+                        Planting Recommendations
+                      </h4>
+                      <ul className="space-y-2">
+                        {adminRecommendation.plantingRecommendations.map((rec: string, index: number) => (
+                          <li key={index} className="flex items-start gap-2 text-sm">
+                            <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Things to Avoid */}
+                    <div>
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                        Things to Avoid
+                      </h4>
+                      <ul className="space-y-2">
+                        {adminRecommendation.thingsToAvoid.map((item: string, index: number) => (
+                          <li key={index} className="flex items-start gap-2 text-sm">
+                            <XCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">

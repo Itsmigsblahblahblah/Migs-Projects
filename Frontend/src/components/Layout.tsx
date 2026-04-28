@@ -347,6 +347,17 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   <span className="relative z-10">Announcements</span>
                   <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-blue-600 transition-all duration-300 ${location.hash === '#announcements' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
                 </button>
+
+                <button
+                  onClick={() => {
+                    console.log('Navigating to Crop Prescription');
+                    navigate('/admin/crop-prescription');
+                  }}
+                  className={`group text-foreground hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${location.pathname === '/admin/crop-prescription' ? 'text-blue-600' : ''}`}
+                >
+                  <span className="relative z-10">Crop Prescription</span>
+                  <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-blue-600 transition-all duration-300 ${location.pathname === '/admin/crop-prescription' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                </button>
               </nav>
             )}
 
