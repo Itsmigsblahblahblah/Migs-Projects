@@ -7,6 +7,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +31,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Edit2, Sprout, Leaf, Scale, TrendingUp, CheckCircle, Package, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Edit2, Sprout, Leaf, Scale, TrendingUp, CheckCircle, Package, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { getCropInsights } from "@/services/cropDataService";
 
 interface AdminCropEditDialogProps {
@@ -48,6 +58,7 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
     const [loading, setLoading] = useState(true);
     const [isExpanded, setIsExpanded] = useState(false);
     const [status, setStatus] = useState<string>("preparation");
+    const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
     
     // Section edit mode state
     const [marketPriceEditing, setMarketPriceEditing] = useState(false);
@@ -313,19 +324,26 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
 
     const handleOpenChange = (open: boolean) => {
         if (!open && (marketPriceEditing || suggestedCapitalEditing || nitrogenEditing || phosphorusEditing || potassiumEditing)) {
-            // Warn about unsaved changes
-            if (window.confirm("You have unsaved changes. Are you sure you want to close?")) {
-                // Reset all edit modes
-                setMarketPriceEditing(false);
-                setSuggestedCapitalEditing(false);
-                setNitrogenEditing(false);
-                setPhosphorusEditing(false);
-                setPotassiumEditing(false);
-                onOpenChange(open);
-            }
+            // Show custom confirmation dialog instead of browser alert
+            setShowDiscardConfirm(true);
         } else {
             onOpenChange(open);
         }
+    };
+
+    const handleDiscardChanges = () => {
+        // Reset all edit modes
+        setMarketPriceEditing(false);
+        setSuggestedCapitalEditing(false);
+        setNitrogenEditing(false);
+        setPhosphorusEditing(false);
+        setPotassiumEditing(false);
+        setShowDiscardConfirm(false);
+        onOpenChange(false);
+    };
+
+    const handleContinueEditing = () => {
+        setShowDiscardConfirm(false);
     };
 
     if (!crop) return null;
@@ -519,6 +537,7 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
     const harvestDateInfo = calculateHarvestDateWithChecklist();
 
     return (
+        <>
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
@@ -1080,6 +1099,33 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        {/* Custom Confirmation Dialog for Unsaved Changes */}
+        <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
+            <AlertDialogContent className="max-w-md">
+                <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-5 w-5" />
+                        Unsaved Changes
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-base">
+                        You have unsaved changes. Are you sure you want to discard them and close the editor?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={handleContinueEditing} className="min-w-[140px]">
+                        Continue Editing
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={handleDiscardChanges}
+                        className="min-w-[140px] bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                        Discard Changes
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 };
 
