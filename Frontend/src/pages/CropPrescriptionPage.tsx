@@ -150,7 +150,9 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
   const [quickLoading, setQuickLoading] = useState(false);
 
   // Add state for admin recommendations
-  const [adminRecommendation, setAdminRecommendation] = useState<any | null>(null);
+  // Admin recommendation state - change to array for multiple recommendations
+  const [adminRecommendations, setAdminRecommendations] = useState<any[]>([]);
+  const [selectedAdminRec, setSelectedAdminRec] = useState<any | null>(null);
   const [loadingAdminData, setLoadingAdminData] = useState(false);
 
   // Wrapper function for handleAddCrop that returns a boolean and captures the crop ID
@@ -187,10 +189,10 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     return farmAddress; // fallback to the full address if no match
   };
 
-  // Soil matching logic - more flexible to show admin recommendations
+  // Soil matching logic - STRICT matching for exact soil data
   const matchesSoilData = (adminSoil: any, userSoil: SoilData): boolean => {
-    const phTolerance = 1.5; // Increased tolerance for better matching
-    const phMatch = Math.abs(adminSoil.pH - userSoil.pH) <= phTolerance;
+    // Exact pH match (with small tolerance for floating point)
+    const phMatch = Math.abs(adminSoil.pH - userSoil.pH) <= 0.1;
     
     // Map admin values to user values
     const nitrogenMap: any = { 'Low': 'L', 'Medium': 'M', 'High': 'H' };
@@ -198,13 +200,10 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     const pMatch = nitrogenMap[adminSoil.phosphorus] === userSoil.Phosphorus;
     const kMatch = nitrogenMap[adminSoil.potassium] === userSoil.Potassium;
     
-    // Very flexible: show if pH matches OR at least 1 nutrient matches
-    const nutrientMatches = [nMatch, pMatch, kMatch].filter(Boolean).length;
+    // STRICT: ALL must match - pH AND Nitrogen AND Phosphorus AND Potassium
+    const matches = phMatch && nMatch && pMatch && kMatch;
     
-    // If pH is close, show it. Or if at least 1 nutrient matches
-    const matches = phMatch || nutrientMatches >= 1;
-    
-    console.log('Soil matching:', {
+    console.log('Soil matching (STRICT):', {
       adminSoil,
       userSoil,
       adminNitrogen: adminSoil.nitrogen,
@@ -214,7 +213,6 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       nMatch,
       pMatch,
       kMatch,
-      nutrientMatches,
       finalMatch: matches
     });
     
@@ -232,7 +230,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       const db = await getDb();
       if (!db) {
         console.error('Firestore database not initialized!');
-        setAdminRecommendation(null);
+        setAdminRecommendations([]);
         setLoadingAdminData(false);
         return;
       }
@@ -253,7 +251,7 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       if (allRecs.length === 0) {
         console.log('⚠️ NO admin recommendations found in Firestore!');
         console.log('Please add admin recommendations first at /admin/crop-prescription');
-        setAdminRecommendation(null);
+        setAdminRecommendations([]);
         setLoadingAdminData(false);
         return;
       }
@@ -264,17 +262,16 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
         isActive: r.isActive
       })));
       
-      // Try to find matching recommendations
+      // STRICT matching: crop name AND exact soil data
       const matchingRecs = allRecs.filter((rec: any) => {
-        // Flexible crop name matching
-        const cropMatch = rec.cropName.toLowerCase().includes(cropName.toLowerCase()) || 
-                         cropName.toLowerCase().includes(rec.cropName.toLowerCase());
+        // Exact crop name match
+        const cropMatch = rec.cropName.toLowerCase() === cropName.toLowerCase();
         
         console.log(`Checking "${rec.cropName}" vs "${cropName}":`, { cropMatch });
         
         if (!cropMatch) return false;
         
-        // Soil matching
+        // STRICT soil matching
         const soilMatch = matchesSoilData(rec.soilAnalysis, soilData);
         
         console.log(`Soil match for "${rec.cropName}":`, soilMatch);
@@ -284,27 +281,15 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
       
       console.log('Matched recommendations (crop + soil):', matchingRecs.length);
       
-      // If no match with soil, try crop name only
-      let finalRecs = matchingRecs;
-      if (matchingRecs.length === 0) {
-        console.log('No soil match, falling back to crop name only...');
-        finalRecs = allRecs.filter((rec: any) => {
-          const cropMatch = rec.cropName.toLowerCase().includes(cropName.toLowerCase()) || 
-                           cropName.toLowerCase().includes(rec.cropName.toLowerCase());
-          console.log(`Fallback crop match "${rec.cropName}":`, cropMatch);
-          return cropMatch;
-        });
-        console.log('Fallback matches (crop name only):', finalRecs.length);
-      }
-      
-      // Set the first matching recommendation
-      if (finalRecs.length > 0) {
-        setAdminRecommendation(finalRecs[0]);
-        console.log('✅ SUCCESS! Set admin recommendation:', finalRecs[0].cropName);
-        console.log('Full admin recommendation:', finalRecs[0]);
+      // NO fallback - only show if EXACT match
+      if (matchingRecs.length > 0) {
+        setAdminRecommendations([matchingRecs[0]]);
+        console.log('✅ SUCCESS! Set admin recommendation:', matchingRecs[0].cropName);
+        console.log('Full admin recommendation:', matchingRecs[0]);
       } else {
-        setAdminRecommendation(null);
-        console.log('❌ NO MATCH FOUND for crop:', cropName);
+        setAdminRecommendations([]);
+        console.log('❌ NO EXACT MATCH FOUND for crop:', cropName);
+        console.log('Admin recommendation will NOT appear (soil data does not match exactly)');
         console.log('Available crops:', allRecs.map((r: any) => r.cropName));
       }
       
@@ -312,11 +297,75 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
     } catch (error) {
       console.error('❌ Error fetching admin recommendations:', error);
       console.error('Error details:', error instanceof Error ? error.message : error);
-      setAdminRecommendation(null);
+      setAdminRecommendations([]);
     } finally {
       setLoadingAdminData(false);
     }
   };
+
+  // Fetch admin recommendations based on soil data ONLY (for main page display)
+  const fetchAdminRecommendationsForSoil = async (soilData: SoilData) => {
+    try {
+      setLoadingAdminData(true);
+      console.log('========== FETCH ADMIN RECOMMENDATIONS FOR SOIL ==========');
+      console.log('User soil data:', soilData);
+      
+      const db = await getDb();
+      if (!db) {
+        console.error('Firestore database not initialized!');
+        setAdminRecommendations([]);
+        setLoadingAdminData(false);
+        return;
+      }
+      
+      const recommendationsRef = collection(db, 'adminRecommendations');
+      const q = query(recommendationsRef, where('isActive', '==', true));
+      const snapshot = await getDocs(q);
+      
+      console.log('Total active admin recommendations in Firestore:', snapshot.size);
+      
+      // Get all recommendations
+      const allRecs: any[] = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return { id: doc.id, ...data };
+      });
+      
+      if (allRecs.length === 0) {
+        console.log('⚠️ NO admin recommendations found in Firestore!');
+        setAdminRecommendations([]);
+        setLoadingAdminData(false);
+        return;
+      }
+      
+      // Find recommendations that match soil data
+      const matchingRecs = allRecs.filter((rec: any) => {
+        const soilMatch = matchesSoilData(rec.soilAnalysis, soilData);
+        console.log(`Checking "${rec.cropName}" soil match:`, soilMatch);
+        return soilMatch;
+      });
+      
+      console.log('Matched recommendations for soil:', matchingRecs.length);
+      
+      // Set ALL matching recommendations (not just the first one)
+      setAdminRecommendations(matchingRecs);
+      console.log('✅ Set admin recommendations:', matchingRecs.length, 'recommendations');
+      
+      console.log('========== END FETCH ADMIN RECOMMENDATIONS ==========');
+    } catch (error) {
+      console.error('❌ Error fetching admin recommendations:', error);
+      setAdminRecommendations([]);
+    } finally {
+      setLoadingAdminData(false);
+    }
+  };
+
+  // Add useEffect to fetch admin recommendations when soil data loads
+  useEffect(() => {
+    if (inputSoilData.pH > 0 && !soilDataLoading) {
+      console.log('Soil data loaded, fetching admin recommendations...');
+      fetchAdminRecommendationsForSoil(inputSoilData);
+    }
+  }, [inputSoilData, soilDataLoading]);
 
   // Function to fetch soil data by barangay
   const fetchSoilDataByBarangay = async (barangay: string) => {
@@ -1191,6 +1240,80 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                     </CardContent>
                   </Card>
 
+                  {/* Admin-Verified Recommendations Table */}
+                  {loadingAdminData && (
+                    <Card className="shadow-card border-2 border-green-200 bg-green-50/30">
+                      <CardContent className="py-8">
+                        <div className="flex justify-center items-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mr-3"></div>
+                          <p className="text-green-700">Loading admin-verified recommendations...</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  {!loadingAdminData && adminRecommendations.length > 0 && (
+                    <Card className="shadow-card border-2 border-green-200 bg-green-50/30">
+                      <CardHeader>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <CardTitle className="flex items-center gap-2 text-green-700">
+                            <Shield className="h-6 w-6" />
+                            Admin-Verified Recommendations
+                          </CardTitle>
+                          <Badge variant="default" className="bg-green-600 w-fit">
+                            {adminRecommendations.length} Verified
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {/* Table */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-green-100 border-b-2 border-green-200">
+                              <tr>
+                                <th className="text-left py-3 px-4 font-semibold text-green-800">Crop Name</th>
+                                <th className="text-left py-3 px-4 font-semibold text-green-800">pH</th>
+                                <th className="text-left py-3 px-4 font-semibold text-green-800">Nitrogen</th>
+                                <th className="text-left py-3 px-4 font-semibold text-green-800">Phosphorus</th>
+                                <th className="text-left py-3 px-4 font-semibold text-green-800">Potassium</th>
+                                <th className="text-left py-3 px-4 font-semibold text-green-800">Avg Price</th>
+                                <th className="text-left py-3 px-4 font-semibold text-green-800">Demand</th>
+                                <th className="text-left py-3 px-4 font-semibold text-green-800">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {adminRecommendations.map((rec) => (
+                                <tr key={rec.id} className="border-b border-green-100 bg-white hover:bg-green-50 transition-colors">
+                                  <td className="py-3 px-4 font-medium text-green-800">{rec.cropName}</td>
+                                  <td className="py-3 px-4">{rec.soilAnalysis.pH}</td>
+                                  <td className="py-3 px-4">{rec.soilAnalysis.nitrogen}</td>
+                                  <td className="py-3 px-4">{rec.soilAnalysis.phosphorus}</td>
+                                  <td className="py-3 px-4">{rec.soilAnalysis.potassium}</td>
+                                  <td className="py-3 px-4">₱{rec.marketDemandForecast.seasonalAvgPrice.toFixed(2)}</td>
+                                  <td className="py-3 px-4">
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                                      {rec.marketDemandForecast.demandLevel}
+                                    </Badge>
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => setSelectedAdminRec(rec)}
+                                      className="bg-green-600 hover:bg-green-700"
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      View More
+                                    </Button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {/* Environmental Factors */}
                   <Card className="shadow-card">
                     <CardHeader>
@@ -1577,158 +1700,6 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                 </CardContent>
               </Card>
 
-              {/* Admin Recommendation Card (if exists) */}
-              {loadingAdminData && (
-                <Card className="shadow-card border-2 border-green-200 bg-green-50/30">
-                  <CardContent className="py-8">
-                    <div className="flex justify-center items-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mr-3"></div>
-                      <p className="text-green-700">Loading admin-verified recommendation...</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {!loadingAdminData && adminRecommendation && (
-                <Card className="shadow-card border-2 border-green-200 bg-green-50/30">
-                  <CardHeader>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <CardTitle className="flex items-center gap-2 text-green-700">
-                        <Shield className="h-6 w-6" />
-                        Admin-Verified Recommendation
-                      </CardTitle>
-                      <Badge variant="default" className="bg-green-600 w-fit">Verified</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Soil Analysis */}
-                    <div className="p-4 bg-green-100/50 rounded-lg border">
-                      <h4 className="font-medium mb-3 flex items-center gap-2">
-                        <FlaskConical className="h-4 w-4" />
-                        Soil Analysis
-                      </h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">pH Level</p>
-                          <p className="font-medium">{adminRecommendation.soilAnalysis.pH}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Nitrogen</p>
-                          <p className="font-medium">{adminRecommendation.soilAnalysis.nitrogen}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Phosphorus</p>
-                          <p className="font-medium">{adminRecommendation.soilAnalysis.phosphorus}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Potassium</p>
-                          <p className="font-medium">{adminRecommendation.soilAnalysis.potassium}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Planting Season, Market Trend, Weather */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <h4 className="font-medium mb-2 flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          Planting Season
-                        </h4>
-                        <p className="text-sm">{adminRecommendation.plantingSeason}</p>
-                      </div>
-
-                      <div>
-                        <h4 className="font-medium mb-2 flex items-center gap-2">
-                          <TrendingUp className="h-4 w-4" />
-                          Market Trend
-                        </h4>
-                        <p className="text-sm">{adminRecommendation.marketTrend}</p>
-                      </div>
-
-                      <div>
-                        <h4 className="font-medium mb-2 flex items-center gap-2">
-                          <Sun className="h-4 w-4" />
-                          Weather Condition
-                        </h4>
-                        <p className="text-sm">{adminRecommendation.weatherCondition}</p>
-                      </div>
-                    </div>
-
-                    {/* Market Demand Forecast */}
-                    {adminRecommendation.marketDemandForecast && (
-                      <div className="p-4 bg-green-100/50 rounded-lg border">
-                        <h4 className="font-medium mb-2 flex items-center gap-2">
-                          <DollarSign className="h-4 w-4" />
-                          Market Demand Forecast
-                        </h4>
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm mt-2">
-                          <div>
-                            <p className="text-muted-foreground">Seasonal Avg Price</p>
-                            <p className="font-medium">₱{adminRecommendation.marketDemandForecast.seasonalAvgPrice.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Predicted Price</p>
-                            <p className="font-medium">₱{adminRecommendation.marketDemandForecast.predictedPrice.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Price Change</p>
-                            <p className="font-medium">
-                              {adminRecommendation.marketDemandForecast.priceChange >= 0 ? '+' : ''}
-                              {adminRecommendation.marketDemandForecast.priceChange.toFixed(2)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Price Change %</p>
-                            <p className={`font-medium ${adminRecommendation.marketDemandForecast.priceChangePercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {adminRecommendation.marketDemandForecast.priceChangePercent >= 0 ? '+' : ''}
-                              {adminRecommendation.marketDemandForecast.priceChangePercent.toFixed(2)}%
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Demand Level</p>
-                            <p className="font-medium">{adminRecommendation.marketDemandForecast.demandLevel}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <Separator />
-
-                    {/* Admin Recommendations */}
-                    <div>
-                      <h4 className="font-medium mb-3 flex items-center gap-2">
-                        <Sprout className="h-4 w-4 text-green-600" />
-                        Planting Recommendations
-                      </h4>
-                      <ul className="space-y-2">
-                        {adminRecommendation.plantingRecommendations.map((rec: string, index: number) => (
-                          <li key={index} className="flex items-start gap-2 text-sm">
-                            <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                            <span>{rec}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Things to Avoid */}
-                    <div>
-                      <h4 className="font-medium mb-3 flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
-                        Things to Avoid
-                      </h4>
-                      <ul className="space-y-2">
-                        {adminRecommendation.thingsToAvoid.map((item: string, index: number) => (
-                          <li key={index} className="flex items-start gap-2 text-sm">
-                            <XCircle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button className="flex-1" onClick={handleSavePrescription}>
@@ -1737,6 +1708,167 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                 <Button variant="outline" className="flex-1 hover:bg-yellow-500 hover:text-black" onClick={handleResetSelection}>
                   Explore Other Crops
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Recommendation Detail Dialog */}
+          {selectedAdminRec && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedAdminRec(null)}>
+              <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                {/* Header */}
+                <div className="bg-green-600 text-white p-6 rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Shield className="h-8 w-8" />
+                      <div>
+                        <h2 className="text-2xl font-bold">Admin-Verified Recommendation</h2>
+                        <p className="text-green-100">Detailed information</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedAdminRec(null)}
+                      className="text-white hover:text-green-200 text-2xl font-bold"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 space-y-6">
+                  {/* Crop Name */}
+                  <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
+                    <h3 className="text-3xl font-bold text-green-800 mb-2">
+                      {selectedAdminRec.cropName}
+                    </h3>
+                    <Badge className="bg-green-600 text-white">
+                      Admin Verified
+                    </Badge>
+                  </div>
+
+                  {/* Soil Analysis */}
+                  <div>
+                    <h4 className="font-semibold text-lg text-green-800 mb-3 flex items-center gap-2">
+                      <FlaskConical className="h-5 w-5" />
+                      Soil Analysis
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <p className="text-sm text-gray-600 mb-1">pH Level</p>
+                        <p className="text-2xl font-bold text-green-700">{selectedAdminRec.soilAnalysis.pH}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <p className="text-sm text-gray-600 mb-1">Nitrogen</p>
+                        <p className="text-2xl font-bold text-green-700">{selectedAdminRec.soilAnalysis.nitrogen}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <p className="text-sm text-gray-600 mb-1">Phosphorus</p>
+                        <p className="text-2xl font-bold text-green-700">{selectedAdminRec.soilAnalysis.phosphorus}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <p className="text-sm text-gray-600 mb-1">Potassium</p>
+                        <p className="text-2xl font-bold text-green-700">{selectedAdminRec.soilAnalysis.potassium}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Market Forecast */}
+                  <div>
+                    <h4 className="font-semibold text-lg text-green-800 mb-3 flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Market Demand Forecast
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <p className="text-sm text-gray-600 mb-1">Seasonal Avg Price</p>
+                        <p className="text-2xl font-bold text-green-700">₱{selectedAdminRec.marketDemandForecast.seasonalAvgPrice.toFixed(2)}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <p className="text-sm text-gray-600 mb-1">Predicted Price</p>
+                        <p className="text-2xl font-bold text-green-700">₱{selectedAdminRec.marketDemandForecast.predictedPrice.toFixed(2)}</p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <p className="text-sm text-gray-600 mb-1">Price Change</p>
+                        <p className="text-2xl font-bold text-green-700">
+                          {selectedAdminRec.marketDemandForecast.priceChange >= 0 ? '+' : ''}
+                          {selectedAdminRec.marketDemandForecast.priceChange.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <p className="text-sm text-gray-600 mb-1">Demand Level</p>
+                        <p className="text-2xl font-bold text-green-700">{selectedAdminRec.marketDemandForecast.demandLevel}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                      <h5 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                        <Calendar className="h-5 w-5" />
+                        Planting Season
+                      </h5>
+                      <p className="text-green-700">{selectedAdminRec.plantingSeason}</p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                      <h5 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        Market Trend
+                      </h5>
+                      <p className="text-green-700">{selectedAdminRec.marketTrend}</p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                      <h5 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                        <Sun className="h-5 w-5" />
+                        Weather Condition
+                      </h5>
+                      <p className="text-green-700">{selectedAdminRec.weatherCondition}</p>
+                    </div>
+                  </div>
+
+                  {/* Recommendations */}
+                  <div className="bg-green-50 rounded-lg p-4 border-2 border-green-200">
+                    <h4 className="font-semibold text-lg text-green-800 mb-4 flex items-center gap-2">
+                      <CheckCircle className="h-6 w-6" />
+                      Planting Recommendations
+                    </h4>
+                    <ul className="space-y-3">
+                      {selectedAdminRec.plantingRecommendations.map((rec: string, index: number) => (
+                        <li key={index} className="flex items-start gap-3">
+                          <span className="text-green-600 mt-1 text-xl">•</span>
+                          <span className="text-gray-700 text-base">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Things to Avoid */}
+                  <div className="bg-red-50 rounded-lg p-4 border-2 border-red-200">
+                    <h4 className="font-semibold text-lg text-red-800 mb-4 flex items-center gap-2">
+                      <AlertTriangle className="h-6 w-6" />
+                      Things to Avoid
+                    </h4>
+                    <ul className="space-y-3">
+                      {selectedAdminRec.thingsToAvoid.map((item: string, index: number) => (
+                        <li key={index} className="flex items-start gap-3">
+                          <span className="text-red-600 mt-1 text-xl">✕</span>
+                          <span className="text-gray-700 text-base">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Close Button */}
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      onClick={() => setSelectedAdminRec(null)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
