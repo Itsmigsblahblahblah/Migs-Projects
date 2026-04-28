@@ -350,12 +350,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
                 <button
                   onClick={() => {
-                    console.log('Navigating to Crop Prescription');
+                    console.log('Navigating to Soil pH Level');
                     navigate('/admin/crop-prescription');
                   }}
                   className={`group text-foreground hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${location.pathname === '/admin/crop-prescription' ? 'text-blue-600' : ''}`}
                 >
-                  <span className="relative z-10">Crop Prescription</span>
+                  <span className="relative z-10">Soil pH Level</span>
                   <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-blue-600 transition-all duration-300 ${location.pathname === '/admin/crop-prescription' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
                 </button>
               </nav>
