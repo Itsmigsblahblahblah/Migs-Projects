@@ -506,11 +506,11 @@ const AdminCropPrescriptionManagement = () => {
                     step="0.1"
                     min="0"
                     max="14"
-                    value={formData.pH}
+                    value={formData.pH === 0 ? "" : formData.pH}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        pH: parseFloat(e.target.value) || 0,
+                        pH: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0,
                       })
                     }
                   />
@@ -587,28 +587,45 @@ const AdminCropPrescriptionManagement = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="marketTrend">Market Trend</Label>
-                <Input
-                  id="marketTrend"
+                <Select
                   value={formData.marketTrend}
-                  onChange={(e) =>
-                    setFormData({ ...formData, marketTrend: e.target.value })
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, marketTrend: value })
                   }
-                  placeholder="e.g., Upward trend, Stable"
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select market trend" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Upward trend">Upward trend</SelectItem>
+                    <SelectItem value="Downward trend">Downward trend</SelectItem>
+                    <SelectItem value="Stable">Stable</SelectItem>
+                    <SelectItem value="Volatile">Volatile</SelectItem>
+                    <SelectItem value="Seasonal peak">Seasonal peak</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="weatherCondition">Weather Condition</Label>
-                <Input
-                  id="weatherCondition"
+                <Select
                   value={formData.weatherCondition}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      weatherCondition: e.target.value,
-                    })
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, weatherCondition: value })
                   }
-                  placeholder="e.g., Warm, Moderate humidity"
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select weather condition" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Warm and dry">Warm and dry</SelectItem>
+                    <SelectItem value="Warm and humid">Warm and humid</SelectItem>
+                    <SelectItem value="Cool and dry">Cool and dry</SelectItem>
+                    <SelectItem value="Cool and humid">Cool and humid</SelectItem>
+                    <SelectItem value="Moderate temperature">Moderate temperature</SelectItem>
+                    <SelectItem value="Heavy rainfall">Heavy rainfall</SelectItem>
+                    <SelectItem value="Drought conditions">Drought conditions</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -618,54 +635,22 @@ const AdminCropPrescriptionManagement = () => {
                 <DollarSign className="h-4 w-4" />
                 Market Demand Forecast
               </Label>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="seasonalAvgPrice" className="whitespace-nowrap">Seasonal Avg Price (₱)</Label>
+                  <Label htmlFor="seasonalAvgPrice" className="whitespace-nowrap">Market Demand (₱)</Label>
                   <Input
                     id="seasonalAvgPrice"
                     type="number"
                     step="0.01"
-                    value={formData.seasonalAvgPrice}
+                    value={formData.seasonalAvgPrice === 0 ? "" : formData.seasonalAvgPrice}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        seasonalAvgPrice: parseFloat(e.target.value) || 0,
+                        seasonalAvgPrice: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0,
                       })
                     }
+                    placeholder="Enter current market price"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="predictedPrice" className="whitespace-nowrap">Predicted Price (₱)</Label>
-                  <Input
-                    id="predictedPrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.predictedPrice}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        predictedPrice: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="whitespace-nowrap">Price Change (₱)</Label>
-                  <div className="px-3 py-2 border rounded-md bg-muted">
-                    {priceChange >= 0 ? "+" : ""}
-                    {priceChange.toFixed(2)}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Price Change (%)</Label>
-                  <div
-                    className={`px-3 py-2 border rounded-md bg-muted ${
-                      priceChangePercent >= 0 ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {priceChangePercent >= 0 ? "+" : ""}
-                    {priceChangePercent.toFixed(2)}%
-                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Demand Level</Label>

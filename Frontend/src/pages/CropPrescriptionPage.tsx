@@ -1182,8 +1182,8 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                             step="0.1"
                             min="0"
                             max="14"
-                            value={inputSoilData.pH}
-                            onChange={(e) => setInputSoilData({ ...inputSoilData, pH: parseFloat(e.target.value) || 0 })}
+                            value={inputSoilData.pH === 0 ? "" : inputSoilData.pH}
+                            onChange={(e) => setInputSoilData({ ...inputSoilData, pH: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                             disabled={soilDataLoading || loading}
                           />
@@ -1637,21 +1637,10 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                           <DollarSign className="h-4 w-4" />
                           Market Demand Forecast
                         </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                           <div>
-                            <p className="text-sm text-muted-foreground">Est. Seasonal Avg. Price</p>
+                            <p className="text-sm text-muted-foreground">Market Demand</p>
                             <p className="font-medium">₱{selectedCrop.marketDemand.current_avg_price.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Est. Predicted Price</p>
-                            <p className="font-medium">₱{selectedCrop.marketDemand.predicted_price.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Est. Price Change</p>
-                            <p className={`font-medium ${selectedCrop.marketDemand.price_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {selectedCrop.marketDemand.price_change >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change.toFixed(2)}
-                              ({selectedCrop.marketDemand.price_change_percent >= 0 ? '+' : ''}{selectedCrop.marketDemand.price_change_percent.toFixed(2)}%)
-                            </p>
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Demand Level</p>
@@ -1779,21 +1768,10 @@ const CropPrescriptionPage = ({ farmerProfile, weatherData }: CropPrescriptionPa
                       <DollarSign className="h-5 w-5" />
                       Market Demand Forecast
                     </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                        <p className="text-sm text-gray-600 mb-1">Seasonal Avg Price</p>
+                        <p className="text-sm text-gray-600 mb-1">Market Demand</p>
                         <p className="text-2xl font-bold text-green-700">₱{selectedAdminRec.marketDemandForecast.seasonalAvgPrice.toFixed(2)}</p>
-                      </div>
-                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                        <p className="text-sm text-gray-600 mb-1">Predicted Price</p>
-                        <p className="text-2xl font-bold text-green-700">₱{selectedAdminRec.marketDemandForecast.predictedPrice.toFixed(2)}</p>
-                      </div>
-                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                        <p className="text-sm text-gray-600 mb-1">Price Change</p>
-                        <p className="text-2xl font-bold text-green-700">
-                          {selectedAdminRec.marketDemandForecast.priceChange >= 0 ? '+' : ''}
-                          {selectedAdminRec.marketDemandForecast.priceChange.toFixed(2)}
-                        </p>
                       </div>
                       <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                         <p className="text-sm text-gray-600 mb-1">Demand Level</p>

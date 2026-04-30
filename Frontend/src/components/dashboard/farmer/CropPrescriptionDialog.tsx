@@ -415,8 +415,8 @@ const CropPrescriptionDialog = ({ open, onOpenChange, farmerProfile, weatherData
                       step="0.1"
                       min="0"
                       max="14"
-                      value={inputSoilData.pH}
-                      onChange={(e) => setInputSoilData({ ...inputSoilData, pH: parseFloat(e.target.value) || 0 })}
+                      value={inputSoilData.pH === 0 ? "" : inputSoilData.pH}
+                      onChange={(e) => setInputSoilData({ ...inputSoilData, pH: e.target.value === "" ? 0 : parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       disabled={soilDataLoading || loading}
                     />
