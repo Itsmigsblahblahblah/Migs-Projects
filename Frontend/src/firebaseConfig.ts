@@ -6,7 +6,7 @@ import { getFunctions } from "firebase/functions";
 // Backend URL - Use environment variable (set in .env.production for production)
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
-// Firebase instances - initialized as null but will be set async
+// Firebase instances - initialized synchronously from environment variables
 let app: any = null;
 let db: any = null;
 let auth: any = null;
@@ -15,20 +15,10 @@ let firebaseConfig: any = null;
 let initializationPromise: Promise<any> | null = null;
 let initError: Error | null = null;
 
-// Create a Promise that resolves when Firebase is ready
-let firebaseReadyPromise: Promise<void> | null = null;
-
-const initializeFirebaseAndWait = async (): Promise<void> => {
-  if (!initializationPromise) {
-    initializationPromise = initializeFirebase();
-  }
-  await initializationPromise;
-};
-
-// Function to initialize Firebase with config from backend
+// Function to initialize Firebase using environment variables ONLY
 export const initializeFirebase = async (): Promise<any> => {
-  // If already initialized with real config, return
-  if (app && firebaseConfig && firebaseConfig.apiKey) {
+  // If already initialized, return
+  if (app && firebaseConfig) {
     console.log('[Firebase] Already initialized, returning existing app');
     return app;
   }
@@ -41,82 +31,32 @@ export const initializeFirebase = async (): Promise<any> => {
 
   initializationPromise = (async () => {
     try {
-      console.log('[Firebase] Starting Firebase initialization...');
-      console.log('[Firebase] Backend URL:', BACKEND_URL);
+      console.log('[Firebase] Starting Firebase initialization from environment variables...');
+      // Use environment variables directly from Frontend/.env
+      firebaseConfig = {
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: import.meta.env.VITE_FIREBASE_APP_ID,
+        measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+      };
       
-      // Try to fetch Firebase config from backend
-      let configResponse;
-      try {
-        configResponse = await fetch(`${BACKEND_URL}/config/firebase`);
-        console.log('[Firebase] Backend config response status:', configResponse.status);
-      } catch (fetchError) {
-        console.warn('[Firebase] Backend fetch failed:', fetchError);
-        console.warn('[Firebase] Using fallback Firebase configuration');
-        // Will use fallback below
-        configResponse = { ok: false };
+      // Verify config is complete
+      const requiredKeys = ['apiKey', 'authDomain', 'projectId'];
+      const missingKeys = requiredKeys.filter(key => !firebaseConfig[key]);
+      if (missingKeys.length > 0) {
+        console.error('[Firebase] Missing required Firebase config values:', missingKeys);
+        throw new Error(`Missing Firebase config values: ${missingKeys.join(', ')}`);
       }
       
-      if (configResponse.ok) {
-        const data = await configResponse.json();
-        console.log('[Firebase] Backend config data:', data);
-        
-        if (data.success && data.config && data.config.apiKey) {
-          console.log('[Firebase] Using backend Firebase configuration');
-          firebaseConfig = data.config;
-          
-          // Verify config is complete
-          const requiredKeys = ['apiKey', 'authDomain', 'projectId'];
-          const missingKeys = requiredKeys.filter(key => !firebaseConfig[key]);
-          if (missingKeys.length > 0) {
-            console.warn('[Firebase] Missing config values from backend:', missingKeys);
-            throw new Error(`Missing Firebase config values: ${missingKeys.join(', ')}`);
-          }
-        } else {
-          console.warn('[Firebase] Backend returned invalid config, using fallback');
-          throw new Error('Invalid backend config');
-        }
-      } else {
-        // Backend not available or returned error - use fallback
-        console.warn('[Firebase] Backend config endpoint not available');
-        console.warn('[Firebase] Using fallback Firebase configuration');
-        
-        // FALLBACK Firebase config - Hardcoded for development
-        firebaseConfig = {
-          apiKey: "AIzaSyARlJB0r_M_VieMV9E2yv2eFRuQXDv6Z2w",
-          authDomain: "majayjay-farm.firebaseapp.com",
-          projectId: "majayjay-farm",
-          storageBucket: "majayjay-farm.firebasestorage.app",
-          messagingSenderId: "704446587483",
-          appId: "1:704446587483:web:611f1dc0e5b826eacb957e",
-          measurementId: "G-65QYLYWQ6F"
-        };
-        
-        console.warn('[Firebase] ⚠️  FALLBACK CONFIG DETECTED');
-        console.warn('[Firebase] ⚠️  Backend /config/firebase endpoint is not working');
-        console.warn('[Firebase] ⚠️  Using hardcoded Firebase credentials for development');
-        console.warn('[Firebase] ✅ Data fetching WILL work with this fallback config');
-        
-        // Initialize Firebase even with fallback config
-        console.log('[Firebase] Initializing Firebase with fallback config...');
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        functions = getFunctions(app);
-        
-        console.log('[Firebase] ✅ Firebase initialization successful with fallback config!');
-        console.log('[Firebase] ✅ Database (Firestore) ready:', !!db);
-        console.log('[Firebase] ✅ Authentication ready:', !!auth);
-        
-        return app;
-      }
+      console.log('[Firebase] Using Firebase configuration from environment variables');
+      console.log('[Firebase] Project ID:', firebaseConfig.projectId);
+      console.log('[Firebase] Auth Domain:', firebaseConfig.authDomain);
       
-      console.log('[Firebase] Initializing Firebase app with config:', {
-        apiKey: firebaseConfig.apiKey?.substring(0, 10) + '...',
-        authDomain: firebaseConfig.authDomain,
-        projectId: firebaseConfig.projectId
-      });
-      
-      // Initialize Firebase with config
+      // Initialize Firebase with config from environment variables
+      console.log('[Firebase] Initializing Firebase app...');
       app = initializeApp(firebaseConfig);
       db = getFirestore(app);
       auth = getAuth(app);
@@ -125,6 +65,7 @@ export const initializeFirebase = async (): Promise<any> => {
       console.log('[Firebase] ✅ Firebase initialization successful!');
       console.log('[Firebase] ✅ Database (Firestore) ready:', !!db);
       console.log('[Firebase] ✅ Authentication ready:', !!auth);
+      console.log('[Firebase] ✅ Login will work independently of backend status');
       
       return app;
     } catch (error) {

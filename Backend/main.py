@@ -11,7 +11,6 @@ import routes.enhanced_soil_routes  # Add the new routes
 import routes.data_routes  # Add data routes
 import routes.auth_routes  # Add authentication routes
 import routes.gemini_routes  # Add Gemini API proxy routes
-import routes.config_routes  # Add Firebase config routes
 import subprocess
 import sys
 import os
@@ -24,10 +23,7 @@ load_dotenv()
 # Log environment variables status
 print("[Backend] Environment variables loaded:")
 print(
-    f"[Backend] - Firebase API Key: {'SET' if os.environ.get('FIREBASE_API_KEY') else 'NOT SET'}")
-print(
-    f"[Backend] - Firebase Project ID: {os.environ.get('FIREBASE_PROJECT_ID', 'NOT SET')}")
-print(f"[Backend] - Backend will serve Firebase config to frontend")
+    f"[Backend] - Gemini API keys: {'LOADED' if any(os.environ.get(f'GEMINI_API_KEY_{i}') for i in range(1, 7)) else 'NOT LOADED'}")
 
 # Create main app
 app = FastAPI(title="Farm Resource Management System",
@@ -49,7 +45,6 @@ app.include_router(routes.enhanced_soil_routes.app)  # Add the new routes
 app.include_router(routes.data_routes.app)  # Add data routes
 app.include_router(routes.auth_routes.app)  # Add authentication routes
 app.include_router(routes.gemini_routes.app)  # Add Gemini API proxy routes
-app.include_router(routes.config_routes.app)  # Add Firebase config routes
 
 
 @app.on_event("startup")
