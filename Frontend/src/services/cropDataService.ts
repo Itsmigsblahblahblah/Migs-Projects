@@ -488,6 +488,8 @@ export const calculateProfitProjection = async (
         console.warn('Could not get demand prediction, using average price:', predictionError);
         // Fall back to average price if prediction fails or times out
       }
+    } else {
+      console.log(`[CropDataService] No historical data available for ${cropName}, using market average price`);
     }
     
     const seedInfo = await getSeedPriceInfo(cropName);

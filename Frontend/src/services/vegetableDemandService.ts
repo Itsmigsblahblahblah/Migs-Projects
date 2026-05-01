@@ -131,27 +131,12 @@ export const getVegetableHistoricalData = async (vegetableName: string) => {
       return result;
     } catch (error) {
       console.error('Error getting vegetable historical data for:', vegetableName, error);
-      // Try with a simplified name
-      try {
-        const simplifiedName = vegetableName.replace(/\s*\(.*?\)/g, '').trim();
-        console.log('Trying with simplified name:', simplifiedName);
-        const response = await fetch(`${API_BASE_URL}/vegetables/vegetable-data/${encodeURIComponent(simplifiedName)}`);
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        if (data.vegetable_data && data.vegetable_data.length > 0) {
-          console.log('Found data with simplified name:', simplifiedName);
-          VEGETABLE_CACHE[cacheKey] = data.vegetable_data;
-          return data.vegetable_data;
-        }
-      } catch (simplifiedError) {
-        console.error('Error with simplified name:', simplifiedError);
-      }
-
-      throw error;
+      
+      // Return empty array instead of trying fallback to prevent CORS errors
+      console.log(`[VegetableService] Returning empty data for ${vegetableName} due to API failure`);
+      const emptyData: any[] = [];
+      VEGETABLE_CACHE[cacheKey] = emptyData;
+      return emptyData;
     } finally {
       // Remove from pending once complete
       delete PENDING_VEGETABLE_REQUESTS[cacheKey];
