@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 import pandas as pd
 import logging
 import os
+import threading
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
@@ -11,6 +12,49 @@ logger = logging.getLogger(__name__)
 
 # Initialize APIRouter
 app = APIRouter(prefix="/data", tags=["data"])
+
+# Global cached datasets (lazy-loaded)
+_data_caches = {
+    'soil': None,
+    'vegetable': None,
+    'seed': None,
+    'crop_yield': None
+}
+_data_locks = {
+    'soil': threading.Lock(),
+    'vegetable': threading.Lock(),
+    'seed': threading.Lock(),
+    'crop_yield': threading.Lock()
+}
+
+
+def _get_cached_dataset(cache_key: str, file_path: str, check_vegetable_format: bool = False):
+    """Thread-safe lazy loader for dataset caches"""
+    if _data_caches[cache_key] is not None:
+        return _data_caches[cache_key]
+
+    with _data_locks[cache_key]:
+        if _data_caches[cache_key] is None:
+            try:
+                logger.info(
+                    f"Loading {cache_key} dataset cache (first request)...")
+                df = pd.read_csv(file_path)
+
+                # Special handling for vegetable prices (check format)
+                if check_vegetable_format and df.columns[0] != 'Vegetable':
+                    # Old format - skip first row and rename
+                    df = df.iloc[1:]
+                    df.columns = ['Vegetable', 'Year', 'Month',
+                                  'Price', 'Annual_Price', 'MonthNum', 'Date']
+
+                df = df.dropna()
+                _data_caches[cache_key] = df
+                logger.info(f"{cache_key} dataset cached: {df.shape[0]} rows")
+            except Exception as e:
+                logger.error(f"Failed to load {cache_key} dataset: {e}")
+                _data_caches[cache_key] = pd.DataFrame()
+
+    return _data_caches[cache_key]
 
 
 @app.get("/brgy_soil_dataset.csv")
@@ -93,29 +137,24 @@ async def get_crop_data(crop_name: str):
         dict: Combined data from all datasets for the crop
     """
     try:
-        # Load all datasets
+        # Use cached datasets instead of loading from file every time
         soil_file = os.path.join("Data", "brgy_soil_dataset.csv")
         vegetable_file = os.path.join("Data", "vegetable_prices.csv")
         seed_file = os.path.join("Data", "seed.csv")
 
-        # Load soil data
-        soil_df = pd.read_csv(soil_file)
+        # Load soil data from cache
+        soil_df = _get_cached_dataset('soil', soil_file)
         soil_matches = soil_df[soil_df['Crop'].str.contains(
             crop_name, case=False, na=False)]
 
-        # Load vegetable price data
-        veg_df = pd.read_csv(vegetable_file)
-        # Check if this is the new cleaned format (no header description row)
-        if veg_df.columns[0] != 'Vegetable':
-            # Old format - skip first row and rename
-            veg_df = veg_df.iloc[1:]
-            veg_df.columns = ['Vegetable', 'Year', 'Month',
-                              'Price', 'Annual_Price', 'MonthNum', 'Date']
+        # Load vegetable price data from cache
+        veg_df = _get_cached_dataset('vegetable', vegetable_file,
+                                     check_vegetable_format=True)
         veg_matches = veg_df[veg_df['Vegetable'].str.contains(
             crop_name, case=False, na=False)]
 
-        # Load seed price data
-        seed_df = pd.read_csv(seed_file)
+        # Load seed price data from cache
+        seed_df = _get_cached_dataset('seed', seed_file)
         seed_matches = seed_df[seed_df['Gulay (Vegetable)'].str.contains(
             crop_name, case=False, na=False)]
 

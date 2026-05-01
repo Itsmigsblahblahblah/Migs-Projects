@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from services.vegetable_demand_service import VegetableDemandTransformer
 import pandas as pd
 import logging
+import threading
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
@@ -16,41 +17,67 @@ logger = logging.getLogger(__name__)
 # Initialize APIRouter
 app = APIRouter(prefix="/vegetables", tags=["vegetables"])
 
+# Global cached datasets (lazy-loaded)
+_veg_data_cache = None
+_veg_data_lock = threading.Lock()
+
+
+def _get_veg_data_cache(file_path: str = 'Data/vegetable_prices.csv'):
+    """Thread-safe lazy loader for vegetable dataset cache"""
+    global _veg_data_cache
+
+    if _veg_data_cache is not None:
+        return _veg_data_cache
+
+    with _veg_data_lock:
+        if _veg_data_cache is None:
+            try:
+                logger.info(
+                    "Loading vegetable dataset cache (first request)...")
+                veg_df = pd.read_csv(file_path)
+                # Check if this is the new cleaned format (no header description row)
+                if veg_df.columns[0] != 'Vegetable':
+                    # Old format - skip first row and rename
+                    veg_df = veg_df.iloc[1:]
+                    veg_df.columns = ['Vegetable', 'Year', 'Month',
+                                      'Price', 'Annual_Price', 'MonthNum', 'Date']
+                veg_df = veg_df.dropna()
+                _veg_data_cache = veg_df
+                logger.info(
+                    f"Vegetable dataset cached: {_veg_data_cache.shape[0]} rows")
+            except Exception as e:
+                logger.error(f"Failed to load vegetable dataset: {e}")
+                _veg_data_cache = pd.DataFrame()  # Empty DataFrame on failure
+
+    return _veg_data_cache
+
+
 # Global model instance (initially None for lazy loading)
 model = None
-_model_loading = False
-_model_loaded = False
+_model_lock = threading.Lock()
 
 
 def _load_model_if_needed():
-    """Lazy load the model on first use (thread-safe)"""
-    global model, _model_loading, _model_loaded
+    """Lazy load the model on first use (thread-safe with real lock)"""
+    global model
 
-    if _model_loaded or model is not None:
+    if model is not None:
         return
 
-    if _model_loading:
-        # Another thread is already loading, wait briefly
-        import time
-        for _ in range(30):  # Wait up to 3 seconds
-            time.sleep(0.1)
-            if _model_loaded:
-                return
-        return  # Timeout, proceed anyway
-
-    _model_loading = True
-    try:
-        logger.info("Loading vegetable demand model (first request)...")
-        model = VegetableDemandTransformer()
-        model.load_model('models/vegetable_demand_transformer.keras',
-                         'models/vegetable_preprocessing_pipeline.pkl')
-        logger.info("Vegetable demand model loaded successfully")
-        _model_loaded = True
-    except Exception as e:
-        logger.error(f"Failed to load vegetable demand model: {e}")
-        model = None
-    finally:
-        _model_loading = False
+    with _model_lock:
+        if model is None:
+            try:
+                logger.info(
+                    "Loading vegetable demand model (first request)...")
+                loaded_model = VegetableDemandTransformer()
+                loaded_model.load_model('models/vegetable_demand_transformer.keras',
+                                        'models/vegetable_preprocessing_pipeline.pkl')
+                model = loaded_model
+                logger.info("Vegetable demand model loaded successfully")
+            except Exception as e:
+                logger.error(f"Failed to load vegetable demand model: {e}")
+                model = None
+                raise
 
 
 @app.get("/")
@@ -186,22 +213,11 @@ async def get_vegetable_data(vegetable_name: str, vegetable_file: str = 'Data/ve
         dict: Historical data for the vegetable
     """
     try:
-        # Load vegetable price data
-        try:
-            veg_df = pd.read_csv(vegetable_file)
-            # Check if this is the new cleaned format (no header description row)
-            if veg_df.columns[0] != 'Vegetable':
-                # Old format - skip first row and rename
-                veg_df = veg_df.iloc[1:]
-                veg_df.columns = ['Vegetable', 'Year', 'Month',
-                                  'Price', 'Annual_Price', 'MonthNum', 'Date']
-        except Exception as e:
-            logger.warning(
-                f"Could not load vegetable data from {vegetable_file}: {e}")
-            return {"vegetable_data": {}}
+        # Use cached dataset instead of loading from file every time
+        veg_df = _get_veg_data_cache(vegetable_file)
 
-        # Clean the data
-        veg_df = veg_df.dropna()
+        if veg_df.empty:
+            return {"vegetable_data": []}
 
         # Try exact match first
         matching_rows = veg_df[veg_df['Vegetable'].str.contains(
@@ -320,7 +336,5 @@ async def get_vegetable_data(vegetable_name: str, vegetable_file: str = 'Data/ve
 
 @app.get("/health")
 async def health_check():
-    # Lazy load model on first use
-    _load_model_if_needed()
-
+    """Lightweight health check - does NOT load models"""
     return {"status": "healthy", "model_loaded": model is not None}

@@ -20,66 +20,56 @@ app = APIRouter(prefix="/enhanced-soil", tags=["enhanced-soil"])
 
 # Global model instance (initially None for lazy loading)
 model = None
-_model_loading = False
-_model_loaded = False
+_model_lock = threading.Lock()
 
 
 def _load_model_if_needed():
-    """Lazy load the model on first use (thread-safe)"""
-    global model, _model_loading, _model_loaded
+    """Lazy load the model on first use (thread-safe with real lock)"""
+    global model
 
-    if _model_loaded or model is not None:
+    if model is not None:
         return
 
-    if _model_loading:
-        # Another thread is already loading, wait briefly
-        import time
-        for _ in range(30):  # Wait up to 3 seconds
-            time.sleep(0.1)
-            if _model_loaded:
-                return
-        return  # Timeout, proceed anyway
-
-    _model_loading = True
-    try:
-        import time as time_module
-        model_loading_start = time_module.time()
-        logger.info("Loading enhanced model (first request)...")
-
-        model = EnhancedSoilCropTransformer()
-        model.load_model('models/enhanced_soil_crop_transformer.keras',
-                         'models/enhanced_soil_preprocessing_pipeline.pkl')
-
-        model_loading_time = time_module.time() - model_loading_start
-        logger.info(
-            f"Enhanced model loaded successfully in {model_loading_time:.4f} seconds")
-        _model_loaded = True
-
-        # Start cache warming in background thread AFTER model is loaded
-        def warm_cache_background():
+    with _model_lock:
+        if model is None:
             try:
-                import time
-                time.sleep(1)
-                cache_warming_start = time_module.time()
-                logger.info("Starting cache warming...")
-                model.warm_cache()
-                cache_warming_time = time_module.time() - cache_warming_start
+                import time as time_module
+                model_loading_start = time_module.time()
+                logger.info("Loading enhanced model (first request)...")
+
+                loaded_model = EnhancedSoilCropTransformer()
+                loaded_model.load_model('models/enhanced_soil_crop_transformer.keras',
+                                        'models/enhanced_soil_preprocessing_pipeline.pkl')
+                model = loaded_model
+
+                model_loading_time = time_module.time() - model_loading_start
                 logger.info(
-                    f"Cache warming completed in {cache_warming_time:.4f} seconds")
+                    f"Enhanced model loaded successfully in {model_loading_time:.4f} seconds")
+
+                # Start cache warming in background thread AFTER model is loaded
+                def warm_cache_background():
+                    try:
+                        import time
+                        time.sleep(1)
+                        cache_warming_start = time_module.time()
+                        logger.info("Starting cache warming...")
+                        model.warm_cache()
+                        cache_warming_time = time_module.time() - cache_warming_start
+                        logger.info(
+                            f"Cache warming completed in {cache_warming_time:.4f} seconds")
+                    except Exception as e:
+                        logger.warning(f"Background cache warming failed: {e}")
+
+                cache_warming_thread = threading.Thread(
+                    target=warm_cache_background, daemon=True)
+                cache_warming_thread.start()
+
             except Exception as e:
-                logger.warning(f"Background cache warming failed: {e}")
-
-        cache_warming_thread = threading.Thread(
-            target=warm_cache_background, daemon=True)
-        cache_warming_thread.start()
-
-    except Exception as e:
-        logger.error(f"Failed to load enhanced model: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        model = None
-    finally:
-        _model_loading = False
+                logger.error(f"Failed to load enhanced model: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                model = None
+                raise
 
 
 @app.get("/")
@@ -331,25 +321,8 @@ async def fair_recommend_crops(data: dict):
 
 @app.get("/health")
 async def health_check():
-    import time as time_module  # Import time module to avoid conflicts
-    health_check_start = time_module.time()
-    logger.info("Health check initiated")
-
-    # Lazy load model on first use
-    _load_model_if_needed()
-
-    # Check if model is loaded
-    model_loaded = model is not None
-    logger.info(f"Model loaded status: {model_loaded}")
-
-    # Skip the sample prediction test for faster health checks
-    # Only check if the model object exists
-
-    health_check_time = time_module.time() - health_check_start
-    logger.info(f"Health check completed in {health_check_time:.4f} seconds")
-
+    """Lightweight health check - does NOT load models"""
     return {
-        "status": "healthy" if model_loaded else "unhealthy",
-        "model_loaded": model_loaded,
-        "health_check_time": health_check_time
+        "status": "healthy" if model is not None else "unhealthy",
+        "model_loaded": model is not None
     }
