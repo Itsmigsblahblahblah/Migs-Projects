@@ -19,11 +19,18 @@ ENABLE_MODEL_WARMUP = os.environ.get(
     'ENABLE_MODEL_WARMUP', 'false').lower() == 'true'
 CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*')
 
-# Parse CORS origins
+# Parse CORS origins - be permissive in development, strict in production
 if CORS_ORIGINS == '*':
     allowed_origins = ['*']
 else:
     allowed_origins = [origin.strip() for origin in CORS_ORIGINS.split(',')]
+    # Always allow localhost for development
+    if ENVIRONMENT == 'development':
+        localhost_origins = ['http://localhost:5173', 'http://localhost:8080',
+                             'http://127.0.0.1:5173', 'http://127.0.0.1:8080']
+        for origin in localhost_origins:
+            if origin not in allowed_origins:
+                allowed_origins.append(origin)
 
 # Log environment status (no secrets)
 print(f"[Backend] Environment: {ENVIRONMENT}")
@@ -39,7 +46,7 @@ print(
 app = FastAPI(title="Farm Resource Management System",
               description="Combined API for soil analysis and vegetable demand prediction")
 
-# Add CORS middleware - environment-driven
+# Add CORS middleware - environment-driven with development permissiveness
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -48,6 +55,9 @@ app.add_middleware(
     allow_headers=["*"],
     max_age=600,  # Cache preflight requests for 10 minutes
 )
+
+# Log CORS configuration (no secrets)
+print(f"[Backend] CORS configured with origins: {allowed_origins}")
 
 # Router registration - routes are registered at startup for FastAPI routing and /docs.
 # Heavy resources (ML models, datasets) inside route files are lazy-loaded on first endpoint call.
@@ -77,6 +87,7 @@ def load_routes():
     import routes.data_routes
     import routes.auth_routes
     import routes.gemini_routes
+    import routes.seasonal_advisory_routes
 
     app.include_router(routes.soil_routes.app)
     app.include_router(routes.vegetable_routes.app)
@@ -84,6 +95,7 @@ def load_routes():
     app.include_router(routes.data_routes.app)
     app.include_router(routes.auth_routes.app)
     app.include_router(routes.gemini_routes.app)
+    app.include_router(routes.seasonal_advisory_routes.app)
 
     _routes_loaded = True
     print("[Backend] Routers registered successfully")

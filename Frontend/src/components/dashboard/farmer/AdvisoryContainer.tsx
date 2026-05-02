@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWeatherAlerts } from "@/hooks/custom/useWeatherAlerts";
 import { useAnnouncements } from "@/components/dashboard/farmer/UserAnnouncements";
 import { useNavigate } from "react-router-dom";
+import SeasonalCropAdvisory from "./SeasonalCropAdvisory";
 
 // Define alert types
 interface AdvisoryItem {
@@ -349,6 +350,9 @@ const AdvisoryContainer = () => {
         <CardTitle>Advisories</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Seasonal Crop Advisory - pinned section */}
+        <SeasonalCropAdvisory />
+
         {/* Today's advisories */}
         <div>
           <h3 className="font-medium mb-2 text-black">Today</h3>

@@ -36,7 +36,7 @@ def load_gemini_keys():
     if not GEMINI_API_KEYS:
         logger.warning("No Gemini API keys loaded from environment!")
     else:
-        logger.info(f"Loaded {len(GEMINI_API_KEYS)} Gemini API keys")
+        logger.info("Gemini API keys loaded from environment (keys hidden)")
 
 
 # Load keys on module initialization
@@ -75,6 +75,7 @@ class GeminiResponse(BaseModel):
 async def generate_content(request: GeminiRequest):
     """
     Proxy endpoint for Gemini API with server-side key rotation
+    Skips compromised keys automatically
 
     This endpoint:
     1. Receives the Gemini API request from frontend
@@ -84,62 +85,79 @@ async def generate_content(request: GeminiRequest):
     """
     global _current_key_index
 
-    try:
-        # Get the next API key in rotation
-        api_key = get_next_api_key()
+    # Try each key in rotation, skip compromised ones
+    last_error = None
+    max_attempts = len(GEMINI_API_KEYS)
 
-        if not api_key:
-            raise HTTPException(
-                status_code=500,
-                detail="No Gemini API keys configured. Please check server environment variables."
-            )
+    for attempt in range(max_attempts):
+        try:
+            # Get the next API key in rotation
+            api_key = get_next_api_key()
 
-        # Forward request to Gemini API
-        gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
-
-        headers = {
-            "Content-Type": "application/json",
-        }
-
-        request_body = {
-            "contents": request.contents,
-        }
-
-        if request.generationConfig:
-            request_body["generationConfig"] = request.generationConfig
-
-        if request.safetySettings:
-            request_body["safetySettings"] = request.safetySettings
-
-        # Make request to Gemini API
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{gemini_url}?key={api_key}",
-                headers=headers,
-                json=request_body
-            )
-
-            if response.status_code != 200:
-                logger.error(
-                    f"Gemini API error: {response.status_code} - {response.text}")
-
-                # Return error but don't expose the API key
+            if not api_key:
                 raise HTTPException(
-                    status_code=response.status_code,
-                    detail=f"Gemini API error: {response.status_code}"
+                    status_code=500,
+                    detail="No Gemini API keys configured. Please check server environment variables."
                 )
 
-            # Return successful response
-            return response.json()
+            # Forward request to Gemini API
+            gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in Gemini proxy: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error while calling Gemini API"
-        )
+            headers = {
+                "Content-Type": "application/json",
+            }
+
+            request_body = {
+                "contents": request.contents,
+            }
+
+            if request.generationConfig:
+                request_body["generationConfig"] = request.generationConfig
+
+            if request.safetySettings:
+                request_body["safetySettings"] = request.safetySettings
+
+            # Make request to Gemini API
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{gemini_url}?key={api_key}",
+                    headers=headers,
+                    json=request_body
+                )
+
+                if response.status_code != 200:
+                    error_text = response.text.lower()
+
+                    # Check if key is compromised
+                    if 'leaked' in error_text or 'compromised' in error_text:
+                        logger.warning(
+                            "Gemini API key COMPROMISED, trying next key...")
+                        last_error = Exception("Key compromised")
+                        continue  # Try next key
+                    else:
+                        logger.error(
+                            f"Gemini API error: {response.status_code} - {response.text[:100]}")
+                        last_error = Exception(
+                            f"Gemini error: {response.status_code}")
+                        continue  # Try next key
+
+                # Return successful response
+                logger.info("Gemini API call successful")
+                return response.json()
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Attempt {attempt + 1} failed: {str(e)}")
+            last_error = e
+            continue  # Try next key
+
+    # If all keys failed
+    logger.error(f"All Gemini API keys failed. Last error: {last_error}")
+    raise HTTPException(
+        status_code=500,
+        detail=f"All Gemini API keys failed. Please try again later."
+    )
 
 
 @app.get("/health")
@@ -148,8 +166,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "Gemini API Proxy",
-        "keys_loaded": len(GEMINI_API_KEYS),
-        "current_key_index": _current_key_index
+        "keys_configured": len(GEMINI_API_KEYS) > 0
     }
 
 
@@ -157,11 +174,9 @@ async def health_check():
 async def api_key_status():
     """
     Get status of API key rotation (for debugging/monitoring)
-    Does NOT expose the actual keys
+    Does NOT expose the actual keys or even the count
     """
     return {
-        "total_keys": len(GEMINI_API_KEYS),
-        "current_key_index": _current_key_index,
         "keys_configured": len(GEMINI_API_KEYS) > 0,
-        "key_indices": list(range(len(GEMINI_API_KEYS)))
+        "rotation_active": True
     }
