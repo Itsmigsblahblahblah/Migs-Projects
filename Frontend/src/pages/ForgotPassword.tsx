@@ -8,7 +8,18 @@ import { ArrowLeft, Mail, Phone, CheckCircle, AlertCircle, Key } from "lucide-re
 import { auth } from "../firebaseConfig";
 import { sendPasswordResetEmail } from "firebase/auth";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+// Auto-detect backend URL based on environment
+const getBackendUrl = (): string => {
+  // If running on localhost, use local backend
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:8000';
+  }
+  
+  // Otherwise use environment variable or production backend
+  return import.meta.env.VITE_BACKEND_URL || 'https://harvestify-ln4s.onrender.com';
+};
+
+const BACKEND_URL = getBackendUrl();
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -71,35 +82,18 @@ const ForgotPassword = () => {
 
   const sendPhoneOTP = async () => {
     try {
-      console.log('[ForgotPassword] Sending OTP to:', phoneNumber);
-      
-      // Validate phone number format
       const cleaned = phoneNumber.replace(/\s|-|\(|\)/g, '');
-      console.log('[ForgotPassword] Cleaned number:', cleaned);
       
-      let formattedPhone = cleaned;
-      
-      if (cleaned.startsWith('+63')) {
-        formattedPhone = cleaned;
-      } else if (cleaned.startsWith('09')) {
-        formattedPhone = '+63' + cleaned.substring(1);
-      } else if (cleaned.startsWith('9')) {
-        formattedPhone = '+63' + cleaned;
-      } else {
-        throw new Error("Invalid phone number format. Use 09xxxxxxxxx or +639xxxxxxxxx");
-      }
+      let formattedPhone = cleaned.startsWith('09') ? '+63' + cleaned.substring(1) : 
+                           cleaned.startsWith('9') ? '+63' + cleaned : cleaned;
 
       console.log('[ForgotPassword] Formatted phone:', formattedPhone);
-      console.log('[ForgotPassword] Length:', formattedPhone.length);
 
       if (formattedPhone.length !== 13) {
         throw new Error("Invalid phone number. Must be 10 digits after country code");
       }
-
-      console.log('[ForgotPassword] Backend URL:', BACKEND_URL);
-      console.log('[ForgotPassword] Testing backend connection...');
       
-      // First test if backend is alive
+      // Test if backend is alive
       try {
         const testResponse = await fetch(`${BACKEND_URL}/auth/test`, {
           method: 'GET',
@@ -109,14 +103,9 @@ const ForgotPassword = () => {
         if (!testResponse.ok) {
           throw new Error("Backend server is not responding");
         }
-        
-        console.log('[ForgotPassword] Backend is alive!');
       } catch (testError: any) {
-        console.error('[ForgotPassword] Backend test failed:', testError);
         throw new Error("Backend server is starting up. Please wait 30-60 seconds and try again. (Render free tier servers sleep after inactivity)");
       }
-      
-      console.log('[ForgotPassword] Sending request to /auth/send-otp...');
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
@@ -129,21 +118,16 @@ const ForgotPassword = () => {
       });
 
       clearTimeout(timeoutId);
-      console.log('[ForgotPassword] Response status:', response.status);
       const data = await response.json();
-      console.log('[ForgotPassword] Response data:', data);
 
       if (!response.ok) {
-        console.error('[ForgotPassword] API error:', data);
         throw new Error(data.detail || data.message || "Failed to send OTP");
       }
 
       if (!data.success) {
-        console.error('[ForgotPassword] Unsuccessful response:', data);
         throw new Error(data.message || "Failed to send OTP");
       }
 
-      console.log('[ForgotPassword] OTP sent successfully');
       setSuccessMessage(`OTP sent to ${phoneNumber}. Valid for 5 minutes.`);
       setShowOTPVerification(true);
     } catch (error: any) {
@@ -217,6 +201,7 @@ const ForgotPassword = () => {
       let formattedPhone = cleaned.startsWith('09') ? '+63' + cleaned.substring(1) : 
                            cleaned.startsWith('9') ? '+63' + cleaned : cleaned;
 
+      // Call backend to update password using Firebase Admin SDK
       const response = await fetch(`${BACKEND_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -232,6 +217,7 @@ const ForgotPassword = () => {
         throw new Error(data.message || "Failed to reset password");
       }
 
+      console.log('[ForgotPassword] Backend response:', data);
       setSuccessMessage("Password reset successfully! You can now login with your new password.");
       setShowNewPasswordForm(false);
       
@@ -240,6 +226,7 @@ const ForgotPassword = () => {
         navigate('/login');
       }, 3000);
     } catch (err: any) {
+      console.error('[ForgotPassword] Password reset error:', err);
       setPasswordError(err.message || "Failed to reset password");
     } finally {
       setPasswordLoading(false);
