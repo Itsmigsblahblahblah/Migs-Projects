@@ -44,10 +44,10 @@ env/
 .DS_Store
 Thumbs.db
 
-# Models and large files
-models/*.keras
-models/*.pkl
-models/*.h5
+# Models and large files (KEEP THESE IN GIT FOR RENDER DEPLOYMENT)
+# models/*.keras
+# models/*.pkl
+# models/*.h5
 
 # Logs
 *.log
