@@ -195,8 +195,13 @@ async def recommend_crops(top_n: int = 10, month: int | None = None, year: int |
             top_n, month, year, demand_level)
         return {"recommended_crops": recommendations}
 
+    except HTTPException:
+        # Re-raise HTTP exceptions without modification
+        raise
     except Exception as e:
         logger.error(f"Error in crop recommendation: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=500, detail=f"Crop recommendation error: {str(e)}")
 
