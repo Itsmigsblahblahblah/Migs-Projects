@@ -7,6 +7,7 @@ Optimized for Render free tier production deployment.
 from fastapi import FastAPI, Response, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import sys
 import asyncio
 from dotenv import load_dotenv
 
@@ -41,6 +42,8 @@ print(
     f"[Backend] Gemini API keys: {'LOADED' if any(os.environ.get(f'GEMINI_API_KEY_{i}') for i in range(1, 7)) else 'NOT LOADED'}")
 print(
     f"[Backend] Training API key: {'CONFIGURED' if os.environ.get('TRAINING_API_KEY') else 'NOT SET'}")
+print(f"[Backend] Python version: {sys.version}")
+print(f"[Backend] Working directory: {os.getcwd()}")
 
 # Create main app
 app = FastAPI(title="Farm Resource Management System",
