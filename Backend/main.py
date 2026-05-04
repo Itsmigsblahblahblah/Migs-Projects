@@ -125,15 +125,15 @@ async def startup_event():
     print(
         f"[Startup] FastAPI app startup complete (Environment: {ENVIRONMENT})")
 
-    # Optional model warmup - DISABLED by default for Render free tier
-    if ENABLE_MODEL_WARMUP:
-        print("[Startup] Background model warmup ENABLED (may take 30-60 seconds)")
+    # ALWAYS warm up models in background for production (prevents first-request timeout)
+    if ENVIRONMENT == 'production' or ENABLE_MODEL_WARMUP:
+        print("[Startup] Background model warmup ENABLED (production mode)")
 
         async def warm_models_in_background():
             """Warm up models in background - non-blocking, error-tolerant"""
             try:
                 # Wait for server to stabilize
-                await asyncio.sleep(5)
+                await asyncio.sleep(2)
 
                 print("[Background Warmup] Starting model preloading...")
 
@@ -152,13 +152,13 @@ async def startup_event():
                         futures.append(executor.submit(
                             routes.enhanced_soil_routes._load_model_if_needed))
 
-                    # Vegetable demand model
+                    # Vegetable demand model (CRITICAL for Market Demand page)
                     if hasattr(routes.vegetable_routes, '_load_model_if_needed'):
                         futures.append(executor.submit(
                             routes.vegetable_routes._load_model_if_needed))
 
-                    # Wait for all models with timeout
-                    for future in concurrent.futures.as_completed(futures, timeout=120):
+                    # Wait for all models with timeout (90 seconds for free tier)
+                    for future in concurrent.futures.as_completed(futures, timeout=90):
                         try:
                             future.result()
                         except Exception as e:
@@ -175,7 +175,7 @@ async def startup_event():
         # Schedule warmup (non-blocking)
         asyncio.create_task(warm_models_in_background())
     else:
-        print("[Startup] Model warmup DISABLED (models will load on first request)")
+        print("[Startup] Model warmup DISABLED (development mode)")
 
 
 @app.get("/")
