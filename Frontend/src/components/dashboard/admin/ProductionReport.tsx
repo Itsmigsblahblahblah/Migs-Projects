@@ -230,6 +230,29 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 return harvestDate.getMonth() === currentMonth && harvestDate.getFullYear() === currentYear;
             }).length;
 
+        // Top harvested crops - count how many times each crop was harvested AND total quantity
+        const cropHarvestStats = productionData.reduce((acc, record) => {
+            const cropName = record.harvestedCrop.toLowerCase();
+            const capitalizedName = cropName.charAt(0).toUpperCase() + cropName.slice(1);
+            
+            if (acc[cropName]) {
+                acc[cropName].count += 1; // Count number of harvests
+                acc[cropName].totalQuantity += record.quantity; // Sum total quantity
+            } else {
+                acc[cropName] = {
+                    name: capitalizedName,
+                    count: 1,
+                    totalQuantity: record.quantity
+                };
+            }
+            return acc;
+        }, {} as Record<string, { name: string; count: number; totalQuantity: number }>);
+
+        // Get top 3 harvested crops sorted by count (descending)
+        const topHarvestedCrops = Object.values(cropHarvestStats)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 3);
+
         // Total harvest per crop (count of harvest records per crop)
         const harvestPerCrop = productionData.reduce((acc, record) => {
             const cropName = record.harvestedCrop.toLowerCase();
@@ -252,7 +275,8 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
         return {
             totalHarvest,
             monthlyHarvest,
-            cropChartData
+            cropChartData,
+            topHarvestedCrops
         };
     }, [productionData]);
 
@@ -277,12 +301,41 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                     icon={<Wheat className="h-5 w-5 text-primary" />}
                     description="Total crops harvested across all records"
                 />
-                <StatsCard
-                    title="Monthly Harvest"
-                    value={analyticsData.monthlyHarvest}
-                    icon={<Calendar className="h-5 w-5 text-success" />}
-                    description={`Crops harvested in ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`}
-                />
+                <Card className="shadow-card">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Top Harvested</CardTitle>
+                        <CardDescription>Most harvested crops by frequency</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                        <div className="space-y-2">
+                            {analyticsData.topHarvestedCrops.length > 0 ? (
+                                analyticsData.topHarvestedCrops.map((crop, index) => (
+                                    <div 
+                                        key={index} 
+                                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-gradient-to-r from-blue-50/50 to-transparent hover:from-blue-50 transition-all"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold ${
+                                                index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-600'
+                                            }`}>
+                                                {index + 1}
+                                            </span>
+                                            <span className="text-sm font-medium text-gray-800">{crop.name}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-sm font-semibold text-blue-600">{crop.count}x</div>
+                                            <div className="text-xs text-muted-foreground">{crop.totalQuantity} kg</div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-4 text-muted-foreground text-sm">
+                                    No harvest data available
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Bar Graph - Total Harvest Per Crop */}
