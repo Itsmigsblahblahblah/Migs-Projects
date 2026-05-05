@@ -302,36 +302,25 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                     description="Total crops harvested across all records"
                 />
                 <Card className="shadow-card">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Top Harvested</CardTitle>
-                        <CardDescription>Most harvested crops by frequency</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                        <div className="space-y-2">
+                    <CardContent className="p-4">
+                        <p className="text-sm text-muted-foreground mb-2">Top Harvested</p>
+                        <div className="space-y-1">
                             {analyticsData.topHarvestedCrops.length > 0 ? (
-                                analyticsData.topHarvestedCrops.map((crop, index) => (
-                                    <div 
-                                        key={index} 
-                                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-gradient-to-r from-blue-50/50 to-transparent hover:from-blue-50 transition-all"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <span className={`flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold ${
+                                analyticsData.topHarvestedCrops.slice(0, 3).map((crop, index) => (
+                                    <div key={index} className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={`flex items-center justify-center w-4 h-4 rounded-full text-white text-xs font-bold ${
                                                 index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-600'
                                             }`}>
                                                 {index + 1}
                                             </span>
-                                            <span className="text-sm font-medium text-gray-800">{crop.name}</span>
+                                            <span className="font-medium">{crop.name}</span>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-sm font-semibold text-blue-600">{crop.count}x</div>
-                                            <div className="text-xs text-muted-foreground">{crop.totalQuantity} kg</div>
-                                        </div>
+                                        <span className="font-semibold text-blue-600">{crop.count}× <span className="text-xs text-muted-foreground">({crop.totalQuantity} kg)</span></span>
                                     </div>
                                 ))
                             ) : (
-                                <div className="text-center py-4 text-muted-foreground text-sm">
-                                    No harvest data available
-                                </div>
+                                <p className="text-sm text-muted-foreground text-center py-1">No data</p>
                             )}
                         </div>
                     </CardContent>
