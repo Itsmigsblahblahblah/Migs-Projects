@@ -433,40 +433,6 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
 
     return (
         <div className="space-y-6">
-            {/* Analytics Containers */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <StatsCard
-                    title="Total Harvest"
-                    value={filteredAnalytics.totalHarvest}
-                    icon={<Wheat className="h-5 w-5 text-primary" />}
-                    description="Total crops harvested across all records"
-                />
-                <Card className="shadow-card">
-                    <CardContent className="p-4">
-                        <p className="text-sm text-muted-foreground mb-2">Top Harvested</p>
-                        <div className="space-y-1">
-                            {filteredAnalytics.topHarvestedCrops.length > 0 ? (
-                                filteredAnalytics.topHarvestedCrops.slice(0, 3).map((crop, index) => (
-                                    <div key={index} className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className={`flex items-center justify-center w-4 h-4 rounded-full text-white text-xs font-bold ${
-                                                index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-600'
-                                            }`}>
-                                                {index + 1}
-                                            </span>
-                                            <span className="font-medium">{crop.name}</span>
-                                        </div>
-                                        <span className="font-semibold text-blue-600">{crop.count}× <span className="text-xs text-muted-foreground">({crop.totalQuantity} kg)</span></span>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-sm text-muted-foreground text-center py-1">No data</p>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
             {/* Filters Section */}
             <Card className="shadow-card">
                 <CardContent className="p-4">
@@ -556,6 +522,40 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Analytics Containers */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <StatsCard
+                    title="Total Harvest"
+                    value={filteredAnalytics.totalHarvest}
+                    icon={<Wheat className="h-5 w-5 text-primary" />}
+                    description="Total crops harvested across all records"
+                />
+                <Card className="shadow-card">
+                    <CardContent className="p-4">
+                        <p className="text-sm text-muted-foreground mb-2">Top Harvested</p>
+                        <div className="space-y-1">
+                            {filteredAnalytics.topHarvestedCrops.length > 0 ? (
+                                filteredAnalytics.topHarvestedCrops.slice(0, 3).map((crop, index) => (
+                                    <div key={index} className="flex items-center justify-between text-sm">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={`flex items-center justify-center w-4 h-4 rounded-full text-white text-xs font-bold ${
+                                                index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-600'
+                                            }`}>
+                                                {index + 1}
+                                            </span>
+                                            <span className="font-medium">{crop.name}</span>
+                                        </div>
+                                        <span className="font-semibold text-blue-600">{crop.count}× <span className="text-xs text-muted-foreground">({crop.totalQuantity} kg)</span></span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-muted-foreground text-center py-1">No data</p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Bar Graph - Total Harvest Per Crop */}
             <Card className="shadow-card">
