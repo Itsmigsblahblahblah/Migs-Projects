@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Sprout, User, LogOut, Bell, Sprout as SproutIcon, Leaf, TrendingUp, History, Menu, X, Users, FileText, BarChart3 } from "lucide-react";
+import { Sprout, User, LogOut, Bell, Sprout as SproutIcon, Leaf, TrendingUp, History, Menu, X, Users, FileText, BarChart3, TestTubes } from "lucide-react";
 import { clearMarketDemandCache } from "@/services/marketDemandMultiCacheService";
 import { clearRecommendationCache } from "@/services/recommendationSessionCache";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -469,11 +469,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     size="icon"
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     aria-label="Toggle navigation menu"
+                    className="rounded-full hover:bg-blue-50"
                   >
                     {isMobileMenuOpen ? (
-                      <X className="h-6 w-6" />
+                      <X className="h-6 w-6 text-blue-600" />
                     ) : (
-                      <Menu className="h-6 w-6" />
+                      <Menu className="h-6 w-6 text-blue-600" />
                     )}
                   </Button>
                 </div>
@@ -593,6 +594,15 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-blue-600 ${location.hash === '#announcements' ? 'text-blue-600' : 'text-foreground'}`}
               >
                 Announcements
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/admin/crop-prescription');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-blue-600 ${location.pathname === '/admin/crop-prescription' ? 'text-blue-600' : 'text-foreground'}`}
+              >
+                Soil pH Level
               </button>
             </div>
           </div>
