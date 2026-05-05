@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, ChevronLeft, ChevronRight, Wheat, Calendar, TrendingUp } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Download, ChevronLeft, ChevronRight, Wheat, Calendar, TrendingUp, Filter, X } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -49,6 +50,17 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const [productionData, setProductionData] = useState<ProductionRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const recordsPerPage = 10;
+
+    // Filter states
+    const [selectedCrop, setSelectedCrop] = useState<string>('all');
+    const [selectedYear, setSelectedYear] = useState<string>('all');
+    const [selectedMonth, setSelectedMonth] = useState<string>('all');
+    const [selectedWeek, setSelectedWeek] = useState<string>('all');
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCrop, selectedYear, selectedMonth, selectedWeek]);
 
     // Color palette for crop bar chart (same as Problem Type Distribution)
     const CROP_COLORS = ['#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#10b981', '#f59e0b', '#06b6d4', '#ec4899'];
@@ -280,16 +292,144 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
         };
     }, [productionData]);
 
-    // Pagination calculations
-    const totalPages = Math.ceil(productionData.length / recordsPerPage);
+    // Get unique crops for filter
+    const uniqueCrops = useMemo(() => {
+        const crops = [...new Set(productionData.map(r => r.harvestedCrop))];
+        return crops.sort();
+    }, [productionData]);
+
+    // Get unique years for filter
+    const uniqueYears = useMemo(() => {
+        const years = [...new Set(productionData.map(r => new Date(r.harvestDate).getFullYear()))];
+        return years.sort((a, b) => b - a); // Newest first
+    }, [productionData]);
+
+    // Filter production data based on selected filters
+    const filteredData = useMemo(() => {
+        return productionData.filter(record => {
+            const harvestDate = new Date(record.harvestDate);
+            
+            // Crop filter
+            if (selectedCrop !== 'all' && record.harvestedCrop !== selectedCrop) return false;
+            
+            // Year filter
+            if (selectedYear !== 'all' && harvestDate.getFullYear() !== parseInt(selectedYear)) return false;
+            
+            // Month filter (0-11)
+            if (selectedMonth !== 'all' && harvestDate.getMonth() !== parseInt(selectedMonth)) return false;
+            
+            // Week filter
+            if (selectedWeek !== 'all') {
+                const weekStart = parseInt(selectedWeek.split('-')[0]);
+                const weekEnd = parseInt(selectedWeek.split('-')[1]);
+                const dayOfMonth = harvestDate.getDate();
+                if (dayOfMonth < weekStart || dayOfMonth > weekEnd) return false;
+            }
+            
+            return true;
+        });
+    }, [productionData, selectedCrop, selectedYear, selectedMonth, selectedWeek]);
+
+    // Calculate filtered analytics data
+    const filteredAnalytics = useMemo(() => {
+        // Total harvest
+        const totalHarvest = filteredData.length;
+
+        // Top harvested crops
+        const cropHarvestStats = filteredData.reduce((acc, record) => {
+            const cropName = record.harvestedCrop.toLowerCase();
+            const capitalizedName = cropName.charAt(0).toUpperCase() + cropName.slice(1);
+            
+            if (acc[cropName]) {
+                acc[cropName].count += 1;
+                acc[cropName].totalQuantity += record.quantity;
+            } else {
+                acc[cropName] = {
+                    name: capitalizedName,
+                    count: 1,
+                    totalQuantity: record.quantity
+                };
+            }
+            return acc;
+        }, {} as Record<string, { name: string; count: number; totalQuantity: number }>);
+
+        const topHarvestedCrops = Object.values(cropHarvestStats)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 3);
+
+        // Harvest per crop for chart
+        const harvestPerCrop = filteredData.reduce((acc, record) => {
+            const cropName = record.harvestedCrop.toLowerCase();
+            if (acc[cropName]) {
+                acc[cropName] += 1;
+            } else {
+                acc[cropName] = 1;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+
+        const cropChartData = Object.entries(harvestPerCrop)
+            .map(([name, count]) => ({
+                name: name.charAt(0).toUpperCase() + name.slice(1),
+                count: count
+            }))
+            .sort((a, b) => b.count - a.count);
+
+        return {
+            totalHarvest,
+            cropChartData,
+            topHarvestedCrops
+        };
+    }, [filteredData]);
+
+    // Generate week options based on selected month/year
+    const getWeekOptions = () => {
+        if (selectedMonth === 'all' || selectedYear === 'all') {
+            return [];
+        }
+        
+        const year = parseInt(selectedYear);
+        const month = parseInt(selectedMonth);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        const weeks = [];
+        let weekStart = 1;
+        let weekNum = 1;
+        
+        while (weekStart <= daysInMonth) {
+            const weekEnd = Math.min(weekStart + 6, daysInMonth);
+            weeks.push({
+                value: `${weekStart}-${weekEnd}`,
+                label: `Week ${weekNum} (${weekStart}-${weekEnd})`
+            });
+            weekStart += 7;
+            weekNum++;
+        }
+        
+        return weeks;
+    };
+
+    // Pagination calculations - use filtered data
+    const totalPages = Math.ceil(filteredData.length / recordsPerPage);
     const startIndex = (currentPage - 1) * recordsPerPage;
     const endIndex = startIndex + recordsPerPage;
-    const visibleRecords = productionData.slice(startIndex, endIndex);
+    const visibleRecords = filteredData.slice(startIndex, endIndex);
 
     // Handle page change
     const handlePageChange = (newPage: number) => {
         setCurrentPage(newPage);
     };
+
+    // Clear all filters
+    const clearFilters = () => {
+        setSelectedCrop('all');
+        setSelectedYear('all');
+        setSelectedMonth('all');
+        setSelectedWeek('all');
+    };
+
+    // Check if any filter is active
+    const hasActiveFilters = selectedCrop !== 'all' || selectedYear !== 'all' || selectedMonth !== 'all' || selectedWeek !== 'all';
 
     return (
         <div className="space-y-6">
@@ -297,7 +437,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <StatsCard
                     title="Total Harvest"
-                    value={analyticsData.totalHarvest}
+                    value={filteredAnalytics.totalHarvest}
                     icon={<Wheat className="h-5 w-5 text-primary" />}
                     description="Total crops harvested across all records"
                 />
@@ -305,8 +445,8 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                     <CardContent className="p-4">
                         <p className="text-sm text-muted-foreground mb-2">Top Harvested</p>
                         <div className="space-y-1">
-                            {analyticsData.topHarvestedCrops.length > 0 ? (
-                                analyticsData.topHarvestedCrops.slice(0, 3).map((crop, index) => (
+                            {filteredAnalytics.topHarvestedCrops.length > 0 ? (
+                                filteredAnalytics.topHarvestedCrops.slice(0, 3).map((crop, index) => (
                                     <div key={index} className="flex items-center justify-between text-sm">
                                         <div className="flex items-center gap-1.5">
                                             <span className={`flex items-center justify-center w-4 h-4 rounded-full text-white text-xs font-bold ${
@@ -327,15 +467,105 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 </Card>
             </div>
 
+            {/* Filters Section */}
+            <Card className="shadow-card">
+                <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="flex items-center gap-2 pt-2">
+                            <Filter className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            {/* Crop Filter */}
+                            <Select value={selectedCrop} onValueChange={setSelectedCrop}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select crop" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Crops</SelectItem>
+                                    {uniqueCrops.map((crop) => (
+                                        <SelectItem key={crop} value={crop}>
+                                            {crop}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {/* Year Filter */}
+                            <Select value={selectedYear} onValueChange={(value) => { setSelectedYear(value); setSelectedWeek('all'); }}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select year" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Years</SelectItem>
+                                    {uniqueYears.map((year) => (
+                                        <SelectItem key={year} value={year.toString()}>
+                                            {year}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {/* Month Filter */}
+                            <Select value={selectedMonth} onValueChange={(value) => { setSelectedMonth(value); setSelectedWeek('all'); }}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select month" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Months</SelectItem>
+                                    <SelectItem value="0">January</SelectItem>
+                                    <SelectItem value="1">February</SelectItem>
+                                    <SelectItem value="2">March</SelectItem>
+                                    <SelectItem value="3">April</SelectItem>
+                                    <SelectItem value="4">May</SelectItem>
+                                    <SelectItem value="5">June</SelectItem>
+                                    <SelectItem value="6">July</SelectItem>
+                                    <SelectItem value="7">August</SelectItem>
+                                    <SelectItem value="8">September</SelectItem>
+                                    <SelectItem value="9">October</SelectItem>
+                                    <SelectItem value="10">November</SelectItem>
+                                    <SelectItem value="11">December</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Week Filter */}
+                            <Select value={selectedWeek} onValueChange={setSelectedWeek} disabled={selectedMonth === 'all' || selectedYear === 'all'}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select week" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Weeks</SelectItem>
+                                    {getWeekOptions().map((week) => (
+                                        <SelectItem key={week.value} value={week.value}>
+                                            {week.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {hasActiveFilters && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={clearFilters}
+                                className="hover:bg-red-50 hover:text-red-600"
+                            >
+                                <X className="h-4 w-4 mr-1" />
+                                Clear
+                            </Button>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Bar Graph - Total Harvest Per Crop */}
             <Card className="shadow-card">
                 <CardHeader>
                     <CardTitle>Harvest Distribution by Crop</CardTitle>
-                    <CardDescription>Total harvest quantity per crop type</CardDescription>
+                    <CardDescription>Total harvest quantity per crop type {hasActiveFilters && <span className="text-blue-600">(filtered)</span>}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={analyticsData.cropChartData.length > 0 ? analyticsData.cropChartData : [{ name: 'No Data', count: 0 }]}>
+                        <BarChart data={filteredAnalytics.cropChartData.length > 0 ? filteredAnalytics.cropChartData : [{ name: 'No Data', count: 0 }]}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" />
                             <YAxis />
@@ -348,8 +578,8 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                 fill="hsl(var(--primary))"
                                 name="Number of Harvests"
                             >
-                                {analyticsData.cropChartData.length > 0 ? (
-                                    analyticsData.cropChartData.map((entry, index) => (
+                                {filteredAnalytics.cropChartData.length > 0 ? (
+                                    filteredAnalytics.cropChartData.map((entry, index) => (
                                         <Cell
                                             key={`cell-${index}`}
                                             fill={CROP_COLORS[index % CROP_COLORS.length]}
@@ -370,13 +600,13 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 <div className="flex items-center justify-between">
                     <div>
                         <CardTitle>Production Report</CardTitle>
-                        <CardDescription>Harvest records from farmers ({productionData.length} total)</CardDescription>
+                        <CardDescription>Harvest records from farmers ({filteredData.length} total {hasActiveFilters ? 'filtered' : ''})</CardDescription>
                     </div>
                     <div className="flex gap-2">
                         <Button
                             variant="outline"
                             onClick={onExport}
-                            disabled={productionData.length === 0}
+                            disabled={filteredData.length === 0}
                             className="hover:bg-blue-50 hover:text-blue-700"
                         >
                             <Download className="h-4 w-4 mr-2" />
@@ -393,7 +623,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                             <p className="text-muted-foreground">Loading production data...</p>
                         </div>
                     </div>
-                ) : productionData.length > 0 ? (
+                ) : filteredData.length > 0 ? (
                     <div className="flex flex-col h-full">
                         <div className="space-y-4 flex-grow">
                             <div className="overflow-x-auto rounded-lg border">
@@ -443,7 +673,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                             {/* Desktop layout */}
                             <div className="hidden md:flex items-center justify-between">
                                 <div className="text-sm text-muted-foreground">
-                                    Showing {startIndex + 1} to {Math.min(endIndex, productionData.length)} of {productionData.length} records
+                                    Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} records
                                 </div>
                                 <div className="flex space-x-1">
                                     <Button
@@ -536,7 +766,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                             {/* Mobile layout */}
                             <div className="md:hidden space-y-4">
                                 <div className="text-sm text-muted-foreground text-center">
-                                    Showing {startIndex + 1} to {Math.min(endIndex, productionData.length)} of {productionData.length} records
+                                    Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} records
                                 </div>
                                 <div className="flex justify-center space-x-1">
                                     <Button
