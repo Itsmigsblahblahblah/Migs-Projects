@@ -91,7 +91,14 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteMode, setDeleteMode] = useState(false);
     const [selectedReports, setSelectedReports] = useState<string[]>([]);
-    const [activeTab, setActiveTab] = useState<'financial' | 'production' | 'complaints'>('complaints');
+    const [activeTab, setActiveTab] = useState<'financial' | 'production' | 'complaints'>(() => {
+        // Load saved tab from localStorage, default to 'complaints' if not found
+        const savedTab = localStorage.getItem('reportsActiveTab');
+        if (savedTab === 'financial' || savedTab === 'production' || savedTab === 'complaints') {
+            return savedTab;
+        }
+        return 'complaints';
+    });
     const { toast } = useToast();
     const reportsPerPage = 10;
 
@@ -99,6 +106,11 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     useEffect(() => {
         setLocalReports(reports);
     }, [reports]);
+
+    // Save active tab to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('reportsActiveTab', activeTab);
+    }, [activeTab]);
 
     // Normalize problem categories to only use the 5 standard ones
     const normalizeProblemCategory = (problem: string): string => {
