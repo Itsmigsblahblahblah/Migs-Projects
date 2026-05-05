@@ -7,6 +7,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import StatsCard from "@/components/shared/StatsCard";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
+import { getCachedProductionData, setCachedProductionData } from "@/services/productionReportCache";
 
 interface ProductionRecord {
     id: string;
@@ -55,7 +56,17 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     // Fetch real data from Firestore - Farmer Profile approach
     useEffect(() => {
         const fetchProductionData = async () => {
+            // Check cache first
+            const cachedData = getCachedProductionData();
+            if (cachedData && cachedData.data.length > 0) {
+                console.log('[ProductionReport] Using cached production data');
+                setProductionData(cachedData.data);
+                setLoading(false);
+                return;
+            }
+
             try {
+                console.log('[ProductionReport] Cache miss, fetching from Firestore...');
                 setLoading(true);
                 console.log('[ProductionReport] Starting to fetch production data...');
                 
@@ -186,6 +197,10 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
 
                 // Sort by harvest date (newest first)
                 records.sort((a, b) => new Date(b.harvestDate).getTime() - new Date(a.harvestDate).getTime());
+
+                // Cache the data
+                setCachedProductionData(records);
+                console.log('[ProductionReport] Data cached for future navigations');
 
                 setProductionData(records);
             } catch (error) {

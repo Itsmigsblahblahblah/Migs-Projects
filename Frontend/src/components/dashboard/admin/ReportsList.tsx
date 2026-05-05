@@ -91,7 +91,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteMode, setDeleteMode] = useState(false);
     const [selectedReports, setSelectedReports] = useState<string[]>([]);
-    const [activeTab, setActiveTab] = useState<'complaints' | 'production'>('complaints');
+    const [activeTab, setActiveTab] = useState<'financial' | 'production' | 'complaints'>('complaints');
     const { toast } = useToast();
     const reportsPerPage = 10;
 
@@ -379,10 +379,11 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     };
 
     return (
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'complaints' | 'production')} className="w-full space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'financial' | 'production' | 'complaints')} className="w-full space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="complaints">Complaints Report</TabsTrigger>
                 <TabsTrigger value="production">Production Report</TabsTrigger>
+                <TabsTrigger value="financial">Financial Report</TabsTrigger>
             </TabsList>
 
             <TabsContent value="complaints" className="space-y-6">
@@ -1307,6 +1308,25 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
 
             <TabsContent value="production" className="mt-0">
                 <ProductionReport onExport={onExport} />
+            </TabsContent>
+
+            <TabsContent value="financial" className="mt-0">
+                <Card className="shadow-card">
+                    <CardHeader>
+                        <CardTitle>Financial Report</CardTitle>
+                        <CardDescription>Financial analytics and revenue tracking (Coming Soon)</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+                            <h3 className="text-lg font-semibold mb-2">Financial Report Module</h3>
+                            <p className="text-muted-foreground">
+                                This feature is currently under development. It will include revenue tracking, 
+                                expense analytics, profit/loss reports, and financial insights for farmers.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
             </TabsContent>
         </Tabs>
     );
