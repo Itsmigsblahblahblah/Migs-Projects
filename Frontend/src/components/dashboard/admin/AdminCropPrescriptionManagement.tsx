@@ -54,6 +54,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { HARDCODED_CROPS, formatCropName } from "@/utils/cropUtils";
+import { getCachedSoilPHData, setCachedSoilPHData } from "@/services/soilPHCache";
 
 interface AdminRecommendation {
   id: string;
@@ -85,6 +86,7 @@ interface AdminRecommendation {
 const AdminCropPrescriptionManagement = () => {
   const [recommendations, setRecommendations] = useState<AdminRecommendation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cacheLoading, setCacheLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRecommendation, setEditingRecommendation] = useState<AdminRecommendation | null>(null);
@@ -139,9 +141,20 @@ const AdminCropPrescriptionManagement = () => {
     };
   }, []);
 
-  // Load recommendations
+  // Load recommendations with caching
   const loadRecommendations = async () => {
+    // Check cache first
+    const cachedData = getCachedSoilPHData();
+    if (cachedData && cachedData.data.length > 0) {
+      console.log('[SoilPH] Using cached soil pH data');
+      setRecommendations(cachedData.data);
+      setLoading(false);
+      return;
+    }
+
     try {
+      console.log('[SoilPH] Cache miss, fetching from Firestore...');
+      setCacheLoading(true);
       const db = await getDb();
       const recommendationsRef = collection(db, "adminRecommendations");
       const q = query(recommendationsRef, orderBy("createdAt", "desc"));
@@ -153,6 +166,8 @@ const AdminCropPrescriptionManagement = () => {
       })) as AdminRecommendation[];
 
       setRecommendations(data);
+      // Cache the data
+      setCachedSoilPHData(data);
     } catch (error) {
       console.error("Error loading recommendations:", error);
       toast({
@@ -162,6 +177,7 @@ const AdminCropPrescriptionManagement = () => {
       });
     } finally {
       setLoading(false);
+      setCacheLoading(false);
     }
   };
 
@@ -330,7 +346,8 @@ const AdminCropPrescriptionManagement = () => {
     rec.cropName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) {
+  // Show loading only on initial fetch (not when using cache)
+  if (loading && recommendations.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
