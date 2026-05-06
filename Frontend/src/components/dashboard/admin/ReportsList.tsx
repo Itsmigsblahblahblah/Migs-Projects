@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle, Eye, Download, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import { Calendar, CheckCircle, Eye, Download, FileText, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ArrowUp, ArrowDown, Trash2, Search } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
+import { Input } from "@/components/ui/input";
 import ProductionReport from "./ProductionReport";
 import {
     DropdownMenu,
@@ -467,6 +468,20 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                         </div>
                     </div>
 
+                    {/* Search Bar */}
+                    <div className="pt-4">
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="text"
+                                placeholder="Search by farmer name, report text, or crop..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-9 w-full md:w-[400px]"
+                            />
+                        </div>
+                    </div>
+
                     {/* Sorting Options - Replace buttons with dropdown */}
                     <div className="flex flex-wrap gap-2 pt-4">
                         <DropdownMenu>
@@ -664,7 +679,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                 />
                                                             </th>
                                                         )}
-                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">#</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Barangay</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Problem</th>
@@ -676,7 +690,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                 </thead>
                                                 <tbody>
                                                     {visibleReports.map((report, index) => {
-                                                        const rowNumber = startIndex + index + 1;
                                                         return (
                                                             <tr
                                                                 key={report.id}
@@ -698,7 +711,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         />
                                                                     </td>
                                                                 )}
-                                                                <td className="p-3 text-sm text-gray-600 font-medium">{rowNumber}</td>
                                                                 <td className="p-3">
                                                                     <div className="font-medium text-gray-900">{report.username}</div>
                                                                 </td>
@@ -986,7 +998,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                 />
                                                             </th>
                                                         )}
-                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">#</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Barangay</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Problem</th>
@@ -998,7 +1009,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                 </thead>
                                                 <tbody>
                                                     {visibleReports.map((report, index) => {
-                                                        const rowNumber = startIndex + index + 1;
                                                         return (
                                                             <tr
                                                                 key={report.id}
@@ -1020,7 +1030,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                         />
                                                                     </td>
                                                                 )}
-                                                                <td className="p-3 text-sm text-gray-600 font-medium">{rowNumber}</td>
                                                                 <td className="p-3">
                                                                     <div className="font-medium text-gray-900">{report.username}</div>
                                                                 </td>

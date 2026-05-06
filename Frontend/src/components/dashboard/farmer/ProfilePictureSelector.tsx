@@ -4,6 +4,16 @@ import { Button } from "@/components/ui/button";
 import { User, Upload, Camera } from "lucide-react";
 import { uploadProfileImage, validateImage } from "@/services/cloudinaryService";
 import { useToast } from "@/hooks/use-toast";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ProfilePictureSelectorProps {
   selectedImage: string | null;
@@ -15,6 +25,7 @@ interface ProfilePictureSelectorProps {
 const ProfilePictureSelector = ({ selectedImage, onSelectImage, disabled, userId }: ProfilePictureSelectorProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -73,9 +84,14 @@ const ProfilePictureSelector = ({ selectedImage, onSelectImage, disabled, userId
   };
 
   /**
-   * Trigger file input click
+   * Trigger disclaimer modal instead of direct file input
    */
   const handleButtonClick = () => {
+    setShowDisclaimer(true);
+  };
+
+  const handleConfirmUpload = () => {
+    setShowDisclaimer(false);
     fileInputRef.current?.click();
   };
 
@@ -162,6 +178,22 @@ const ProfilePictureSelector = ({ selectedImage, onSelectImage, disabled, userId
           Upload a profile image (JPG, PNG, or WebP, max 2MB)
         </p>
       )}
+
+      {/* Disclaimer Modal */}
+      <AlertDialog open={showDisclaimer} onOpenChange={setShowDisclaimer}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Update Profile Image</AlertDialogTitle>
+            <AlertDialogDescription className="text-justify">
+              Disclaimer: This feature is intended for profile image updates only. Please upload an appropriate image. Accessing this function may open your device's file explorer, and any unnecessary actions (such as deleting files) are your responsibility. Avoid performing unrelated actions to prevent accidental file loss.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmUpload} className="bg-green-600 hover:bg-green-700 text-white">Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
