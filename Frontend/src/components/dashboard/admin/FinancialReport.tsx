@@ -318,6 +318,17 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
         }).format(amount);
     };
 
+    // Check if any filter is active
+    const hasActiveFilters = selectedCrop !== 'all' || selectedBarangay !== 'all' || selectedYear !== 'all' || selectedMonth !== 'all';
+
+    // Clear all filters
+    const clearFilters = () => {
+        setSelectedCrop('all');
+        setSelectedBarangay('all');
+        setSelectedYear('all');
+        setSelectedMonth('all');
+    };
+
     if (loading) {
         return (
             <Card className="shadow-card">
@@ -333,6 +344,96 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
 
     return (
         <div className="space-y-6">
+            {/* Filters Section - Same as Production Report */}
+            <Card className="shadow-card">
+                <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                        <div className="flex items-center gap-2 pt-2">
+                            <Filter className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            {/* Crop Filter */}
+                            <Select value={selectedCrop} onValueChange={setSelectedCrop}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select crop" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Crops</SelectItem>
+                                    {uniqueCrops.map((crop) => (
+                                        <SelectItem key={crop} value={crop}>
+                                            {crop}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {/* Barangay Filter */}
+                            <Select value={selectedBarangay} onValueChange={setSelectedBarangay}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select barangay" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Barangays</SelectItem>
+                                    {uniqueBarangays.map((barangay) => (
+                                        <SelectItem key={barangay} value={barangay}>
+                                            {barangay}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {/* Year Filter */}
+                            <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select year" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Years</SelectItem>
+                                    {uniqueYears.map((year) => (
+                                        <SelectItem key={year} value={year}>
+                                            {year}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {/* Month Filter */}
+                            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select month" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Months</SelectItem>
+                                    <SelectItem value="January">January</SelectItem>
+                                    <SelectItem value="February">February</SelectItem>
+                                    <SelectItem value="March">March</SelectItem>
+                                    <SelectItem value="April">April</SelectItem>
+                                    <SelectItem value="May">May</SelectItem>
+                                    <SelectItem value="June">June</SelectItem>
+                                    <SelectItem value="July">July</SelectItem>
+                                    <SelectItem value="August">August</SelectItem>
+                                    <SelectItem value="September">September</SelectItem>
+                                    <SelectItem value="October">October</SelectItem>
+                                    <SelectItem value="November">November</SelectItem>
+                                    <SelectItem value="December">December</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {hasActiveFilters && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={clearFilters}
+                                className="hover:bg-red-50 hover:text-red-600"
+                            >
+                                <X className="h-4 w-4 mr-1" />
+                                Clear
+                            </Button>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* Summary Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <StatsCard
@@ -360,117 +461,6 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                     description={`${Object.keys(stats.byBarangay).length} barangays`}
                 />
             </div>
-
-            {/* Filters */}
-            <Card className="shadow-card">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Filters</CardTitle>
-                            <CardDescription>Filter financial records by crop, location, and time period</CardDescription>
-                        </div>
-                        <Button
-                            variant="outline"
-                            onClick={handleExport}
-                            disabled={filteredData.length === 0}
-                            className="hover:bg-green-50 hover:text-green-700"
-                        >
-                            <Download className="h-4 w-4 mr-2" />
-                            Export CSV
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label className="text-sm font-medium mb-2 block">Crop Type</label>
-                            <Select value={selectedCrop} onValueChange={setSelectedCrop}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Crops" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Crops</SelectItem>
-                                    {uniqueCrops.map(crop => (
-                                        <SelectItem key={crop} value={crop}>{crop}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium mb-2 block">Barangay</label>
-                            <Select value={selectedBarangay} onValueChange={setSelectedBarangay}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Barangays" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Barangays</SelectItem>
-                                    {uniqueBarangays.map(barangay => (
-                                        <SelectItem key={barangay} value={barangay}>{barangay}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium mb-2 block">Year</label>
-                            <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Years" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Years</SelectItem>
-                                    {uniqueYears.map(year => (
-                                        <SelectItem key={year} value={year}>{year}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium mb-2 block">Month</label>
-                            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="All Months" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Months</SelectItem>
-                                    {uniqueMonths.map(month => (
-                                        <SelectItem key={month} value={month}>{month}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Active filters display */}
-                    {(selectedCrop !== 'all' || selectedBarangay !== 'all' || selectedYear !== 'all' || selectedMonth !== 'all') && (
-                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-                            <span className="text-sm text-muted-foreground">Active filters:</span>
-                            {selectedCrop !== 'all' && (
-                                <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80" onClick={() => setSelectedCrop('all')}>
-                                    Crop: {selectedCrop} <X className="h-3 w-3 ml-1" />
-                                </Badge>
-                            )}
-                            {selectedBarangay !== 'all' && (
-                                <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80" onClick={() => setSelectedBarangay('all')}>
-                                    Barangay: {selectedBarangay} <X className="h-3 w-3 ml-1" />
-                                </Badge>
-                            )}
-                            {selectedYear !== 'all' && (
-                                <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80" onClick={() => setSelectedYear('all')}>
-                                    Year: {selectedYear} <X className="h-3 w-3 ml-1" />
-                                </Badge>
-                            )}
-                            {selectedMonth !== 'all' && (
-                                <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80" onClick={() => setSelectedMonth('all')}>
-                                    Month: {selectedMonth} <X className="h-3 w-3 ml-1" />
-                                </Badge>
-                            )}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
