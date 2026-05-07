@@ -62,6 +62,12 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
         'preparation': '#6b7280'
     };
 
+    // Truncate long text for charts (MUST be before all useMemo hooks)
+    const truncateText = (text: string, maxLength: number = 15) => {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    };
+
     // Fetch financial data from ledger service WITH CACHING
     useEffect(() => {
         const fetchFinancialData = async () => {
@@ -244,7 +250,8 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
     const cropRevenueData = useMemo(() => {
         return Object.entries(stats.byCrop)
             .map(([crop, data]) => ({
-                name: crop,
+                name: truncateText(crop, 12),
+                fullName: crop, // Keep full name for tooltip
                 revenue: data.totalRevenue,
                 profit: data.totalProfit,
                 capital: data.totalCapital
@@ -255,7 +262,8 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
     const barangayRevenueData = useMemo(() => {
         return Object.entries(stats.byBarangay)
             .map(([barangay, data]) => ({
-                name: barangay,
+                name: truncateText(barangay, 15),
+                fullName: barangay, // Keep full name for tooltip
                 revenue: data.totalRevenue,
                 profit: data.totalProfit,
                 capital: data.totalCapital
@@ -477,7 +485,13 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
                                     <YAxis tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`} />
-                                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                    <Tooltip 
+                                        formatter={(value: number, name: string, props: any) => [
+                                            formatCurrency(value), 
+                                            name === 'revenue' ? 'Revenue' : name === 'profit' ? 'Profit' : 'Capital'
+                                        ]}
+                                        labelFormatter={(label) => `Crop: ${label}`}
+                                    />
                                     <Legend />
                                     <Bar dataKey="revenue" fill="#10b981" name="Revenue" />
                                     <Bar dataKey="profit" fill="#3b82f6" name="Profit" />
@@ -504,7 +518,13 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
                                     <YAxis tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`} />
-                                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                                    <Tooltip 
+                                        formatter={(value: number, name: string, props: any) => [
+                                            formatCurrency(value), 
+                                            name === 'revenue' ? 'Revenue' : name === 'profit' ? 'Profit' : 'Capital'
+                                        ]}
+                                        labelFormatter={(label) => `Barangay: ${label}`}
+                                    />
                                     <Legend />
                                     <Bar dataKey="revenue" fill="#f59e0b" name="Revenue" />
                                     <Bar dataKey="profit" fill="#8b5cf6" name="Profit" />
@@ -527,11 +547,17 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                     <CardContent>
                         {cropRevenueData.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={cropRevenueData.map(d => ({ name: d.name, count: stats.byCrop[d.name]?.count || 0 }))}>
+                                <BarChart data={cropRevenueData.map(d => ({ name: d.name, fullName: d.fullName, count: stats.byCrop[d.fullName]?.count || 0 }))}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
                                     <YAxis />
-                                    <Tooltip />
+                                    <Tooltip 
+                                        formatter={(value: number, name: string, props: any) => [value, 'Projects']}
+                                        labelFormatter={(label, payload) => {
+                                            const item = payload?.[0]?.payload;
+                                            return item?.fullName || label;
+                                        }}
+                                    />
                                     <Bar dataKey="count" fill="#06b6d4" name="Number of Projects" />
                                 </BarChart>
                             </ResponsiveContainer>
