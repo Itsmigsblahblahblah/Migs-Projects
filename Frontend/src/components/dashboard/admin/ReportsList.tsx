@@ -66,6 +66,7 @@ interface Farmer {
     createdAt: string;
     photoURL?: string | null;
     homeAddress?: string;
+    farmAddress?: string;
 }
 
 interface ReportsListProps {
@@ -147,22 +148,26 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         return categoryMap[normalized] || 'general';
     };
 
-    // Create a map of farmer IDs to their addresses
-    const farmerAddressMap = useMemo(() => {
-        const map: Record<string, string> = {};
+    // Create a map of farmer IDs to their current profile data (name, farm address)
+    const farmerProfileMap = useMemo(() => {
+        const map: Record<string, { fullName: string; address: string }> = {};
         farmers.forEach(farmer => {
-            map[farmer.uid] = farmer.homeAddress || 'Unknown';
+            // Use farmAddress first, fallback to homeAddress, then 'Unknown'
+            map[farmer.uid] = {
+                fullName: farmer.fullName || 'Unknown Farmer',
+                address: farmer.farmAddress || farmer.homeAddress || 'Unknown'
+            };
         });
         return map;
     }, [farmers]);
 
-    // Get unique barangays from actual reports (not all farmers)
-    const uniqueBarangays = useMemo(() => {
-        const barangays = localReports
-            .map(report => farmerAddressMap[report.userId] || 'Unknown')
+    // Get unique farm addresses from actual reports (not all farmers)
+    const uniqueFarmAddresses = useMemo(() => {
+        const addresses = localReports
+            .map(report => farmerProfileMap[report.userId]?.address || 'Unknown')
             .filter(Boolean);
-        return [...new Set(barangays)].sort();
-    }, [localReports, farmerAddressMap]);
+        return [...new Set(addresses)].sort();
+    }, [localReports, farmerProfileMap]);
 
     // Filter and sort reports
     const { sortedReports, stats } = useMemo(() => {
@@ -176,9 +181,9 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
             const matchesStatus = statusFilter === 'all' || report.status === statusFilter;
             const matchesProblem = problemFilter === 'all' || normalizeProblemCategory(report.problem) === problemFilter;
             
-            // Fix: Use farmerAddressMap to get barangay and filter correctly
-            const reportBarangay = farmerAddressMap[report.userId] || 'Unknown Barangay';
-            const matchesBarangay = selectedBarangay === 'all' || reportBarangay === selectedBarangay;
+            // Fix: Use farmerProfileMap to get farm address and filter correctly
+            const reportFarmAddress = farmerProfileMap[report.userId]?.address || 'Unknown';
+            const matchesBarangay = selectedBarangay === 'all' || reportFarmAddress === selectedBarangay;
             
             return matchesSearch && matchesStatus && matchesProblem && matchesBarangay;
         });
@@ -222,7 +227,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                 problemCounts
             }
         };
-    }, [localReports, searchQuery, statusFilter, problemFilter, selectedBarangay, sortBy, sortOrder, farmerAddressMap]);
+    }, [localReports, searchQuery, statusFilter, problemFilter, selectedBarangay, sortBy, sortOrder, farmerProfileMap]);
 
     // Pagination calculations
     const totalPages = Math.ceil(sortedReports.length / reportsPerPage);
@@ -568,28 +573,28 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-64 max-h-60 overflow-y-auto">
-                                {uniqueBarangays.length > 0 ? (
-                                    uniqueBarangays.map(barangay => (
+                                {uniqueFarmAddresses.length > 0 ? (
+                                    uniqueFarmAddresses.map(address => (
                                         <DropdownMenuItem
-                                            key={barangay}
+                                            key={address}
                                             onClick={() => {
-                                                setSelectedBarangay(barangay);
+                                                setSelectedBarangay(address);
                                                 setSortOption('barangay');
                                             }}
-                                            className={`cursor-pointer ${selectedBarangay === barangay ? "bg-blue-50 text-blue-700" : ""}`}
+                                            className={`cursor-pointer ${selectedBarangay === address ? "bg-blue-50 text-blue-700" : ""}`}
                                             style={{ cursor: 'pointer' }}
                                             onMouseEnter={(e) => {
                                                 e.currentTarget.style.backgroundColor = '#eff6ff';
                                                 e.currentTarget.style.color = '#1d4ed8';
                                             }}
                                             onMouseLeave={(e) => {
-                                                if (selectedBarangay !== barangay) {
+                                                if (selectedBarangay !== address) {
                                                     e.currentTarget.style.backgroundColor = '';
                                                     e.currentTarget.style.color = '';
                                                 }
                                             }}
                                         >
-                                            {barangay}
+                                            {address}
                                         </DropdownMenuItem>
                                     ))
                                 ) : (
@@ -666,7 +671,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             </th>
                                                         )}
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
-                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Barangay</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farm Address</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Problem</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Affected Crop</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Date</th>
@@ -698,17 +703,23 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                     </td>
                                                                 )}
                                                                 <td className="p-3">
-                                                                    <div className="font-medium text-gray-900">{report.username}</div>
+                                                                    <div className="font-medium text-gray-900">{farmerProfileMap[report.userId]?.fullName || report.username}</div>
                                                                 </td>
                                                                 <td className="p-3 text-sm text-gray-700">
-                                                                    {farmerAddressMap[report.userId] || 'Unknown Barangay'}
+                                                                    {farmerProfileMap[report.userId]?.address || 'Unknown'}
                                                                 </td>
                                                                 <td className="p-3">
                                                                     <Badge variant="outline" className="capitalize text-xs">
                                                                         {normalizeProblemCategory(report.problem)}
                                                                     </Badge>
                                                                 </td>
-                                                                <td className="p-3 text-sm text-gray-700 capitalize">{report.affectedCrop || 'N/A'}</td>
+                                                                <td className="p-3 text-sm text-gray-700 capitalize">
+                                                                    {report.affectedCrop && 
+                                                                     report.affectedCrop.trim() !== '' && 
+                                                                     report.affectedCrop.trim().toLowerCase() !== 'unknown' 
+                                                                        ? report.affectedCrop 
+                                                                        : 'N/A'}
+                                                                </td>
                                                                 <td className="p-3 text-sm text-gray-700">
                                                                     {report.createdAt?.toDate().toLocaleDateString()}
                                                                 </td>
@@ -985,7 +996,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             </th>
                                                         )}
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
-                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Barangay</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farm Address</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Problem</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Affected Crop</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Date</th>
@@ -1017,17 +1028,23 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                     </td>
                                                                 )}
                                                                 <td className="p-3">
-                                                                    <div className="font-medium text-gray-900">{report.username}</div>
+                                                                    <div className="font-medium text-gray-900">{farmerProfileMap[report.userId]?.fullName || report.username}</div>
                                                                 </td>
                                                                 <td className="p-3 text-sm text-gray-700">
-                                                                    {farmerAddressMap[report.userId] || 'Unknown Barangay'}
+                                                                    {farmerProfileMap[report.userId]?.address || 'Unknown'}
                                                                 </td>
                                                                 <td className="p-3">
                                                                     <Badge variant="outline" className="capitalize text-xs">
                                                                         {normalizeProblemCategory(report.problem)}
                                                                     </Badge>
                                                                 </td>
-                                                                <td className="p-3 text-sm text-gray-700 capitalize">{report.affectedCrop || 'N/A'}</td>
+                                                                <td className="p-3 text-sm text-gray-700 capitalize">
+                                                                    {report.affectedCrop && 
+                                                                     report.affectedCrop.trim() !== '' && 
+                                                                     report.affectedCrop.trim().toLowerCase() !== 'unknown' 
+                                                                        ? report.affectedCrop 
+                                                                        : 'N/A'}
+                                                                </td>
                                                                 <td className="p-3 text-sm text-gray-700">
                                                                     {report.createdAt?.toDate().toLocaleDateString()}
                                                                 </td>
