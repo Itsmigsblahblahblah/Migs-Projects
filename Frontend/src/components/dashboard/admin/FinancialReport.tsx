@@ -155,6 +155,8 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
 
     // Calculate statistics
     const stats = useMemo(() => {
+        console.log('[FinancialReport] Calculating stats from', filteredData.length, 'records');
+        
         // Safety check: if no data, return empty stats
         if (filteredData.length === 0) {
             return {
@@ -168,7 +170,18 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
             };
         }
         
-        const summary = calculateLedgerSummary(filteredData as any);
+        // Calculate totals directly from filteredData
+        const totalCapital = filteredData.reduce((sum, record) => sum + record.capital, 0);
+        const totalRevenue = filteredData.reduce((sum, record) => sum + record.revenue, 0);
+        const totalProfit = filteredData.reduce((sum, record) => sum + record.profit, 0);
+        const averageProfitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+        
+        console.log('[FinancialReport] Calculated totals:', {
+            totalCapital,
+            totalRevenue,
+            totalProfit,
+            averageProfitMargin
+        });
         
         // Additional stats by crop
         const byCrop: Record<string, { totalCapital: number; totalRevenue: number; totalProfit: number; count: number }> = {};
@@ -195,10 +208,10 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
         });
 
         return {
-            totalCapital: summary.totalInvestment,
-            totalRevenue: summary.totalRevenue,
-            totalProfit: summary.totalProfit,
-            averageProfitMargin: summary.averageProfitMargin,
+            totalCapital,
+            totalRevenue,
+            totalProfit,
+            averageProfitMargin,
             totalProjects: filteredData.length,
             byCrop,
             byBarangay
