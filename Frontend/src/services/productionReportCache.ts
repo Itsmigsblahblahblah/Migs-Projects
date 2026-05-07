@@ -8,7 +8,7 @@ interface ProductionCacheData {
     year: number;
 }
 
-const CACHE_KEY = 'productionReportCache';
+const CACHE_KEY = 'productionReportCache_v2'; // Updated to v2 to invalidate old cache
 // Cache expiration: 1 hour (3600000 ms)
 const CACHE_EXPIRATION = 3600000;
 
