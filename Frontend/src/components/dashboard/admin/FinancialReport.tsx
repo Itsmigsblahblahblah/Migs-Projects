@@ -38,7 +38,7 @@ interface FinancialReportProps {
 const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [financialData, setFinancialData] = useState<FinancialRecord[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Changed to false - will be set to true only when fetching
     const recordsPerPage = 10;
 
     // Filter states
@@ -62,11 +62,28 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
         'preparation': '#6b7280'
     };
 
-    // Fetch financial data from ledger service
+    // Fetch financial data from ledger service WITH CACHING
     useEffect(() => {
         const fetchFinancialData = async () => {
+            // Check if data is already cached in sessionStorage
+            const cachedData = sessionStorage.getItem('financial_report_data');
+            const cacheTimestamp = sessionStorage.getItem('financial_report_timestamp');
+            
+            // Use cached data if less than 5 minutes old
+            if (cachedData && cacheTimestamp) {
+                const age = Date.now() - parseInt(cacheTimestamp);
+                if (age < 5 * 60 * 1000) { // 5 minutes cache
+                    console.log('[FinancialReport] Using cached data (age:', Math.round(age / 1000), 's)');
+                    setFinancialData(JSON.parse(cachedData));
+                    setLoading(false); // Set loading to false BEFORE returning
+                    return;
+                }
+            }
+            
+            // No cache or expired - fetch fresh data
+            console.log('[FinancialReport] Cache miss or expired, fetching fresh financial data from ledgers...');
+            
             try {
-                console.log('[FinancialReport] Fetching financial data from ledgers...');
                 setLoading(true);
                 
                 // Get all ledgers using the optimized service
@@ -106,6 +123,11 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                 
                 console.log(`[FinancialReport] Total financial records: ${records.length}`);
                 setFinancialData(records);
+                
+                // Cache the data in sessionStorage
+                sessionStorage.setItem('financial_report_data', JSON.stringify(records));
+                sessionStorage.setItem('financial_report_timestamp', Date.now().toString());
+                
                 setLoading(false);
             } catch (error) {
                 console.error('[FinancialReport] Error fetching financial data:', error);

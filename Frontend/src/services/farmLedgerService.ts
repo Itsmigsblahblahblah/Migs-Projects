@@ -554,6 +554,11 @@ export const clearInsightsCache = () => {
   Object.keys(INSIGHTS_CACHE).forEach(key => delete INSIGHTS_CACHE[key]);
   Object.keys(PENDING_REQUESTS).forEach(key => delete PENDING_REQUESTS[key]);
   console.log('[FarmLedgerService] Insights cache cleared');
+  
+  // Also clear financial report cache
+  sessionStorage.removeItem('financial_report_data');
+  sessionStorage.removeItem('financial_report_timestamp');
+  console.log('[FarmLedgerService] Financial report cache cleared');
 };
 
 /**
