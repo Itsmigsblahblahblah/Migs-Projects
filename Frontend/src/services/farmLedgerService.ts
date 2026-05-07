@@ -359,25 +359,74 @@ export const getUserLedgers = async (userId: string, getCropById?: (id: string) 
  */
 export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<FarmLedger[]> => {
   try {
+    console.log('[LedgerService] Starting to fetch all ledgers...');
+    
+    // Step 1: Fetch all crops
     const cropsRef = collection(db, 'farmerCrops');
     const cropsSnap = await getDocs(cropsRef);
     
-    const ledgers: FarmLedger[] = [];
-    const cropsData = cropsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as any);
+    console.log(`[LedgerService] Found ${cropsSnap.size} crops`);
     
-    // OPTIMIZATION STEP 1: Pre-fetch all unique crop insights in ONE batch
+    const cropsData = cropsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as any);
+    const ledgers: FarmLedger[] = [];
+    
+    // Step 2: Fetch all farmers to get username and address
+    const farmersRef = collection(db, 'farmers');
+    const farmersSnap = await getDocs(farmersRef);
+    
+    const farmerMap: Record<string, any> = {};
+    farmersSnap.forEach(doc => {
+      farmerMap[doc.id] = doc.data();
+    });
+    
+    // Step 2.5: Also fetch users collection as fallback (for orphaned crops)
+    let userMap: Record<string, any> = {};
+    try {
+      const usersRef = collection(db, 'users');
+      const usersSnap = await getDocs(usersRef);
+      
+      usersSnap.forEach(doc => {
+        userMap[doc.id] = doc.data();
+      });
+    } catch (error) {
+      console.warn('[LedgerService] Users collection not found, skipping fallback');
+    }
+    
+    console.log(`[LedgerService] Found ${farmersSnap.size} farmers`);
+    console.log(`[LedgerService] Found ${Object.keys(userMap).length} users (fallback)`);
+    console.log(`[LedgerService] Farmer IDs:`, Object.keys(farmerMap));
+    
+    // Step 3: Pre-fetch all unique crop insights in ONE batch
     await preFetchCropInsights(cropsData);
     
-    // OPTIMIZATION STEP 2: Now process all ledgers (all data is cached, so this is FAST)
+    // Step 4: Now process all ledgers (all data is cached, so this is FAST)
     const cropPromises = cropsData.map(async (cropData) => {
       const cropId = cropData.id;
       const userId = cropData.userId;
       
       if (!userId) {
+        console.error(`[LedgerService] ❌ Crop ${cropData.name || cropId} has NO userId!`);
         return null;
       }
       
       try {
+        // Get farmer data from our map
+        const farmerData = farmerMap[userId];
+        
+        // If not found in farmers collection, try users collection as fallback
+        const userData = !farmerData ? userMap[userId] : null;
+        
+        // Skip this crop if farmer/user doesn't exist (orphaned data from deleted account)
+        if (!farmerData && !userData) {
+          console.warn(`[LedgerService] ⚠️ Skipping crop ${cropData.name || cropId} - orphaned data from deleted user ${userId}`);
+          return null; // Skip this crop entirely
+        }
+        
+        const farmerName = farmerData?.fullName || userData?.fullName || cropData.username || cropData.farmerName || 'Unknown Farmer';
+        const barangay = farmerData?.homeAddress || userData?.homeAddress || farmerData?.farmAddress || cropData.farmAddress || cropData.location || 'Unknown Barangay';
+        
+        console.log(`[LedgerService] ✅ Processing: ${cropData.name} | Farmer: ${farmerName} | Location: ${barangay}`);
+        
         // Get crop data (from context or use directly)
         const crop = getCropById ? getCropById(cropId) : cropData;
         
@@ -392,17 +441,17 @@ export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<
         return {
           id: cropId,
           userId: userId,
-          username: cropData.username || '',
+          username: farmerName,
           // Use plantedDate, fallback to createdAt, then null (no today's date fallback)
           date: cropData.plantedDate?.toDate?.() || cropData.createdAt?.toDate?.() || null,
           crop: calculatedData.crop || cropData.name || 'Unknown',
           variety: cropData.variety || '',
-          location: calculatedData.location || cropData.farmAddress || 'Unknown',
+          location: barangay,
           status: (calculatedData.status || 'planned') as any,
           inputParameters: {
             soil: { pH: 0, nitrogen: 'M', phosphorus: 'M', potassium: 'M', soilType: cropData.soilType || '' },
             weather: { temperature: 0, humidity: 0, condition: '' },
-            location: { barangay: '', farmAddress: cropData.farmAddress || '', area: cropData.landArea || 0 }
+            location: { barangay: barangay, farmAddress: cropData.farmAddress || '', area: cropData.landArea || 0 }
           },
           financials: {
             capital: calculatedData.financials?.capital || 0,
@@ -430,6 +479,7 @@ export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<
     
     // Wait for all calculations and filter out nulls
     const results = (await Promise.all(cropPromises)).filter(Boolean) as FarmLedger[];
+    console.log(`[LedgerService] Successfully processed ${results.length} ledgers`);
     ledgers.push(...results);
     
     return ledgers.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -443,9 +493,9 @@ export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<
  * Calculate summary statistics
  */
 export const calculateLedgerSummary = (ledgers: FarmLedger[]) => {
-  const totalInvestment = ledgers.reduce((sum, l) => sum + (l.financials.capital || 0), 0);
-  const totalRevenue = ledgers.reduce((sum, l) => sum + (l.financials.actualRevenue || l.financials.estimatedRevenue || 0), 0);
-  const totalProfit = ledgers.reduce((sum, l) => sum + (l.financials.actualProfit || l.financials.estimatedProfit || 0), 0);
+  const totalInvestment = ledgers.reduce((sum, l) => sum + (l.financials?.capital || 0), 0);
+  const totalRevenue = ledgers.reduce((sum, l) => sum + (l.financials?.actualRevenue || l.financials?.estimatedRevenue || 0), 0);
+  const totalProfit = ledgers.reduce((sum, l) => sum + (l.financials?.actualProfit || l.financials?.estimatedProfit || 0), 0);
   
   // Active crops: preparation, planting, maintenance, harvesting (not yet post-harvest)
   const activeLedgers = ledgers.filter(l => 

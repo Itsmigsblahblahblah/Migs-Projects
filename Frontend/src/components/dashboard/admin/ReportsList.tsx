@@ -5,6 +5,7 @@ import { Calendar, CheckCircle, Eye, Download, FileText, ChevronLeft, ChevronRig
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import ProductionReport from "./ProductionReport";
+import FinancialReport from "./FinancialReport";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -400,22 +401,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
             </TabsList>
 
             <TabsContent value="financial" className="mt-0">
-                <Card className="shadow-card">
-                    <CardHeader>
-                        <CardTitle>Financial Report</CardTitle>
-                        <CardDescription>Financial analytics and revenue tracking (Coming Soon)</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">Financial Report Module</h3>
-                            <p className="text-muted-foreground">
-                                This feature is currently under development. It will include revenue tracking, 
-                                expense analytics, profit/loss reports, and financial insights for farmers.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+                <FinancialReport onExport={onExport} />
             </TabsContent>
 
             <TabsContent value="production" className="mt-0">
