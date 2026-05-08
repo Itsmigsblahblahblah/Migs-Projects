@@ -9,6 +9,8 @@ import { db } from "@/firebaseConfig";
 import StatsCard from "@/components/shared/StatsCard";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from "recharts";
 import { getCachedProductionData, setCachedProductionData } from "@/services/productionReportCache";
+import { getCachedCropInsights } from "@/services/cropInsightsCache";
+import { getCropInsights } from "@/services/cropDataService";
 
 interface ProductionRecord {
     id: string;
@@ -68,6 +70,12 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     // Fetch real data from Firestore - Farmer Profile approach
     useEffect(() => {
         const fetchProductionData = async () => {
+            // CRITICAL FIX: Always clear old cache on load to ensure fresh calculations
+            // This prevents showing stale/incorrect yield values
+            console.log('[ProductionReport] Clearing old crop insights cache to ensure fresh calculations...');
+            const { clearCropInsightsCache } = await import('@/services/cropInsightsCache');
+            clearCropInsightsCache();
+            
             // Check cache first
             const cachedData = getCachedProductionData();
             if (cachedData && cachedData.data.length > 0) {
@@ -159,46 +167,92 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                 allFields: Object.keys(cropData)
                             });
                             
-                            // Sales Forecast calculation (from EnhancedSalesForecastCard line 78, 81-83):
-                            // const baseYield = crop.landArea * 2000;
-                            // const estimatedYield = userInvestment === 0 ? 0 :
-                            //     baseYield * (userInvestment >= suggestedCapital ? 1 : (userInvestment / suggestedCapital));
+                            // PRODUCTION REPORT - Use EXACT SAME calculation as EnhancedSalesForecastCard
+                            // Always fetch insights to ensure we get the ACTUAL values (not estimates)
+                            // This ensures Admin sees EXACTLY what Farmer sees
+                            const cacheKey = `${cropData.name.toLowerCase()}-${soilType.toLowerCase()}-${landArea}`;
                             
-                            // Since API is failing, we need suggestedCapital
-                            // Let's calculate it: suggestedCapital is typically ~PHP 50,000-80,000 per hectare
-                            // For now, use the same formula Sales Forecast uses
-                            
-                            const baseYield = landArea * 2000; // Base estimation
-                            
-                            // If userInvestment is 0, estimatedYield is 0
-                            // Otherwise, check if investment covers suggested capital
-                            // Typical suggestedCapital: ~60,000 per hectare
-                            const suggestedCapital = landArea * 60000; // Rough estimate
+                            // Try to get from cache first (instant, no API call)
+                            const cachedInsights = getCachedCropInsights(cacheKey);
                             
                             let estimatedYield: number;
-                            if (userInvestment === 0) {
-                                estimatedYield = 0;
-                            } else if (userInvestment >= suggestedCapital) {
-                                estimatedYield = baseYield; // Full yield
-                            } else {
-                                // Partial investment = reduced yield
-                                estimatedYield = baseYield * (userInvestment / suggestedCapital);
-                            }
                             
-                            console.log(`[ProductionReport]       Yield calculation:`, {
-                                landArea,
-                                userInvestment,
-                                suggestedCapital,
-                                baseYield,
-                                estimatedYield,
-                                yieldPerHectare: estimatedYield / landArea
+                            console.log(`[ProductionReport]       🔍 Checking cache for key: ${cacheKey}`, {
+                                hasCache: !!cachedInsights,
+                                cacheYield: cachedInsights?.profit?.estimatedYield,
+                                cacheCapital: cachedInsights?.profit?.suggestedCapital
                             });
                             
-                            // Calculate yield per hectare (kg/ha)
-                            const yieldPerHectare = landArea > 0 ? estimatedYield / landArea : 0;
+                            // Only use cache if it has valid yield > 0
+                            if (cachedInsights && cachedInsights.profit?.estimatedYield > 0 && cachedInsights.profit?.suggestedCapital > 0) {
+                                // Use EXACT cached values from Farmer side
+                                const baseYield = cachedInsights.profit.estimatedYield;
+                                const suggestedCapital = cachedInsights.profit.suggestedCapital;
+                                
+                                console.log(`[ProductionReport]       ✅ Using CACHED insights (matches Farmer view):`, {
+                                    baseYield,
+                                    suggestedCapital,
+                                    userInvestment,
+                                    calculationMethod: 'cache'
+                                });
+                                
+                                // SAME formula as EnhancedSalesForecastCard
+                                if (userInvestment === 0) {
+                                    estimatedYield = 0;
+                                } else if (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01) {
+                                    estimatedYield = baseYield;
+                                } else {
+                                    estimatedYield = baseYield * (userInvestment / suggestedCapital);
+                                }
+                            } else {
+                                // No cache or invalid cache - MUST calculate fresh insights
+                                console.log(`[ProductionReport]       ⚠️ ${!cachedInsights ? 'No cache found' : `Invalid cache (yield: ${cachedInsights?.profit?.estimatedYield}, capital: ${cachedInsights?.profit?.suggestedCapital})`}, calculating fresh insights...`);
+                                
+                                try {
+                                    const cropInsights = await getCropInsights(
+                                        cropData.name,
+                                        soilType,
+                                        landArea,
+                                        userInvestment
+                                    );
+                                    
+                                    const baseYield = cropInsights?.profit?.estimatedYield || 0;
+                                    const suggestedCapital = cropInsights?.profit?.suggestedCapital || 0;
+                                    
+                                    console.log(`[ProductionReport]       ✅ Fresh insights calculated:`, {
+                                        baseYield,
+                                        suggestedCapital,
+                                        userInvestment,
+                                        calculationMethod: 'fresh-api',
+                                        willMatchFarmerView: true
+                                    });
+                                    
+                                    if (userInvestment === 0) {
+                                        estimatedYield = 0;
+                                    } else if (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01) {
+                                        estimatedYield = baseYield;
+                                    } else {
+                                        estimatedYield = baseYield * (userInvestment / suggestedCapital);
+                                    }
+                                } catch (error) {
+                                    console.error('[ProductionReport] ❌ Error fetching insights:', error);
+                                    // Last resort fallback - should never happen
+                                    estimatedYield = 0;
+                                }
+                            }
                             
-                            // Use estimatedYield for quantity
+                            console.log(`[ProductionReport]       🎯 FINAL Yield (MUST MATCH Farmer Est. Yield Harvest):`, {
+                                crop: cropData.name,
+                                landArea,
+                                userInvestment,
+                                estimatedYield, // This is the TOTAL yield in kg (matches Farmer view)
+                                note: 'This TOTAL yield value should match what the Farmer sees in their Crop Details page'
+                            });
+                            
+                            // Use estimatedYield (TOTAL kg) to match Farmer's "Est. Yield Harvest"
+                            // This ensures Admin sees the SAME total yield as Farmer
                             const quantity = estimatedYield;
+                            const yieldPerHectare = landArea > 0 ? estimatedYield / landArea : 0;
 
                             // Get harvest date - use actual completion date if all maintenance is done
                             let harvestDate = new Date().toISOString().split('T')[0];
@@ -300,40 +354,31 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 return harvestDate.getMonth() === currentMonth && harvestDate.getFullYear() === currentYear;
             }).length;
 
-        // Top harvested crops - RANKED BY YIELD (kg/ha)
-        // If yields are equal, then consider number of harvests as tiebreaker
+        // Top harvested crops - RANKED BY TOTAL QUANTITY (kg)
         const cropHarvestStats = productionData.reduce((acc, record) => {
             const cropName = record.harvestedCrop.toLowerCase();
             const capitalizedName = cropName.charAt(0).toUpperCase() + cropName.slice(1);
             
             if (acc[cropName]) {
-                acc[cropName].count += 1; // Count number of harvests
-                acc[cropName].totalQuantity += record.quantity; // Sum total quantity
-                acc[cropName].totalYield += record.yield; // Sum total yield for averaging
+                acc[cropName].count += 1;
+                acc[cropName].totalQuantity += record.quantity;
             } else {
                 acc[cropName] = {
                     name: capitalizedName,
                     count: 1,
-                    totalQuantity: record.quantity,
-                    totalYield: record.yield,
-                    avgYield: record.yield // Will be calculated
+                    totalQuantity: record.quantity
                 };
             }
             return acc;
-        }, {} as Record<string, { name: string; count: number; totalQuantity: number; totalYield: number; avgYield: number }>);
+        }, {} as Record<string, { name: string; count: number; totalQuantity: number }>);
 
-        // Calculate average yield for each crop
-        Object.values(cropHarvestStats).forEach((stats) => {
-            stats.avgYield = stats.totalYield / stats.count;
-        });
-
-        // Get top 3 harvested crops sorted by average yield (kg/ha) - highest yield first
-        // If yields are equal, use count as tiebreaker (more harvests = higher priority)
+        // Get top 3 harvested crops sorted by total quantity (kg) - highest yield first
+        // If quantities are equal, use count as tiebreaker (more harvests = higher priority)
         const topHarvestedCrops = Object.values(cropHarvestStats)
             .sort((a, b) => {
-                // Primary sort: average yield (highest first)
-                if (b.avgYield !== a.avgYield) {
-                    return b.avgYield - a.avgYield;
+                // Primary sort: total quantity (highest first)
+                if (b.totalQuantity !== a.totalQuantity) {
+                    return b.totalQuantity - a.totalQuantity;
                 }
                 // Tiebreaker: number of harvests (most first)
                 return b.count - a.count;
@@ -410,7 +455,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
         // Total harvest
         const totalHarvest = filteredData.length;
 
-        // Top harvested crops - RANKED BY YIELD
+        // Top harvested crops - RANKED BY TOTAL QUANTITY (kg)
         const cropHarvestStats = filteredData.reduce((acc, record) => {
             const cropName = record.harvestedCrop.toLowerCase();
             const capitalizedName = cropName.charAt(0).toUpperCase() + cropName.slice(1);
@@ -418,28 +463,20 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
             if (acc[cropName]) {
                 acc[cropName].count += 1;
                 acc[cropName].totalQuantity += record.quantity;
-                acc[cropName].totalYield += record.yield;
             } else {
                 acc[cropName] = {
                     name: capitalizedName,
                     count: 1,
-                    totalQuantity: record.quantity,
-                    totalYield: record.yield,
-                    avgYield: record.yield
+                    totalQuantity: record.quantity
                 };
             }
             return acc;
-        }, {} as Record<string, { name: string; count: number; totalQuantity: number; totalYield: number; avgYield: number }>);
-
-        // Calculate average yield
-        Object.values(cropHarvestStats).forEach((stats) => {
-            stats.avgYield = stats.totalYield / stats.count;
-        });
+        }, {} as Record<string, { name: string; count: number; totalQuantity: number }>);
 
         const topHarvestedCrops = Object.values(cropHarvestStats)
             .sort((a, b) => {
-                if (b.avgYield !== a.avgYield) {
-                    return b.avgYield - a.avgYield;
+                if (b.totalQuantity !== a.totalQuantity) {
+                    return b.totalQuantity - a.totalQuantity;
                 }
                 return b.count - a.count;
             })
@@ -724,7 +761,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                             <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farm Address</th>
                                             <th className="text-left p-3 font-semibold text-gray-700 text-sm">Harvested Crop</th>
                                             <th className="text-left p-3 font-semibold text-gray-700 text-sm">Land Area (ha)</th>
-                                            <th className="text-left p-3 font-semibold text-gray-700 text-sm">Yield (kg/ha)</th>
+                                            <th className="text-left p-3 font-semibold text-gray-700 text-sm">Est. Yield Harvest (kg)</th>
                                             <th className="text-left p-3 font-semibold text-gray-700 text-sm">Harvest Date</th>
                                         </tr>
                                     </thead>
@@ -742,7 +779,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                                     <td className="p-3 text-sm text-gray-700">{record.barangay}</td>
                                                     <td className="p-3 text-sm text-gray-700 capitalize">{record.harvestedCrop}</td>
                                                     <td className="p-3 text-sm text-gray-700">{record.landArea}</td>
-                                                    <td className="p-3 text-sm text-gray-700">{record.yield}</td>
+                                                    <td className="p-3 text-sm font-semibold text-gray-900">{record.quantity.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                                                     <td className="p-3 text-sm text-gray-700">
                                                         {new Date(record.harvestDate).toLocaleDateString()}
                                                     </td>

@@ -35,6 +35,14 @@ export const getCachedCropInsights = (cacheKey: string): any => {
         return null; // Return null so it will fetch fresh data
       }
       
+      // ADDITIONAL CHECK: If estimatedYield is very small (< 1) but suggestedCapital exists, it's likely invalid
+      if (data?.profit?.estimatedYield > 0 && data?.profit?.estimatedYield < 1 && data?.profit?.suggestedCapital > 1000) {
+        console.log(`[CropInsightsCache] Detected suspicious low yield (${data.profit.estimatedYield}), clearing cache for key: ${cacheKey}`);
+        delete allCachedData[cacheKey];
+        localStorage.setItem(CROP_INSIGHTS_CACHE_KEY, JSON.stringify(allCachedData));
+        return null;
+      }
+      
       return cachedEntry.data;
     }
     
@@ -134,3 +142,24 @@ export const setupCropInsightsCacheListener = (): void => {
 
 // Set up the logout listener when the service is imported
 setupCropInsightsCacheListener();
+
+/**
+ * DEBUG: Clear all crop insights cache (can be called from browser console)
+ * Usage: import { forceClearAllCropInsightsCache } from '@/services/cropInsightsCache';
+ *        forceClearAllCropInsightsCache();
+ */
+export const forceClearAllCropInsightsCache = (): void => {
+  try {
+    localStorage.removeItem(CROP_INSIGHTS_CACHE_KEY);
+    console.log('[CropInsightsCache] ✅ All cache cleared successfully!');
+    console.log('[CropInsightsCache] Please refresh the page to fetch fresh data');
+  } catch (error) {
+    console.error('[CropInsightsCache] Error clearing cache:', error);
+  }
+};
+
+// Make it available in browser console for debugging
+if (typeof window !== 'undefined') {
+  (window as any).clearCropInsightsCache = forceClearAllCropInsightsCache;
+  console.log('[CropInsightsCache] 💡 Tip: Run clearCropInsightsCache() in console to clear all old cache');
+}
