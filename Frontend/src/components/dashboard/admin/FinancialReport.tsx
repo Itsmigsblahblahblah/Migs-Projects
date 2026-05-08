@@ -10,11 +10,19 @@ import StatsCard from "@/components/shared/StatsCard";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend, PieChart, Pie } from "recharts";
 import { getAllLedgers, calculateLedgerSummary } from "@/services/farmLedgerService";
 import { FarmLedger } from "@/services/types";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 interface FinancialRecord {
     id: string;
     farmerName: string;
-    barangay: string;
+    farmAddress: string;
     crop: string;
     capital: number;
     revenue: number;
@@ -38,7 +46,7 @@ interface FinancialReportProps {
 const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [financialData, setFinancialData] = useState<FinancialRecord[]>([]);
-    const [loading, setLoading] = useState(false); // Changed to false - will be set to true only when fetching
+    const [loading, setLoading] = useState(false);
     const recordsPerPage = 10;
 
     // Filter states
@@ -46,6 +54,69 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
     const [selectedBarangay, setSelectedBarangay] = useState<string>('all');
     const [selectedYear, setSelectedYear] = useState<string>('all');
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
+
+    // Export dialog state
+    const [showExportDialog, setShowExportDialog] = useState(false);
+
+    // Local export function for Financial Report only
+    const handleExportFinancial = (exportType: 'page' | 'all') => {
+        if (financialData.length === 0) {
+            return;
+        }
+
+        // Determine which data to export
+        const dataToExport = exportType === 'page' 
+            ? visibleRecords.map(record => ({
+                'Farmer Name': record.farmerName,
+                'Farm Address': record.farmAddress,
+                'Crop': record.crop,
+                'Capital (₱)': record.capital.toFixed(2),
+                'Revenue (₱)': record.revenue.toFixed(2),
+                'Profit (₱)': record.profit.toFixed(2),
+                'Profit Margin (%)': record.profitMargin.toFixed(2),
+                'Planted Date': new Date(record.plantedDate).toLocaleDateString(),
+                'Status': record.status
+            }))
+            : filteredData.map(record => ({
+                'Farmer Name': record.farmerName,
+                'Farm Address': record.farmAddress,
+                'Crop': record.crop,
+                'Capital (₱)': record.capital.toFixed(2),
+                'Revenue (₱)': record.revenue.toFixed(2),
+                'Profit (₱)': record.profit.toFixed(2),
+                'Profit Margin (%)': record.profitMargin.toFixed(2),
+                'Planted Date': new Date(record.plantedDate).toLocaleDateString(),
+                'Status': record.status
+            }));
+
+        if (dataToExport.length === 0) {
+            return;
+        }
+
+        // Convert to CSV
+        const headers = Object.keys(dataToExport[0]);
+        const csv = [
+            headers.join(','),
+            ...dataToExport.map(row =>
+                headers.map(header => JSON.stringify(row[header] || '')).join(',')
+            )
+        ].join('\n');
+
+        // Download CSV
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const filename = exportType === 'page'
+            ? `financial_report_page${currentPage}_${new Date().toISOString().split('T')[0]}.csv`
+            : `financial_report_all_pages_${new Date().toISOString().split('T')[0]}.csv`;
+        a.href = url;
+        a.download = filename;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        // Close dialog
+        setShowExportDialog(false);
+    };
 
     // Reset to page 1 when filters change
     useEffect(() => {
@@ -110,10 +181,13 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                     
                     // Only include records with financial data
                     if (capital > 0 || revenue > 0) {
+                        // Get farm address from farmer data (priority: farmAddress > homeAddress)
+                        const farmAddress = ledger.location || 'Unknown Farm Address';
+                        
                         records.push({
                             id: ledger.id,
                             farmerName: ledger.username || 'Unknown Farmer',
-                            barangay: ledger.location || 'Unknown Barangay',
+                            farmAddress: farmAddress,
                             crop: ledger.crop || 'Unknown Crop',
                             capital,
                             revenue,
@@ -151,8 +225,8 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
     }, [financialData]);
 
     const uniqueBarangays = useMemo(() => {
-        const barangays = financialData.map(record => record.barangay);
-        return [...new Set(barangays)].sort();
+        const farmAddresses = financialData.map(record => record.farmAddress);
+        return [...new Set(farmAddresses)].sort();
     }, [financialData]);
 
     const uniqueYears = useMemo(() => {
@@ -172,7 +246,7 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
     const filteredData = useMemo(() => {
         return financialData.filter(record => {
             const matchesCrop = selectedCrop === 'all' || record.crop === selectedCrop;
-            const matchesBarangay = selectedBarangay === 'all' || record.barangay === selectedBarangay;
+            const matchesBarangay = selectedBarangay === 'all' || record.farmAddress === selectedBarangay;
             const matchesYear = selectedYear === 'all' || new Date(record.plantedDate).getFullYear().toString() === selectedYear;
             const matchesMonth = selectedMonth === 'all' || 
                 new Date(record.plantedDate).toLocaleString('en-US', { month: 'long' }) === selectedMonth;
@@ -226,13 +300,13 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
         // Additional stats by barangay
         const byBarangay: Record<string, { totalCapital: number; totalRevenue: number; totalProfit: number; count: number }> = {};
         filteredData.forEach(record => {
-            if (!byBarangay[record.barangay]) {
-                byBarangay[record.barangay] = { totalCapital: 0, totalRevenue: 0, totalProfit: 0, count: 0 };
+            if (!byBarangay[record.farmAddress]) {
+                byBarangay[record.farmAddress] = { totalCapital: 0, totalRevenue: 0, totalProfit: 0, count: 0 };
             }
-            byBarangay[record.barangay].totalCapital += record.capital;
-            byBarangay[record.barangay].totalRevenue += record.revenue;
-            byBarangay[record.barangay].totalProfit += record.profit;
-            byBarangay[record.barangay].count += 1;
+            byBarangay[record.farmAddress].totalCapital += record.capital;
+            byBarangay[record.farmAddress].totalRevenue += record.revenue;
+            byBarangay[record.farmAddress].totalProfit += record.profit;
+            byBarangay[record.farmAddress].count += 1;
         });
 
         return {
@@ -292,29 +366,10 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
     const endIndex = startIndex + recordsPerPage;
     const visibleRecords = filteredData.slice(startIndex, endIndex);
 
-    // Export to CSV
+    // Export to CSV (deprecated - now using handleExportFinancial with dialog)
     const handleExport = () => {
-        const headers = ['Farmer Name', 'Barangay', 'Crop', 'Capital (₱)', 'Revenue (₱)', 'Profit (₱)', 'Profit Margin (%)', 'Planted Date', 'Status'];
-        const csvData = filteredData.map(record => [
-            record.farmerName,
-            record.barangay,
-            record.crop,
-            record.capital.toFixed(2),
-            record.revenue.toFixed(2),
-            record.profit.toFixed(2),
-            record.profitMargin.toFixed(2),
-            record.plantedDate,
-            record.status
-        ]);
-
-        const csvContent = [headers, ...csvData].map(row => row.join(',')).join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `financial_report_${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
+        // This function is now deprecated, use handleExportFinancial instead
+        setShowExportDialog(true);
     };
 
     // Format currency
@@ -351,6 +406,7 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
     }
 
     return (
+        <>
         <div className="space-y-6">
             {/* Filters Section - Same as Production Report */}
             <Card className="shadow-card">
@@ -375,16 +431,16 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                                 </SelectContent>
                             </Select>
 
-                            {/* Barangay Filter */}
+                            {/* Barangay/Farm Address Filter */}
                             <Select value={selectedBarangay} onValueChange={setSelectedBarangay}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Select barangay" />
+                                    <SelectValue placeholder="Select farm address" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Barangays</SelectItem>
-                                    {uniqueBarangays.map((barangay) => (
-                                        <SelectItem key={barangay} value={barangay}>
-                                            {barangay}
+                                    <SelectItem value="all">All Farm Addresses</SelectItem>
+                                    {uniqueBarangays.map((farmAddress) => (
+                                        <SelectItem key={farmAddress} value={farmAddress}>
+                                            {farmAddress}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -605,25 +661,44 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                 </Card>
             </div>
 
-            {/* Financial Data Table */}
-            <Card className="shadow-card">
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Financial Records</CardTitle>
-                            <CardDescription>Detailed financial data for all projects ({filteredData.length} records)</CardDescription>
+            {/* Financial Records Table */}
+            <Card className="shadow-card h-full flex flex-col">
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Financial Records</CardTitle>
+                        <CardDescription>Detailed financial data for all projects ({filteredData.length} total {hasActiveFilters ? 'filtered' : ''})</CardDescription>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowExportDialog(true)}
+                            disabled={filteredData.length === 0}
+                            className="hover:bg-blue-50 hover:text-blue-700"
+                        >
+                            <Download className="h-4 w-4 mr-2" />
+                            Export Financial Report
+                        </Button>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-grow flex flex-col">
+                {loading ? (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                            <p className="text-muted-foreground">Loading financial data...</p>
                         </div>
                     </div>
-                </CardHeader>
-                <CardContent>
-                    {filteredData.length > 0 ? (
-                        <div className="space-y-4">
+                ) : filteredData.length > 0 ? (
+                    <div className="flex flex-col h-full">
+                        <div className="space-y-4 flex-grow">
                             <div className="overflow-x-auto rounded-lg border">
                                 <table className="w-full border-collapse">
                                     <thead>
-                                        <tr className="bg-gradient-to-r from-green-50 to-emerald-50 border-b-2 border-green-200">
+                                        <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200">
                                             <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
-                                            <th className="text-left p-3 font-semibold text-gray-700 text-sm">Barangay</th>
+                                            <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farm Address</th>
                                             <th className="text-left p-3 font-semibold text-gray-700 text-sm">Crop</th>
                                             <th className="text-right p-3 font-semibold text-gray-700 text-sm">Capital (₱)</th>
                                             <th className="text-right p-3 font-semibold text-gray-700 text-sm">Revenue (₱)</th>
@@ -634,161 +709,228 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {visibleRecords.map((record) => (
-                                            <tr
-                                                key={record.id}
-                                                className="border-b hover:bg-green-50/50 transition-colors"
-                                            >
-                                                <td className="p-3">
-                                                    <div className="font-medium text-gray-900">{record.farmerName}</div>
-                                                </td>
-                                                <td className="p-3 text-sm text-gray-700">
-                                                    <div className="flex items-center gap-1">
-                                                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                                                        {record.barangay}
-                                                    </div>
-                                                </td>
-                                                <td className="p-3 text-sm font-medium text-gray-900">{record.crop}</td>
-                                                <td className="p-3 text-sm text-right font-medium text-blue-600">
-                                                    {formatCurrency(record.capital)}
-                                                </td>
-                                                <td className="p-3 text-sm text-right font-medium text-green-600">
-                                                    {formatCurrency(record.revenue)}
-                                                </td>
-                                                <td className={`p-3 text-sm text-right font-semibold ${record.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                    {formatCurrency(record.profit)}
-                                                </td>
-                                                <td className="p-3 text-sm text-right">
-                                                    <Badge
-                                                        variant={record.profitMargin >= 0 ? 'default' : 'destructive'}
-                                                        className={record.profitMargin >= 0 ? 'bg-green-600' : 'bg-red-600'}
-                                                    >
-                                                        {record.profitMargin.toFixed(1)}%
-                                                    </Badge>
-                                                </td>
-                                                <td className="p-3 text-sm text-gray-700">
-                                                    {new Date(record.plantedDate).toLocaleDateString()}
-                                                </td>
-                                                <td className="p-3 text-center">
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="capitalize text-xs"
-                                                    >
-                                                        {record.status.replace('-', ' ')}
-                                                    </Badge>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {visibleRecords.map((record, index) => {
+                                            const rowNumber = startIndex + index + 1;
+                                            return (
+                                                <tr
+                                                    key={record.id}
+                                                    className="border-b hover:bg-blue-50/50 transition-colors"
+                                                >
+                                                    <td className="p-3">
+                                                        <div className="font-medium text-gray-900">{record.farmerName}</div>
+                                                    </td>
+                                                    <td className="p-3 text-sm text-gray-700">
+                                                        {record.farmAddress}
+                                                    </td>
+                                                    <td className="p-3 text-sm font-medium text-gray-900">{record.crop}</td>
+                                                    <td className="p-3 text-sm text-right font-medium text-gray-900">
+                                                        {formatCurrency(record.capital)}
+                                                    </td>
+                                                    <td className="p-3 text-sm text-right font-medium text-gray-900">
+                                                        {formatCurrency(record.revenue)}
+                                                    </td>
+                                                    <td className={`p-3 text-sm text-right font-semibold ${record.profit >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+                                                        {formatCurrency(record.profit)}
+                                                    </td>
+                                                    <td className="p-3 text-sm text-right">
+                                                        <Badge
+                                                            variant={record.profitMargin >= 0 ? 'default' : 'destructive'}
+                                                            className={record.profitMargin >= 0 ? 'bg-green-600' : 'bg-red-600'}
+                                                        >
+                                                            {record.profitMargin.toFixed(1)}%
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="p-3 text-sm text-gray-700">
+                                                        {new Date(record.plantedDate).toLocaleDateString()}
+                                                    </td>
+                                                    <td className="p-3 text-center">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="capitalize text-xs"
+                                                        >
+                                                            {record.status.replace('-', ' ')}
+                                                        </Badge>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
 
-                            {/* Pagination */}
-                            <div className="border-t pt-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="text-sm text-muted-foreground">
-                                        Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} records
-                                    </div>
-                                    <div className="flex space-x-1">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
-                                            disabled={currentPage === 1}
-                                            className="h-8 px-3 text-sm hover:bg-green-50"
-                                        >
-                                            Previous
-                                        </Button>
+                        {/* Pagination Controls */}
+                        <div className="border-t pt-4 mt-auto">
+                            {/* Desktop layout */}
+                            <div className="hidden md:flex items-center justify-between">
+                                <div className="text-sm text-muted-foreground">
+                                    Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} records
+                                </div>
+                                <div className="flex space-x-1">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        className="h-8 px-3 text-sm hover:bg-green-50"
+                                    >
+                                        Previous
+                                    </Button>
 
-                                        {(() => {
-                                            const pageButtons = [];
-                                            let startPage = Math.max(1, currentPage - 2);
-                                            let endPage = Math.min(totalPages, startPage + 4);
+                                    {/* Page Number Buttons */}
+                                    {(() => {
+                                        const pageButtons = [];
+                                        let startPage = Math.max(1, currentPage - 2);
+                                        let endPage = Math.min(totalPages, startPage + 4);
 
-                                            if (endPage - startPage < 4) {
-                                                startPage = Math.max(1, endPage - 4);
-                                            }
+                                        if (endPage - startPage < 4) {
+                                            startPage = Math.max(1, endPage - 4);
+                                        }
 
-                                            if (startPage > 1) {
+                                        if (startPage > 1) {
+                                            pageButtons.push(
+                                                <Button
+                                                    key={1}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(1)}
+                                                    className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
+                                                >
+                                                    1
+                                                </Button>
+                                            );
+                                            if (startPage > 2) {
                                                 pageButtons.push(
-                                                    <Button
-                                                        key={1}
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setCurrentPage(1)}
-                                                        className="h-8 w-8 p-0 text-sm hover:bg-green-50"
-                                                    >
-                                                        1
-                                                    </Button>
-                                                );
-                                                if (startPage > 2) {
-                                                    pageButtons.push(
-                                                        <span key="start-ellipsis" className="px-1 text-muted-foreground text-sm">⋯</span>
-                                                    );
-                                                }
-                                            }
-
-                                            for (let i = startPage; i <= endPage; i++) {
-                                                pageButtons.push(
-                                                    <Button
-                                                        key={i}
-                                                        variant={currentPage === i ? "default" : "outline"}
-                                                        size="sm"
-                                                        onClick={() => setCurrentPage(i)}
-                                                        className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-green-600 text-white hover:bg-green-700" : "hover:bg-green-50"}`}
-                                                    >
-                                                        {i}
-                                                    </Button>
+                                                    <span key="start-ellipsis" className="px-1 text-muted-foreground text-sm">⋯</span>
                                                 );
                                             }
+                                        }
 
-                                            if (endPage < totalPages) {
-                                                if (endPage < totalPages - 1) {
-                                                    pageButtons.push(
-                                                        <span key="end-ellipsis" className="px-1 text-muted-foreground text-sm"></span>
-                                                    );
-                                                }
+                                        for (let i = startPage; i <= endPage; i++) {
+                                            pageButtons.push(
+                                                <Button
+                                                    key={i}
+                                                    variant={currentPage === i ? "default" : "outline"}
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(i)}
+                                                    className={`h-8 w-8 p-0 text-sm ${currentPage === i ? "bg-blue-600 text-white hover:bg-blue-700" : "hover:bg-blue-50"}`}
+                                                >
+                                                    {i}
+                                                </Button>
+                                            );
+                                        }
+
+                                        if (endPage < totalPages) {
+                                            if (endPage < totalPages - 1) {
                                                 pageButtons.push(
-                                                    <Button
-                                                        key={totalPages}
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => setCurrentPage(totalPages)}
-                                                        className="h-8 w-8 p-0 text-sm hover:bg-green-50"
-                                                    >
-                                                        {totalPages}
-                                                    </Button>
+                                                    <span key="end-ellipsis" className="px-1 text-muted-foreground text-sm">⋯</span>
                                                 );
                                             }
+                                            pageButtons.push(
+                                                <Button
+                                                    key={totalPages}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(totalPages)}
+                                                    className="h-8 w-8 p-0 text-sm hover:bg-blue-50"
+                                                >
+                                                    {totalPages}
+                                                </Button>
+                                            );
+                                        }
 
-                                            return pageButtons;
-                                        })()}
+                                        return pageButtons;
+                                    })()}
 
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
-                                            disabled={currentPage === totalPages}
-                                            className="h-8 px-3 text-sm hover:bg-green-50"
-                                        >
-                                            Next
-                                        </Button>
-                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                        className="h-8 px-3 text-sm hover:bg-green-50"
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {/* Mobile layout */}
+                            <div className="md:hidden space-y-4">
+                                <div className="text-sm text-muted-foreground text-center">
+                                    Showing {startIndex + 1} to {Math.min(endIndex, filteredData.length)} of {filteredData.length} records
+                                </div>
+                                <div className="flex justify-center space-x-1">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        className="h-8 px-3 text-sm hover:bg-blue-50"
+                                    >
+                                        Previous
+                                    </Button>
+
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                        className="h-8 px-3 text-sm hover:bg-blue-50"
+                                    >
+                                        Next
+                                    </Button>
                                 </div>
                             </div>
                         </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <DollarSign className="h-16 w-16 text-muted-foreground mb-4" />
+                    </div>
+                ) : (
+                    <div className="flex items-center justify-center h-64 text-center">
+                        <div>
+                            <DollarSign className="h-16 w-16 text-muted-foreground mb-4 mx-auto" />
                             <h3 className="text-lg font-semibold mb-2">No Financial Data Available</h3>
                             <p className="text-muted-foreground max-w-md">
                                 There are no financial records matching your current filters. Try adjusting the filters or wait for farmers to submit their crop data.
                             </p>
                         </div>
-                    )}
-                </CardContent>
-            </Card>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
         </div>
+
+        {/* Export Dialog */}
+        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Export Financial Report</DialogTitle>
+                    <DialogDescription>
+                        Choose which data you want to export:
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
+                         onClick={() => handleExportFinancial('page')}>
+                        <h4 className="font-semibold mb-2">Export This Page</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Export {visibleRecords.length} record{visibleRecords.length !== 1 ? 's' : ''} from the current page (Page {currentPage} of {totalPages})
+                        </p>
+                    </div>
+                    <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
+                         onClick={() => handleExportFinancial('all')}>
+                        <h4 className="font-semibold mb-2">Export All Pages</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Export all {filteredData.length} record{filteredData.length !== 1 ? 's' : ''} {hasActiveFilters ? '(with current filters)' : ''}
+                        </p>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+                        Cancel
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    </>
     );
 };
 

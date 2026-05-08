@@ -423,9 +423,10 @@ export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<
         }
         
         const farmerName = farmerData?.fullName || userData?.fullName || cropData.username || cropData.farmerName || 'Unknown Farmer';
-        const barangay = farmerData?.homeAddress || userData?.homeAddress || farmerData?.farmAddress || cropData.farmAddress || cropData.location || 'Unknown Barangay';
+        // Priority: farmAddress first (for farm location), then homeAddress as fallback
+        const farmAddress = farmerData?.farmAddress || cropData.farmAddress || farmerData?.homeAddress || userData?.homeAddress || cropData.location || 'Unknown Farm Address';
         
-        console.log(`[LedgerService] ✅ Processing: ${cropData.name} | Farmer: ${farmerName} | Location: ${barangay}`);
+        console.log(`[LedgerService] ✅ Processing: ${cropData.name} | Farmer: ${farmerName} | Farm Address: ${farmAddress}`);
         
         // Get crop data (from context or use directly)
         const crop = getCropById ? getCropById(cropId) : cropData;
@@ -446,12 +447,12 @@ export const getAllLedgers = async (getCropById?: (id: string) => any): Promise<
           date: cropData.plantedDate?.toDate?.() || cropData.createdAt?.toDate?.() || null,
           crop: calculatedData.crop || cropData.name || 'Unknown',
           variety: cropData.variety || '',
-          location: barangay,
+          location: farmAddress,
           status: (calculatedData.status || 'planned') as any,
           inputParameters: {
             soil: { pH: 0, nitrogen: 'M', phosphorus: 'M', potassium: 'M', soilType: cropData.soilType || '' },
             weather: { temperature: 0, humidity: 0, condition: '' },
-            location: { barangay: barangay, farmAddress: cropData.farmAddress || '', area: cropData.landArea || 0 }
+            location: { barangay: farmAddress, farmAddress: farmAddress, area: cropData.landArea || 0 }
           },
           financials: {
             capital: calculatedData.financials?.capital || 0,
