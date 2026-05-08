@@ -35,6 +35,7 @@ interface AdminCropViewDialogProps {
         plantedDate: any;
         status: string;
         adminData?: any;
+        harvestData?: any; // Add harvest data from farmer
     } | null;
 }
 
@@ -169,20 +170,32 @@ const AdminCropViewDialog = ({ open, onOpenChange, crop }: AdminCropViewDialogPr
                 
                 // Calculate estimated yield based on investment vs suggested capital
                 // SAME LOGIC as farmer side - use different baseYield calculation depending on data source
-                let baseYield: number;
+                let estimatedYield: number;
                 
-                if (hasAdminData) {
-                    // When admin data exists, use land area * 2000 (same as farmer side)
-                    baseYield = crop.landArea * 2000;
+                // CRITICAL: Use actual harvest data from farmer if available
+                // This ensures admin sees the SAME value as farmer's "Est. Yield Harvest"
+                if (crop.harvestData && crop.harvestData.estimatedYield) {
+                    // Use ACTUAL yield from farmer (no calculation needed)
+                    estimatedYield = crop.harvestData.estimatedYield;
+                    console.log('Sales Forecast: Using ACTUAL farmer yield from harvestData:', estimatedYield);
                 } else {
-                    // When no admin data, use system estimated yield
-                    baseYield = cropInsights?.profit?.estimatedYield || 0;
+                    // Fallback to calculated yield only if no harvest data exists
+                    let baseYield: number;
+                    
+                    if (hasAdminData) {
+                        // When admin data exists, use land area * 2000 (same as farmer side)
+                        baseYield = crop.landArea * 2000;
+                    } else {
+                        // When no admin data, use system estimated yield
+                        baseYield = cropInsights?.profit?.estimatedYield || 0;
+                    }
+                    
+                    estimatedYield = userInvestment === 0 ? 0 
+                        : baseYield * (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 
+                            ? 1 
+                            : (userInvestment / suggestedCapital));
+                    console.log('Sales Forecast: Using CALCULATED yield (no harvestData):', estimatedYield);
                 }
-                
-                const estimatedYield = userInvestment === 0 ? 0 
-                    : baseYield * (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 
-                        ? 1 
-                        : (userInvestment / suggestedCapital));
                 
                 // Calculate potential revenue
                 const potentialRevenue = estimatedYield * marketPrice;
@@ -203,7 +216,7 @@ const AdminCropViewDialog = ({ open, onOpenChange, crop }: AdminCropViewDialogPr
                         system: cropInsights?.profit?.suggestedCapital, 
                         used: suggestedCapital 
                     },
-                    baseYield,
+                    usedHarvestData: crop.harvestData && crop.harvestData.estimatedYield,
                     estimatedYield,
                     potentialRevenue,
                     netProfit: netProfitCalc

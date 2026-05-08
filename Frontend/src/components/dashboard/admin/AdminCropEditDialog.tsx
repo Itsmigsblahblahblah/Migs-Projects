@@ -627,9 +627,19 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
                                             type="text"
                                             value={marketPrice}
                                             onChange={(e) => {
-                                                // Remove non-numeric chars except decimal point
+                                                // Allow free-form numeric input without auto-formatting
                                                 const raw = e.target.value.replace(/[^\d.]/g, '');
-                                                setMarketPrice(raw);
+                                                // Prevent multiple decimal points
+                                                const parts = raw.split('.');
+                                                if (parts.length <= 2) {
+                                                    setMarketPrice(raw);
+                                                }
+                                            }}
+                                            onBlur={(e) => {
+                                                // Clean up trailing decimal point if empty
+                                                if (e.target.value.endsWith('.')) {
+                                                    setMarketPrice(e.target.value.slice(0, -1));
+                                                }
                                             }}
                                             className="mt-1"
                                             placeholder="Enter market price"
@@ -649,11 +659,21 @@ const AdminCropEditDialog = ({ open, onOpenChange, crop, onSave }: AdminCropEdit
                                     {suggestedCapitalEditing ? (
                                         <Input
                                             type="text"
-                                            value={suggestedCapital ? Number(suggestedCapital).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : ''}
+                                            value={suggestedCapital}
                                             onChange={(e) => {
-                                                // Remove non-numeric chars except decimal point
+                                                // Allow free-form numeric input without auto-formatting
                                                 const raw = e.target.value.replace(/[^\d.]/g, '');
-                                                setSuggestedCapital(raw);
+                                                // Prevent multiple decimal points
+                                                const parts = raw.split('.');
+                                                if (parts.length <= 2) {
+                                                    setSuggestedCapital(raw);
+                                                }
+                                            }}
+                                            onBlur={(e) => {
+                                                // Clean up trailing decimal point if empty
+                                                if (e.target.value.endsWith('.')) {
+                                                    setSuggestedCapital(e.target.value.slice(0, -1));
+                                                }
                                             }}
                                             className="mt-1"
                                             placeholder="Enter suggested capital"

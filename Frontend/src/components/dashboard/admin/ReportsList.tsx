@@ -37,6 +37,14 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { useToast } from "@/hooks/use-toast";
@@ -104,6 +112,9 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     });
     const { toast } = useToast();
     const reportsPerPage = 10;
+
+    // Export dialog state
+    const [showExportDialog, setShowExportDialog] = useState(false);
 
     // Sync localReports with parent reports when they change (e.g., when status is updated)
     useEffect(() => {
@@ -397,6 +408,62 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         }
     };
 
+    // Export complaints report
+    const handleExportComplaints = (exportType: 'page' | 'all') => {
+        const dataToExport = exportType === 'page'
+            ? visibleReports.map(r => ({
+                'Farmer': r.username,
+                'Problem': r.problem,
+                'Affected Crop': r.affectedCrop,
+                'Date': r.createdAt?.toDate().toLocaleDateString(),
+                'Status': r.status,
+                'Recommendations': r.recommendedCrops?.join(', '),
+                'Barangay': getFarmerBarangay(r.userId)
+            }))
+            : sortedReports.map(r => ({
+                'Farmer': r.username,
+                'Problem': r.problem,
+                'Affected Crop': r.affectedCrop,
+                'Date': r.createdAt?.toDate().toLocaleDateString(),
+                'Status': r.status,
+                'Recommendations': r.recommendedCrops?.join(', '),
+                'Barangay': getFarmerBarangay(r.userId)
+            }));
+
+        if (dataToExport.length === 0) {
+            return;
+        }
+
+        // Convert to CSV
+        const headers = Object.keys(dataToExport[0]);
+        const csv = [
+            headers.join(','),
+            ...dataToExport.map(row =>
+                headers.map(header => JSON.stringify(row[header] || '')).join(',')
+            )
+        ].join('\n');
+
+        // Download CSV
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const filename = exportType === 'page'
+            ? `complaints_report_page${currentPage}_${new Date().toISOString().split('T')[0]}.csv`
+            : `complaints_report_all_pages_${new Date().toISOString().split('T')[0]}.csv`;
+        a.href = url;
+        a.download = filename;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        setShowExportDialog(false);
+    };
+
+    // Helper function to get farmer's barangay
+    const getFarmerBarangay = (userId: string) => {
+        const farmer = farmers.find(f => f.uid === userId);
+        return farmer?.homeAddress || 'Unknown';
+    };
+
     return (
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'financial' | 'production' | 'complaints')} className="w-full space-y-6">
             <TabsList className="grid w-full grid-cols-3">
@@ -449,12 +516,12 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                             </Button>
                             <Button
                                 variant="outline"
-                                onClick={onExport}
+                                onClick={() => setShowExportDialog(true)}
                                 disabled={localReports.length === 0}
                                 className="hover:bg-blue-50 hover:text-blue-700"
                             >
                                 <Download className="h-4 w-4 mr-2" />
-                                Export All
+                                Export Complaints Report
                             </Button>
                         </div>
                     </div>
@@ -1351,6 +1418,39 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Export Dialog for Complaints */}
+            <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Export Complaints Report</DialogTitle>
+                        <DialogDescription>
+                            Choose which data you want to export:
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
+                             onClick={() => handleExportComplaints('page')}>
+                            <h4 className="font-semibold mb-2">Export This Page</h4>
+                            <p className="text-sm text-muted-foreground">
+                                Export {visibleReports.length} record{visibleReports.length !== 1 ? 's' : ''} from the current page (Page {currentPage} of {totalPages})
+                            </p>
+                        </div>
+                        <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
+                             onClick={() => handleExportComplaints('all')}>
+                            <h4 className="font-semibold mb-2">Export All Pages</h4>
+                            <p className="text-sm text-muted-foreground">
+                                Export all {sortedReports.length} record{sortedReports.length !== 1 ? 's' : ''}
+                            </p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+                            Cancel
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             </TabsContent>
         </Tabs>
     );

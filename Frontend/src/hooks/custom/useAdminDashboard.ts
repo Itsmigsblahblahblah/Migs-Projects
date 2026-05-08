@@ -580,6 +580,13 @@ export const useAdminDashboard = () => {
         } else if (type === 'crops') {
             dataToExport = cropRecommendations;
             filename = 'crop_recommendations.csv';
+        } else if (type === 'production') {
+            // Production report export will be handled separately by ProductionReport component
+            toast({
+                title: "Export Production Report",
+                description: "Please use the export button within the Production Report tab.",
+            });
+            return;
         }
 
         // Convert to CSV

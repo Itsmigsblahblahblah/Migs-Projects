@@ -434,6 +434,7 @@ const FarmerDetailPage = () => {
           createdAt: data.createdAt,
           checklist: data.checklist || [],
           adminData: data.adminData || null,
+          harvestData: data.harvestData || null, // Include harvest data from farmer
           status: status
         });
       });

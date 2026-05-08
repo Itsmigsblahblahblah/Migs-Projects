@@ -11,6 +11,14 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { getCachedProductionData, setCachedProductionData } from "@/services/productionReportCache";
 import { getCachedCropInsights } from "@/services/cropInsightsCache";
 import { getCropInsights } from "@/services/cropDataService";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ProductionRecord {
     id: string;
@@ -59,6 +67,63 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
     const [selectedWeek, setSelectedWeek] = useState<string>('all');
 
+    // Export dialog state
+    const [showExportDialog, setShowExportDialog] = useState(false);
+
+    // Local export function for Production Report only
+    const handleExportProduction = (exportType: 'page' | 'all') => {
+        if (productionData.length === 0) {
+            return;
+        }
+
+        // Determine which data to export
+        const dataToExport = exportType === 'page' 
+            ? visibleRecords.map(record => ({
+                'Farmer Name': record.farmerName,
+                'Farm Address': record.barangay,
+                'Harvested Crop': record.harvestedCrop,
+                'Land Area (ha)': record.landArea,
+                'Est. Yield Harvest (kg)': record.quantity,
+                'Harvest Date': new Date(record.harvestDate).toLocaleDateString()
+            }))
+            : filteredData.map(record => ({
+                'Farmer Name': record.farmerName,
+                'Farm Address': record.barangay,
+                'Harvested Crop': record.harvestedCrop,
+                'Land Area (ha)': record.landArea,
+                'Est. Yield Harvest (kg)': record.quantity,
+                'Harvest Date': new Date(record.harvestDate).toLocaleDateString()
+            }));
+
+        if (dataToExport.length === 0) {
+            return;
+        }
+
+        // Convert to CSV
+        const headers = Object.keys(dataToExport[0]);
+        const csv = [
+            headers.join(','),
+            ...dataToExport.map(row =>
+                headers.map(header => JSON.stringify(row[header] || '')).join(',')
+            )
+        ].join('\n');
+
+        // Download CSV
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const filename = exportType === 'page'
+            ? `production_report_page${currentPage}_${new Date().toISOString().split('T')[0]}.csv`
+            : `production_report_all_pages_${new Date().toISOString().split('T')[0]}.csv`;
+        a.href = url;
+        a.download = filename;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        // Close dialog
+        setShowExportDialog(false);
+    };
+
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
@@ -70,21 +135,13 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     // Fetch real data from Firestore - Farmer Profile approach
     useEffect(() => {
         const fetchProductionData = async () => {
-            // CRITICAL FIX: Always clear old cache on load to ensure fresh calculations
-            // This prevents showing stale/incorrect yield values
-            console.log('[ProductionReport] Clearing old crop insights cache to ensure fresh calculations...');
-            const { clearCropInsightsCache } = await import('@/services/cropInsightsCache');
-            clearCropInsightsCache();
+            // FORCE CLEAR ALL CACHES to ensure each farmer gets their own specific yield calculation
+            console.log('[ProductionReport] 🗑️ Clearing ALL caches to force fresh calculations...');
+            const { clearAllCropCaches } = await import('@/services/cropDataService');
+            clearAllCropCaches();
             
-            // Check cache first
-            const cachedData = getCachedProductionData();
-            if (cachedData && cachedData.data.length > 0) {
-                console.log('[ProductionReport] Using cached production data');
-                setProductionData(cachedData.data);
-                setLoading(false);
-                return;
-            }
-
+            console.log('[ProductionReport] 🔄 Fetching FRESH data (all caches cleared)...');
+            
             try {
                 console.log('[ProductionReport] Cache miss, fetching from Firestore...');
                 setLoading(true);
@@ -158,57 +215,47 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                             const landArea = cropData.landArea || 1;
                             const userInvestment = cropData.puhunan || 0;
                             const soilType = cropData.soilType || 'Loam';
+                            const userId = cropData.userId || 'unknown';
                             
-                            console.log(`[ProductionReport]       Crop data:`, {
-                                name: cropData.name,
-                                landArea,
-                                userInvestment,
-                                soilType,
-                                allFields: Object.keys(cropData)
-                            });
+                            console.log(`[ProductionReport]       ========================================`);
+                            console.log(`[ProductionReport]       FARMER: ${farmerName}`);
+                            console.log(`[ProductionReport]       Crop: ${cropData.name}`);
+                            console.log(`[ProductionReport]       User ID: ${userId}`);
+                            console.log(`[ProductionReport]       Land Area: ${landArea} hectares`);
+                            console.log(`[ProductionReport]       Investment (Puhunan): ₱${userInvestment.toLocaleString()}`);
+                            console.log(`[ProductionReport]       Soil Type: ${soilType}`);
+                            console.log(`[ProductionReport]       ========================================`);
                             
                             // PRODUCTION REPORT - Use EXACT SAME calculation as EnhancedSalesForecastCard
                             // Always fetch insights to ensure we get the ACTUAL values (not estimates)
                             // This ensures Admin sees EXACTLY what Farmer sees
-                            const cacheKey = `${cropData.name.toLowerCase()}-${soilType.toLowerCase()}-${landArea}`;
                             
-                            // Try to get from cache first (instant, no API call)
-                            const cachedInsights = getCachedCropInsights(cacheKey);
+                            // ALWAYS calculate fresh for each crop (don't use cache for yield calculation)
+                            // This ensures each farmer gets THEIR specific yield based on their investment
+                            console.log(`[ProductionReport]       🔄 STARTING fresh calculation for: ${cropData.name} (${farmerName})`);
                             
                             let estimatedYield: number;
                             
-                            console.log(`[ProductionReport]       🔍 Checking cache for key: ${cacheKey}`, {
-                                hasCache: !!cachedInsights,
-                                cacheYield: cachedInsights?.profit?.estimatedYield,
-                                cacheCapital: cachedInsights?.profit?.suggestedCapital
-                            });
-                            
-                            // Only use cache if it has valid yield > 0
-                            if (cachedInsights && cachedInsights.profit?.estimatedYield > 0 && cachedInsights.profit?.suggestedCapital > 0) {
-                                // Use EXACT cached values from Farmer side
-                                const baseYield = cachedInsights.profit.estimatedYield;
-                                const suggestedCapital = cachedInsights.profit.suggestedCapital;
-                                
-                                console.log(`[ProductionReport]       ✅ Using CACHED insights (matches Farmer view):`, {
-                                    baseYield,
-                                    suggestedCapital,
-                                    userInvestment,
-                                    calculationMethod: 'cache'
-                                });
-                                
-                                // SAME formula as EnhancedSalesForecastCard
-                                if (userInvestment === 0) {
-                                    estimatedYield = 0;
-                                } else if (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01) {
-                                    estimatedYield = baseYield;
+                            try {
+                                // CRITICAL: First check if crop has actual harvest data from farmer
+                                // This ensures Admin sees EXACTLY the same value as Farmer's "Est. Yield Harvest"
+                                if (cropData.harvestData && cropData.harvestData.estimatedYield) {
+                                    // Use ACTUAL yield from farmer (no calculation needed)
+                                    estimatedYield = cropData.harvestData.estimatedYield;
+                                    console.log(`[ProductionReport]       ✅ Using ACTUAL farmer yield from harvestData:`, {
+                                        farmerName: farmerName,
+                                        userId: userId,
+                                        cropName: cropData.name,
+                                        actualYield: estimatedYield,
+                                        unit: 'kg',
+                                        note: 'This is the SAME value the farmer sees'
+                                    });
                                 } else {
-                                    estimatedYield = baseYield * (userInvestment / suggestedCapital);
-                                }
-                            } else {
-                                // No cache or invalid cache - MUST calculate fresh insights
-                                console.log(`[ProductionReport]       ⚠️ ${!cachedInsights ? 'No cache found' : `Invalid cache (yield: ${cachedInsights?.profit?.estimatedYield}, capital: ${cachedInsights?.profit?.suggestedCapital})`}, calculating fresh insights...`);
-                                
-                                try {
+                                    // Fallback: Calculate yield only if no harvest data exists
+                                    console.log(`[ProductionReport]       ⚠️ No harvestData, calculating yield...`);
+                                    
+                                    // CRITICAL: Use getCropInsights (same as Farmer) to get consistent calculation
+                                    // This ensures Admin sees EXACTLY the same value as Farmer
                                     const cropInsights = await getCropInsights(
                                         cropData.name,
                                         soilType,
@@ -216,38 +263,50 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                         userInvestment
                                     );
                                     
+                                    // Get BASE yield and suggested capital from insights
                                     const baseYield = cropInsights?.profit?.estimatedYield || 0;
                                     const suggestedCapital = cropInsights?.profit?.suggestedCapital || 0;
                                     
-                                    console.log(`[ProductionReport]       ✅ Fresh insights calculated:`, {
-                                        baseYield,
-                                        suggestedCapital,
-                                        userInvestment,
-                                        calculationMethod: 'fresh-api',
-                                        willMatchFarmerView: true
-                                    });
+                                    // EXACT SAME FORMULA as EnhancedSalesForecastCard (lines 158-160)
+                                    // This ensures Production Report matches Farmer's Est. Yield Harvest exactly
+                                    const calculatedYield = userInvestment === 0 ? 0 :
+                                        baseYield *
+                                        (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 
+                                            ? 1 
+                                            : (userInvestment / suggestedCapital));
                                     
-                                    if (userInvestment === 0) {
-                                        estimatedYield = 0;
-                                    } else if (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01) {
-                                        estimatedYield = baseYield;
-                                    } else {
-                                        estimatedYield = baseYield * (userInvestment / suggestedCapital);
-                                    }
-                                } catch (error) {
-                                    console.error('[ProductionReport] ❌ Error fetching insights:', error);
-                                    // Last resort fallback - should never happen
-                                    estimatedYield = 0;
+                                    estimatedYield = calculatedYield;
+                                    
+                                    console.log(`[ProductionReport]       💰 Yield calculation for ${cropData.name} (${farmerName}):`, {
+                                        farmerName: farmerName,
+                                        userId: userId,
+                                        cropName: cropData.name,
+                                        landArea: landArea,
+                                        userInvestment: userInvestment,
+                                        baseYield: baseYield,
+                                        suggestedCapital: suggestedCapital,
+                                        calculatedYield: calculatedYield,
+                                        formula: 'baseYield × (userInvestment / suggestedCapital)',
+                                        note: 'This uses EXACT SAME formula as Farmer side'
+                                    });
                                 }
+                            } catch (error) {
+                                console.error('[ProductionReport] ❌ Error fetching insights:', error);
+                                estimatedYield = 0;
                             }
                             
-                            console.log(`[ProductionReport]       🎯 FINAL Yield (MUST MATCH Farmer Est. Yield Harvest):`, {
+                            console.log(`[ProductionReport]       🎯 FINAL Yield (MUST match Farmer Est. Yield Harvest):`, {
+                                farmer: farmerName,
+                                userId: userId,
                                 crop: cropData.name,
-                                landArea,
-                                userInvestment,
-                                estimatedYield, // This is the TOTAL yield in kg (matches Farmer view)
-                                note: 'This TOTAL yield value should match what the Farmer sees in their Crop Details page'
+                                landArea: landArea,
+                                userInvestment: userInvestment,
+                                estimatedYield: estimatedYield,
+                                unit: 'kg',
+                                note: 'This value should EXACTLY match what the farmer sees in their Crop Details page'
                             });
+                            console.log(`[ProductionReport]       ========================================`);
+                            console.log('');
                             
                             // Use estimatedYield (TOTAL kg) to match Farmer's "Est. Yield Harvest"
                             // This ensures Admin sees the SAME total yield as Farmer
@@ -322,9 +381,8 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 // Sort by harvest date (newest first)
                 records.sort((a, b) => new Date(b.harvestDate).getTime() - new Date(a.harvestDate).getTime());
 
-                // Cache the data
-                setCachedProductionData(records);
-                console.log('[ProductionReport] Data cached for future navigations');
+                // Don't cache production data - always calculate fresh
+                // setCachedProductionData(records);  // DISABLED - causes stale data
 
                 setProductionData(records);
             } catch (error) {
@@ -557,6 +615,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const hasActiveFilters = selectedCrop !== 'all' || selectedYear !== 'all' || selectedMonth !== 'all' || selectedWeek !== 'all';
 
     return (
+        <>
         <div className="space-y-6">
             {/* Filters Section */}
             <Card className="shadow-card">
@@ -732,12 +791,12 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                     <div className="flex gap-2">
                         <Button
                             variant="outline"
-                            onClick={onExport}
+                            onClick={() => setShowExportDialog(true)}
                             disabled={filteredData.length === 0}
                             className="hover:bg-blue-50 hover:text-blue-700"
                         >
                             <Download className="h-4 w-4 mr-2" />
-                            Export Report
+                            Export Production Report
                         </Button>
                     </div>
                 </div>
@@ -923,6 +982,40 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
             </CardContent>
         </Card>
         </div>
+
+        {/* Export Dialog */}
+        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Export Production Report</DialogTitle>
+                    <DialogDescription>
+                        Choose which data you want to export:
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
+                         onClick={() => handleExportProduction('page')}>
+                        <h4 className="font-semibold mb-2">Export This Page</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Export {visibleRecords.length} record{visibleRecords.length !== 1 ? 's' : ''} from the current page (Page {currentPage} of {totalPages})
+                        </p>
+                    </div>
+                    <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
+                         onClick={() => handleExportProduction('all')}>
+                        <h4 className="font-semibold mb-2">Export All Pages</h4>
+                        <p className="text-sm text-muted-foreground">
+                            Export all {filteredData.length} record{filteredData.length !== 1 ? 's' : ''} {hasActiveFilters ? '(with current filters)' : ''}
+                        </p>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+                        Cancel
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 };
 

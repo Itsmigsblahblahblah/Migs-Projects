@@ -161,11 +161,44 @@ const CropDetails = () => {
             
             const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
             console.log('[CropDetails-Harvest] Data received');
-            setHarvestData(harvestInfo);
             
-            // Save to Firestore (non-blocking)
+            // CRITICAL: Calculate estimatedYield and add it to harvestData
+            // This ensures Admin sees the SAME value as Farmer's "Est. Yield Harvest"
+            console.log('[CropDetails-Harvest] Calculating estimatedYield for sync with Admin...');
+            const { getCropInsights } = await import('@/services/cropDataService');
+            const cropInsights = await getCropInsights(
+                cropData.name,
+                cropData.soilType,
+                cropData.landArea,
+                cropData.puhunan
+            );
+            
+            const userInvestment = Number(cropData.puhunan) || 0;
+            const suggestedCapital = cropInsights?.profit?.suggestedCapital || 0;
+            const baseYield = cropInsights?.profit?.estimatedYield || 0;
+            
+            // Calculate estimatedYield using SAME formula as EnhancedSalesForecastCard
+            const calculatedEstimatedYield = userInvestment === 0 ? 0 :
+                baseYield *
+                (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 
+                    ? 1 
+                    : (userInvestment / suggestedCapital));
+            
+            // Add estimatedYield to harvestData object before saving
+            const harvestInfoWithYield = {
+                ...harvestInfo,
+                estimatedYield: calculatedEstimatedYield,
+                unit: 'kg',
+                calculationNote: 'Synced to Admin Production Report'
+            };
+            
+            console.log('[CropDetails-Harvest] Calculated and added estimatedYield:', calculatedEstimatedYield, 'kg');
+            
+            setHarvestData(harvestInfoWithYield);
+            
+            // Save to Firestore (non-blocking) - NOW includes estimatedYield
             if (cropData.id) {
-                updateCrop(cropData.id, { harvestData: harvestInfo })
+                updateCrop(cropData.id, { harvestData: harvestInfoWithYield })
                     .catch((err: any) => console.error('[CropDetails-Harvest] Save error:', err));
             }
         } catch (error: any) {
@@ -322,7 +355,57 @@ const CropDetails = () => {
                                         // SKIP API CALL if harvest data already exists in Firestore
                                         if (cropData.harvestData && Object.keys(cropData.harvestData).length > 0) {
                                             console.log('[CropDetails-Harvest] ✅ Using cached harvest data from Firestore - SKIP API CALL');
-                                            if (isMounted) setHarvestData(cropData.harvestData);
+                                            
+                                            // MIGRATION: Check if harvestData has estimatedYield, if not, add it
+                                            if (!cropData.harvestData.estimatedYield) {
+                                                console.log('[CropDetails-Harvest] ⚠️ Missing estimatedYield in existing harvestData, calculating and adding...');
+                                                try {
+                                                    const { getCropInsights } = await import('@/services/cropDataService');
+                                                    const cropInsights = await getCropInsights(
+                                                        cropData.name,
+                                                        cropData.soilType,
+                                                        cropData.landArea,
+                                                        cropData.puhunan
+                                                    );
+                                                    
+                                                    const userInvestment = Number(cropData.puhunan) || 0;
+                                                    const suggestedCapital = cropInsights?.profit?.suggestedCapital || 0;
+                                                    const baseYield = cropInsights?.profit?.estimatedYield || 0;
+                                                    
+                                                    // Calculate estimatedYield using SAME formula
+                                                    const calculatedEstimatedYield = userInvestment === 0 ? 0 :
+                                                        baseYield *
+                                                        (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 
+                                                            ? 1 
+                                                            : (userInvestment / suggestedCapital));
+                                                    
+                                                    // Update harvestData with estimatedYield
+                                                    const updatedHarvestData = {
+                                                        ...cropData.harvestData,
+                                                        estimatedYield: calculatedEstimatedYield,
+                                                        unit: 'kg',
+                                                        migratedAt: new Date().toISOString()
+                                                    };
+                                                    
+                                                    console.log('[CropDetails-Harvest] ✅ Added estimatedYield:', calculatedEstimatedYield, 'kg');
+                                                    
+                                                    // Save updated harvestData to Firestore
+                                                    if (isMounted) {
+                                                        await updateCrop(cropData.id, { harvestData: updatedHarvestData });
+                                                        console.log('[CropDetails-Harvest] ✅ Saved updated harvestData to Firestore');
+                                                    }
+                                                    
+                                                    // Update state
+                                                    if (isMounted) setHarvestData(updatedHarvestData);
+                                                } catch (error) {
+                                                    console.error('[CropDetails-Harvest] Error adding estimatedYield to existing harvestData:', error);
+                                                    // Fallback to using existing harvestData
+                                                    if (isMounted) setHarvestData(cropData.harvestData);
+                                                }
+                                            } else {
+                                                // harvestData already has estimatedYield, just use it
+                                                if (isMounted) setHarvestData(cropData.harvestData);
+                                            }
                                             return;
                                         }
                                         
@@ -345,15 +428,43 @@ const CropDetails = () => {
                                                 const harvestInfo = await getHarvestEstimate(cropData.name, plantedDate, "Majayjay, Laguna");
                                                 clearTimeout(timeoutId);
                                                 console.log('[CropDetails-Harvest] Harvest info received');
+                                                
+                                                // CRITICAL: Calculate and add estimatedYield to harvestData
+                                                console.log('[CropDetails-Harvest] Calculating estimatedYield for new crop...');
+                                                const { getCropInsights } = await import('@/services/cropDataService');
+                                                const cropInsights = await getCropInsights(
+                                                    cropData.name,
+                                                    cropData.soilType,
+                                                    cropData.landArea,
+                                                    cropData.puhunan
+                                                );
+                                                
+                                                const userInvestment = Number(cropData.puhunan) || 0;
+                                                const suggestedCapital = cropInsights?.profit?.suggestedCapital || 0;
+                                                const baseYield = cropInsights?.profit?.estimatedYield || 0;
+                                                
+                                                const calculatedEstimatedYield = userInvestment === 0 ? 0 :
+                                                    baseYield *
+                                                    (userInvestment >= suggestedCapital || Math.abs(userInvestment - suggestedCapital) < 0.01 
+                                                        ? 1 
+                                                        : (userInvestment / suggestedCapital));
+                                                
+                                                const harvestInfoWithYield = {
+                                                    ...harvestInfo,
+                                                    estimatedYield: calculatedEstimatedYield,
+                                                    unit: 'kg'
+                                                };
+                                                
+                                                console.log('[CropDetails-Harvest] Calculated estimatedYield:', calculatedEstimatedYield, 'kg');
 
                                                 if (cropData.id && isMounted) {
-                                                    console.log('[CropDetails-Harvest] Saving harvest data to Firestore');
-                                                    await updateCrop(cropData.id, { harvestData: harvestInfo });
+                                                    console.log('[CropDetails-Harvest] Saving harvest data with estimatedYield to Firestore');
+                                                    await updateCrop(cropData.id, { harvestData: harvestInfoWithYield });
                                                 }
 
                                                 if (isMounted) {
                                                     console.log('[CropDetails-Harvest] Setting harvest data state');
-                                                    setHarvestData(harvestInfo);
+                                                    setHarvestData(harvestInfoWithYield);
                                                 }
                                             } catch (error: any) {
                                                 if (timeoutId) clearTimeout(timeoutId);

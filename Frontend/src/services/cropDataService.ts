@@ -764,9 +764,12 @@ export const getCropInsights = async (
   landArea: number,
   puhunan: number
 ) => {
-  // Create cache key based on crop name, soil type, AND land area
-  // IMPORTANT: landArea must be included because suggested capital and yield depend on it
-  const cacheKey = `${cropName.toLowerCase()}-${soilType.toLowerCase()}-${landArea}`;
+  // CRITICAL FIX: Include puhunan (investment) in cache key!
+  // Different farmers have different investments, so they need different calculations
+  // This ensures each farmer gets THEIR specific yield based on their investment
+  const cacheKey = `${cropName.toLowerCase()}-${soilType.toLowerCase()}-${landArea}-${puhunan}`;
+  
+  console.log(`[getCropInsights] Cache key: ${cacheKey} (includes investment: ₱${puhunan})`);
   
   // OPTIMIZATION: Check localStorage cache first (like MarketDemand & CropPrescription)
   const cachedData = getCachedCropInsights(cacheKey);
