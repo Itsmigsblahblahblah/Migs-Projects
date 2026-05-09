@@ -36,35 +36,47 @@ const CheckboxSplitButton = ({
 }: CheckboxSplitButtonProps) => {
     const checkboxRef = useRef<HTMLInputElement>(null);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false); // Track update state
 
-    // Update checkbox state based on selection
+    // Compute checkbox state
+    const isAllSelected = totalCount > 0 && selectedCount === totalCount;
+    const isPartiallySelected = totalCount > 0 && selectedCount > 0 && selectedCount < totalCount;
+    const isEmpty = totalCount === 0 || selectedCount === 0;
+
+    // Update checkbox visual state when selection changes
     useEffect(() => {
-        // Update the actual checkbox element
         if (checkboxRef.current) {
-            const isAllSelected = selectedCount === totalCount && totalCount > 0;
-            const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
-            
-            checkboxRef.current.checked = isAllSelected;
+            // Set indeterminate state via DOM (React doesn't support this prop)
             checkboxRef.current.indeterminate = isPartiallySelected;
+            
+            // Force checkbox to re-render by triggering a reflow if needed
+            setIsUpdating(false);
         }
-    }, [selectedCount, totalCount]);
+    }, [selectedCount, totalCount, isPartiallySelected]);
 
     const handleCheckboxClick = (e: React.MouseEvent) => {
         e.preventDefault();
+        e.stopPropagation();
         
-        const isAllSelected = selectedCount === totalCount && totalCount > 0;
-        const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
+        // Prevent multiple clicks during update
+        if (isUpdating) return;
         
-        // If all selected -> deselect all
-        // If partially selected (minus sign) -> show confirmation dialog
-        // If none selected -> select all
+        // Determine current state and take appropriate action
         if (isAllSelected) {
+            // All selected -> Deselect all
+            setIsUpdating(true);
             onDeselectAll();
+            // Reset updating state after a brief delay
+            setTimeout(() => setIsUpdating(false), 50);
         } else if (isPartiallySelected) {
-            // Show confirmation dialog for indeterminate state
+            // Partially selected -> Show confirmation
             setShowConfirmDialog(true);
         } else {
+            // None selected -> Select all
+            setIsUpdating(true);
             onSelectAll();
+            // Reset updating state after a brief delay
+            setTimeout(() => setIsUpdating(false), 50);
         }
     };
 
@@ -81,11 +93,12 @@ const CheckboxSplitButton = ({
                     <input
                         ref={checkboxRef}
                         type="checkbox"
-                        checked={selectedCount === totalCount && totalCount > 0}
+                        checked={isAllSelected}
                         onClick={handleCheckboxClick}
-                        onChange={() => {}}
+                        onChange={() => {}} // Controlled component - no direct changes
                         className="w-4 h-4 cursor-pointer m-1"
                         style={{ flexShrink: 0 }}
+                        disabled={isUpdating || totalCount === 0} // Disable during updates
                     />
                     
                     {/* Vertical Divider */}

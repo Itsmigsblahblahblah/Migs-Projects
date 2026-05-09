@@ -1093,6 +1093,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             {/* Gmail-Style Checkbox Split Button - Independent Column */}
                                                             {localReports.length > 0 && (
                                                                 <CheckboxSplitButton
+                                                                    key={`${selectedReports.length}-${sortedReports.length}`} // Force re-render on state change
                                                                     selectedCount={selectedReports.length}
                                                                     totalCount={sortedReports.length}
                                                                     onSelectAll={selectAllReports}
