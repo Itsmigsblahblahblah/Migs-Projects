@@ -745,7 +745,7 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                                                     </td>
                                                     <td className="p-3 text-center">
                                                         <Badge
-                                                            variant="outline"
+                                                            variant={record.status === 'post-harvest' ? 'default' : 'secondary'}
                                                             className="capitalize text-xs"
                                                         >
                                                             {record.status.replace('-', ' ')}
