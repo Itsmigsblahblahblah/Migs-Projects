@@ -637,6 +637,17 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     return (
         <>
         <div className="space-y-6">
+            {loading ? (
+                <Card className="shadow-card">
+                    <CardContent className="flex items-center justify-center py-12">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                            <p className="text-muted-foreground">Loading production data...</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : (
+                <>
             {/* Filters Section */}
             <Card className="shadow-card">
                 <CardContent className="p-4">
@@ -822,14 +833,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 </div>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col">
-                {loading ? (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="text-center">
-                            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                            <p className="text-muted-foreground">Loading production data...</p>
-                        </div>
-                    </div>
-                ) : filteredData.length > 0 ? (
+                {filteredData.length > 0 ? (
                     <div className="flex flex-col h-full">
                         <div className="space-y-4 flex-grow">
                             <div className="overflow-x-auto rounded-lg border">
@@ -1001,6 +1005,8 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 )}
             </CardContent>
         </Card>
+                </>
+            )}
         </div>
 
         {/* Export Dialog */}
