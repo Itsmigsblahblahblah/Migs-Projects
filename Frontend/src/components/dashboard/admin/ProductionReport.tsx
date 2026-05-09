@@ -132,21 +132,29 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     // Color palette for crop bar chart (same as Problem Type Distribution)
     const CROP_COLORS = ['#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#10b981', '#f59e0b', '#06b6d4', '#ec4899'];
 
-    // Fetch real data from Firestore - Farmer Profile approach
+    // Fetch real data from Firestore with session caching
     useEffect(() => {
         const fetchProductionData = async () => {
             // Check if data is already cached in sessionStorage
             const cachedData = sessionStorage.getItem('production_report_data');
             const cacheTimestamp = sessionStorage.getItem('production_report_timestamp');
             
-            // Use cached data if less than 5 minutes old
+            // Use cached data if less than 30 minutes old (session-based caching)
             if (cachedData && cacheTimestamp) {
                 const age = Date.now() - parseInt(cacheTimestamp);
-                if (age < 5 * 60 * 1000) { // 5 minutes cache
-                    console.log('[ProductionReport] Using cached data (age:', Math.round(age / 1000), 's)');
+                if (age < 30 * 60 * 1000) { // 30 minutes cache
+                    console.log('[ProductionReport] ✅ Using cached data (age:', Math.round(age / 1000), 's)');
                     setProductionData(JSON.parse(cachedData));
                     setLoading(false);
-                    return;
+                    
+                    // If cache is older than 5 minutes, silently refresh in background
+                    if (age > 5 * 60 * 1000) {
+                        console.log('[ProductionReport] 🔄 Cache >5min old, will silently refresh...');
+                        // Continue to fetch below, but DON'T set loading=true
+                    } else {
+                        // Fresh cache (<5min), no refresh needed
+                        return;
+                    }
                 }
             }
             
@@ -162,7 +170,11 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
             
             try {
                 console.log('[ProductionReport] Cache miss, fetching from Firestore...');
-                setLoading(true);
+                
+                // Only show loading if NO cache exists (first load)
+                if (!cachedData || !cacheTimestamp) {
+                    setLoading(true);
+                }
                 console.log('[ProductionReport] Starting to fetch production data...');
                 
                 // Step 1: Fetch all farmers
@@ -399,10 +411,10 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 // Sort by harvest date (newest first)
                 records.sort((a, b) => new Date(b.harvestDate).getTime() - new Date(a.harvestDate).getTime());
 
-                // Cache the data in sessionStorage for 5 minutes
+                // Cache the data in sessionStorage for 30 minutes (session-based)
                 sessionStorage.setItem('production_report_data', JSON.stringify(records));
                 sessionStorage.setItem('production_report_timestamp', Date.now().toString());
-                console.log('[ProductionReport] Data cached in sessionStorage');
+                console.log('[ProductionReport] Data cached in sessionStorage (30 min TTL)');
 
                 setProductionData(records);
             } catch (error) {
@@ -414,6 +426,11 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
         };
 
         fetchProductionData();
+        
+        // NO auto-refresh polling - only refresh on navigation/tab change
+        // This prevents excessive Firestore reads
+        // User can manually refresh by navigating away and back
+        return () => {}; // Cleanup function (empty - no polling)
     }, []);
 
     // Calculate analytics data
