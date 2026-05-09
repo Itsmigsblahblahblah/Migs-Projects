@@ -58,7 +58,7 @@ interface ProductionReportProps {
 const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [productionData, setProductionData] = useState<ProductionRecord[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // Changed to false - will use cache first
     const recordsPerPage = 10;
 
     // Filter states
@@ -135,6 +135,24 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     // Fetch real data from Firestore - Farmer Profile approach
     useEffect(() => {
         const fetchProductionData = async () => {
+            // Check if data is already cached in sessionStorage
+            const cachedData = sessionStorage.getItem('production_report_data');
+            const cacheTimestamp = sessionStorage.getItem('production_report_timestamp');
+            
+            // Use cached data if less than 5 minutes old
+            if (cachedData && cacheTimestamp) {
+                const age = Date.now() - parseInt(cacheTimestamp);
+                if (age < 5 * 60 * 1000) { // 5 minutes cache
+                    console.log('[ProductionReport] Using cached data (age:', Math.round(age / 1000), 's)');
+                    setProductionData(JSON.parse(cachedData));
+                    setLoading(false);
+                    return;
+                }
+            }
+            
+            // No cache or expired - fetch fresh data
+            console.log('[ProductionReport] Cache miss or expired, fetching fresh data...');
+            
             // FORCE CLEAR ALL CACHES to ensure each farmer gets their own specific yield calculation
             console.log('[ProductionReport] 🗑️ Clearing ALL caches to force fresh calculations...');
             const { clearAllCropCaches } = await import('@/services/cropDataService');
@@ -381,8 +399,10 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 // Sort by harvest date (newest first)
                 records.sort((a, b) => new Date(b.harvestDate).getTime() - new Date(a.harvestDate).getTime());
 
-                // Don't cache production data - always calculate fresh
-                // setCachedProductionData(records);  // DISABLED - causes stale data
+                // Cache the data in sessionStorage for 5 minutes
+                sessionStorage.setItem('production_report_data', JSON.stringify(records));
+                sessionStorage.setItem('production_report_timestamp', Date.now().toString());
+                console.log('[ProductionReport] Data cached in sessionStorage');
 
                 setProductionData(records);
             } catch (error) {
