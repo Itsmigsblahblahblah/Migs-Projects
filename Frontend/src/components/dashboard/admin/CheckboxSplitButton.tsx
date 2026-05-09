@@ -6,16 +6,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 interface CheckboxSplitButtonProps {
     selectedCount: number;
@@ -23,7 +13,6 @@ interface CheckboxSplitButtonProps {
     onSelectAll: () => void;
     onDeselectAll: () => void;
     selectReportsByStatus: (status: 'all' | 'processed' | 'resolved') => void;
-    onConfirmClear?: () => void; // Optional confirmation callback
 }
 
 const CheckboxSplitButton = ({
@@ -32,10 +21,8 @@ const CheckboxSplitButton = ({
     onSelectAll,
     onDeselectAll,
     selectReportsByStatus,
-    onConfirmClear,
 }: CheckboxSplitButtonProps) => {
     const checkboxRef = useRef<HTMLInputElement>(null);
-    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false); // Track update state
 
     // Compute checkbox state
@@ -69,8 +56,11 @@ const CheckboxSplitButton = ({
             // Reset updating state after a brief delay
             setTimeout(() => setIsUpdating(false), 50);
         } else if (isPartiallySelected) {
-            // Partially selected -> Show confirmation
-            setShowConfirmDialog(true);
+            // Partially selected -> Deselect all directly
+            setIsUpdating(true);
+            onDeselectAll();
+            // Reset updating state after a brief delay
+            setTimeout(() => setIsUpdating(false), 50);
         } else {
             // None selected -> Select all
             setIsUpdating(true);
@@ -78,11 +68,6 @@ const CheckboxSplitButton = ({
             // Reset updating state after a brief delay
             setTimeout(() => setIsUpdating(false), 50);
         }
-    };
-
-    const handleConfirmClear = () => {
-        onDeselectAll();
-        setShowConfirmDialog(false);
     };
 
     return (
@@ -138,24 +123,6 @@ const CheckboxSplitButton = ({
                     </DropdownMenu>
                 </div>
             </div>
-
-            {/* Confirmation Dialog for Indeterminate State */}
-            <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Clear Selection?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will deselect all currently selected reports across all pages.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmClear}>
-                            Clear Selection
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </>
     );
 };
