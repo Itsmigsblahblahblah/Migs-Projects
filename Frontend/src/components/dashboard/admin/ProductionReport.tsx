@@ -58,7 +58,8 @@ interface ProductionReportProps {
 const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [productionData, setProductionData] = useState<ProductionRecord[]>([]);
-    const [loading, setLoading] = useState(false); // Changed to false - will use cache first
+    const [loading, setLoading] = useState(true); // Changed to true - show loading on first load
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false); // Track if data has been loaded at least once
     const recordsPerPage = 10;
 
     // Filter states
@@ -132,7 +133,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     // Color palette for crop bar chart (same as Problem Type Distribution)
     const CROP_COLORS = ['#3b82f6', '#ef4444', '#f97316', '#8b5cf6', '#10b981', '#f59e0b', '#06b6d4', '#ec4899'];
 
-    // Fetch real data from Firestore with session caching
+    // Fetch production data from Firestore with session caching
     useEffect(() => {
         const fetchProductionData = async () => {
             // Check if data is already cached in sessionStorage
@@ -146,6 +147,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                     console.log('[ProductionReport] ✅ Using cached data (age:', Math.round(age / 1000), 's)');
                     setProductionData(JSON.parse(cachedData));
                     setLoading(false);
+                    setHasLoadedOnce(true);
                     
                     // If cache is older than 5 minutes, silently refresh in background
                     if (age > 5 * 60 * 1000) {
@@ -169,7 +171,6 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                     setLoading(true);
                 }
                 console.log('[ProductionReport] Starting to fetch production data...');
-                
                 // FORCE CLEAR ALL CACHES only on fresh fetch (not on silent refresh)
                 // This ensures each farmer gets their own specific yield calculation
                 if (!cachedData || !cacheTimestamp) {
@@ -418,11 +419,13 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 console.log('[ProductionReport] Data cached in sessionStorage (30 min TTL)');
 
                 setProductionData(records);
+                setHasLoadedOnce(true);
             } catch (error) {
                 console.error('[ProductionReport] Error fetching production data:', error);
                 // Don't overwrite existing data if fetch fails during silent refresh
                 if (!productionData.length) {
                     setProductionData([]); // Only set empty if no existing data
+                    setHasLoadedOnce(true);
                 }
                 // If we have existing data, keep it (don't clear on error)
             } finally {
@@ -659,7 +662,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     return (
         <>
         <div className="space-y-6">
-            {loading ? (
+            {loading && !hasLoadedOnce ? (
                 <Card className="shadow-card">
                     <CardContent className="flex items-center justify-center py-12">
                         <div className="text-center">
