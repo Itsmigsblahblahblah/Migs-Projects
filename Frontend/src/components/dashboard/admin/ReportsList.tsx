@@ -48,6 +48,7 @@ import {
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Report {
     id: string;
@@ -102,6 +103,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteMode, setDeleteMode] = useState(false);
     const [selectedReports, setSelectedReports] = useState<string[]>([]);
+    const [selectionFilter, setSelectionFilter] = useState<'all' | 'processed' | 'resolved'>('all'); // For selection dropdown
     const [activeTab, setActiveTab] = useState<'financial' | 'production' | 'complaints'>(() => {
         // Load saved tab from localStorage, default to 'complaints' if not found
         const savedTab = localStorage.getItem('reportsActiveTab');
@@ -367,6 +369,20 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         }
     };
 
+    // Select reports by status filter
+    const selectReportsByStatus = (status: 'all' | 'processed' | 'resolved') => {
+        setSelectionFilter(status);
+        if (status === 'all') {
+            setSelectedReports(visibleReports.map(report => report.id));
+        } else {
+            setSelectedReports(
+                visibleReports
+                    .filter(report => report.status === status)
+                    .map(report => report.id)
+            );
+        }
+    };
+
     const handleBatchDelete = async () => {
         if (selectedReports.length === 0) {
             toast({
@@ -483,239 +499,245 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
             <TabsContent value="complaints" className="space-y-6">
                 <Card className="shadow-card h-full flex flex-col">
                     <CardHeader>
-                        <div className="flex items-center justify-between">
+                        <div className="space-y-4">
+                            {/* Title */}
                             <div>
                                 <CardTitle>Complaints Report</CardTitle>
                                 <CardDescription>Latest submissions from farmers ({localReports.length} total)</CardDescription>
                             </div>
-                        <div className="flex gap-2">
-                            {deleteMode && (
-                                <Button
-                                    variant="destructive"
-                                    onClick={handleBatchDelete}
-                                    disabled={selectedReports.length === 0}
-                                    className="bg-red-600 hover:bg-red-700"
-                                >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete Selected ({selectedReports.length})
-                                </Button>
-                            )}
-                            <Button
-                                variant={deleteMode ? "default" : "outline"}
-                                onClick={toggleDeleteMode}
-                                className={deleteMode ? "bg-blue-600 hover:bg-blue-700" : "hover:bg-blue-50 hover:text-blue-700"}
-                            >
-                                {deleteMode ? (
-                                    <>Cancel</>
-                                ) : (
-                                    <>
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Batch Delete
-                                    </>
-                                )}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => setShowExportDialog(true)}
-                                disabled={localReports.length === 0}
-                                className="hover:bg-blue-50 hover:text-blue-700"
-                            >
-                                <Download className="h-4 w-4 mr-2" />
-                                Export Complaints Report
-                            </Button>
-                        </div>
-                    </div>
 
-                    {/* Search Bar */}
-                    <div className="pt-4">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                type="text"
-                                placeholder="Search by farmer name, report text, or crop..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 w-full md:w-[400px]"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Sorting Options - Replace buttons with dropdown */}
-                    <div className="flex flex-wrap gap-2 pt-4">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                    Sort: {getSortByLabel()} - {getOrderLabel()}
-                                    <ChevronDown className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64">
-                                <Accordion
-                                    type="single"
-                                    collapsible
-                                    value={openAccordion}
-                                    onValueChange={handleAccordionChange}
-                                    className="w-full"
-                                >
-                                    <AccordionItem value="date" className="border-b-0">
-                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
-                                            <span className="flex items-center">
-                                                <ChevronRight className="h-4 w-4 mr-2" />
-                                                Date
-                                            </span>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pb-0">
-                                            <DropdownMenuItem onClick={() => handleSortChange("date", "desc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                                <ArrowDown className="h-4 w-4 mr-2" />
-                                                Newest
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleSortChange("date", "asc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                                <ArrowUp className="h-4 w-4 mr-2" />
-                                                Oldest
-                                            </DropdownMenuItem>
-                                        </AccordionContent>
-                                    </AccordionItem>
-
-                                    <DropdownMenuSeparator />
-
-                                    <AccordionItem value="status" className="border-b-0">
-                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
-                                            <span className="flex items-center">
-                                                <ChevronRight className="h-4 w-4 mr-2" />
-                                                Group by
-                                            </span>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pb-0">
-                                            <DropdownMenuItem onClick={() => handleSortChange("status", "desc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                                <ArrowDown className="h-4 w-4 mr-2" />
-                                                Resolved
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleSortChange("status", "asc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                                <ArrowUp className="h-4 w-4 mr-2" />
-                                                Processed
-                                            </DropdownMenuItem>
-                                        </AccordionContent>
-                                    </AccordionItem>
-
-                                    {/* Add Problem Category as dropdown like Date and Group by */}
-                                    <DropdownMenuSeparator />
-                                    
-                                    <AccordionItem value="problem" className="border-b-0">
-                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
-                                            <span className="flex items-center">
-                                                <ChevronRight className="h-4 w-4 mr-2" />
-                                                Problem Category
-                                            </span>
-                                        </AccordionTrigger>
-                                        <AccordionContent className="pb-0">
-                                            <DropdownMenuItem onClick={() => setProblemFilter('general')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                                General
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setProblemFilter('flood')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                                Flood
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setProblemFilter('pest')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                                Pest
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setProblemFilter('disease')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                                Disease
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setProblemFilter('drought')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                                Drought
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setProblemFilter('all')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                                All Problems
-                                            </DropdownMenuItem>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Accordion>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                    Group by Barangay
-                                    <ChevronDown className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64 max-h-60 overflow-y-auto">
-                                {uniqueFarmAddresses.length > 0 ? (
-                                    uniqueFarmAddresses.map(address => (
-                                        <DropdownMenuItem
-                                            key={address}
-                                            onClick={() => {
-                                                setSelectedBarangay(address);
-                                                setSortOption('barangay');
-                                            }}
-                                            className={`cursor-pointer ${selectedBarangay === address ? "bg-blue-50 text-blue-700" : ""}`}
-                                            style={{ cursor: 'pointer' }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.backgroundColor = '#eff6ff';
-                                                e.currentTarget.style.color = '#1d4ed8';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (selectedBarangay !== address) {
-                                                    e.currentTarget.style.backgroundColor = '';
-                                                    e.currentTarget.style.color = '';
-                                                }
-                                            }}
-                                        >
-                                            {address}
-                                        </DropdownMenuItem>
-                                    ))
-                                ) : (
-                                    <DropdownMenuItem disabled className="text-muted-foreground">
-                                        No barangays available
-                                    </DropdownMenuItem>
-                                )}
-                                {selectedBarangay !== 'all' && sortOption === 'barangay' && (
-                                    <>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                            onClick={() => {
-                                                setSelectedBarangay('all');
-                                                setSortOption('newest');
-                                            }}
-                                            className="cursor-pointer text-red-600 hover:bg-red-50"
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.backgroundColor = '#fef2f2';
-                                                e.currentTarget.style.color = '#dc2626';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.backgroundColor = '';
-                                                e.currentTarget.style.color = '';
-                                            }}
-                                        >
-                                            Clear Filter
-                                        </DropdownMenuItem>
-                                    </>
-                                )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-
-                    </div>
-
-                    {/* Stats display for selected barangay - shown below */}
-                    {sortOption === 'barangay' && selectedBarangay && (
-                        <div className="pt-4">
-                            <div className="bg-muted p-3 rounded-md">
-                                <h3 className="font-semibold">
-                                    {selectedBarangay} has {stats.totalReports} report{stats.totalReports !== 1 ? 's' : ''}
-                                </h3>
-                                <div className="flex flex-wrap gap-4 mt-2">
-                                    {Object.entries(stats.problemCounts).map(([problem, count]) => (
-                                        <div key={problem} className="flex items-center gap-1 cursor-pointer hover:bg-muted rounded px-2 py-1 transition-colors" style={{ cursor: 'pointer' }}>
-                                            <span className="text-sm capitalize">{problem}:</span>
-                                            <Badge variant="secondary">{count}</Badge>
-                                        </div>
-                                    ))}
+                            {/* Top Controls - Horizontal Layout */}
+                            <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+                                {/* Search Bar */}
+                                <div className="relative flex-1 md:flex-none md:w-80">
+                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        type="text"
+                                        placeholder="Search by farmer name, report text, or crop..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="pl-9"
+                                    />
                                 </div>
+
+                                {/* Sort Dropdown */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                            Sort: {getSortByLabel()} - {getOrderLabel()}
+                                            <ChevronDown className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-64">
+                                        <Accordion
+                                            type="single"
+                                            collapsible
+                                            value={openAccordion}
+                                            onValueChange={handleAccordionChange}
+                                            className="w-full"
+                                        >
+                                            <AccordionItem value="date" className="border-b-0">
+                                                <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
+                                                    <span className="flex items-center">
+                                                        <ChevronRight className="h-4 w-4 mr-2" />
+                                                        Date
+                                                    </span>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pb-0">
+                                                    <DropdownMenuItem onClick={() => handleSortChange("date", "desc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                                        <ArrowDown className="h-4 w-4 mr-2" />
+                                                        Newest
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleSortChange("date", "asc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                                        <ArrowUp className="h-4 w-4 mr-2" />
+                                                        Oldest
+                                                    </DropdownMenuItem>
+                                                </AccordionContent>
+                                            </AccordionItem>
+
+                                            <DropdownMenuSeparator />
+
+                                            <AccordionItem value="status" className="border-b-0">
+                                                <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
+                                                    <span className="flex items-center">
+                                                        <ChevronRight className="h-4 w-4 mr-2" />
+                                                        Group by
+                                                    </span>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pb-0">
+                                                    <DropdownMenuItem onClick={() => handleSortChange("status", "desc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                                        <ArrowDown className="h-4 w-4 mr-2" />
+                                                        Resolved
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleSortChange("status", "asc")} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                                        <ArrowUp className="h-4 w-4 mr-2" />
+                                                        Processed
+                                                    </DropdownMenuItem>
+                                                </AccordionContent>
+                                            </AccordionItem>
+
+                                            <DropdownMenuSeparator />
+                                            
+                                            <AccordionItem value="problem" className="border-b-0">
+                                                <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
+                                                    <span className="flex items-center">
+                                                        <ChevronRight className="h-4 w-4 mr-2" />
+                                                        Problem Category
+                                                    </span>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pb-0">
+                                                    <DropdownMenuItem onClick={() => setProblemFilter('general')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                                        General
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setProblemFilter('flood')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                                        Flood
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setProblemFilter('pest')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                                        Pest
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setProblemFilter('disease')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                                        Disease
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setProblemFilter('drought')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                                        Drought
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setProblemFilter('all')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                                        All Problems
+                                                    </DropdownMenuItem>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        </Accordion>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                {/* Group by Barangay Dropdown */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                            Group by Barangay
+                                            <ChevronDown className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-64 max-h-60 overflow-y-auto">
+                                        {uniqueFarmAddresses.length > 0 ? (
+                                            uniqueFarmAddresses.map(address => (
+                                                <DropdownMenuItem
+                                                    key={address}
+                                                    onClick={() => {
+                                                        setSelectedBarangay(address);
+                                                        setSortOption('barangay');
+                                                    }}
+                                                    className={`cursor-pointer ${selectedBarangay === address ? "bg-blue-50 text-blue-700" : ""}`}
+                                                    style={{ cursor: 'pointer' }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.backgroundColor = '#eff6ff';
+                                                        e.currentTarget.style.color = '#1d4ed8';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        if (selectedBarangay !== address) {
+                                                            e.currentTarget.style.backgroundColor = '';
+                                                            e.currentTarget.style.color = '';
+                                                        }
+                                                    }}
+                                                >
+                                                    {address}
+                                                </DropdownMenuItem>
+                                            ))
+                                        ) : (
+                                            <DropdownMenuItem disabled className="text-muted-foreground">
+                                                No barangays available
+                                            </DropdownMenuItem>
+                                        )}
+                                        {selectedBarangay !== 'all' && sortOption === 'barangay' && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onClick={() => {
+                                                        setSelectedBarangay('all');
+                                                        setSortOption('newest');
+                                                    }}
+                                                    className="cursor-pointer text-red-600 hover:bg-red-50"
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.backgroundColor = '#fef2f2';
+                                                        e.currentTarget.style.color = '#dc2626';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.backgroundColor = '';
+                                                        e.currentTarget.style.color = '';
+                                                    }}
+                                                >
+                                                    Clear Filter
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                {/* Export Button */}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowExportDialog(true)}
+                                    disabled={localReports.length === 0}
+                                    className="w-full md:w-auto hover:bg-blue-50 hover:text-blue-700"
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export
+                                </Button>
                             </div>
+
+                            {/* Batch Delete Controls - Shows when items selected */}
+                            {selectedReports.length > 0 && (
+                                <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-md animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="flex items-center gap-2 flex-1">
+                                        <Trash2 className="h-5 w-5 text-red-600" />
+                                        <span className="text-sm font-medium text-red-700">
+                                            {selectedReports.length} report{selectedReports.length > 1 ? 's' : ''} selected
+                                        </span>
+                                    </div>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => {
+                                            setReportToDelete(null);
+                                            setDeleteDialogOpen(true);
+                                        }}
+                                        className="bg-red-600 hover:bg-red-700 text-white"
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete Selected
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setSelectedReports([])}
+                                        className="text-red-700 hover:bg-red-100"
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Stats display for selected barangay */}
+                            {sortOption === 'barangay' && selectedBarangay && (
+                                <div className="pt-2">
+                                    <div className="bg-muted p-3 rounded-md">
+                                        <h3 className="font-semibold">
+                                            {selectedBarangay} has {stats.totalReports} report{stats.totalReports !== 1 ? 's' : ''}
+                                        </h3>
+                                        <div className="flex flex-wrap gap-4 mt-2">
+                                            {Object.entries(stats.problemCounts).map(([problem, count]) => (
+                                                <div key={problem} className="flex items-center gap-1 cursor-pointer hover:bg-muted rounded px-2 py-1 transition-colors" style={{ cursor: 'pointer' }}>
+                                                    <span className="text-sm capitalize">{problem}:</span>
+                                                    <Badge variant="secondary">{count}</Badge>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
-                </CardHeader>
+                    </CardHeader>
                 <CardContent className="flex-grow flex flex-col">
                     {localReports.length > 0 ? (
                         <div className="flex flex-col h-full">
@@ -727,17 +749,74 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                             <table className="w-full border-collapse">
                                                 <thead>
                                                     <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b-2 border-blue-200">
-                                                        {deleteMode && (
-                                                            <th className="text-center p-3 font-semibold text-gray-700 text-sm w-16">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={selectedReports.length === visibleReports.length && visibleReports.length > 0}
-                                                                    onChange={selectAllReports}
-                                                                    className="w-4 h-4 cursor-pointer"
-                                                                />
-                                                            </th>
-                                                        )}
-                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
+                                                        <th className="text-left p-3 font-semibold text-gray-700 text-sm w-48">
+                                                            {/* Gmail-Style Split Button - Integrated in Header */}
+                                                            {localReports.length > 0 && (
+                                                                <div className="flex items-center gap-2">
+                                                                    {/* Split Button Container */}
+                                                                    <div className="inline-flex items-center border rounded-md hover:bg-gray-50 transition-colors duration-150 group">
+                                                                        {/* Checkbox Portion - Left Side */}
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={selectedReports.length === visibleReports.length && visibleReports.length > 0}
+                                                                            onChange={(e) => {
+                                                                                if (e.target.checked) {
+                                                                                    selectReportsByStatus(selectionFilter);
+                                                                                } else {
+                                                                                    setSelectedReports([]);
+                                                                                }
+                                                                            }}
+                                                                            className="w-4 h-4 cursor-pointer m-1.5"
+                                                                        />
+                                                                        
+                                                                        {/* Vertical Divider */}
+                                                                        <div className="w-px h-4 bg-border mx-0.5" />
+                                                                        
+                                                                        {/* Dropdown Arrow Portion - Right Side */}
+                                                                        <DropdownMenu>
+                                                                            <DropdownMenuTrigger asChild>
+                                                                                <button className="inline-flex items-center justify-center h-6 w-6 cursor-pointer hover:bg-gray-200 rounded-r-md transition-colors duration-150 focus:outline-none" title="Filter selection">
+                                                                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                                                                </button>
+                                                                            </DropdownMenuTrigger>
+                                                                            <DropdownMenuContent align="start" className="bg-white">
+                                                                                <DropdownMenuItem onClick={() => selectReportsByStatus('all')}>
+                                                                                    All
+                                                                                </DropdownMenuItem>
+                                                                                <DropdownMenuItem onClick={() => selectReportsByStatus('processed')}>
+                                                                                    Processed
+                                                                                </DropdownMenuItem>
+                                                                                <DropdownMenuItem onClick={() => selectReportsByStatus('resolved')}>
+                                                                                    Resolved
+                                                                                </DropdownMenuItem>
+                                                                            </DropdownMenuContent>
+                                                                        </DropdownMenu>
+                                                                    </div>
+
+                                                                    {/* Delete Icon - Shows when items selected */}
+                                                                    {selectedReports.length > 0 && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => {
+                                                                                setReportToDelete(null);
+                                                                                setDeleteDialogOpen(true);
+                                                                            }}
+                                                                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    )}
+
+                                                                    {/* Selected count */}
+                                                                    {selectedReports.length > 0 && (
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            {selectedReports.length}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farm Address</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Problem</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Affected Crop</th>
@@ -752,25 +831,21 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             <tr
                                                                 key={report.id}
                                                                 className={`border-b transition-colors ${
-                                                                    deleteMode 
-                                                                        ? selectedReports.includes(report.id)
-                                                                            ? 'bg-blue-100 hover:bg-blue-200'
-                                                                            : 'hover:bg-gray-50'
+                                                                    selectedReports.includes(report.id)
+                                                                        ? 'bg-blue-100 hover:bg-blue-200'
                                                                         : 'hover:bg-blue-50/50'
                                                                 }`}
                                                             >
-                                                                {deleteMode && (
-                                                                    <td className="p-3 text-center">
+                                                                <td className="p-3">
+                                                                    <div className="flex items-center gap-2">
                                                                         <input
                                                                             type="checkbox"
                                                                             checked={selectedReports.includes(report.id)}
                                                                             onChange={() => toggleReportSelection(report.id)}
                                                                             className="w-4 h-4 cursor-pointer"
                                                                         />
-                                                                    </td>
-                                                                )}
-                                                                <td className="p-3">
-                                                                    <div className="font-medium text-gray-900">{farmerProfileMap[report.userId]?.fullName || report.username}</div>
+                                                                        <div className="font-medium text-gray-900">{farmerProfileMap[report.userId]?.fullName || report.username}</div>
+                                                                    </div>
                                                                 </td>
                                                                 <td className="p-3 text-sm text-gray-700">
                                                                     {farmerProfileMap[report.userId]?.address || 'Unknown'}
@@ -1062,6 +1137,66 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                                 />
                                                             </th>
                                                         )}
+                                                        <th className="text-center p-3 font-semibold text-gray-700 text-sm w-16">
+                                                            {/* Gmail-Style Checkbox Split Button - Independent Column */}
+                                                            {localReports.length > 0 && (
+                                                                <div className="flex items-center justify-center">
+                                                                    {/* Split Button Container */}
+                                                                    <div className="inline-flex items-center border rounded-md hover:bg-blue-50/70 transition-colors duration-150 group cursor-pointer" style={{ padding: '2px' }}>
+                                                                        {/* Checkbox Portion - Left Side */}
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={selectedReports.length === visibleReports.length && visibleReports.length > 0}
+                                                                            onChange={(e) => {
+                                                                                if (e.target.checked) {
+                                                                                    selectReportsByStatus(selectionFilter);
+                                                                                } else {
+                                                                                    setSelectedReports([]);
+                                                                                }
+                                                                            }}
+                                                                            className="w-4 h-4 cursor-pointer m-1"
+                                                                            style={{ flexShrink: 0 }}
+                                                                        />
+                                                                        
+                                                                        {/* Vertical Divider */}
+                                                                        <div className="w-px h-4 bg-border mx-1" />
+                                                                        
+                                                                        {/* Dropdown Arrow Portion - Right Side */}
+                                                                        <DropdownMenu>
+                                                                            <DropdownMenuTrigger asChild>
+                                                                                <button 
+                                                                                    className="inline-flex items-center justify-center h-5 w-5 cursor-pointer hover:bg-blue-100/50 rounded-r-md transition-colors duration-150 focus:outline-none" 
+                                                                                    title="Filter selection"
+                                                                                    style={{ flexShrink: 0 }}
+                                                                                >
+                                                                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                                                                </button>
+                                                                            </DropdownMenuTrigger>
+                                                                            <DropdownMenuContent align="start" className="bg-white shadow-md">
+                                                                                <DropdownMenuItem 
+                                                                                    onClick={() => selectReportsByStatus('all')}
+                                                                                    className="cursor-pointer hover:bg-blue-50"
+                                                                                >
+                                                                                    All
+                                                                                </DropdownMenuItem>
+                                                                                <DropdownMenuItem 
+                                                                                    onClick={() => selectReportsByStatus('processed')}
+                                                                                    className="cursor-pointer hover:bg-blue-50"
+                                                                                >
+                                                                                    Processed
+                                                                                </DropdownMenuItem>
+                                                                                <DropdownMenuItem 
+                                                                                    onClick={() => selectReportsByStatus('resolved')}
+                                                                                    className="cursor-pointer hover:bg-blue-50"
+                                                                                >
+                                                                                    Resolved
+                                                                                </DropdownMenuItem>
+                                                                            </DropdownMenuContent>
+                                                                        </DropdownMenu>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farm Address</th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Problem</th>
@@ -1077,23 +1212,19 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                             <tr
                                                                 key={report.id}
                                                                 className={`border-b transition-colors ${
-                                                                    deleteMode 
-                                                                        ? selectedReports.includes(report.id)
-                                                                            ? 'bg-blue-100 hover:bg-blue-200'
-                                                                            : 'hover:bg-gray-50'
+                                                                    selectedReports.includes(report.id)
+                                                                        ? 'bg-blue-100 hover:bg-blue-200'
                                                                         : 'hover:bg-blue-50/50'
                                                                 }`}
                                                             >
-                                                                {deleteMode && (
-                                                                    <td className="p-3 text-center">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={selectedReports.includes(report.id)}
-                                                                            onChange={() => toggleReportSelection(report.id)}
-                                                                            className="w-4 h-4 cursor-pointer"
-                                                                        />
-                                                                    </td>
-                                                                )}
+                                                                <td className="p-3 text-center">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={selectedReports.includes(report.id)}
+                                                                        onChange={() => toggleReportSelection(report.id)}
+                                                                        className="w-4 h-4 cursor-pointer"
+                                                                    />
+                                                                </td>
                                                                 <td className="p-3">
                                                                     <div className="font-medium text-gray-900">{farmerProfileMap[report.userId]?.fullName || report.username}</div>
                                                                 </td>
@@ -1398,19 +1529,31 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this report? This action cannot be undone.
-                            {reportToDelete && (
-                                <div className="mt-2 p-2 bg-muted rounded">
-                                    <p className="font-medium">{reportToDelete.username}</p>
-                                    <p className="text-sm text-muted-foreground line-clamp-2">{reportToDelete.reportText}</p>
-                                </div>
+                            {reportToDelete ? (
+                                <>
+                                    Are you sure you want to delete this report? This action cannot be undone.
+                                    <div className="mt-2 p-2 bg-muted rounded">
+                                        <p className="font-medium">{reportToDelete.username}</p>
+                                        <p className="text-sm text-muted-foreground line-clamp-2">{reportToDelete.reportText}</p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    Are you sure you want to delete <strong>{selectedReports.length} selected report(s)</strong>? This action cannot be undone.
+                                </>
                             )}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                            onClick={confirmDelete}
+                            onClick={() => {
+                                if (reportToDelete) {
+                                    confirmDelete();
+                                } else {
+                                    handleBatchDelete();
+                                }
+                            }}
                             className="bg-red-600 hover:bg-red-700"
                         >
                             Delete
