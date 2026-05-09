@@ -6,6 +6,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import ProductionReport from "./ProductionReport";
 import FinancialReport from "./FinancialReport";
+import CheckboxSplitButton from "./CheckboxSplitButton";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -362,25 +363,32 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     };
 
     const selectAllReports = () => {
-        if (selectedReports.length === visibleReports.length) {
-            setSelectedReports([]); // Deselect all if all are selected
-        } else {
-            setSelectedReports(visibleReports.map(report => report.id));
-        }
+        // Select ALL reports across all pages
+        setSelectedReports(sortedReports.map(report => report.id));
+        setSelectionFilter('all');
     };
 
-    // Select reports by status filter
+    // Select reports by status filter - ACROSS ALL PAGES
     const selectReportsByStatus = (status: 'all' | 'processed' | 'resolved') => {
         setSelectionFilter(status);
         if (status === 'all') {
-            setSelectedReports(visibleReports.map(report => report.id));
+            // Select ALL reports across all pages
+            setSelectedReports(sortedReports.map(report => report.id));
         } else {
-            setSelectedReports(
-                visibleReports
-                    .filter(report => report.status === status)
-                    .map(report => report.id)
-            );
+            // Filter from ALL reports (sortedReports), not just visible ones
+            const filteredReports = sortedReports.filter(report => report.status === status);
+            if (filteredReports.length === 0) {
+                setSelectedReports([]);
+            } else {
+                setSelectedReports(filteredReports.map(report => report.id));
+            }
         }
+    };
+
+    // Deselect all reports
+    const deselectAllReports = () => {
+        setSelectedReports([]);
+        setSelectionFilter('all');
     };
 
     const handleBatchDelete = async () => {
@@ -752,69 +760,13 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm w-48">
                                                             {/* Gmail-Style Split Button - Integrated in Header */}
                                                             {localReports.length > 0 && (
-                                                                <div className="flex items-center gap-2">
-                                                                    {/* Split Button Container */}
-                                                                    <div className="inline-flex items-center border rounded-md hover:bg-gray-50 transition-colors duration-150 group">
-                                                                        {/* Checkbox Portion - Left Side */}
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={selectedReports.length === visibleReports.length && visibleReports.length > 0}
-                                                                            onChange={(e) => {
-                                                                                if (e.target.checked) {
-                                                                                    selectReportsByStatus(selectionFilter);
-                                                                                } else {
-                                                                                    setSelectedReports([]);
-                                                                                }
-                                                                            }}
-                                                                            className="w-4 h-4 cursor-pointer m-1.5"
-                                                                        />
-                                                                        
-                                                                        {/* Vertical Divider */}
-                                                                        <div className="w-px h-4 bg-border mx-0.5" />
-                                                                        
-                                                                        {/* Dropdown Arrow Portion - Right Side */}
-                                                                        <DropdownMenu>
-                                                                            <DropdownMenuTrigger asChild>
-                                                                                <button className="inline-flex items-center justify-center h-6 w-6 cursor-pointer hover:bg-gray-200 rounded-r-md transition-colors duration-150 focus:outline-none" title="Filter selection">
-                                                                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                                                                                </button>
-                                                                            </DropdownMenuTrigger>
-                                                                            <DropdownMenuContent align="start" className="bg-white">
-                                                                                <DropdownMenuItem onClick={() => selectReportsByStatus('all')}>
-                                                                                    All
-                                                                                </DropdownMenuItem>
-                                                                                <DropdownMenuItem onClick={() => selectReportsByStatus('processed')}>
-                                                                                    Processed
-                                                                                </DropdownMenuItem>
-                                                                                <DropdownMenuItem onClick={() => selectReportsByStatus('resolved')}>
-                                                                                    Resolved
-                                                                                </DropdownMenuItem>
-                                                                            </DropdownMenuContent>
-                                                                        </DropdownMenu>
-                                                                    </div>
-
-                                                                    {/* Delete Icon - Shows when items selected */}
-                                                                    {selectedReports.length > 0 && (
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            onClick={() => {
-                                                                                setReportToDelete(null);
-                                                                                setDeleteDialogOpen(true);
-                                                                            }}
-                                                                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                        </Button>
-                                                                    )}
-
-                                                                    {/* Selected count */}
-                                                                    {selectedReports.length > 0 && (
-                                                                        <span className="text-xs text-muted-foreground">
-                                                                            {selectedReports.length}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
+                                                                <CheckboxSplitButton
+                                                                    selectedCount={selectedReports.length}
+                                                                    totalCount={sortedReports.length}
+                                                                    onSelectAll={selectAllReports}
+                                                                    onDeselectAll={deselectAllReports}
+                                                                    selectReportsByStatus={selectReportsByStatus}
+                                                                />
                                                             )}
                                                         </th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farm Address</th>
@@ -1140,61 +1092,13 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                                         <th className="text-center p-3 font-semibold text-gray-700 text-sm w-16">
                                                             {/* Gmail-Style Checkbox Split Button - Independent Column */}
                                                             {localReports.length > 0 && (
-                                                                <div className="flex items-center justify-center">
-                                                                    {/* Split Button Container */}
-                                                                    <div className="inline-flex items-center border rounded-md hover:bg-blue-50/70 transition-colors duration-150 group cursor-pointer" style={{ padding: '2px' }}>
-                                                                        {/* Checkbox Portion - Left Side */}
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={selectedReports.length === visibleReports.length && visibleReports.length > 0}
-                                                                            onChange={(e) => {
-                                                                                if (e.target.checked) {
-                                                                                    selectReportsByStatus(selectionFilter);
-                                                                                } else {
-                                                                                    setSelectedReports([]);
-                                                                                }
-                                                                            }}
-                                                                            className="w-4 h-4 cursor-pointer m-1"
-                                                                            style={{ flexShrink: 0 }}
-                                                                        />
-                                                                        
-                                                                        {/* Vertical Divider */}
-                                                                        <div className="w-px h-4 bg-border mx-1" />
-                                                                        
-                                                                        {/* Dropdown Arrow Portion - Right Side */}
-                                                                        <DropdownMenu>
-                                                                            <DropdownMenuTrigger asChild>
-                                                                                <button 
-                                                                                    className="inline-flex items-center justify-center h-5 w-5 cursor-pointer hover:bg-blue-100/50 rounded-r-md transition-colors duration-150 focus:outline-none" 
-                                                                                    title="Filter selection"
-                                                                                    style={{ flexShrink: 0 }}
-                                                                                >
-                                                                                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                                                                                </button>
-                                                                            </DropdownMenuTrigger>
-                                                                            <DropdownMenuContent align="start" className="bg-white shadow-md">
-                                                                                <DropdownMenuItem 
-                                                                                    onClick={() => selectReportsByStatus('all')}
-                                                                                    className="cursor-pointer hover:bg-blue-50"
-                                                                                >
-                                                                                    All
-                                                                                </DropdownMenuItem>
-                                                                                <DropdownMenuItem 
-                                                                                    onClick={() => selectReportsByStatus('processed')}
-                                                                                    className="cursor-pointer hover:bg-blue-50"
-                                                                                >
-                                                                                    Processed
-                                                                                </DropdownMenuItem>
-                                                                                <DropdownMenuItem 
-                                                                                    onClick={() => selectReportsByStatus('resolved')}
-                                                                                    className="cursor-pointer hover:bg-blue-50"
-                                                                                >
-                                                                                    Resolved
-                                                                                </DropdownMenuItem>
-                                                                            </DropdownMenuContent>
-                                                                        </DropdownMenu>
-                                                                    </div>
-                                                                </div>
+                                                                <CheckboxSplitButton
+                                                                    selectedCount={selectedReports.length}
+                                                                    totalCount={sortedReports.length}
+                                                                    onSelectAll={selectAllReports}
+                                                                    onDeselectAll={deselectAllReports}
+                                                                    selectReportsByStatus={selectReportsByStatus}
+                                                                />
                                                             )}
                                                         </th>
                                                         <th className="text-left p-3 font-semibold text-gray-700 text-sm">Farmer Name</th>
