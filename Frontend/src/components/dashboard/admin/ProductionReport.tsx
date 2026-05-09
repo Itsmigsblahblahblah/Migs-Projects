@@ -58,8 +58,7 @@ interface ProductionReportProps {
 const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [productionData, setProductionData] = useState<ProductionRecord[]>([]);
-    const [loading, setLoading] = useState(true); // Changed to true - show loading on first load
-    const [hasLoadedOnce, setHasLoadedOnce] = useState(false); // Track if data has been loaded at least once
+    const [loading, setLoading] = useState(false); // Changed back to false - only show if no data
     const recordsPerPage = 10;
 
     // Filter states
@@ -146,8 +145,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 if (age < 30 * 60 * 1000) { // 30 minutes cache
                     console.log('[ProductionReport] ✅ Using cached data (age:', Math.round(age / 1000), 's)');
                     setProductionData(JSON.parse(cachedData));
-                    setLoading(false);
-                    setHasLoadedOnce(true);
+                    setLoading(false); // No loading - data exists
                     
                     // If cache is older than 5 minutes, silently refresh in background
                     if (age > 5 * 60 * 1000) {
@@ -166,8 +164,8 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
             try {
                 console.log('[ProductionReport] Fetching from Firestore...');
                 
-                // Only show loading if NO cache exists (first load)
-                if (!cachedData || !cacheTimestamp) {
+                // Only show loading if NO cached data exists (first time or empty cache)
+                if (!cachedData) {
                     setLoading(true);
                 }
                 console.log('[ProductionReport] Starting to fetch production data...');
@@ -419,13 +417,11 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 console.log('[ProductionReport] Data cached in sessionStorage (30 min TTL)');
 
                 setProductionData(records);
-                setHasLoadedOnce(true);
             } catch (error) {
                 console.error('[ProductionReport] Error fetching production data:', error);
                 // Don't overwrite existing data if fetch fails during silent refresh
                 if (!productionData.length) {
                     setProductionData([]); // Only set empty if no existing data
-                    setHasLoadedOnce(true);
                 }
                 // If we have existing data, keep it (don't clear on error)
             } finally {
@@ -662,7 +658,8 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     return (
         <>
         <div className="space-y-6">
-            {loading && !hasLoadedOnce ? (
+            {/* Show loading ONLY if we have no data at all (first load with no cache) */}
+            {loading && productionData.length === 0 ? (
                 <Card className="shadow-card">
                     <CardContent className="flex items-center justify-center py-12">
                         <div className="text-center">

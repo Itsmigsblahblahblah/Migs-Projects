@@ -46,8 +46,7 @@ interface FinancialReportProps {
 const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [financialData, setFinancialData] = useState<FinancialRecord[]>([]);
-    const [loading, setLoading] = useState(true); // Start with true - show loading on first load
-    const [hasLoadedOnce, setHasLoadedOnce] = useState(false); // Track if data has been loaded
+    const [loading, setLoading] = useState(false); // Changed back to false - only show if no data
     const recordsPerPage = 10;
 
     // Filter states
@@ -153,8 +152,7 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                 if (age < 10 * 60 * 1000) { // 10 minutes cache for better efficiency
                     console.log('[FinancialReport] Using cached data (age:', Math.round(age / 1000), 's)');
                     setFinancialData(JSON.parse(cachedData));
-                    setLoading(false);
-                    setHasLoadedOnce(true); // Mark as loaded
+                    setLoading(false); // No loading - data exists
                     return;
                 }
             }
@@ -163,7 +161,10 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
             console.log('[FinancialReport] Cache miss or expired, fetching fresh financial data from ledgers...');
             
             try {
-                setLoading(true);
+                // Only show loading if NO cached data exists (first time or empty cache)
+                if (!cachedData) {
+                    setLoading(true);
+                }
                 
                 // Get all ledgers using the optimized service
                 const allLedgers = await getAllLedgers();
@@ -205,7 +206,6 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                 
                 console.log(`[FinancialReport] Total financial records: ${records.length}`);
                 setFinancialData(records);
-                setHasLoadedOnce(true); // Mark as loaded
                 
                 // Cache the data in sessionStorage
                 sessionStorage.setItem('financial_report_data', JSON.stringify(records));
@@ -217,7 +217,6 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                 // Don't overwrite existing data if fetch fails during silent refresh
                 if (!financialData.length) {
                     setFinancialData([]); // Only set empty if no existing data
-                    setHasLoadedOnce(true); // Mark as loaded even on error
                 }
                 // If we have existing data, keep it (don't clear on error)
                 setLoading(false);
@@ -401,7 +400,8 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
         setSelectedMonth('all');
     };
 
-    if (loading && !hasLoadedOnce) {
+    // Show loading ONLY if we have no data at all (first load with no cache)
+    if (loading && financialData.length === 0) {
         return (
             <Card className="shadow-card">
                 <CardContent className="flex items-center justify-center py-12">
