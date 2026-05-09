@@ -146,22 +146,14 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
             const cachedData = sessionStorage.getItem('financial_report_data');
             const cacheTimestamp = sessionStorage.getItem('financial_report_timestamp');
             
-            // Use cached data if less than 30 minutes old (session-based caching)
+            // Use cached data if less than 10 minutes old (like Complaints Report)
             if (cachedData && cacheTimestamp) {
                 const age = Date.now() - parseInt(cacheTimestamp);
-                if (age < 30 * 60 * 1000) { // 30 minutes cache
-                    console.log('[FinancialReport] ✅ Using cached data (age:', Math.round(age / 1000), 's)');
+                if (age < 10 * 60 * 1000) { // 10 minutes cache for better efficiency
+                    console.log('[FinancialReport] Using cached data (age:', Math.round(age / 1000), 's)');
                     setFinancialData(JSON.parse(cachedData));
                     setLoading(false); // Set loading to false BEFORE returning
-                    
-                    // If cache is older than 5 minutes, silently refresh in background
-                    if (age > 5 * 60 * 1000) {
-                        console.log('[FinancialReport] 🔄 Cache >5min old, will silently refresh...');
-                        // Continue to fetch below, but DON'T set loading=true
-                    } else {
-                        // Fresh cache (<5min), no refresh needed
-                        return;
-                    }
+                    return;
                 }
             }
             
@@ -212,14 +204,18 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                 console.log(`[FinancialReport] Total financial records: ${records.length}`);
                 setFinancialData(records);
                 
-                // Cache the data in sessionStorage for 30 minutes (session-based)
+                // Cache the data in sessionStorage
                 sessionStorage.setItem('financial_report_data', JSON.stringify(records));
                 sessionStorage.setItem('financial_report_timestamp', Date.now().toString());
-                console.log('[FinancialReport] Data cached in sessionStorage (30 min TTL)');
                 
                 setLoading(false);
             } catch (error) {
                 console.error('[FinancialReport] Error fetching financial data:', error);
+                // Don't overwrite existing data if fetch fails during silent refresh
+                if (!financialData.length) {
+                    setFinancialData([]); // Only set empty if no existing data
+                }
+                // If we have existing data, keep it (don't clear on error)
                 setLoading(false);
             }
         };

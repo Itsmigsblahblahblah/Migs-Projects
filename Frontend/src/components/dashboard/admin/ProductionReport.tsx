@@ -161,21 +161,22 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
             // No cache or expired - fetch fresh data
             console.log('[ProductionReport] Cache miss or expired, fetching fresh data...');
             
-            // FORCE CLEAR ALL CACHES to ensure each farmer gets their own specific yield calculation
-            console.log('[ProductionReport] 🗑️ Clearing ALL caches to force fresh calculations...');
-            const { clearAllCropCaches } = await import('@/services/cropDataService');
-            clearAllCropCaches();
-            
-            console.log('[ProductionReport] 🔄 Fetching FRESH data (all caches cleared)...');
-            
             try {
-                console.log('[ProductionReport] Cache miss, fetching from Firestore...');
+                console.log('[ProductionReport] Fetching from Firestore...');
                 
                 // Only show loading if NO cache exists (first load)
                 if (!cachedData || !cacheTimestamp) {
                     setLoading(true);
                 }
                 console.log('[ProductionReport] Starting to fetch production data...');
+                
+                // FORCE CLEAR ALL CACHES only on fresh fetch (not on silent refresh)
+                // This ensures each farmer gets their own specific yield calculation
+                if (!cachedData || !cacheTimestamp) {
+                    console.log('[ProductionReport] 🗑️ Clearing ALL caches for fresh calculations...');
+                    const { clearAllCropCaches } = await import('@/services/cropDataService');
+                    clearAllCropCaches();
+                }
                 
                 // Step 1: Fetch all farmers
                 const farmersRef = collection(db, "farmers");
@@ -419,7 +420,11 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 setProductionData(records);
             } catch (error) {
                 console.error('[ProductionReport] Error fetching production data:', error);
-                setProductionData([]);
+                // Don't overwrite existing data if fetch fails during silent refresh
+                if (!productionData.length) {
+                    setProductionData([]); // Only set empty if no existing data
+                }
+                // If we have existing data, keep it (don't clear on error)
             } finally {
                 setLoading(false);
             }
