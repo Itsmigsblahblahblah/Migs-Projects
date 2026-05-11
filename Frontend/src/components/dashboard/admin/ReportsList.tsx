@@ -116,9 +116,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
     const { toast } = useToast();
     const reportsPerPage = 10;
 
-    // Export dialog state
-    const [showExportDialog, setShowExportDialog] = useState(false);
-
     // Sync localReports with parent reports when they change (e.g., when status is updated)
     useEffect(() => {
         setLocalReports(reports);
@@ -478,8 +475,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
         a.download = filename;
         a.click();
         window.URL.revokeObjectURL(url);
-
-        setShowExportDialog(false);
     };
 
     // Helper function to get farmer's barangay
@@ -532,7 +527,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                 {/* Sort Dropdown */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                        <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 hover:text-blue-700 hover:bg-blue-50">
                                             Sort: {getSortByLabel()} - {getOrderLabel()}
                                             <ChevronDown className="h-4 w-4" />
                                         </Button>
@@ -622,7 +617,7 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                 {/* Group by Barangay Dropdown */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                                        <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 hover:text-blue-700 hover:bg-blue-50">
                                             Group by Barangay
                                             <ChevronDown className="h-4 w-4" />
                                         </Button>
@@ -682,17 +677,39 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                                     </DropdownMenuContent>
                                 </DropdownMenu>
 
-                                {/* Export Button */}
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setShowExportDialog(true)}
-                                    disabled={localReports.length === 0}
-                                    className="w-full md:w-auto hover:bg-blue-50 hover:text-blue-700"
-                                >
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Export
-                                </Button>
+                                {/* Export Button - Dropdown Popup */}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={localReports.length === 0}
+                                            className="w-full md:w-auto hover:bg-blue-50 hover:text-blue-700"
+                                        >
+                                            <Download className="h-4 w-4 mr-2" />
+                                            Export
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-64">
+                                        <DropdownMenuItem onClick={() => handleExportComplaints('page')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">Export This Page</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    Export {visibleReports.length} record{visibleReports.length !== 1 ? 's' : ''} from the current page (Page {currentPage} of {totalPages})
+                                                </span>
+                                            </div>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => handleExportComplaints('all')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                            <div className="flex flex-col">
+                                                <span className="font-medium">Export All Pages</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    Export all {sortedReports.length} record{sortedReports.length !== 1 ? 's' : ''}
+                                                </span>
+                                            </div>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
 
                             {/* Batch Delete Controls - Shows when items selected */}
@@ -1468,38 +1485,6 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* Export Dialog for Complaints */}
-            <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Export Complaints Report</DialogTitle>
-                        <DialogDescription>
-                            Choose which data you want to export:
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
-                             onClick={() => handleExportComplaints('page')}>
-                            <h4 className="font-semibold mb-2">Export This Page</h4>
-                            <p className="text-sm text-muted-foreground">
-                                Export {visibleReports.length} record{visibleReports.length !== 1 ? 's' : ''} from the current page (Page {currentPage} of {totalPages})
-                            </p>
-                        </div>
-                        <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
-                             onClick={() => handleExportComplaints('all')}>
-                            <h4 className="font-semibold mb-2">Export All Pages</h4>
-                            <p className="text-sm text-muted-foreground">
-                                Export all {sortedReports.length} record{sortedReports.length !== 1 ? 's' : ''}
-                            </p>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowExportDialog(false)}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
             </TabsContent>
         </Tabs>
     );
