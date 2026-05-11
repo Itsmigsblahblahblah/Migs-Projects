@@ -799,7 +799,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                             <span className="font-medium">{crop.name}</span>
                                         </div>
                                         <span className="font-semibold text-blue-600">
-                                            {crop.count}× <span className="text-xs text-muted-foreground">({crop.totalQuantity.toLocaleString()} kg)</span>
+                                            {crop.count}× <span className="text-xs text-muted-foreground">({Math.round(crop.totalQuantity).toLocaleString()} kg)</span>
                                         </span>
                                     </div>
                                 ))
