@@ -32,7 +32,8 @@ import {
   MessageSquare,
   Filter,
   Edit,
-  Eye
+  Eye,
+  Phone
 } from "lucide-react";
 
 interface Farmer {
@@ -912,9 +913,12 @@ const FarmerDetailPage = () => {
                 </Avatar>
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold mb-2">{farmer.fullName}</h1>
-                  <p className="text-white/90 mb-4">
-                    {farmer.contactNumber || "No contact number provided"}
-                  </p>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Phone className="h-4 w-4" />
+                    <span className="text-white/90">
+                      {farmer.contactNumber || "No contact number provided"}
+                    </span>
+                  </div>
                   <div className="flex flex-wrap gap-4">
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4" />
@@ -958,9 +962,12 @@ const FarmerDetailPage = () => {
               </Avatar>
               <div className="flex-1 min-w-0">
                 <h1 className="text-2xl font-bold mb-1 break-words">{farmer.fullName}</h1>
-                <p className="text-white/90 text-sm mb-3">
-                  {farmer.contactNumber || "No contact number provided"}
-                </p>
+                <div className="flex flex-col gap-2 mb-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-3 w-3 flex-shrink-0" />
+                    <span>{farmer.contactNumber || "No contact number provided"}</span>
+                  </div>
+                </div>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 text-sm">
                     <Mail className="h-3 w-3 flex-shrink-0" />
