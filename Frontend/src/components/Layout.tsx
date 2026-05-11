@@ -348,16 +348,45 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-blue-600 transition-all duration-300 ${location.hash === '#announcements' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
                 </button>
 
-                <button
-                  onClick={() => {
-                    console.log('Navigating to Soil pH Level');
-                    navigate('/admin/crop-prescription');
-                  }}
-                  className={`group text-foreground hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${location.pathname === '/admin/crop-prescription' ? 'text-blue-600' : ''}`}
-                >
-                  <span className="relative z-10">Soil pH Level</span>
-                  <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-blue-600 transition-all duration-300 ${location.pathname === '/admin/crop-prescription' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={`group text-foreground hover:text-blue-600 px-3 py-2 text-sm font-medium transition-all duration-300 relative ${location.pathname === '/admin/crop-prescription' || location.pathname === '/admin/market-demand' ? 'text-blue-600' : ''}`}
+                    >
+                      <span className="relative z-10">Configure</span>
+                      <span className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 h-0.5 bg-blue-600 transition-all duration-300 ${location.pathname === '/admin/crop-prescription' || location.pathname === '/admin/market-demand' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64 border-blue-100">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        console.log('Navigating to Soil pH Level');
+                        navigate('/admin/crop-prescription');
+                      }}
+                      className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                    >
+                      <TestTubes className="h-4 w-4 mr-2" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">Soil pH Level</span>
+                        <span className="text-xs text-muted-foreground">Manage soil pH and crop prescriptions</span>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-blue-100" />
+                    <DropdownMenuItem
+                      onClick={() => {
+                        console.log('Navigating to Market Demand');
+                        navigate('/admin/market-demand');
+                      }}
+                      className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                    >
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">Market Demand</span>
+                        <span className="text-xs text-muted-foreground">Configure crop prices and forecasts</span>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </nav>
             )}
 
@@ -595,15 +624,44 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               >
                 Announcements
               </button>
-              <button
-                onClick={() => {
-                  navigate('/admin/crop-prescription');
-                  setIsMobileMenuOpen(false);
-                }}
-                className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-blue-600 ${location.pathname === '/admin/crop-prescription' ? 'text-blue-600' : 'text-foreground'}`}
-              >
-                Soil pH Level
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className={`block w-full text-left px-3 py-2 text-base font-medium transition-all duration-300 relative hover:text-blue-600 ${location.pathname === '/admin/crop-prescription' || location.pathname === '/admin/market-demand' ? 'text-blue-600' : 'text-foreground'}`}
+                  >
+                    Configure
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64 border-blue-100">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      navigate('/admin/crop-prescription');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                  >
+                    <TestTubes className="h-4 w-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Soil pH Level</span>
+                      <span className="text-xs text-muted-foreground">Manage soil pH and crop prescriptions</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-blue-100" />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      navigate('/admin/market-demand');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Market Demand</span>
+                      <span className="text-xs text-muted-foreground">Configure crop prices and forecasts</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         )}

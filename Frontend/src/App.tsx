@@ -25,6 +25,7 @@ import FarmerReportDetail from "@/pages/FarmerReportDetail";
 import FarmLedger from "@/pages/FarmLedger";
 import FarmLedgerDetail from "@/pages/FarmLedgerDetail";
 import AdminCropPrescription from "@/pages/AdminCropPrescription";
+import AdminMarketDemand from "@/pages/AdminMarketDemand";
 import SplashScreen from "@/components/SplashScreen";
 import { useState } from "react";
 
@@ -128,6 +129,14 @@ const App = () => {
                     element={
                       <ProtectedRoute requiredRole="admin">
                         <AdminCropPrescription />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/market-demand" 
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AdminMarketDemand />
                       </ProtectedRoute>
                     } 
                   />

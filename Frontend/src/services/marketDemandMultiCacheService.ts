@@ -5,8 +5,8 @@
 
 // Cache key for localStorage
 const MARKET_DEMAND_CACHE_KEY = 'marketDemandMultiCache';
-// Cache duration - 2 hours (in milliseconds) for better performance
-const CACHE_DURATION = 2 * 60 * 60 * 1000;
+// Cache duration - 5 minutes for better sync between admin and farmer (in milliseconds)
+const CACHE_DURATION = 5 * 60 * 1000;
 
 /**
  * Get cached market demand data from localStorage if available and valid

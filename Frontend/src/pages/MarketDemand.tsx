@@ -33,6 +33,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { getCachedMarketDemandData, setCachedMarketDemandData } from "@/services/marketDemandMultiCacheService";
+import { db, getDbWhenReady, isFirebaseReady } from "@/firebaseConfig";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
 interface MarketDemandData {
   vegetable: string;
@@ -61,6 +63,9 @@ const MarketDemand = () => {
     const now = new Date();
     return now.getFullYear();
   }); // Default to current year
+
+  // Force reload if cache is older than 5 minutes (to sync with admin)
+  const CACHE_SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
   // Debugging: Log initial state
   useEffect(() => {
@@ -245,14 +250,47 @@ const MarketDemand = () => {
       // Check if we have cached data for these parameters
       const cachedData = getCachedMarketDemandData(cacheKey);
       if (cachedData && cachedData.data && cachedData.data.length > 0) {
-        console.log('Using cached market data with', cachedData.data.length, 'items');
+        console.log('[Farmer] Using cached market data with', cachedData.data.length, 'items');
         // Even for cached data, show loading animation for a short time to maintain consistent UX
         await new Promise(resolve => setTimeout(resolve, 300)); // 300ms loading animation
-        setMarketData(cachedData.data);
+        
+        // Try to apply admin overrides from Firebase (optional)
+        let dataWithOverrides = cachedData.data;
+        try {
+          let firestoreDb;
+          if (!isFirebaseReady()) {
+            firestoreDb = await getDbWhenReady();
+          } else {
+            firestoreDb = db;
+          }
+          
+          const priceOverridesRef = collection(firestoreDb, "adminPriceOverrides");
+          const q = query(priceOverridesRef, where("month", "==", selectedMonth), where("year", "==", selectedYear));
+          const overrideSnapshot = await getDocs(q);
+          
+          const overridesMap: Record<string, number> = {};
+          overrideSnapshot.forEach((doc) => {
+            const data = doc.data();
+            overridesMap[data.vegetable] = data.overridePrice;
+          });
+          
+          // Apply admin overrides to cached data (overrides predicted_price)
+          dataWithOverrides = cachedData.data.map((crop: any) => ({
+            ...crop,
+            predicted_price: overridesMap[crop.vegetable] || crop.predicted_price
+          }));
+          
+          console.log('Applied admin overrides to cached data:', Object.keys(overridesMap).length, 'crops');
+        } catch (firebaseError: any) {
+          console.warn('Firebase not accessible for cached data, using original prices:', firebaseError.message);
+          // Continue with original cached data
+        }
+        
+        setMarketData(dataWithOverrides);
         setLoading(false);
         return;
       } else {
-        console.log('Cache empty or invalid, fetching fresh data from API...');
+        console.log('[Farmer] Cache empty - fetching fresh data from API...');
       }
 
       // Use relative URL for proxy or full URL for production
@@ -284,8 +322,50 @@ const MarketDemand = () => {
       const marketData = data.recommended_crops || [];
       console.log('Processed marketData:', marketData);
       console.log('Processed marketData length:', marketData.length);
+      
+      // Log first 3 crops to debug
+      if (marketData.length > 0) {
+        console.log('[Farmer Market Demand] Sample API data (first 3 crops):', marketData.slice(0, 3));
+        console.log('[Farmer Market Demand] First crop predicted_price (raw):', marketData[0].predicted_price);
+        console.log('[Farmer Market Demand] First crop predicted_price (toFixed):', marketData[0].predicted_price.toFixed(2));
+      }
 
-      // Only cache if we have valid data
+      // Try to load admin price overrides from Firebase (optional)
+      let dataWithOverrides = marketData;
+      try {
+        let firestoreDb;
+        if (!isFirebaseReady()) {
+          firestoreDb = await getDbWhenReady();
+        } else {
+          firestoreDb = db;
+        }
+
+        console.log('Loading admin price overrides for farmer side...');
+        
+        const priceOverridesRef = collection(firestoreDb, "adminPriceOverrides");
+        const q = query(priceOverridesRef, where("month", "==", selectedMonth), where("year", "==", selectedYear));
+        const overrideSnapshot = await getDocs(q);
+        
+        const overridesMap: Record<string, number> = {};
+        overrideSnapshot.forEach((doc) => {
+          const data = doc.data();
+          overridesMap[data.vegetable] = data.overridePrice;
+        });
+
+        // Apply admin overrides to API data (overrides predicted_price)
+        dataWithOverrides = marketData.map((crop: any) => ({
+          ...crop,
+          predicted_price: overridesMap[crop.vegetable] || crop.predicted_price
+        }));
+
+        console.log('Applied admin price overrides:', Object.keys(overridesMap).length, 'crops');
+      } catch (firebaseError: any) {
+        console.warn('Firebase not accessible, using original API prices:', firebaseError.message);
+        // Continue with original API data
+        dataWithOverrides = marketData;
+      }
+
+      // Only cache if we have valid data (cache original API data, not overrides)
       if (marketData.length > 0) {
         // Cache the data with the specific parameters
         setCachedMarketDemandData({ data: marketData }, cacheKey);
@@ -294,8 +374,8 @@ const MarketDemand = () => {
         console.warn('API returned empty data, not caching');
       }
 
-      console.log('About to set marketData state with', marketData.length, 'items');
-      setMarketData([...marketData]); // Force a new array reference
+      console.log('About to set marketData state with', dataWithOverrides.length, 'items');
+      setMarketData([...dataWithOverrides]); // Force a new array reference
       console.log('Set marketData state completed');
     } catch (err: any) {
       if (err.name === 'AbortError') {
