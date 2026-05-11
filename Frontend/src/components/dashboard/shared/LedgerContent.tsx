@@ -40,9 +40,10 @@ import { format } from 'date-fns';
 interface LedgerContentProps {
   userId: string;
   isAdmin?: boolean;
+  spinnerColor?: 'blue' | 'green';
 }
 
-const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
+const LedgerContent = ({ userId, isAdmin = false, spinnerColor }: LedgerContentProps) => {
   const {
     ledgers,
     summary,
@@ -50,12 +51,13 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
     filters,
     updateFilters,
     clearFilters,
-  } = useFarmLedger(userId, isAdmin);
+  } = useFarmLedger(userId, false); // Always false to fetch user-specific data, not all data
 
   const [uniqueCrops, setUniqueCrops] = useState<string[]>([]);
 
-  // Determine spinner color based on user role
-  const spinnerColor = isAdmin ? 'border-blue-600' : 'border-green-600';
+  // Determine spinner CSS class based on spinnerColor prop, default based on isAdmin
+  const spinnerBorder = spinnerColor || (isAdmin ? 'blue' : 'green');
+  const spinnerClass = spinnerBorder === 'blue' ? 'border-blue-600' : 'border-green-600';
 
   // Calculate monthly values for current month
   const monthlyStats = useMemo(() => {
@@ -148,7 +150,7 @@ const LedgerContent = ({ userId, isAdmin = false }: LedgerContentProps) => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className={`w-12 h-12 border-4 ${spinnerColor} border-t-transparent rounded-full animate-spin mx-auto mb-4`} />
+          <div className={`w-12 h-12 border-4 ${spinnerClass} border-t-transparent rounded-full animate-spin mx-auto mb-4`} />
           <p className="text-muted-foreground">Loading ledger data...</p>
         </div>
       </div>

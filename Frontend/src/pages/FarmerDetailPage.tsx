@@ -1321,6 +1321,7 @@ const FarmerDetailPage = () => {
             <LedgerContent 
               userId={farmerId || ''} 
               isAdmin={false}
+              spinnerColor="blue"
             />
           </TabsContent>
         </Tabs>
