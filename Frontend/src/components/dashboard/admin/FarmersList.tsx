@@ -233,12 +233,12 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
     return (
         <Card className="shadow-card h-full flex flex-col">
             <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex-1">
                         <CardTitle>Registered Farmers</CardTitle>
                         <CardDescription>List of all farmers registered in the system ({filteredAndSortedFarmers.length} total)</CardDescription>
                     </div>
-                    <div className="relative w-64">
+                    <div className="relative w-full md:w-64">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Search farmers..."
@@ -250,10 +250,10 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                 </div>
 
                 {/* Sorting and Grouping Options */}
-                <div className="flex flex-wrap gap-2 pt-4">
+                <div className="flex flex-col md:flex-row md:flex-wrap gap-2 pt-4">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                            <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                                 Sort: {getSortByLabel()} - {getOrderLabel()}
                                 <ChevronDown className="h-4 w-4" />
                             </Button>
@@ -310,7 +310,7 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                     {/* Group by Barangay Dropdown */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                            <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                                 Group by Barangay
                                 <ChevronDown className="h-4 w-4" />
                             </Button>
