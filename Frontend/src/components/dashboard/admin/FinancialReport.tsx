@@ -11,13 +11,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { getAllLedgers, calculateLedgerSummary } from "@/services/farmLedgerService";
 import { FarmLedger } from "@/services/types";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 
 interface FinancialRecord {
     id: string;
@@ -69,10 +68,7 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
     const [selectedYear, setSelectedYear] = useState<string>('all');
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
-    // Export dialog state
-    const [showExportDialog, setShowExportDialog] = useState(false);
-
-    // Local export function for Financial Report only
+    // Export function for Financial Report only
     const handleExportFinancial = (exportType: 'page' | 'all') => {
         if (financialData.length === 0) {
             return;
@@ -127,9 +123,6 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
         a.download = filename;
         a.click();
         window.URL.revokeObjectURL(url);
-
-        // Close dialog
-        setShowExportDialog(false);
     };
 
     // Reset to page 1 when filters change
@@ -390,12 +383,6 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
     const startIndex = (currentPage - 1) * recordsPerPage;
     const endIndex = startIndex + recordsPerPage;
     const visibleRecords = filteredData.slice(startIndex, endIndex);
-
-    // Export to CSV (deprecated - now using handleExportFinancial with dialog)
-    const handleExport = () => {
-        // This function is now deprecated, use handleExportFinancial instead
-        setShowExportDialog(true);
-    };
 
     // Format currency
     const formatCurrency = (amount: number) => {
@@ -690,21 +677,44 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
             {/* Financial Records Table */}
             <Card className="shadow-card h-full flex flex-col">
             <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex-1">
                         <CardTitle>Financial Records</CardTitle>
                         <CardDescription>Detailed financial data for all projects ({filteredData.length} total {hasActiveFilters ? 'filtered' : ''})</CardDescription>
                     </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowExportDialog(true)}
-                            disabled={filteredData.length === 0}
-                            className="hover:bg-blue-50 hover:text-blue-700"
-                        >
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Financial Report
-                        </Button>
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={filteredData.length === 0}
+                                    className="w-full md:w-auto hover:bg-blue-50 hover:text-blue-700"
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export Financial Report
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                <DropdownMenuItem onClick={() => handleExportFinancial('page')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                    <div className="flex flex-col">
+                                        <span className="font-medium">Export This Page</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            Export {visibleRecords.length} record{visibleRecords.length !== 1 ? 's' : ''} from the current page (Page {currentPage} of {totalPages})
+                                        </span>
+                                    </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleExportFinancial('all')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                    <div className="flex flex-col">
+                                        <span className="font-medium">Export All Pages</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            Export all {filteredData.length} record{filteredData.length !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
             </CardHeader>
@@ -923,40 +933,7 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
             </CardContent>
         </Card>
         </div>
-
-        {/* Export Dialog */}
-        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Export Financial Report</DialogTitle>
-                    <DialogDescription>
-                        Choose which data you want to export:
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
-                         onClick={() => handleExportFinancial('page')}>
-                        <h4 className="font-semibold mb-2">Export This Page</h4>
-                        <p className="text-sm text-muted-foreground">
-                            Export {visibleRecords.length} record{visibleRecords.length !== 1 ? 's' : ''} from the current page (Page {currentPage} of {totalPages})
-                        </p>
-                    </div>
-                    <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
-                         onClick={() => handleExportFinancial('all')}>
-                        <h4 className="font-semibold mb-2">Export All Pages</h4>
-                        <p className="text-sm text-muted-foreground">
-                            Export all {filteredData.length} record{filteredData.length !== 1 ? 's' : ''} {hasActiveFilters ? '(with current filters)' : ''}
-                        </p>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowExportDialog(false)}>
-                        Cancel
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    </>
+        </>
     );
 };
 
