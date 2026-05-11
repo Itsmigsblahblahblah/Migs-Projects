@@ -732,10 +732,6 @@ const FarmerDetailPage = () => {
     return (
       <Layout>
         <div className="max-w-4xl mx-auto p-6">
-          <Button variant="outline" onClick={() => navigate('/admin')} className="mb-6 hover:bg-blue-50 hover:text-blue-600">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
           <div className="text-center py-12">
             <div className="mx-auto h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
               <User className="h-8 w-8 text-destructive" />
@@ -745,6 +741,7 @@ const FarmerDetailPage = () => {
               The farmer you're looking for doesn't exist or has been removed.
             </p>
             <Button onClick={() => navigate('/admin')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Return to Admin Dashboard
             </Button>
           </div>
@@ -893,42 +890,89 @@ const FarmerDetailPage = () => {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto p-6 space-y-6">
-        <Button variant="outline" onClick={() => navigate('/admin')} className="mb-2 hover:bg-blue-50 hover:text-blue-600">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Dashboard
-        </Button>
-
-        {/* Farmer Header */}
+        {/* Farmer Header with Back Button */}
         <div className="bg-blue-600 rounded-xl p-6 text-white">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-            <Avatar className="h-20 w-20 border-4 border-white/20 overflow-hidden rounded-full">
-              {farmer.photoURL ? (
-                <AvatarImage src={farmer.photoURL} alt={farmer.fullName} className="object-cover w-full h-full" />
-              ) : (
-                <AvatarFallback className="text-2xl bg-blue-500/20">
-                  {getInitials(farmer.fullName)}
-                </AvatarFallback>
-              )}
-            </Avatar>
+          {/* Desktop layout - back button vertically centered */}
+          <div className="hidden md:flex items-center gap-6">
+            <div className="flex-shrink-0">
+              <Button variant="outline" onClick={() => navigate('/admin')} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </div>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2">{farmer.fullName}</h1>
-              <p className="text-white/90 mb-4">
-                {farmer.contactNumber || "No contact number provided"}
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  <span>{farmer.email}</span>
+              <div className="flex flex-col md:flex-row md:items-center gap-6">
+                <Avatar className="h-20 w-20 border-4 border-white/20 overflow-hidden rounded-full">
+                  {farmer.photoURL ? (
+                    <AvatarImage src={farmer.photoURL} alt={farmer.fullName} className="object-cover w-full h-full" />
+                  ) : (
+                    <AvatarFallback className="text-2xl bg-blue-500/20">
+                      {getInitials(farmer.fullName)}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold mb-2">{farmer.fullName}</h1>
+                  <p className="text-white/90 mb-4">
+                    {farmer.contactNumber || "No contact number provided"}
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      <span>{farmer.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>Joined {formatDate(farmer.createdAt)}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>Joined {formatDate(farmer.createdAt)}</span>
+                <Badge variant="secondary" className="text-lg py-2 px-4 flex-shrink-0">
+                  {totalCrops} Crops
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile layout - back button and badge on top, profile info below */}
+          <div className="md:hidden">
+            {/* Top row: Back button + Crops badge */}
+            <div className="flex items-center justify-between mb-4">
+              <Button variant="outline" onClick={() => navigate('/admin')} className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <Badge variant="secondary" className="text-sm py-1 px-3">
+                {totalCrops} Crops
+              </Badge>
+            </div>
+            
+            {/* Profile info: Avatar + Name + Details */}
+            <div className="flex items-start gap-3">
+              <Avatar className="h-16 w-16 border-4 border-white/20 overflow-hidden rounded-full flex-shrink-0">
+                {farmer.photoURL ? (
+                  <AvatarImage src={farmer.photoURL} alt={farmer.fullName} className="object-cover w-full h-full" />
+                ) : (
+                  <AvatarFallback className="text-xl bg-blue-500/20">
+                    {getInitials(farmer.fullName)}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold mb-1 break-words">{farmer.fullName}</h1>
+                <p className="text-white/90 text-sm mb-3">
+                  {farmer.contactNumber || "No contact number provided"}
+                </p>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{farmer.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-3 w-3 flex-shrink-0" />
+                    <span>Joined {formatDate(farmer.createdAt)}</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <Badge variant="secondary" className="text-lg py-2 px-4">
-              {totalCrops} Crops
-            </Badge>
           </div>
         </div>
 
