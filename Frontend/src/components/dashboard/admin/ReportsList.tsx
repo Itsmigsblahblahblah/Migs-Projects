@@ -517,8 +517,8 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
 
                             {/* Top Controls - Horizontal Layout */}
                             <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
-                                {/* Search Bar */}
-                                <div className="relative flex-1 md:flex-none md:w-80">
+                                {/* Search Bar - Full width on mobile, fixed width on desktop */}
+                                <div className="relative w-full md:flex-none md:w-80">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input
                                         type="text"
