@@ -490,10 +490,11 @@ const ReportsList = ({ reports, farmers, onExport, onUpdateStatus }: ReportsList
 
     return (
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'financial' | 'production' | 'complaints')} className="w-full space-y-6">
+            {/* Tabs: Financial, Production, Complaints - visible on all screen sizes */}
             <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="financial">Financial Report</TabsTrigger>
-                <TabsTrigger value="production">Production Report</TabsTrigger>
-                <TabsTrigger value="complaints">Complaints Report</TabsTrigger>
+                <TabsTrigger value="financial" className="text-xs sm:text-sm">Financial Report</TabsTrigger>
+                <TabsTrigger value="production" className="text-xs sm:text-sm">Production Report</TabsTrigger>
+                <TabsTrigger value="complaints" className="text-xs sm:text-sm">Complaints Report</TabsTrigger>
             </TabsList>
 
             <TabsContent value="financial" className="mt-0">
