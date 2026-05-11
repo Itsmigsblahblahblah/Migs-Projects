@@ -179,7 +179,7 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
     const renderFarmerCard = (farmer: typeof farmers[0]) => (
         <div
             key={farmer.uid}
-            className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+            className="p-4 border rounded-lg hover:bg-blue-50 transition-colors"
         >
             <div className="flex items-center gap-4">
                 {/* Circular Profile Image */}
@@ -238,7 +238,12 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                         <CardTitle>Registered Farmers</CardTitle>
                         <CardDescription>List of all farmers registered in the system ({filteredAndSortedFarmers.length} total)</CardDescription>
                     </div>
-                    <div className="relative w-full md:w-64">
+                </div>
+
+                {/* Search Bar and Sorting/Grouping Options */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2 pt-4">
+                    {/* Search Bar */}
+                    <div className="relative w-full md:flex-1 md:max-w-xs">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Search farmers..."
@@ -247,10 +252,8 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                             className="pl-10"
                         />
                     </div>
-                </div>
 
-                {/* Sorting and Grouping Options */}
-                <div className="flex flex-col md:flex-row md:flex-wrap gap-2 pt-4">
+                    {/* Sorting Dropdown */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
