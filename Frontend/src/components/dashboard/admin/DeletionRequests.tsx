@@ -173,7 +173,7 @@ const DeletionRequests = ({
                             {deletionRequests.map((request) => (
                                 <div
                                     key={request.id}
-                                    className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                    className="p-4 border rounded-lg hover:bg-blue-50 transition-colors"
                                 >
                                     <div className="flex items-start gap-3">
                                         {/* Checkbox for delete mode */}
