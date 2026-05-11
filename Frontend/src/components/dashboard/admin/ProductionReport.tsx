@@ -12,13 +12,12 @@ import { getCachedProductionData, setCachedProductionData } from "@/services/pro
 import { getCachedCropInsights } from "@/services/cropInsightsCache";
 import { getCropInsights } from "@/services/cropDataService";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 
 interface ProductionRecord {
     id: string;
@@ -81,10 +80,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
     const [selectedWeek, setSelectedWeek] = useState<string>('all');
 
-    // Export dialog state
-    const [showExportDialog, setShowExportDialog] = useState(false);
-
-    // Local export function for Production Report only
+    // Export function for Production Report only
     const handleExportProduction = (exportType: 'page' | 'all') => {
         if (productionData.length === 0) {
             return;
@@ -133,9 +129,6 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
         a.download = filename;
         a.click();
         window.URL.revokeObjectURL(url);
-
-        // Close dialog
-        setShowExportDialog(false);
     };
 
     // Reset to page 1 when filters change
@@ -671,7 +664,6 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const hasActiveFilters = selectedCrop !== 'all' || selectedYear !== 'all' || selectedMonth !== 'all' || selectedWeek !== 'all';
 
     return (
-        <>
         <div className="space-y-6">
             {/* Show loading ONLY if we have no data at all (first load with no cache) */}
             {loading && productionData.length === 0 ? (
@@ -851,21 +843,44 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
             {/* Production Report Table */}
             <Card className="shadow-card h-full flex flex-col">
             <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex-1">
                         <CardTitle>Production Report</CardTitle>
                         <CardDescription>Harvest records from farmers ({filteredData.length} total {hasActiveFilters ? 'filtered' : ''})</CardDescription>
                     </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowExportDialog(true)}
-                            disabled={filteredData.length === 0}
-                            className="hover:bg-blue-50 hover:text-blue-700"
-                        >
-                            <Download className="h-4 w-4 mr-2" />
-                            Export Production Report
-                        </Button>
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={filteredData.length === 0}
+                                    className="w-full md:w-auto hover:bg-blue-50 hover:text-blue-700"
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export Production Report
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64">
+                                <DropdownMenuItem onClick={() => handleExportProduction('page')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                    <div className="flex flex-col">
+                                        <span className="font-medium">Export This Page</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            Export {visibleRecords.length} record{visibleRecords.length !== 1 ? 's' : ''} from the current page (Page {currentPage} of {totalPages})
+                                        </span>
+                                    </div>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleExportProduction('all')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
+                                    <div className="flex flex-col">
+                                        <span className="font-medium">Export All Pages</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            Export all {filteredData.length} record{filteredData.length !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
             </CardHeader>
@@ -1045,40 +1060,6 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 </>
             )}
         </div>
-
-        {/* Export Dialog */}
-        <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Export Production Report</DialogTitle>
-                    <DialogDescription>
-                        Choose which data you want to export:
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
-                         onClick={() => handleExportProduction('page')}>
-                        <h4 className="font-semibold mb-2">Export This Page</h4>
-                        <p className="text-sm text-muted-foreground">
-                            Export {visibleRecords.length} record{visibleRecords.length !== 1 ? 's' : ''} from the current page (Page {currentPage} of {totalPages})
-                        </p>
-                    </div>
-                    <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors"
-                         onClick={() => handleExportProduction('all')}>
-                        <h4 className="font-semibold mb-2">Export All Pages</h4>
-                        <p className="text-sm text-muted-foreground">
-                            Export all {filteredData.length} record{filteredData.length !== 1 ? 's' : ''} {hasActiveFilters ? '(with current filters)' : ''}
-                        </p>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowExportDialog(false)}>
-                        Cancel
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-        </>
     );
 };
 
