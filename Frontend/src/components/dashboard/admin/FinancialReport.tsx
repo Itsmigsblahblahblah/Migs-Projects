@@ -46,7 +46,21 @@ interface FinancialReportProps {
 const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [financialData, setFinancialData] = useState<FinancialRecord[]>([]);
-    const [loading, setLoading] = useState(false); // Changed back to false - only show if no data
+    // Initialize loading state based on whether cached data exists
+    const [loading, setLoading] = useState(() => {
+        // Check if valid cache exists on mount
+        const cachedData = sessionStorage.getItem('financial_report_data');
+        const cacheTimestamp = sessionStorage.getItem('financial_report_timestamp');
+        if (cachedData && cacheTimestamp) {
+            const age = Date.now() - parseInt(cacheTimestamp);
+            if (age < 10 * 60 * 1000) {
+                // Valid cache exists - don't show loading
+                return false;
+            }
+        }
+        // No valid cache - need to fetch, show loading
+        return true;
+    });
     const recordsPerPage = 10;
 
     // Filter states
@@ -146,26 +160,29 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
             const cachedData = sessionStorage.getItem('financial_report_data');
             const cacheTimestamp = sessionStorage.getItem('financial_report_timestamp');
             
-            // Use cached data if less than 10 minutes old (like Complaints Report)
+            // Use cached data if less than 10 minutes old
             if (cachedData && cacheTimestamp) {
                 const age = Date.now() - parseInt(cacheTimestamp);
-                if (age < 10 * 60 * 1000) { // 10 minutes cache for better efficiency
+                if (age < 10 * 60 * 1000) { // 10 minutes cache
                     console.log('[FinancialReport] Using cached data (age:', Math.round(age / 1000), 's)');
                     setFinancialData(JSON.parse(cachedData));
-                    setLoading(false); // No loading - data exists
-                    return;
+                    setLoading(false); // Ensure loading is FALSE - data exists
+                    return; // Exit early - no fetch needed
+                } else {
+                    // Cache expired - clear it
+                    console.log('[FinancialReport] ⚠️ Cache expired, clearing and fetching fresh data...');
+                    sessionStorage.removeItem('financial_report_data');
+                    sessionStorage.removeItem('financial_report_timestamp');
                 }
+            } else {
+                // No cache at all
+                console.log('[FinancialReport] 🆕 No cache found, fetching data...');
             }
             
-            // No cache or expired - fetch fresh data
-            console.log('[FinancialReport] Cache miss or expired, fetching fresh financial data from ledgers...');
+            // Fetch fresh data from Firestore
+            console.log('[FinancialReport] Fetching fresh financial data from ledgers...');
             
             try {
-                // Only show loading if NO cached data exists (first time or empty cache)
-                if (!cachedData) {
-                    setLoading(true);
-                }
-                
                 // Get all ledgers using the optimized service
                 const allLedgers = await getAllLedgers();
                 

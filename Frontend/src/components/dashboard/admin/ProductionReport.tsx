@@ -58,7 +58,21 @@ interface ProductionReportProps {
 const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [productionData, setProductionData] = useState<ProductionRecord[]>([]);
-    const [loading, setLoading] = useState(false); // Changed back to false - only show if no data
+    // Initialize loading state based on whether cached data exists
+    const [loading, setLoading] = useState(() => {
+        // Check if valid cache exists on mount
+        const cachedData = sessionStorage.getItem('production_report_data');
+        const cacheTimestamp = sessionStorage.getItem('production_report_timestamp');
+        if (cachedData && cacheTimestamp) {
+            const age = Date.now() - parseInt(cacheTimestamp);
+            if (age < 30 * 60 * 1000) {
+                // Valid cache exists - don't show loading
+                return false;
+            }
+        }
+        // No valid cache - need to fetch, show loading
+        return true;
+    });
     const recordsPerPage = 10;
 
     // Filter states
@@ -145,33 +159,34 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 if (age < 30 * 60 * 1000) { // 30 minutes cache
                     console.log('[ProductionReport] ✅ Using cached data (age:', Math.round(age / 1000), 's)');
                     setProductionData(JSON.parse(cachedData));
-                    setLoading(false); // No loading - data exists
+                    setLoading(false); // Ensure loading is FALSE - data exists
                     
                     // If cache is older than 5 minutes, silently refresh in background
                     if (age > 5 * 60 * 1000) {
                         console.log('[ProductionReport] 🔄 Cache >5min old, will silently refresh...');
-                        // Continue to fetch below, but DON'T set loading=true
+                        // Continue to fetch below, but DON'T set loading=true (keep showing cached data)
                     } else {
                         // Fresh cache (<5min), no refresh needed
                         return;
                     }
+                } else {
+                    // Cache expired - clear it
+                    console.log('[ProductionReport] ⚠️ Cache expired, clearing and fetching fresh data...');
+                    sessionStorage.removeItem('production_report_data');
+                    sessionStorage.removeItem('production_report_timestamp');
                 }
+            } else {
+                // No cache at all
+                console.log('[ProductionReport] 🆕 No cache found, fetching data...');
             }
             
-            // No cache or expired - fetch fresh data
-            console.log('[ProductionReport] Cache miss or expired, fetching fresh data...');
+            // Fetch fresh data from Firestore
+            console.log('[ProductionReport] Fetching from Firestore...');
             
             try {
-                console.log('[ProductionReport] Fetching from Firestore...');
-                
-                // Only show loading if NO cached data exists (first time or empty cache)
-                if (!cachedData) {
-                    setLoading(true);
-                }
-                console.log('[ProductionReport] Starting to fetch production data...');
                 // FORCE CLEAR ALL CACHES only on fresh fetch (not on silent refresh)
                 // This ensures each farmer gets their own specific yield calculation
-                if (!cachedData || !cacheTimestamp) {
+                if (!cachedData || !cacheTimestamp || (Date.now() - parseInt(cacheTimestamp) >= 30 * 60 * 1000)) {
                     console.log('[ProductionReport] 🗑️ Clearing ALL caches for fresh calculations...');
                     const { clearAllCropCaches } = await import('@/services/cropDataService');
                     clearAllCropCaches();
@@ -420,12 +435,12 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
             } catch (error) {
                 console.error('[ProductionReport] Error fetching production data:', error);
                 // Don't overwrite existing data if fetch fails during silent refresh
-                if (!productionData.length) {
-                    setProductionData([]); // Only set empty if no existing data
+                if (!productionData.length && !cachedData) {
+                    setProductionData([]); // Only set empty if no existing data and no cache
                 }
                 // If we have existing data, keep it (don't clear on error)
             } finally {
-                setLoading(false);
+                setLoading(false); // Always hide loading after fetch completes
             }
         };
 
