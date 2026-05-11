@@ -447,10 +447,10 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select crop" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Crops</SelectItem>
+                                <SelectContent className="production-filter-dropdown">
+                                    <SelectItem value="all" className="cursor-pointer">All Crops</SelectItem>
                                     {uniqueCrops.map((crop) => (
-                                        <SelectItem key={crop} value={crop}>
+                                        <SelectItem key={crop} value={crop} className="cursor-pointer">
                                             {crop}
                                         </SelectItem>
                                     ))}
@@ -462,10 +462,10 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select farm address" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Farm Addresses</SelectItem>
+                                <SelectContent className="production-filter-dropdown">
+                                    <SelectItem value="all" className="cursor-pointer">All Farm Addresses</SelectItem>
                                     {uniqueBarangays.map((farmAddress) => (
-                                        <SelectItem key={farmAddress} value={farmAddress}>
+                                        <SelectItem key={farmAddress} value={farmAddress} className="cursor-pointer">
                                             {farmAddress}
                                         </SelectItem>
                                     ))}
@@ -477,10 +477,10 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select year" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Years</SelectItem>
+                                <SelectContent className="production-filter-dropdown">
+                                    <SelectItem value="all" className="cursor-pointer">All Years</SelectItem>
                                     {uniqueYears.map((year) => (
-                                        <SelectItem key={year} value={year}>
+                                        <SelectItem key={year} value={year} className="cursor-pointer">
                                             {year}
                                         </SelectItem>
                                     ))}
@@ -492,20 +492,20 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select month" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Months</SelectItem>
-                                    <SelectItem value="January">January</SelectItem>
-                                    <SelectItem value="February">February</SelectItem>
-                                    <SelectItem value="March">March</SelectItem>
-                                    <SelectItem value="April">April</SelectItem>
-                                    <SelectItem value="May">May</SelectItem>
-                                    <SelectItem value="June">June</SelectItem>
-                                    <SelectItem value="July">July</SelectItem>
-                                    <SelectItem value="August">August</SelectItem>
-                                    <SelectItem value="September">September</SelectItem>
-                                    <SelectItem value="October">October</SelectItem>
-                                    <SelectItem value="November">November</SelectItem>
-                                    <SelectItem value="December">December</SelectItem>
+                                <SelectContent className="production-filter-dropdown">
+                                    <SelectItem value="all" className="cursor-pointer">All Months</SelectItem>
+                                    <SelectItem value="January" className="cursor-pointer">January</SelectItem>
+                                    <SelectItem value="February" className="cursor-pointer">February</SelectItem>
+                                    <SelectItem value="March" className="cursor-pointer">March</SelectItem>
+                                    <SelectItem value="April" className="cursor-pointer">April</SelectItem>
+                                    <SelectItem value="May" className="cursor-pointer">May</SelectItem>
+                                    <SelectItem value="June" className="cursor-pointer">June</SelectItem>
+                                    <SelectItem value="July" className="cursor-pointer">July</SelectItem>
+                                    <SelectItem value="August" className="cursor-pointer">August</SelectItem>
+                                    <SelectItem value="September" className="cursor-pointer">September</SelectItem>
+                                    <SelectItem value="October" className="cursor-pointer">October</SelectItem>
+                                    <SelectItem value="November" className="cursor-pointer">November</SelectItem>
+                                    <SelectItem value="December" className="cursor-pointer">December</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
