@@ -698,10 +698,10 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select crop" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Crops</SelectItem>
+                                <SelectContent className="production-filter-dropdown">
+                                    <SelectItem value="all" className="cursor-pointer">All Crops</SelectItem>
                                     {uniqueCrops.map((crop) => (
-                                        <SelectItem key={crop} value={crop}>
+                                        <SelectItem key={crop} value={crop} className="cursor-pointer">
                                             {crop}
                                         </SelectItem>
                                     ))}
@@ -713,10 +713,10 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select year" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Years</SelectItem>
+                                <SelectContent className="production-filter-dropdown">
+                                    <SelectItem value="all" className="cursor-pointer">All Years</SelectItem>
                                     {uniqueYears.map((year) => (
-                                        <SelectItem key={year} value={year.toString()}>
+                                        <SelectItem key={year} value={year.toString()} className="cursor-pointer">
                                             {year}
                                         </SelectItem>
                                     ))}
@@ -728,20 +728,20 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select month" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Months</SelectItem>
-                                    <SelectItem value="0">January</SelectItem>
-                                    <SelectItem value="1">February</SelectItem>
-                                    <SelectItem value="2">March</SelectItem>
-                                    <SelectItem value="3">April</SelectItem>
-                                    <SelectItem value="4">May</SelectItem>
-                                    <SelectItem value="5">June</SelectItem>
-                                    <SelectItem value="6">July</SelectItem>
-                                    <SelectItem value="7">August</SelectItem>
-                                    <SelectItem value="8">September</SelectItem>
-                                    <SelectItem value="9">October</SelectItem>
-                                    <SelectItem value="10">November</SelectItem>
-                                    <SelectItem value="11">December</SelectItem>
+                                <SelectContent className="production-filter-dropdown">
+                                    <SelectItem value="all" className="cursor-pointer">All Months</SelectItem>
+                                    <SelectItem value="0" className="cursor-pointer">January</SelectItem>
+                                    <SelectItem value="1" className="cursor-pointer">February</SelectItem>
+                                    <SelectItem value="2" className="cursor-pointer">March</SelectItem>
+                                    <SelectItem value="3" className="cursor-pointer">April</SelectItem>
+                                    <SelectItem value="4" className="cursor-pointer">May</SelectItem>
+                                    <SelectItem value="5" className="cursor-pointer">June</SelectItem>
+                                    <SelectItem value="6" className="cursor-pointer">July</SelectItem>
+                                    <SelectItem value="7" className="cursor-pointer">August</SelectItem>
+                                    <SelectItem value="8" className="cursor-pointer">September</SelectItem>
+                                    <SelectItem value="9" className="cursor-pointer">October</SelectItem>
+                                    <SelectItem value="10" className="cursor-pointer">November</SelectItem>
+                                    <SelectItem value="11" className="cursor-pointer">December</SelectItem>
                                 </SelectContent>
                             </Select>
 
@@ -750,10 +750,10 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select week" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Weeks</SelectItem>
+                                <SelectContent className="production-filter-dropdown">
+                                    <SelectItem value="all" className="cursor-pointer">All Weeks</SelectItem>
                                     {getWeekOptions().map((week) => (
-                                        <SelectItem key={week.value} value={week.value}>
+                                        <SelectItem key={week.value} value={week.value} className="cursor-pointer">
                                             {week.label}
                                         </SelectItem>
                                     ))}

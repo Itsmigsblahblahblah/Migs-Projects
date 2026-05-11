@@ -165,3 +165,10 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Production Report Filter Dropdown - Blue Hover Styling */
+.production-filter-dropdown [data-highlighted] {
+  background-color: hsl(210, 100%, 97%) !important; /* blue-50 */
+  color: hsl(214, 100%, 37%) !important; /* blue-700 */
+  cursor: pointer !important;
+}
