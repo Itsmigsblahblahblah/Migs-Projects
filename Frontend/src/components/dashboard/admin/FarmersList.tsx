@@ -256,7 +256,7 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                     {/* Sorting Dropdown */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                            <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 hover:text-blue-700 hover:bg-blue-50">
                                 Sort: {getSortByLabel()} - {getOrderLabel()}
                                 <ChevronDown className="h-4 w-4" />
                             </Button>
@@ -313,7 +313,7 @@ const FarmersList = ({ farmers }: FarmersListProps) => {
                     {/* Group by Barangay Dropdown */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                            <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 hover:text-blue-700 hover:bg-blue-50">
                                 Group by Barangay
                                 <ChevronDown className="h-4 w-4" />
                             </Button>
