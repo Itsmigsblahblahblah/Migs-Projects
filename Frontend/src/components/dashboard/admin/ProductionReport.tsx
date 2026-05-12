@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, ChevronLeft, ChevronRight, Wheat, Calendar, TrendingUp, Filter, X, ChevronDown } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, Wheat, Calendar, TrendingUp, Filter, X, ChevronDown, FileText } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -18,6 +18,11 @@ import {
     DropdownMenuTrigger,
     DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useToast } from "@/hooks/use-toast";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface ProductionRecord {
     id: string;
@@ -83,56 +88,101 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     // Group by Barangay states
     const [sortOption, setSortOption] = useState<'newest' | 'barangay'>('newest');
     const [selectedGroupBarangay, setSelectedGroupBarangay] = useState<string>('all');
+    const [exportAccordion, setExportAccordion] = useState<string | undefined>(undefined);
+    const { toast } = useToast();
 
     // Export function for Production Report only
-    const handleExportProduction = (exportType: 'page' | 'all') => {
+    const handleExportProduction = (exportType: 'page' | 'all', format: 'csv' | 'pdf' | 'excel') => {
         if (productionData.length === 0) {
+            toast({
+                title: "No Data",
+                description: "There are no records to export.",
+                variant: "destructive",
+            });
             return;
         }
 
         // Determine which data to export
-        const dataToExport = exportType === 'page' 
-            ? visibleRecords.map(record => ({
-                'Farmer Name': record.farmerName,
-                'Farm Address': record.barangay,
-                'Harvested Crop': record.harvestedCrop,
-                'Land Area (ha)': record.landArea,
-                'Est. Yield Harvest (kg)': record.quantity,
-                'Harvest Date': new Date(record.harvestDate).toLocaleDateString()
-            }))
-            : filteredData.map(record => ({
-                'Farmer Name': record.farmerName,
-                'Farm Address': record.barangay,
-                'Harvested Crop': record.harvestedCrop,
-                'Land Area (ha)': record.landArea,
-                'Est. Yield Harvest (kg)': record.quantity,
-                'Harvest Date': new Date(record.harvestDate).toLocaleDateString()
-            }));
+        const rawData = exportType === 'page' ? visibleRecords : filteredData;
+        
+        const dataToExport = rawData.map(record => ({
+            'Farmer Name': record.farmerName,
+            'Farm Address': record.barangay,
+            'Harvested Crop': record.harvestedCrop,
+            'Land Area (ha)': record.landArea,
+            'Est. Yield Harvest (kg)': Math.round(record.quantity),
+            'Harvest Date': new Date(record.harvestDate).toLocaleDateString()
+        }));
 
         if (dataToExport.length === 0) {
             return;
         }
 
-        // Convert to CSV
-        const headers = Object.keys(dataToExport[0]);
-        const csv = [
-            headers.join(','),
-            ...dataToExport.map(row =>
-                headers.map(header => JSON.stringify(row[header] || '')).join(',')
-            )
-        ].join('\n');
+        const filename = `production_report_${exportType === 'page' ? `page${currentPage}` : 'all'}_${new Date().toISOString().split('T')[0]}`;
 
-        // Download CSV
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        const filename = exportType === 'page'
-            ? `production_report_page${currentPage}_${new Date().toISOString().split('T')[0]}.csv`
-            : `production_report_all_pages_${new Date().toISOString().split('T')[0]}.csv`;
-        a.href = url;
-        a.download = filename;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        if (format === 'csv') {
+            const headers = Object.keys(dataToExport[0]);
+            const csv = [
+                headers.join(','),
+                ...dataToExport.map(row =>
+                    headers.map(header => JSON.stringify(row[header as keyof typeof row] || '')).join(',')
+                )
+            ].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } else if (format === 'pdf') {
+            const doc = new jsPDF();
+            
+            // Add title
+            doc.setFontSize(18);
+            doc.setTextColor(37, 99, 235); // blue-600
+            doc.text('Production Report', 14, 22);
+            
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+            doc.text(`Type: ${exportType === 'page' ? `Page ${currentPage}` : 'All Pages'}`, 14, 36);
+            
+            autoTable(doc, {
+                startY: 45,
+                head: [['Farmer Name', 'Farm Address', 'Harvested Crop', 'Land Area (ha)', 'Est. Yield Harvest (kg)', 'Harvest Date']],
+                body: dataToExport.map(row => Object.values(row)),
+                headStyles: { fillColor: [37, 99, 235], textColor: 255 }, // blue-600
+                alternateRowStyles: { fillColor: [239, 246, 255] }, // blue-50
+                margin: { top: 45 },
+                styles: { fontSize: 8, cellPadding: 3 },
+            });
+            
+            doc.save(`${filename}.pdf`);
+        } else if (format === 'excel') {
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Production");
+            
+            // Apply column widths
+            const colWidths = [
+                { wch: 25 }, // Farmer Name
+                { wch: 25 }, // Farm Address
+                { wch: 20 }, // Harvested Crop
+                { wch: 15 }, // Land Area
+                { wch: 20 }, // Est. Yield
+                { wch: 15 }, // Harvest Date
+            ];
+            worksheet['!cols'] = colWidths;
+            
+            XLSX.writeFile(workbook, `${filename}.xlsx`);
+        }
+
+        toast({
+            title: "Export Successful",
+            description: `Successfully exported to ${format.toUpperCase()} format.`,
+        });
     };
 
     // Reset to page 1 when filters change
@@ -931,30 +981,127 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                                     variant="outline"
                                     size="sm"
                                     disabled={filteredData.length === 0}
-                                    className="w-full md:w-auto hover:bg-blue-50 hover:text-blue-700"
+                                    className="w-full md:w-auto flex items-center gap-2 hover:bg-blue-50 hover:text-blue-700"
                                 >
                                     <Download className="h-4 w-4 mr-2" />
                                     Export Production Report
+                                    <ChevronDown className="h-4 w-4 ml-1" />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-64">
-                                <DropdownMenuItem onClick={() => handleExportProduction('page')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                    <div className="flex flex-col">
-                                        <span className="font-medium">Export This Page</span>
-                                        <span className="text-xs text-muted-foreground">
-                                            Export {visibleRecords.length} record{visibleRecords.length !== 1 ? 's' : ''} from the current page (Page {currentPage} of {totalPages})
-                                        </span>
-                                    </div>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleExportProduction('all')} className="hover:bg-blue-50 hover:text-blue-700" style={{ cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}>
-                                    <div className="flex flex-col">
-                                        <span className="font-medium">Export All Pages</span>
-                                        <span className="text-xs text-muted-foreground">
-                                            Export all {filteredData.length} record{filteredData.length !== 1 ? 's' : ''}
-                                        </span>
-                                    </div>
-                                </DropdownMenuItem>
+                                <Accordion
+                                    type="single"
+                                    collapsible
+                                    value={exportAccordion}
+                                    onValueChange={setExportAccordion}
+                                    className="w-full"
+                                >
+                                    {/* PDF Format Section */}
+                                    <AccordionItem value="pdf" className="border-b-0">
+                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
+                                            <span className="flex items-center">
+                                                <FileText className="h-4 w-4 mr-2 text-red-500" />
+                                                PDF Format
+                                            </span>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pb-0">
+                                            <DropdownMenuItem 
+                                                onClick={() => handleExportProduction('page', 'pdf')} 
+                                                className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
+                                            >
+                                                <div className="flex flex-col pl-6">
+                                                    <span className="font-medium">Export This Page</span>
+                                                    <span className="text-[10px] text-muted-foreground">Current page records only</span>
+                                                </div>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                                onClick={() => handleExportProduction('all', 'pdf')} 
+                                                className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
+                                            >
+                                                <div className="flex flex-col pl-6">
+                                                    <span className="font-medium">Export All Pages</span>
+                                                    <span className="text-[10px] text-muted-foreground">All {filteredData.length} records</span>
+                                                </div>
+                                            </DropdownMenuItem>
+                                        </AccordionContent>
+                                    </AccordionItem>
+
+                                    <DropdownMenuSeparator />
+
+                                    {/* Excel Format Section */}
+                                    <AccordionItem value="excel" className="border-b-0">
+                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
+                                            <span className="flex items-center">
+                                                <FileText className="h-4 w-4 mr-2 text-green-600" />
+                                                Excel Format
+                                            </span>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pb-0">
+                                            <DropdownMenuItem 
+                                                onClick={() => handleExportProduction('page', 'excel')} 
+                                                className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
+                                            >
+                                                <div className="flex flex-col pl-6">
+                                                    <span className="font-medium">Export This Page</span>
+                                                    <span className="text-[10px] text-muted-foreground">Current page records only</span>
+                                                </div>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                                onClick={() => handleExportProduction('all', 'excel')} 
+                                                className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
+                                            >
+                                                <div className="flex flex-col pl-6">
+                                                    <span className="font-medium">Export All Pages</span>
+                                                    <span className="text-[10px] text-muted-foreground">All {filteredData.length} records</span>
+                                                </div>
+                                            </DropdownMenuItem>
+                                        </AccordionContent>
+                                    </AccordionItem>
+
+                                    <DropdownMenuSeparator />
+
+                                    {/* CSV Format Section */}
+                                    <AccordionItem value="csv" className="border-b-0">
+                                        <AccordionTrigger className="py-2 px-4 hover:no-underline hover:bg-blue-50 rounded-sm">
+                                            <span className="flex items-center">
+                                                <FileText className="h-4 w-4 mr-2 text-blue-500" />
+                                                CSV Format
+                                            </span>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="pb-0">
+                                            <DropdownMenuItem 
+                                                onClick={() => handleExportProduction('page', 'csv')} 
+                                                className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
+                                            >
+                                                <div className="flex flex-col pl-6">
+                                                    <span className="font-medium">Export This Page</span>
+                                                    <span className="text-[10px] text-muted-foreground">Current page records only</span>
+                                                </div>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                                onClick={() => handleExportProduction('all', 'csv')} 
+                                                className="hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#eff6ff'; e.currentTarget.style.color = '#1d4ed8'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = ''; e.currentTarget.style.color = ''; }}
+                                            >
+                                                <div className="flex flex-col pl-6">
+                                                    <span className="font-medium">Export All Pages</span>
+                                                    <span className="text-[10px] text-muted-foreground">All {filteredData.length} records</span>
+                                                </div>
+                                            </DropdownMenuItem>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
