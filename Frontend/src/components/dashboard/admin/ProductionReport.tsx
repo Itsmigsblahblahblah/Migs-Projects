@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, ChevronLeft, ChevronRight, Wheat, Calendar, TrendingUp, Filter, X } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, Wheat, Calendar, TrendingUp, Filter, X, ChevronDown } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -79,6 +79,10 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
     const [selectedYear, setSelectedYear] = useState<string>('all');
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
     const [selectedWeek, setSelectedWeek] = useState<string>('all');
+    
+    // Group by Barangay states
+    const [sortOption, setSortOption] = useState<'newest' | 'barangay'>('newest');
+    const [selectedGroupBarangay, setSelectedGroupBarangay] = useState<string>('all');
 
     // Export function for Production Report only
     const handleExportProduction = (exportType: 'page' | 'all') => {
@@ -525,6 +529,12 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
         return crops.sort();
     }, [productionData]);
 
+    // Get unique barangays for filter
+    const uniqueBarangays = useMemo(() => {
+        const barangays = [...new Set(productionData.map(r => r.barangay))];
+        return barangays.sort();
+    }, [productionData]);
+
     // Get unique years for filter
     const uniqueYears = useMemo(() => {
         const years = [...new Set(productionData.map(r => new Date(r.harvestDate).getFullYear()))];
@@ -553,9 +563,12 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 if (dayOfMonth < weekStart || dayOfMonth > weekEnd) return false;
             }
             
+            // Group by barangay filter - only show records from selected barangay
+            if (sortOption === 'barangay' && selectedGroupBarangay !== 'all' && record.barangay !== selectedGroupBarangay) return false;
+            
             return true;
         });
-    }, [productionData, selectedCrop, selectedYear, selectedMonth, selectedWeek]);
+    }, [productionData, selectedCrop, selectedYear, selectedMonth, selectedWeek, sortOption, selectedGroupBarangay]);
 
     // Calculate filtered analytics data
     const filteredAnalytics = useMemo(() => {
@@ -849,6 +862,69 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                         <CardDescription>Harvest records from farmers ({filteredData.length} total {hasActiveFilters ? 'filtered' : ''})</CardDescription>
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
+                        {/* Group by Barangay Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 hover:text-blue-700 hover:bg-blue-50">
+                                    Group by Barangay
+                                    <ChevronDown className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-64 max-h-60 overflow-y-auto">
+                                {uniqueBarangays.length > 0 ? (
+                                    uniqueBarangays.map(address => (
+                                        <DropdownMenuItem
+                                            key={address}
+                                            onClick={() => {
+                                                setSelectedGroupBarangay(address);
+                                                setSortOption('barangay');
+                                            }}
+                                            className={`cursor-pointer ${selectedGroupBarangay === address ? "bg-blue-50 text-blue-700" : ""}`}
+                                            style={{ cursor: 'pointer' }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#eff6ff';
+                                                e.currentTarget.style.color = '#1d4ed8';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (selectedGroupBarangay !== address) {
+                                                    e.currentTarget.style.backgroundColor = '';
+                                                    e.currentTarget.style.color = '';
+                                                }
+                                            }}
+                                        >
+                                            {address}
+                                        </DropdownMenuItem>
+                                    ))
+                                ) : (
+                                    <DropdownMenuItem disabled className="text-muted-foreground">
+                                        No barangays available
+                                    </DropdownMenuItem>
+                                )}
+                                {selectedGroupBarangay !== 'all' && sortOption === 'barangay' && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onClick={() => {
+                                                setSelectedGroupBarangay('all');
+                                                setSortOption('newest');
+                                            }}
+                                            className="cursor-pointer text-red-600 hover:bg-red-50"
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#fef2f2';
+                                                e.currentTarget.style.color = '#dc2626';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = '';
+                                                e.currentTarget.style.color = '';
+                                            }}
+                                        >
+                                            Clear Filter
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -888,6 +964,23 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                 {filteredData.length > 0 ? (
                     <div className="flex flex-col h-full">
                         <div className="space-y-4 flex-grow">
+                            {/* Stats display for selected barangay */}
+                            {sortOption === 'barangay' && selectedGroupBarangay && (
+                                <div className="pt-2">
+                                    <div className="bg-muted p-3 rounded-md">
+                                        <h3 className="font-semibold">
+                                            {selectedGroupBarangay} has {filteredData.filter(r => r.barangay === selectedGroupBarangay).length} record(s)
+                                        </h3>
+                                        <div className="flex flex-wrap gap-4 mt-2">
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-sm">Total Production:</span>
+                                                <Badge variant="secondary">{filteredData.filter(r => r.barangay === selectedGroupBarangay).reduce((sum, r) => sum + r.quantity, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
                             <div className="overflow-x-auto rounded-lg border">
                                 <table className="w-full border-collapse">
                                     <thead>

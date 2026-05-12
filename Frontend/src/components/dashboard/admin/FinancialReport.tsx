@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, ChevronLeft, ChevronRight, TrendingUp, Filter, X, DollarSign, Users, MapPin } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, TrendingUp, Filter, X, DollarSign, Users, MapPin, ChevronDown } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/firebaseConfig";
@@ -17,6 +17,8 @@ import {
     DropdownMenuTrigger,
     DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface FinancialRecord {
     id: string;
@@ -67,6 +69,13 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
     const [selectedBarangay, setSelectedBarangay] = useState<string>('all');
     const [selectedYear, setSelectedYear] = useState<string>('all');
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
+    
+    // Group by Barangay states
+    const [sortOption, setSortOption] = useState<'newest' | 'barangay'>('newest');
+    const [selectedGroupBarangay, setSelectedGroupBarangay] = useState<string>('all');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [sortBy, setSortBy] = useState<'date' | 'barangay'>('date');
+    const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
 
     // Export function for Financial Report only
     const handleExportFinancial = (exportType: 'page' | 'all') => {
@@ -269,9 +278,12 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
             const matchesMonth = selectedMonth === 'all' || 
                 new Date(record.plantedDate).toLocaleString('en-US', { month: 'long' }) === selectedMonth;
             
-            return matchesCrop && matchesBarangay && matchesYear && matchesMonth;
+            // Group by barangay filter - only show records from selected barangay
+            const matchesGroupBarangay = sortOption !== 'barangay' || selectedGroupBarangay === 'all' || record.farmAddress === selectedGroupBarangay;
+            
+            return matchesCrop && matchesBarangay && matchesYear && matchesMonth && matchesGroupBarangay;
         });
-    }, [financialData, selectedCrop, selectedBarangay, selectedYear, selectedMonth]);
+    }, [financialData, selectedCrop, selectedBarangay, selectedYear, selectedMonth, sortOption, selectedGroupBarangay]);
 
     // Calculate statistics
     const stats = useMemo(() => {
@@ -683,6 +695,69 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                         <CardDescription>Detailed financial data for all projects ({filteredData.length} total {hasActiveFilters ? 'filtered' : ''})</CardDescription>
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
+                        {/* Group by Barangay Dropdown */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 hover:text-blue-700 hover:bg-blue-50">
+                                    Group by Barangay
+                                    <ChevronDown className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-64 max-h-60 overflow-y-auto">
+                                {uniqueBarangays.length > 0 ? (
+                                    uniqueBarangays.map(address => (
+                                        <DropdownMenuItem
+                                            key={address}
+                                            onClick={() => {
+                                                setSelectedGroupBarangay(address);
+                                                setSortOption('barangay');
+                                            }}
+                                            className={`cursor-pointer ${selectedGroupBarangay === address ? "bg-blue-50 text-blue-700" : ""}`}
+                                            style={{ cursor: 'pointer' }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#eff6ff';
+                                                e.currentTarget.style.color = '#1d4ed8';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (selectedGroupBarangay !== address) {
+                                                    e.currentTarget.style.backgroundColor = '';
+                                                    e.currentTarget.style.color = '';
+                                                }
+                                            }}
+                                        >
+                                            {address}
+                                        </DropdownMenuItem>
+                                    ))
+                                ) : (
+                                    <DropdownMenuItem disabled className="text-muted-foreground">
+                                        No barangays available
+                                    </DropdownMenuItem>
+                                )}
+                                {selectedGroupBarangay !== 'all' && sortOption === 'barangay' && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            onClick={() => {
+                                                setSelectedGroupBarangay('all');
+                                                setSortOption('newest');
+                                            }}
+                                            className="cursor-pointer text-red-600 hover:bg-red-50"
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = '#fef2f2';
+                                                e.currentTarget.style.color = '#dc2626';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = '';
+                                                e.currentTarget.style.color = '';
+                                            }}
+                                        >
+                                            Clear Filter
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -729,6 +804,31 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                 ) : filteredData.length > 0 ? (
                     <div className="flex flex-col h-full">
                         <div className="space-y-4 flex-grow">
+                            {/* Stats display for selected barangay */}
+                            {sortOption === 'barangay' && selectedGroupBarangay && (
+                                <div className="pt-2">
+                                    <div className="bg-muted p-3 rounded-md">
+                                        <h3 className="font-semibold">
+                                            {selectedGroupBarangay} has {stats.byBarangay[selectedGroupBarangay]?.count || 0} record(s)
+                                        </h3>
+                                        <div className="flex flex-wrap gap-4 mt-2">
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-sm">Total Capital:</span>
+                                                <Badge variant="secondary">{formatCurrency(stats.byBarangay[selectedGroupBarangay]?.totalCapital || 0)}</Badge>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-sm">Total Revenue:</span>
+                                                <Badge variant="secondary">{formatCurrency(stats.byBarangay[selectedGroupBarangay]?.totalRevenue || 0)}</Badge>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-sm">Total Profit:</span>
+                                                <Badge variant="secondary">{formatCurrency(stats.byBarangay[selectedGroupBarangay]?.totalProfit || 0)}</Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
                             <div className="overflow-x-auto rounded-lg border">
                                 <table className="w-full border-collapse">
                                     <thead>
