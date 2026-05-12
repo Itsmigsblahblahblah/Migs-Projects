@@ -911,8 +911,7 @@ const ProductionReport = ({ onExport }: ProductionReportProps) => {
                         <CardTitle>Production Report</CardTitle>
                         <CardDescription>Harvest records from farmers ({filteredData.length} total {hasActiveFilters ? 'filtered' : ''})</CardDescription>
                     </div>
-                    <div className="flex gap-2 w-full md:w-auto">
-                        {/* Group by Barangay Dropdown */}
+                    <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="w-full md:w-auto flex items-center gap-2 hover:text-blue-700 hover:bg-blue-50">

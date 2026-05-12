@@ -742,7 +742,7 @@ const FinancialReport = ({ onExport, category = 'all' }: FinancialReportProps) =
                         <CardTitle>Financial Records</CardTitle>
                         <CardDescription>Detailed financial data for all projects ({filteredData.length} total {hasActiveFilters ? 'filtered' : ''})</CardDescription>
                     </div>
-                    <div className="flex gap-2 w-full md:w-auto">
+                    <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                         {/* Group by Barangay Dropdown */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
