@@ -142,10 +142,17 @@ const AdminCropPrescriptionManagement = () => {
   }, []);
 
   // Load recommendations with caching
-  const loadRecommendations = async () => {
+  const loadRecommendations = async (forceRefresh = false) => {
+    // If force refresh, clear cache first
+    if (forceRefresh) {
+      console.log('[SoilPH] Force refreshing from Firestore (clearing cache)...');
+      sessionStorage.removeItem('soilPHCache');
+      sessionStorage.removeItem('soilPHCacheTimestamp');
+    }
+    
     // Check cache first
     const cachedData = getCachedSoilPHData();
-    if (cachedData && cachedData.data.length > 0) {
+    if (!forceRefresh && cachedData && cachedData.data.length > 0) {
       console.log('[SoilPH] Using cached soil pH data');
       setRecommendations(cachedData.data);
       setLoading(false);
@@ -153,7 +160,8 @@ const AdminCropPrescriptionManagement = () => {
     }
 
     try {
-      console.log('[SoilPH] Cache miss, fetching from Firestore...');
+      console.log('[SoilPH] Fetching from Firestore...');
+      setLoading(true);
       setCacheLoading(true);
       const db = await getDb();
       const recommendationsRef = collection(db, "adminRecommendations");
@@ -165,6 +173,7 @@ const AdminCropPrescriptionManagement = () => {
         ...doc.data(),
       })) as AdminRecommendation[];
 
+      console.log('[SoilPH] Loaded', data.length, 'records from Firestore');
       setRecommendations(data);
       // Cache the data
       setCachedSoilPHData(data);
@@ -195,8 +204,15 @@ const AdminCropPrescriptionManagement = () => {
   // Handle form submission
   const handleSubmit = async () => {
     try {
+      console.log('[SoilPH] Starting form submission...');
+      console.log('[SoilPH] Form data:', formData);
+      
+      // Check if Firebase is ready
       const db = await getDb();
+      console.log('[SoilPH] Firebase DB instance:', db);
+      
       const userId = localStorage.getItem("userId") || "admin";
+      console.log('[SoilPH] User ID:', userId);
 
       const recommendationData = {
         cropName: formData.cropName,
@@ -227,23 +243,31 @@ const AdminCropPrescriptionManagement = () => {
         updatedAt: Timestamp.now(),
       };
 
+      console.log('[SoilPH] Data to save:', recommendationData);
+
       if (editingRecommendation) {
         // Update existing
+        console.log('[SoilPH] Updating existing recommendation:', editingRecommendation.id);
         const docRef = doc(db, "adminRecommendations", editingRecommendation.id);
         await updateDoc(docRef, {
           ...recommendationData,
           createdAt: editingRecommendation.createdAt,
         });
+        console.log('[SoilPH] Successfully updated!');
         toast({
           title: "Success",
           description: "Recommendation updated successfully.",
         });
       } else {
         // Create new
-        await addDoc(collection(db, "adminRecommendations"), {
+        console.log('[SoilPH] Creating new recommendation...');
+        const collectionRef = collection(db, "adminRecommendations");
+        console.log('[SoilPH] Collection reference:', collectionRef);
+        const result = await addDoc(collectionRef, {
           ...recommendationData,
           createdAt: Timestamp.now(),
         });
+        console.log('[SoilPH] Successfully created! Document ID:', result.id);
         toast({
           title: "Success",
           description: "Recommendation created successfully.",
@@ -252,12 +276,25 @@ const AdminCropPrescriptionManagement = () => {
 
       setIsDialogOpen(false);
       resetForm();
-      loadRecommendations();
-    } catch (error) {
-      console.error("Error saving recommendation:", error);
+      await loadRecommendations(true); // Force refresh to get new data from Firestore
+    } catch (error: any) {
+      console.error("[SoilPH] Error saving recommendation:", error);
+      console.error("[SoilPH] Error code:", error.code);
+      console.error("[SoilPH] Error message:", error.message);
+      
+      let errorMessage = 'Failed to save recommendation.';
+      
+      if (error.code === 'permission-denied') {
+        errorMessage = 'Firebase permission denied. Please check Firestore security rules for adminRecommendations collection.';
+      } else if (error.code === 'unavailable') {
+        errorMessage = 'Firebase service unavailable. Please check your internet connection.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to save recommendation.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -279,7 +316,7 @@ const AdminCropPrescriptionManagement = () => {
 
       setIsDeleteDialogOpen(false);
       setDeletingRecommendation(null);
-      loadRecommendations();
+      await loadRecommendations(true); // Force refresh after delete
     } catch (error) {
       console.error("Error deleting recommendation:", error);
       toast({
